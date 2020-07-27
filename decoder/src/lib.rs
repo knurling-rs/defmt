@@ -1,10 +1,11 @@
 // NOTE: always runs on the host
 
-use core::ops::Range;
 use core::fmt;
+use core::ops::Range;
 use std::collections::BTreeMap;
 
 use byteorder::{ReadBytesExt, LE};
+use colored::Colorize;
 
 use binfmt_parser::Type;
 use common::Level;
@@ -56,7 +57,18 @@ impl core::fmt::Display for Frame<'_> {
         // 0.000000 Info Hello, world!
         let seconds = self.timestamp / 1000000;
         let micros = self.timestamp % 1000000;
-        write!(f, "{}.{:06}", seconds, micros)
+
+        let level = match self.level {
+            Level::Trace => "TRACE".dimmed(),
+            Level::Debug => "DEBUG".normal(),
+            Level::Info => "INFO".green(),
+            Level::Warn => "WARN".yellow(),
+            Level::Error => "ERROR".red(),
+        };
+
+        
+
+        write!(f, "{}.{:06} {}", seconds, micros, level)
     }
 }
 
@@ -101,11 +113,7 @@ pub fn decode<'t>(
     Ok((frame, consumed))
 }
 
-fn parse_args<'t>(
-    bytes: &mut &[u8],
-    format: &str,
-    table: &'t Table,
-) -> Result<Vec<Arg<'t>>, ()> {
+fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<Vec<Arg<'t>>, ()> {
     let mut args = vec![];
     let mut params = binfmt_parser::parse(format).map_err(drop)?;
     params.sort_by_key(|param| param.index);
@@ -128,10 +136,12 @@ fn parse_args<'t>(
                 if level != None {
                     return Err(());
                 }
-                let mut params = binfmt_parser::parse(format).map_err(drop)?;
                 let inner_args = parse_args(bytes, format, table)?;
 
-                args.push(Arg::Format { format, args: inner_args});
+                args.push(Arg::Format {
+                    format,
+                    args: inner_args,
+                });
             }
             Type::I16 => {
                 let data = bytes.read_i16::<LE>().map_err(drop)?;

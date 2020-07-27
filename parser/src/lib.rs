@@ -6,11 +6,13 @@ use std::{borrow::Cow, collections::BTreeSet};
 pub struct Parameter {
     pub index: usize,
     pub ty: Type,
+    pub span: Range<usize>,
 }
 
 struct Param {
     index: Option<usize>,
     ty: Type,
+    span: Range<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -67,12 +69,13 @@ fn parse_range(s: &str) -> Option<(Range<u8>, usize)> {
 
 pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
     let s = format_string;
-    let mut chars = s.chars();
+    let mut chars = s.char_indices();
 
     let mut params = Vec::<Param>::new();
-    while let Some(c) = chars.next() {
+    while let Some((span_start, c)) = chars.next() {
         match c {
             '{' => {
+                let len_start = chars.as_str().len();
                 let index = if let Some((idx, skip)) = parse_usize(chars.as_str())? {
                     for _ in 0..skip {
                         drop(chars.next())
@@ -82,7 +85,7 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                     None
                 };
 
-                let c = chars.next();
+                let c = chars.next().map(|(_, c)| c);
                 match c {
                     // escaped `{`
                     Some('{') => {}
@@ -155,7 +158,8 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                             }
                         }
 
-                        params.push(Param { ty, index })
+                        let span = span_start..len_start - chars.as_str().len() + 1;
+                        params.push(Param { ty, index, span })
                     }
 
                     Some(_) => return Err("`{` must be followed by `:`".into()),
@@ -166,7 +170,7 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
 
             '}' => {
                 // must be a escaped `}`
-                if chars.next() != Some('}') {
+                if chars.next().map(|(_, c)| c) != Some('}') {
                     return Err("unmatched `}` in format string".into());
                 }
             }
@@ -199,6 +203,7 @@ fn assign_indices(params: Vec<Param>) -> Result<Vec<Parameter>, Cow<'static, str
         parameters.push(Parameter {
             index,
             ty: param.ty,
+            span: param.span,
         });
     }
 
@@ -224,91 +229,113 @@ mod tests {
 
     #[test]
     fn ty() {
+        let fmt = "{:bool}";
         assert_eq!(
-            super::parse("{:bool}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::Bool
+                ty: Type::Bool,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:?}";
         assert_eq!(
-            super::parse("{:?}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::Format
+                ty: Type::Format,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:i16}";
         assert_eq!(
-            super::parse("{:i16}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::I16
+                ty: Type::I16,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:i32}";
         assert_eq!(
-            super::parse("{:i32}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::I32
+                ty: Type::I32,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:i8}";
         assert_eq!(
-            super::parse("{:i8}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::I8
+                ty: Type::I8,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:str}";
         assert_eq!(
-            super::parse("{:str}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::Str
+                ty: Type::Str,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:u16}";
         assert_eq!(
-            super::parse("{:u16}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::U16
+                ty: Type::U16,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:u24}";
         assert_eq!(
-            super::parse("{:u24}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::U24
+                ty: Type::U24,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:u32}";
         assert_eq!(
-            super::parse("{:u32}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::U32
+                ty: Type::U32,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:u8}";
         assert_eq!(
-            super::parse("{:u8}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::U8
+                ty: Type::U8,
+                span: 0..fmt.len(),
             }])
         );
 
+        let fmt = "{:[u8]}";
         assert_eq!(
-            super::parse("{:[u8]}"),
+            super::parse(fmt),
             Ok(vec![Parameter {
                 index: 0,
-                ty: Type::Slice
+                ty: Type::Slice,
+                span: 0..fmt.len(),
             }])
         );
     }
