@@ -3,9 +3,10 @@
 use core::ops::Range;
 use std::collections::BTreeMap;
 
-use byteorder::ReadBytesExt;
+use byteorder::{ReadBytesExt, LE};
 
 use common::Level;
+use binfmt_parser::Type;
 
 /// Interner table
 pub struct Table {
@@ -81,11 +82,46 @@ pub fn decode<'t>(
     let params = binfmt_parser::parse(format).map_err(drop)?;
     for param in params {
         match param.ty {
-            binfmt_parser::Type::U8 => {
+            Type::U8 => {
                 let data = bytes.read_u8().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
             }
-            _ => todo!(),
+            
+            Type::BitField(_) => {
+
+            }
+            Type::Bool => {
+                
+            }
+            Type::Format => {}
+            Type::I16 => {
+                let data = bytes.read_i16::<LE>().map_err(drop)?;
+                args.push(Arg::Uxx(data as u64));
+            }
+            Type::I32 => {
+                let data = bytes.read_i32::<LE>().map_err(drop)?;
+                args.push(Arg::Uxx(data as u64));
+            }
+            Type::I8 => {
+                let data = bytes.read_i8().map_err(drop)?;
+                args.push(Arg::Uxx(data as u64));
+            }
+            Type::Str => {}
+            Type::U16 => {
+                let data = bytes.read_u16::<LE>().map_err(drop)?;
+                args.push(Arg::Uxx(data as u64));
+            }
+            Type::U24 => {
+                let data_low = bytes.read_u8().map_err(drop)?;
+                let data_high = bytes.read_u16::<LE>().map_err(drop)?;
+                let data = data_low as u64 | (data_high as u64) << 8; 
+                args.push(Arg::Uxx(data as u64));
+            }
+            Type::U32 => {
+                let data = bytes.read_u32::<LE>().map_err(drop)?;
+                args.push(Arg::Uxx(data as u64));
+            }
+            Type::Slice => {}
         }
     }
 
@@ -163,5 +199,7 @@ mod tests {
         );
 
         // TODO Format ({:?})
+    #[test]
+        
     }
 }
