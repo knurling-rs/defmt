@@ -32,6 +32,8 @@ SECTIONS
     /* User interned strings (Str) */
     _binfmt_str = .;
     *(.binfmt.str.*);
-    _ebinfmt = .
+    _ebinfmt = .;
   }
 }
+
+ASSERT(_ebinfmt < 16384, ".binfmt section cannot contain more than (1<<14) interned strings");

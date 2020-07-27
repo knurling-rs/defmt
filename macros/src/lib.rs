@@ -239,7 +239,7 @@ pub fn info(ts: TokenStream) -> TokenStream {
     let section = format!(".binfmt.info.{}", id);
     let sym = format!("{}@{}", ls, id);
     quote!({
-        if cfg!(feature = "binfmt") {
+        if cfg!(feature = "binfmt-on") {
             if binfmt::export::Level::Info >= binfmt::export::threshold() {
                 if let Some(mut _fmt_) = binfmt::export::acquire() {
                     match (binfmt::export::timestamp(), #(#args),*) {

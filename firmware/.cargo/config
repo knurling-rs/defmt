@@ -1,0 +1,11 @@
+[target.thumbv7m-none-eabi]
+runner = "qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel"
+
+rustflags = [
+  # LLD (shipped with the Rust toolchain) is used as the default linker
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=-Tbinfmt.x",
+]
+
+[build]
+target = "thumbv7m-none-eabi"    # Cortex-M3
