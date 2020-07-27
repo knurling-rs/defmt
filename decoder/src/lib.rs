@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 
 use byteorder::{ReadBytesExt, LE};
 
-use common::Level;
 use binfmt_parser::Type;
+use common::Level;
 
 /// Interner table
 pub struct Table {
@@ -79,32 +79,31 @@ pub fn decode<'t>(
     let level = level.ok_or(())?;
 
     let mut args = vec![];
-    let params = binfmt_parser::parse(format).map_err(drop)?;
+    let mut params = binfmt_parser::parse(format).map_err(drop)?;
+    params.sort_by_key(|param| param.index);
+    params.dedup_by_key(|param| param.index);
+
     for param in params {
         match param.ty {
             Type::U8 => {
                 let data = bytes.read_u8().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
             }
-            
-            Type::BitField(_) => {
 
-            }
-            Type::Bool => {
-                
-            }
+            Type::BitField(_) => {}
+            Type::Bool => {}
             Type::Format => {}
             Type::I16 => {
                 let data = bytes.read_i16::<LE>().map_err(drop)?;
-                args.push(Arg::Uxx(data as u64));
+                args.push(Arg::Ixx(data as i64));
             }
             Type::I32 => {
                 let data = bytes.read_i32::<LE>().map_err(drop)?;
-                args.push(Arg::Uxx(data as u64));
+                args.push(Arg::Ixx(data as i64));
             }
             Type::I8 => {
                 let data = bytes.read_i8().map_err(drop)?;
-                args.push(Arg::Uxx(data as u64));
+                args.push(Arg::Ixx(data as i64));
             }
             Type::Str => {}
             Type::U16 => {
@@ -114,7 +113,7 @@ pub fn decode<'t>(
             Type::U24 => {
                 let data_low = bytes.read_u8().map_err(drop)?;
                 let data_high = bytes.read_u16::<LE>().map_err(drop)?;
-                let data = data_low as u64 | (data_high as u64) << 8; 
+                let data = data_low as u64 | (data_high as u64) << 8;
                 args.push(Arg::Uxx(data as u64));
             }
             Type::U32 => {
@@ -175,7 +174,7 @@ mod tests {
                     timestamp: 1,
                     args: vec![],
                 },
-                2
+                bytes.len(),
             ))
         );
 
@@ -194,12 +193,113 @@ mod tests {
                     timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
-                3
+                bytes.len(),
             ))
         );
 
         // TODO Format ({:?})
+    }
+
     #[test]
-        
+    fn all_integers() {
+        const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:i8} {:i16} {:i32}!";
+        let mut entries = BTreeMap::new();
+        entries.insert(0, FMT.to_owned());
+
+        let table = Table {
+            entries,
+            debug: 0..0,
+            error: 0..0,
+            info: 0..1,
+            trace: 0..0,
+            warn: 0..0,
+        };
+
+        let bytes = [
+            0,  // index
+            2,  // timestamp
+            42, // u8
+            0xff, 0xff, // u16
+            0, 0, 1, // u24
+            0xff, 0xff, 0xff, 0xff, // u32
+            0xff, // i8
+            0xff, 0xff, // i16
+            0xff, 0xff, 0xff, 0xff, // i32
+        ];
+
+        assert_eq!(
+            super::decode(&bytes, &table),
+            Ok((
+                Frame {
+                    level: Level::Info,
+                    format: FMT,
+                    timestamp: 2,
+                    args: vec![
+                        Arg::Uxx(42),                      // u8
+                        Arg::Uxx(u16::max_value().into()), // u16
+                        Arg::Uxx(0x10000),                 // u24
+                        Arg::Uxx(u32::max_value().into()), // u32
+                        Arg::Ixx(-1),                      // i8
+                        Arg::Ixx(-1),                      // i16
+                        Arg::Ixx(-1),                      // i32
+                    ],
+                },
+                bytes.len(),
+            ))
+        );
+    }
+
+    #[test]
+    fn indices() {
+        let mut entries = BTreeMap::new();
+        entries.insert(0, "The answer is {0:u8} {0:u8}!".to_owned());
+        entries.insert(1, "The answer is {1:u16} {0:u8} {1:u16}!".to_owned());
+
+        let table = Table {
+            entries,
+            debug: 0..0,
+            error: 0..0,
+            info: 0..2,
+            trace: 0..0,
+            warn: 0..0,
+        };
+        let bytes = [
+            0,  // index
+            2,  // timestamp
+            42, // argument
+        ];
+
+        assert_eq!(
+            super::decode(&bytes, &table),
+            Ok((
+                Frame {
+                    level: Level::Info,
+                    format: "The answer is {0:u8} {0:u8}!",
+                    timestamp: 2,
+                    args: vec![Arg::Uxx(42)],
+                },
+                bytes.len(),
+            ))
+        );
+
+        let bytes = [
+            1,  // index
+            2,  // timestamp
+            42, // u8
+            0xff, 0xff, // u16
+        ];
+
+        assert_eq!(
+            super::decode(&bytes, &table),
+            Ok((
+                Frame {
+                    level: Level::Info,
+                    format: "The answer is {1:u16} {0:u8} {1:u16}!",
+                    timestamp: 2,
+                    args: vec![Arg::Uxx(42), Arg::Uxx(0xffff)],
+                },
+                bytes.len(),
+            ))
+        );
     }
 }
