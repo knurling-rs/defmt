@@ -220,18 +220,6 @@ The following printers are currently available:
 
 > TODO list printers here (they don't exist yet)
 
-## Specification
-
-> TODO maybe someday we'll write a spec?
-
-### Macro syntax
-
-> TODO maybe?
-
-### Wire format
-
-> TODO maybe?
-
 ## Design / implementation notes
 
 > NOTE(japaric) this part is meant to be a reference. You do not need to grok all this right off the bat.
