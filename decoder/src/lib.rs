@@ -3,6 +3,8 @@
 use core::ops::Range;
 use std::collections::BTreeMap;
 
+use byteorder::ReadBytesExt;
+
 use common::Level;
 
 /// Interner table
@@ -75,14 +77,26 @@ pub fn decode<'t>(
     let (level, format) = table.get(index as usize)?;
     let level = level.ok_or(())?;
 
-    let consumed = len - bytes.len();
+    let mut args = vec![];
+    let params = binfmt_parser::parse(format).map_err(drop)?;
+    for param in params {
+        match param.ty {
+            binfmt_parser::Type::U8 => {
+                let data = bytes.read_u8().map_err(drop)?;
+                args.push(Arg::Uxx(data as u64));
+            }
+            _ => todo!(),
+        }
+    }
+
     let frame = Frame {
         level,
         format,
         timestamp,
-        args: Vec::new(),
+        args,
     };
 
+    let consumed = len - bytes.len();
     Ok((frame, consumed))
 }
 
@@ -100,6 +114,10 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(0, "Hello, world!".to_owned());
         entries.insert(1, "The answer is {:u8}!".to_owned());
+        // [IDX, TS, 42]
+        //           ^^
+        //entries.insert(2, "The answer is {0:u8} {1:u16}!".to_owned());
+
         let table = Table {
             entries,
             debug: 1..2,
@@ -135,12 +153,12 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
-                    level: Level::Info,
+                    level: Level::Debug,
                     format: "The answer is {:u8}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
-                2
+                3
             ))
         );
 

@@ -8,3 +8,4 @@ version = "0.1.0"
 binfmt-parser = { path = "../parser" }
 common = { path = "../common" }
 leb128 = "0.2.4"
+byteorder = "1"
