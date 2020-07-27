@@ -78,6 +78,24 @@ pub fn decode<'t>(
     let (level, format) = table.get(index as usize)?;
     let level = level.ok_or(())?;
 
+    let args = parse_args(&mut bytes, format, table)?;
+
+    let frame = Frame {
+        level,
+        format,
+        timestamp,
+        args,
+    };
+
+    let consumed = len - bytes.len();
+    Ok((frame, consumed))
+}
+
+fn parse_args<'t>(
+    bytes: &mut &[u8],
+    format: &str,
+    table: &'t Table,
+) -> Result<Vec<Arg<'t>>, ()> {
     let mut args = vec![];
     let mut params = binfmt_parser::parse(format).map_err(drop)?;
     params.sort_by_key(|param| param.index);
@@ -92,7 +110,19 @@ pub fn decode<'t>(
 
             Type::BitField(_) => {}
             Type::Bool => {}
-            Type::Format => {}
+            // {:?}
+            Type::Format => {
+                let index = leb128::read::unsigned(bytes).map_err(drop)?;
+                let (level, format) = table.get(index as usize)?;
+                // not well-formed
+                if level != None {
+                    return Err(());
+                }
+                let mut params = binfmt_parser::parse(format).map_err(drop)?;
+                let inner_args = parse_args(bytes, format, table)?;
+
+                args.push(Arg::Format { format, args: inner_args});
+            }
             Type::I16 => {
                 let data = bytes.read_i16::<LE>().map_err(drop)?;
                 args.push(Arg::Ixx(data as i64));
@@ -124,15 +154,7 @@ pub fn decode<'t>(
         }
     }
 
-    let frame = Frame {
-        level,
-        format,
-        timestamp,
-        args,
-    };
-
-    let consumed = len - bytes.len();
-    Ok((frame, consumed))
+    Ok(args)
 }
 
 #[cfg(test)]
@@ -297,6 +319,45 @@ mod tests {
                     format: "The answer is {1:u16} {0:u8} {1:u16}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42), Arg::Uxx(0xffff)],
+                },
+                bytes.len(),
+            ))
+        );
+    }
+
+    #[test]
+    fn format() {
+        let mut entries = BTreeMap::new();
+        entries.insert(0, "x={:?}".to_owned());
+        entries.insert(1, "Foo {{ x: {:u8} }}".to_owned());
+
+        let table = Table {
+            entries,
+            debug: 0..0,
+            error: 0..0,
+            info: 0..1,
+            trace: 0..0,
+            warn: 0..0,
+        };
+
+        let bytes = [
+            0,  // index
+            2,  // timestamp
+            1,  // index of the struct
+            42, // Foo.x
+        ];
+
+        assert_eq!(
+            super::decode(&bytes, &table),
+            Ok((
+                Frame {
+                    level: Level::Info,
+                    format: "x={:?}",
+                    timestamp: 2,
+                    args: vec![Arg::Format {
+                        format: "Foo {{ x: {:u8} }}",
+                        args: vec![Arg::Uxx(42)]
+                    }],
                 },
                 bytes.len(),
             ))
