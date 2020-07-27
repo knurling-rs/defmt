@@ -1,6 +1,6 @@
 // NOTE: always runs on the host
 
-use core::fmt;
+use core::fmt::{self, Write as _};
 use core::ops::Range;
 use std::collections::BTreeMap;
 
@@ -66,7 +66,16 @@ impl core::fmt::Display for Frame<'_> {
             Level::Error => "ERROR".red(),
         };
 
-        
+        let params = binfmt_parser::parse(self.format).unwrap();
+        let mut buf = String::new();
+        let mut cursor = 0;
+        for param in params {
+            //let tocopy = param.span.start - cursor;
+            buf.push_str(&self.format[cursor..param.span.start]);
+            cursor = param.span.end;
+
+            write!(&mut buf, "{}", self.args[param.index]).ok();
+        }
 
         write!(f, "{}.{:06} {}", seconds, micros, level)
     }
@@ -87,6 +96,12 @@ pub enum Arg<'t> {
     Format { format: &'t str, args: Vec<Arg<'t>> },
     // Slice
     Slice(Vec<u8>),
+}
+
+impl fmt::Display for Arg<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        todo!()
+    }
 }
 
 pub fn decode<'t>(
