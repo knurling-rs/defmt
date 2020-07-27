@@ -101,6 +101,7 @@ impl core::fmt::Display for DisplayFrame<'_> {
 pub enum Arg<'t> {
     // Bool
     Bool(bool),
+    F32(f32),
     // U8, U16, U24 and U32
     Uxx(u64),
     // I8, I16, I24 and I32
@@ -117,6 +118,7 @@ impl fmt::Display for Arg<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Arg::Bool(x) => write!(f, "{:?}", x),
+            Arg::F32(x) => write!(f, "{}", ryu::Buffer::new().format(*x)),
             Arg::Uxx(x) => write!(f, "{}", x),
             Arg::Ixx(x) => write!(f, "{}", x),
             Arg::Str(_) => todo!(),
@@ -206,6 +208,10 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
             Type::U32 => {
                 let data = bytes.read_u32::<LE>().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
+            }
+            Type::F32 => {
+                let data = bytes.read_u32::<LE>().map_err(drop)?;
+                args.push(Arg::F32(f32::from_bits(data)));
             }
             Type::Slice => {}
         }
@@ -437,6 +443,35 @@ mod tests {
                 },
                 bytes.len(),
             ))
+        );
+    }
+
+    #[test]
+    fn display() {
+        let mut entries = BTreeMap::new();
+        entries.insert(0, "x={:?}".to_owned());
+        entries.insert(1, "Foo {{ x: {:u8} }}".to_owned());
+
+        let table = Table {
+            entries,
+            debug: 0..0,
+            error: 0..0,
+            info: 0..1,
+            trace: 0..0,
+            warn: 0..0,
+        };
+
+        let bytes = [
+            0,  // index
+            2,  // timestamp
+            1,  // index of the struct
+            42, // Foo.x
+        ];
+
+        let frame = super::decode(&bytes, &table).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO x=Foo { x: 42 }"
         );
     }
 }

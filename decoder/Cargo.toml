@@ -10,3 +10,4 @@ common = { path = "../common" }
 leb128 = "0.2.4"
 byteorder = "1"
 colored = "2.0.0"
+ryu = "1"

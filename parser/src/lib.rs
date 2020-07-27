@@ -29,6 +29,7 @@ pub enum Type {
     U32,
     U8,
     Slice,
+    F32,
 }
 
 fn digit(c: Option<char>) -> Option<u8> {
@@ -102,6 +103,7 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         static U16: &str = "u16}";
                         static U24: &str = "u24}";
                         static U32: &str = "u32}";
+                        static F32: &str = "f32}";
                         static U8: &str = "u8}";
 
                         let s = chars.as_str();
@@ -123,6 +125,9 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         } else if s.starts_with(U32) {
                             (0..U32.len()).for_each(|_| drop(chars.next()));
                             Type::U32
+                        } else if s.starts_with(F32) {
+                            (0..F32.len()).for_each(|_| drop(chars.next()));
+                            Type::F32
                         } else if s.starts_with(I8) {
                             (0..I8.len()).for_each(|_| drop(chars.next()));
                             Type::I8
@@ -316,6 +321,16 @@ mod tests {
             Ok(vec![Parameter {
                 index: 0,
                 ty: Type::U32,
+                span: 0..fmt.len(),
+            }])
+        );
+
+        let fmt = "{:f32}";
+        assert_eq!(
+            super::parse(fmt),
+            Ok(vec![Parameter {
+                index: 0,
+                ty: Type::F32,
                 span: 0..fmt.len(),
             }])
         );
