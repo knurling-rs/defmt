@@ -1,5 +1,16 @@
 # `binfmt`
 
+---
+
+TODO
+- [ ] decoder
+- [ ] terminal printer
+- [ ] float support
+- [ ] test in QEMU
+- [ ] work on macro interface
+
+---
+
 ## Features
 
 - `println!`-like formatting

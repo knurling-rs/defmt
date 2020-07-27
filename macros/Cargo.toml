@@ -1,0 +1,17 @@
+[package]
+authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+edition = "2018"
+name = "binfmt-macros"
+version = "0.1.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.7"
+rand = "0.7.3"
+proc-macro2 = "1.0.18"
+
+[dependencies.syn]
+features = ["full"]
+version = "1.0.31"

@@ -1,0 +1,9 @@
+[package]
+authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+edition = "2018"
+name = "decoder"
+version = "0.1.0"
+
+[dependencies]
+binfmt-parser = { path = "../parser" }
+common = { path = "../common" }

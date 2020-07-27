@@ -1,0 +1,17 @@
+[package]
+authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+edition = "2018"
+name = "binfmt"
+version = "0.1.0"
+
+[dependencies]
+binfmt-macros = { path = "macros" }
+common = { path = "common" }
+
+[workspace]
+members = [
+  ".",
+  "decoder",
+  "macros",
+  "parser",
+]
