@@ -64,8 +64,26 @@ pub enum Arg<'t> {
     Slice(Vec<u8>),
 }
 
-pub fn decode<'t>(bytes: &[u8], table: &'t Table) -> Option<(Frame<'t>, /*consumed: */ usize)> {
-    todo!()
+pub fn decode<'t>(
+    mut bytes: &[u8],
+    table: &'t Table,
+) -> Result<(Frame<'t>, /*consumed: */ usize), ()> {
+    let len = bytes.len();
+    let index = leb128::read::unsigned(&mut bytes).map_err(drop)?;
+    let timestamp = leb128::read::unsigned(&mut bytes).map_err(drop)?;
+
+    let (level, format) = table.get(index as usize)?;
+    let level = level.ok_or(())?;
+
+    let consumed = len - bytes.len();
+    let frame = Frame {
+        level,
+        format,
+        timestamp,
+        args: Vec::new(),
+    };
+
+    Ok((frame, consumed))
 }
 
 #[cfg(test)]
@@ -75,6 +93,7 @@ mod tests {
     use common::Level;
 
     use super::{Frame, Table};
+    use crate::Arg;
 
     #[test]
     fn decode() {
@@ -95,7 +114,7 @@ mod tests {
 
         assert_eq!(
             super::decode(&bytes, &table),
-            Some((
+            Ok((
                 Frame {
                     level: Level::Info,
                     format: "Hello, world!",
@@ -106,17 +125,20 @@ mod tests {
             ))
         );
 
-        let bytes = [1, 2, 42]; // <- argument
-        //     index ^  ^ timestamp
+        let bytes = [
+            1,  // index
+            2,  // timestamp
+            42, // argument
+        ];
 
         assert_eq!(
             super::decode(&bytes, &table),
-            Some((
+            Ok((
                 Frame {
                     level: Level::Info,
                     format: "The answer is {:u8}!",
                     timestamp: 2,
-                    args: vec![Arg::U8(42)],
+                    args: vec![Arg::Uxx(42)],
                 },
                 2
             ))
