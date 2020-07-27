@@ -1,6 +1,7 @@
 // NOTE: always runs on the host
 
 use core::ops::Range;
+use core::fmt;
 use std::collections::BTreeMap;
 
 use byteorder::{ReadBytesExt, LE};
@@ -10,12 +11,12 @@ use common::Level;
 
 /// Interner table
 pub struct Table {
-    entries: BTreeMap<usize, String>,
-    debug: Range<usize>,
-    error: Range<usize>,
-    info: Range<usize>,
-    trace: Range<usize>,
-    warn: Range<usize>,
+    pub entries: BTreeMap<usize, String>,
+    pub debug: Range<usize>,
+    pub error: Range<usize>,
+    pub info: Range<usize>,
+    pub trace: Range<usize>,
+    pub warn: Range<usize>,
 }
 
 impl Table {
@@ -48,6 +49,15 @@ pub struct Frame<'t> {
     pub format: &'t str,
     pub timestamp: u64,
     pub args: Vec<Arg<'t>>,
+}
+
+impl core::fmt::Display for Frame<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // 0.000000 Info Hello, world!
+        let seconds = self.timestamp / 1000000;
+        let micros = self.timestamp % 1000000;
+        write!(f, "{}.{:06}", seconds, micros)
+    }
 }
 
 // NOTE follows `parser::Type`
