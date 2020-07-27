@@ -76,8 +76,9 @@ impl core::fmt::Display for Frame<'_> {
 
             write!(&mut buf, "{}", self.args[param.index]).ok();
         }
+        buf.push_str(&self.format[cursor..]);
 
-        write!(f, "{}.{:06} {}", seconds, micros, level)
+        write!(f, "{}.{:06} {} {}", seconds, micros, level, buf)
     }
 }
 
@@ -100,7 +101,26 @@ pub enum Arg<'t> {
 
 impl fmt::Display for Arg<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        todo!()
+        match self {
+            Arg::Bool(x) => {
+                write!(f, "{:?}", x)
+            }
+            Arg::Uxx(x) => {
+                write!(f, "{}", x)
+            }
+            Arg::Ixx(x) => {
+                write!(f, "{}", x)
+            }
+            Arg::Str(_) => {
+                todo!()
+            }
+            Arg::Format { format, args } => {
+               todo!()
+            }
+            Arg::Slice(_) => {
+                todo!()
+            }
+        }
     }
 }
 
@@ -192,6 +212,21 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
     Ok(args)
 }
 
+fn format_args(format: &str, args: &[Arg]) -> String {
+    let params = binfmt_parser::parse(format).unwrap();
+        let mut buf = String::new();
+        let mut cursor = 0;
+        for param in params {
+            //let tocopy = param.span.start - cursor;
+            buf.push_str(&format[cursor..param.span.start]);
+            cursor = param.span.end;
+
+            write!(&mut buf, "{}", args[param.index]).ok();
+        }
+        buf.push_str(&format[cursor..]);
+        buf
+
+}
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
