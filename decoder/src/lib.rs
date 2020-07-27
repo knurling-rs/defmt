@@ -52,33 +52,47 @@ pub struct Frame<'t> {
     pub args: Vec<Arg<'t>>,
 }
 
-impl core::fmt::Display for Frame<'_> {
+impl<'t> Frame<'t> {
+    pub fn display(&'t self, colored: bool) -> DisplayFrame<'t> {
+        DisplayFrame {
+            frame: self,
+            colored,
+        }
+    }
+}
+
+pub struct DisplayFrame<'t> {
+    frame: &'t Frame<'t>,
+    colored: bool,
+}
+
+impl core::fmt::Display for DisplayFrame<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // 0.000000 Info Hello, world!
-        let seconds = self.timestamp / 1000000;
-        let micros = self.timestamp % 1000000;
+        let seconds = self.frame.timestamp / 1000000;
+        let micros = self.frame.timestamp % 1000000;
 
-        let level = match self.level {
-            Level::Trace => "TRACE".dimmed(),
-            Level::Debug => "DEBUG".normal(),
-            Level::Info => "INFO".green(),
-            Level::Warn => "WARN".yellow(),
-            Level::Error => "ERROR".red(),
+        let level = if self.colored {
+            match self.frame.level {
+                Level::Trace => "TRACE".dimmed().to_string(),
+                Level::Debug => "DEBUG".normal().to_string(),
+                Level::Info => "INFO".green().to_string(),
+                Level::Warn => "WARN".yellow().to_string(),
+                Level::Error => "ERROR".red().to_string(),
+            }
+        } else {
+            match self.frame.level {
+                Level::Trace => "TRACE".to_string(),
+                Level::Debug => "DEBUG".to_string(),
+                Level::Info => "INFO".to_string(),
+                Level::Warn => "WARN".to_string(),
+                Level::Error => "ERROR".to_string(),
+            }
         };
 
-        let params = binfmt_parser::parse(self.format).unwrap();
-        let mut buf = String::new();
-        let mut cursor = 0;
-        for param in params {
-            //let tocopy = param.span.start - cursor;
-            buf.push_str(&self.format[cursor..param.span.start]);
-            cursor = param.span.end;
+        let args = format_args(&self.frame.format, &self.frame.args);
 
-            write!(&mut buf, "{}", self.args[param.index]).ok();
-        }
-        buf.push_str(&self.format[cursor..]);
-
-        write!(f, "{}.{:06} {} {}", seconds, micros, level, buf)
+        write!(f, "{}.{:06} {} {}", seconds, micros, level, args)
     }
 }
 
@@ -102,24 +116,12 @@ pub enum Arg<'t> {
 impl fmt::Display for Arg<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Arg::Bool(x) => {
-                write!(f, "{:?}", x)
-            }
-            Arg::Uxx(x) => {
-                write!(f, "{}", x)
-            }
-            Arg::Ixx(x) => {
-                write!(f, "{}", x)
-            }
-            Arg::Str(_) => {
-                todo!()
-            }
-            Arg::Format { format, args } => {
-               todo!()
-            }
-            Arg::Slice(_) => {
-                todo!()
-            }
+            Arg::Bool(x) => write!(f, "{:?}", x),
+            Arg::Uxx(x) => write!(f, "{}", x),
+            Arg::Ixx(x) => write!(f, "{}", x),
+            Arg::Str(_) => todo!(),
+            Arg::Format { format, args } => f.write_str(&format_args(format, args)),
+            Arg::Slice(_) => todo!(),
         }
     }
 }
@@ -213,20 +215,24 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
 }
 
 fn format_args(format: &str, args: &[Arg]) -> String {
+    fn unescape(literal: &str) -> String {
+        literal.replace("{{", "{").replace("}}", "}")
+    }
+
     let params = binfmt_parser::parse(format).unwrap();
-        let mut buf = String::new();
-        let mut cursor = 0;
-        for param in params {
-            //let tocopy = param.span.start - cursor;
-            buf.push_str(&format[cursor..param.span.start]);
-            cursor = param.span.end;
+    let mut buf = String::new();
+    let mut cursor = 0;
+    for param in params {
+        let literal = &format[cursor..param.span.start];
+        buf.push_str(&unescape(literal));
+        cursor = param.span.end;
 
-            write!(&mut buf, "{}", args[param.index]).ok();
-        }
-        buf.push_str(&format[cursor..]);
-        buf
-
+        write!(&mut buf, "{}", args[param.index]).ok();
+    }
+    buf.push_str(&unescape(&format[cursor..]));
+    buf
 }
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
