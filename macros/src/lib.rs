@@ -60,15 +60,9 @@ pub fn format(ts: TokenStream) -> TokenStream {
                 ))
             }
 
-            let id = rand::random::<u64>();
-            let section = format!(".binfmt.fmt.{}", id);
-            let sym = format!("{}@{}", fs, id);
+            let sym = mksym(&fs, "fmt");
             exprs.push(quote!(
-                #[link_section = #section]
-                #[export_name = #sym]
-                static S: u8 = 0;
-
-                f.str(&binfmt::export::str(&S));
+                f.str(&binfmt::export::str(#sym));
             ));
             exprs.push(quote!(match self {
                 #(#arms)*
@@ -212,6 +206,7 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
     list
 }
 
+// TODO other logging levels
 #[proc_macro]
 pub fn info(ts: TokenStream) -> TokenStream {
     let log = parse_macro_input!(ts as Log);
@@ -235,26 +230,58 @@ pub fn info(ts: TokenStream) -> TokenStream {
         Err(e) => return e.to_compile_error().into(),
     };
 
-    let id = rand::random::<u64>();
-    let section = format!(".binfmt.info.{}", id);
-    let sym = format!("{}@{}", ls, id);
+    let sym = mksym(&ls, "info");
     quote!({
         if cfg!(feature = "binfmt-on") {
             if binfmt::export::Level::Info >= binfmt::export::threshold() {
                 if let Some(mut _fmt_) = binfmt::export::acquire() {
-                    match (binfmt::export::timestamp(), #(#args),*) {
-                        (ts, #(ref #pats),*) => {
-                            #[link_section = #section]
-                            #[export_name = #sym]
-                            static S: u8 = 0;
-
-                            _fmt_.str(&binfmt::export::str(&S));
+                    match (binfmt::export::timestamp(), #(&#args),*) {
+                        (ts, #(#pats),*) => {
+                            _fmt_.str(&binfmt::export::str(#sym));
                             _fmt_.leb64(ts);
                             #(#exprs;)*
                             binfmt::export::release(_fmt_)
                         }
                     }
                 }
+            }
+        }
+    })
+    .into()
+}
+
+// TODO share more code with `info`
+#[proc_macro]
+pub fn winfo(ts: TokenStream) -> TokenStream {
+    let write = parse_macro_input!(ts as Write);
+    let ls = write.litstr.value();
+    let params = match Param::parse(&ls) {
+        Ok(args) => args,
+        Err(e) => {
+            return parse::Error::new(write.litstr.span(), e)
+                .to_compile_error()
+                .into()
+        }
+    };
+
+    let args = write
+        .rest
+        .map(|(_, exprs)| exprs.into_iter().collect())
+        .unwrap_or(vec![]);
+
+    let (pats, exprs) = match Codegen::new(&params, args.len(), write.litstr.span()) {
+        Ok(cg) => (cg.pats, cg.exprs),
+        Err(e) => return e.to_compile_error().into(),
+    };
+
+    let f = &write.fmt;
+    let sym = mksym(&ls, "info");
+    quote!({
+        match (&mut #f, binfmt::export::timestamp(), #(&#args),*) {
+            (_fmt_, ts, #(#pats),*) => {
+                _fmt_.str(&binfmt::export::str(#sym));
+                _fmt_.leb64(ts);
+                #(#exprs;)*
             }
         }
     })
@@ -292,18 +319,14 @@ pub fn intern(ts: TokenStream) -> TokenStream {
         .into();
     }
 
-    let id = rand::random::<u64>();
-    let section = format!(".binfmt.str.{}", id);
-    let sym = format!("{}@{}", ls, id);
+    let sym = mksym(&ls, "str");
     quote!({
-        #[link_section = #section]
-        #[export_name = #sym]
-        static S: u8 = 0;
-        binfmt::export::str(&S)
+        binfmt::export::str(#sym)
     })
     .into()
 }
 
+// TODO(likely) remove
 #[proc_macro]
 pub fn internp(ts: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(ts as LitStr);
@@ -353,20 +376,33 @@ pub fn write(ts: TokenStream) -> TokenStream {
     };
 
     let fmt = &write.fmt;
-    let id = rand::random::<u64>();
-    let section = format!(".binfmt.fmt.{}", id);
-    let sym = format!("{}@{}", ls, id);
-    quote!(match (#fmt, #(#args),*) {
-        (ref mut _fmt_, #(ref #pats),*) => {
-            #[link_section = #section]
-            #[export_name = #sym]
-            static S: u8 = 0;
-
-            _fmt_.str(&binfmt::export::str(&S));
+    let sym = mksym(&ls, "fmt");
+    quote!(match (#fmt, #(&#args),*) {
+        (ref mut _fmt_, #(#pats),*) => {
+            _fmt_.str(&binfmt::export::str(#sym));
             #(#exprs;)*
         }
     })
     .into()
+}
+
+fn mksym(string: &str, section: &str) -> TokenStream2 {
+    let id = rand::random::<u64>();
+    let section = format!(".binfmt.{}.{}", section, string);
+    let sym = format!("{}@{}", string, id);
+    quote!(match () {
+        #[cfg(target_arch = "x86_64")]
+        () => {
+            binfmt::export::fetch_add_string_index()
+        }
+        #[cfg(not(target_arch = "x86_64"))]
+        () => {
+            #[link_section = #section]
+            #[export_name = #sym]
+            static S: u8 = 0;
+            &S as *const u8 as usize
+        }
+    })
 }
 
 struct Write {
