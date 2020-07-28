@@ -128,6 +128,13 @@ impl Formatter {
         unsafe { self.writer.as_mut().write(bytes) }
     }
 
+    #[cfg(not(target_arch = "x86_64"))]
+    pub unsafe fn from_raw(writer: *mut dyn Write) -> Self {
+        Self {
+            writer: NonNull::new_unchecked(writer),
+        }
+    }
+
     // TODO turn these public methods in `export` free functions
     pub fn fmt(&mut self, f: &impl Format) {
         f.format(self)
