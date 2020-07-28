@@ -3,9 +3,6 @@
 ---
 
 TODO
-- [ ] decoder
-- [ ] terminal printer
-- [ ] float support
 - [ ] test in QEMU
 - [ ] work on macro interface
 
@@ -24,6 +21,7 @@ TODO
 - Custom linking (linker script) is required
 - Single, global logger instance
 - The `@` character is not allowed in strings but otherwise UTF-8 is supported &#x1F44D
+- No x86 support. This architecture is exclusively used for testing at the moment.
 - ???
 
 ## Intended use

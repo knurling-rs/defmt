@@ -1,10 +1,12 @@
 #![allow(warnings)] // FIXME
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(target_arch = "x86_64"), no_std)]
 
 use core::{mem::MaybeUninit, ptr::NonNull};
 
 #[cfg(not(test))]
 pub use binfmt_macros::intern;
+#[doc(hidden)]
+pub use binfmt_macros::winfo;
 pub use binfmt_macros::{info, write, Format};
 
 use crate as binfmt;
@@ -31,11 +33,11 @@ pub struct Str {
     address: u16,
 }
 
+/// Handler that owns the global logger
 pub struct Formatter {
-    /// This pointer owns the global logger
-    #[cfg(not(test))]
+    #[cfg(not(target_arch = "x86_64"))]
     writer: NonNull<dyn Write>,
-    #[cfg(test)]
+    #[cfg(target_arch = "x86_64")]
     bytes: Vec<u8>,
 }
 
@@ -102,24 +104,28 @@ unsafe fn leb64(x: u64, buf: &mut [u8]) -> usize {
 }
 
 impl Formatter {
-    #[cfg(test)]
-    fn new() -> Self {
+    /// Only for testing
+    #[cfg(target_arch = "x86_64")]
+    pub fn new() -> Self {
         Self { bytes: vec![] }
     }
 
-    #[cfg(test)]
-    fn bytes(&self) -> &[u8] {
+    /// Only for testing
+    #[cfg(target_arch = "x86_64")]
+    pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    #[cfg(not(test))]
-    fn write(&mut self, bytes: &[u8]) {
-        unsafe { self.writer.as_mut().write(bytes) }
+    #[doc(hidden)]
+    #[cfg(target_arch = "x86_64")]
+    pub fn write(&mut self, bytes: &[u8]) {
+        self.bytes.extend_from_slice(bytes)
     }
 
-    #[cfg(test)]
-    fn write(&mut self, bytes: &[u8]) {
-        self.bytes.extend_from_slice(bytes)
+    #[doc(hidden)]
+    #[cfg(not(target_arch = "x86_64"))]
+    pub fn write(&mut self, bytes: &[u8]) {
+        unsafe { self.writer.as_mut().write(bytes) }
     }
 
     // TODO turn these public methods in `export` free functions

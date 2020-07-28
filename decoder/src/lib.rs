@@ -165,9 +165,8 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 args.push(Arg::Uxx(data as u64));
             }
 
-            Type::BitField(_) => {}
-            Type::Bool => {}
-            // {:?}
+            Type::BitField(_) => todo!(),
+            Type::Bool => todo!(),
             Type::Format => {
                 let index = leb128::read::unsigned(bytes).map_err(drop)?;
                 let (level, format) = table.get(index as usize)?;
@@ -194,7 +193,7 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 let data = bytes.read_i8().map_err(drop)?;
                 args.push(Arg::Ixx(data as i64));
             }
-            Type::Str => {}
+            Type::Str => todo!(),
             Type::U16 => {
                 let data = bytes.read_u16::<LE>().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
@@ -213,7 +212,7 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 let data = bytes.read_u32::<LE>().map_err(drop)?;
                 args.push(Arg::F32(f32::from_bits(data)));
             }
-            Type::Slice => {}
+            Type::Slice => todo!(),
         }
     }
 
