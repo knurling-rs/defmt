@@ -23,7 +23,7 @@ pub enum Type {
     I16,
     I32,
     I8,
-    Str,
+    Str, // used for string values (i.e. passed directly; not as interned string indices)
     U16,
     U24,
     U32,
