@@ -343,13 +343,19 @@ pub fn internp(ts: TokenStream) -> TokenStream {
     // NOTE(no random id) these won't collide because they are limited in use
     let section = format!(".binfmt.prim.{}", ls);
     let sym = ls;
-    quote!({
-        #[link_section = #section]
-        #[export_name = #sym]
-        static S: u8 = 0;
-        &S as *const u8 as u8
-    })
-    .into()
+    quote!(match () {
+        #[cfg(target_arch = "x86_64")]
+        () => {
+            binfmt::export::fetch_add_string_index() as u8
+        }
+        #[cfg(not(target_arch = "x86_64"))]
+        () => {
+            #[link_section = #section]
+            #[export_name = #sym]
+            static S: u8 = 0;
+            &S as *const u8 as u8
+        }
+    }).into()
 }
 
 #[proc_macro]
