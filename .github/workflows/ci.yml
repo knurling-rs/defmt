@@ -20,7 +20,7 @@ jobs:
           - nightly
         os:
           - ubuntu-latest
-          - macOS-latest
+          #- macOS-latest  # FIXME: Reenable after #4 is merged
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
