@@ -52,12 +52,10 @@ fn inc(index: u8, n: u8) -> u8 {
 }
 
 // CFI = Check Format Implementation
-fn cfi(val: impl Format, bytes: &[u8]) {
+fn cfi(val: impl Format, expected_encoding: &[u8]) {
     let mut f = Formatter::new();
-    let index = fetch_string_index();
     val.format(&mut f);
-    assert_eq!(f.bytes()[0], index); // e.g. "{:u8}"
-    assert_eq!(&f.bytes()[1..], bytes);
+    assert_eq!(f.bytes(), expected_encoding);
 }
 
 #[test]
@@ -97,12 +95,14 @@ fn single_struct() {
         z: u16,
     }
 
+    let index = fetch_string_index();
     cfi(
         X { y: 1, z: 2 },
         &[
-            1, // x
-            2, // y.low
-            0, // y.high
+            index, // "X {{ x: {:u8}, y: {:u16} }}"
+            1,     // x
+            2,     // y.low
+            0,     // y.high
         ],
     )
 }
@@ -124,7 +124,7 @@ fn nested_struct() {
     cfi(
         X { y: Y { z: val } },
         &[
-            // `index` = intern("X {{ y: {:?} }}") is checked in `cfi`
+            index,         // "X {{ y: {:?} }}"
             inc(index, 1), // "Y {{ z: {:u8} }}"
             val,
         ],
@@ -133,29 +133,81 @@ fn nested_struct() {
 
 #[test]
 fn format_primitives() {
-    cfi(42u8, &[42]);
-    cfi(42u16, &[42, 0]);
-    cfi(513u16, &[1, 2]);
+    let index = fetch_string_index();
+    cfi(
+        42u8,
+        &[
+            index, // "{:u8}"
+            42,
+        ],
+    );
+    cfi(
+        42u16,
+        &[
+            inc(index, 1), // "{:u16}"
+            42,
+            0,
+        ],
+    );
+    cfi(
+        513u16,
+        &[
+            inc(index, 2), // "{:u16}"
+            1,
+            2,
+        ],
+    );
 
-    cfi(42u32, &[42, 0, 0, 0]);
-    cfi(513u32, &[1, 2, 0, 0]);
+    cfi(
+        42u32,
+        &[
+            inc(index, 3), // "{:u32}"
+            42,
+            0,
+            0,
+            0,
+        ],
+    );
+    cfi(
+        513u32,
+        &[
+            inc(index, 4), // "{:u32}"
+            1,
+            2,
+            0,
+            0,
+        ],
+    );
 
-    cfi(42i8, &[42]);
-    cfi(-42i8, &[-42i8 as u8]);
+    cfi(
+        42i8,
+        &[
+            inc(index, 5), // "{:i8}"
+            42,
+        ],
+    );
+    cfi(
+        -42i8,
+        &[
+            inc(index, 6), // "{:i8}"
+            -42i8 as u8,
+        ],
+    );
 
     cfi(
         None::<u8>,
         &[
-            0, // None discriminant
+            inc(index, 7), // "<option-format-string>"
+            0,             // None discriminant
         ],
     );
-    let index = fetch_string_index();
+
     cfi(
         Some(42u8),
         &[
-            // `index` = intern(<Option format string>) is checked in `cfi`
+            inc(index, 8), // "<option-format-string>"
             1,             // Some discriminant
-            inc(index, 1), // "{:u8}"
+            inc(index, 9), // "{:u8}"
             42,            // Some.0 field
         ],
     );
