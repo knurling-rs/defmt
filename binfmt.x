@@ -6,34 +6,36 @@ SECTIONS
     *(.binfmt.prim.*);
 
     /* ERROR logging level */
-    _binfmt_error = .;
+    _binfmt_error_start = .;
     *(.binfmt.error.*);
+    _binfmt_error_end = .;
 
     /* WARN logging level */
-    _binfmt_warn = .;
+    _binfmt_warn_start = .;
     *(.binfmt.warn.*);
+    _binfmt_warn_end = .;
 
     /* INFO logging level */
-    _binfmt_info = .;
+    _binfmt_info_start = .;
     *(.binfmt.info.*);
+    _binfmt_info_end = .;
 
     /* DEBUG logging level */
-    _binfmt_debug = .;
+    _binfmt_debug_start = .;
     *(.binfmt.debug.*);
+    _binfmt_debug_end = .;
 
     /* TRACE logging level */
-    _binfmt_trace = .;
+    _binfmt_trace_start = .;
     *(.binfmt.trace.*);
+    _binfmt_trace_end = .;
 
     /* Format/write! strings */
-    _binfmt_fmt = .;
     *(.binfmt.fmt.*);
 
     /* User interned strings (Str) */
-    _binfmt_str = .;
     *(.binfmt.str.*);
-    _ebinfmt = .;
   }
 }
 
-ASSERT(_ebinfmt < 16384, ".binfmt section cannot contain more than (1<<14) interned strings");
+ASSERT(SIZEOF(.binfmt) < 16384, ".binfmt section cannot contain more than (1<<14) interned strings");
