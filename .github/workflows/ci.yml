@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, staging, trying ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "--deny warnings"
+  NO_STD_TARGET: thumbv7m-none-eabi  # firmware uses atomics
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - nightly
+        os:
+          - ubuntu-latest
+          #- macOS-latest  # FIXME: Reenable after #4 is merged
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Build
+      run: cargo build --workspace --all-targets
+    - name: Run tests
+      run: cargo test --workspace
+
+  no-std:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        target: ${{ env.NO_STD_TARGET }}
+    - name: Build
+      working-directory: firmware
+      run: cargo build --verbose --no-default-features --target ${{ env.NO_STD_TARGET }}
