@@ -37,8 +37,13 @@
 // Additional notes:
 //
 // - the mocked index is 7 bits so its LEB128 encoding is the input byte
+// - the family of `info!` macros do nothing on x86; instead use `winfo!` which take a formatter
+// argument like `write!`
 
-use binfmt::{export::fetch_string_index, Format, Formatter};
+use binfmt::{
+    export::{fetch_string_index, fetch_timestamp},
+    winfo, Format, Formatter,
+};
 
 // Increase the 7-bit mocked interned index
 fn inc(index: u8, n: u8) -> u8 {
@@ -53,6 +58,35 @@ fn cfi(val: impl Format, bytes: &[u8]) {
     val.format(&mut f);
     assert_eq!(f.bytes()[0], index); // e.g. "{:u8}"
     assert_eq!(&f.bytes()[1..], bytes);
+}
+
+#[test]
+fn info() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "The answer is {:u8}", 42);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,     // "The answer is {:u8}",
+            timestamp, //
+            42,        // u8 value
+        ]
+    );
+
+    let mut f = Formatter::new();
+    winfo!(f, "The answer is {:?}", 42u8);
+    assert_eq!(
+        f.bytes(),
+        &[
+            inc(index, 1),     // "The answer is {:?}"
+            inc(timestamp, 1), //
+            inc(index, 2),     // "{:u8}" / impl Format for u8
+            42,                // u8 value
+        ]
+    );
 }
 
 #[test]
