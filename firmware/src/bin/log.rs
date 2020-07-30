@@ -1,9 +1,10 @@
 #![no_std]
 #![no_main]
 
+use binfmt::Format;
 use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use cortex_m_rt::entry;
-use cortex_m_semihosting::{hio, debug};
+use cortex_m_semihosting::{debug, hio};
 use panic_halt as _;
 
 #[entry]
@@ -12,9 +13,25 @@ fn main() -> ! {
     binfmt::info!("World!");
     binfmt::info!("The answer is {:u8}", 42);
 
-    // HACK cortex-m-semihosting and/or QEMU does not flush until it sees a newline :sad:
-    use binfmt::Write as _;
-    Logger.write(b"\n");
+    #[derive(Format)]
+    struct S {
+        x: u8,
+        y: u16,
+    }
+
+    #[derive(Format)]
+    struct X {
+        y: Y,
+    }
+
+    #[derive(Format)]
+    struct Y {
+        z: u8,
+    }
+
+    binfmt::info!("{:?}", S { x: 1, y: 256 });
+    binfmt::info!("{:?}", X { y: Y { z: 42 } });
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

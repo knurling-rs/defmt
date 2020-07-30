@@ -15,5 +15,6 @@ members = [
   "elf2table",
   "macros",
   "parser",
+  "qemu-run",
 ]
 exclude = ["firmware"]
