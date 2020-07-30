@@ -1,15 +1,7 @@
-#[cfg(not(test))]
-use binfmt_macros::internp;
 use crate as binfmt;
+use binfmt_macros::internp;
 
 use crate::{Format, Formatter, Str};
-
-#[cfg(test)]
-macro_rules! internp {
-    ($s:expr) => {
-        crate::tests::PSTR
-    };
-}
 
 impl Format for i8 {
     fn format(&self, fmt: &mut Formatter) {

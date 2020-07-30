@@ -3,22 +3,12 @@
 
 use core::{mem::MaybeUninit, ptr::NonNull};
 
-#[cfg(not(test))]
 pub use binfmt_macros::intern;
 #[doc(hidden)]
 pub use binfmt_macros::winfo;
 pub use binfmt_macros::{info, write, Format};
 
 use crate as binfmt;
-
-#[cfg(test)]
-macro_rules! intern {
-    ($s:expr) => {
-        crate::Str {
-            address: crate::tests::STR,
-        }
-    };
-}
 
 #[doc(hidden)]
 pub mod export;
