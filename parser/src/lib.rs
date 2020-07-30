@@ -78,6 +78,10 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
         return None;
     }
 
+    if start >= 32 || end >= 32 {
+        return None;
+    }
+
     Some((start..end, start_digits + end_digits + 2))
 }
 
@@ -170,6 +174,12 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         if let Some(i) = index {
                             for param in &params {
                                 if param.index == index && param.ty != ty {
+                                    if let (Type::BitField(_), Type::BitField(_)) = (&param.ty, &ty)
+                                    {
+                                        // Multiple bitfield uses with different ranges are fine.
+                                        continue;
+                                    }
+
                                     return Err(format!(
                                         "argument {} assigned more than one type",
                                         i
@@ -475,12 +485,38 @@ mod tests {
             }])
         );
 
+        let a = "{0:30..31}";
+        let b = "{1:0..4}";
+        let c = "{1:2..6}";
+        assert_eq!(
+            super::parse(&format!("{} {} {}", a, b, c)),
+            Ok(vec![
+                Parameter {
+                    index: 0,
+                    ty: Type::BitField(30..31),
+                    span: 0..a.len(),
+                },
+                Parameter {
+                    index: 1,
+                    ty: Type::BitField(0..4),
+                    span: a.len() + 1..a.len() + 1 + b.len(),
+                },
+                Parameter {
+                    index: 1,
+                    ty: Type::BitField(2..6),
+                    span: a.len() + 1 + b.len() + 1..a.len() + 1 + b.len() + 1 + c.len(),
+                }
+            ])
+        );
+
         // empty range
         assert!(super::parse("{:0..0}").is_err());
         // start > end
         assert!(super::parse("{:1..0}").is_err());
-        // out of u8 range
-        assert!(super::parse("{:0..256}").is_err());
+        // out of 32-bit range
+        assert!(super::parse("{:0..32}").is_err());
+        // just inside 32-bit range
+        assert!(super::parse("{:0..31}").is_ok());
 
         // missing parts
         assert!(super::parse("{:0..4").is_err());
