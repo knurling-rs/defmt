@@ -13,6 +13,12 @@ fn main() -> ! {
     binfmt::info!("World!");
     binfmt::info!("The answer is {:u8}", 42);
 
+    binfmt::trace!("log trace");
+    binfmt::debug!("log debug");
+    binfmt::info!("log info");
+    binfmt::warn!("log warn");
+    binfmt::error!("log error");
+
     #[derive(Format)]
     struct S {
         x: u8,

@@ -42,3 +42,13 @@ fn leb() {
         [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1]
     );
 }
+
+#[test]
+fn log_levels() {
+    // just make sure they build OK for now
+    binfmt::trace!("test trace");
+    binfmt::debug!("test debug");
+    binfmt::info!("test info");
+    binfmt::warn!("test warn");
+    binfmt::error!("test error");
+}
