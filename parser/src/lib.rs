@@ -32,13 +32,6 @@ pub enum Type {
     F32,
 }
 
-fn digit(c: Option<char>) -> Option<u8> {
-    c.and_then(|c| match c {
-        '0'..='9' => Some((c as u32 - '0' as u32) as u8),
-        _ => None,
-    })
-}
-
 fn is_digit(c: Option<char>) -> bool {
     match c.unwrap_or('\0') {
         '0'..='9' => true,
@@ -63,9 +56,33 @@ fn parse_usize(s: &str) -> Result<Option<(usize, usize)>, &'static str> {
     }
 }
 
-#[cfg(TODO)]
-fn parse_range(s: &str) -> Option<(Range<u8>, usize)> {
-    todo!()
+fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
+    let start_digits = s
+        .as_bytes()
+        .iter()
+        .take_while(|b| is_digit(Some(**b as char)))
+        .count();
+    let start = s[..start_digits].parse().ok()?;
+    if &s[start_digits..start_digits + 2] != ".." {
+        return None;
+    }
+    s = &s[start_digits + 2..];
+    let end_digits = s
+        .as_bytes()
+        .iter()
+        .take_while(|b| is_digit(Some(**b as char)))
+        .count();
+    let end = s[..end_digits].parse().ok()?;
+
+    if end <= start {
+        return None;
+    }
+
+    if start >= 32 || end >= 32 {
+        return None;
+    }
+
+    Some((start..end, start_digits + end_digits + 2))
 }
 
 pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
@@ -144,16 +161,25 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                             (0..SLICE.len()).for_each(|_| drop(chars.next()));
                             Type::Slice
                         } else {
-                            if let Some(_i) = digit(c) {
-                                todo!("bitfield/range syntax")
-                            } else {
-                                return Err("unknown format specifier".into());
+                            // Bitfield syntax
+                            let (range, used) = parse_range(s).ok_or("invalid bitfield range")?;
+                            (0..used).for_each(|_| drop(chars.next()));
+                            if !chars.as_str().starts_with("}") {
+                                return Err("missing `}` after bitfield range".into());
                             }
+                            chars.next();
+                            Type::BitField(range)
                         };
 
                         if let Some(i) = index {
                             for param in &params {
                                 if param.index == index && param.ty != ty {
+                                    if let (Type::BitField(_), Type::BitField(_)) = (&param.ty, &ty)
+                                    {
+                                        // Multiple bitfield uses with different ranges are fine.
+                                        continue;
+                                    }
+
                                     return Err(format!(
                                         "argument {} assigned more than one type",
                                         i
@@ -447,10 +473,56 @@ mod tests {
         assert!(super::parse("{2:u8} {1:u16}").is_err());
     }
 
-    // TODO
-    #[ignore]
     #[test]
     fn range() {
-        assert!(super::parse("{:0..4}").is_ok());
+        let fmt = "{:0..4}";
+        assert_eq!(
+            super::parse(fmt),
+            Ok(vec![Parameter {
+                index: 0,
+                ty: Type::BitField(0..4),
+                span: 0..fmt.len(),
+            }])
+        );
+
+        let a = "{0:30..31}";
+        let b = "{1:0..4}";
+        let c = "{1:2..6}";
+        assert_eq!(
+            super::parse(&format!("{} {} {}", a, b, c)),
+            Ok(vec![
+                Parameter {
+                    index: 0,
+                    ty: Type::BitField(30..31),
+                    span: 0..a.len(),
+                },
+                Parameter {
+                    index: 1,
+                    ty: Type::BitField(0..4),
+                    span: a.len() + 1..a.len() + 1 + b.len(),
+                },
+                Parameter {
+                    index: 1,
+                    ty: Type::BitField(2..6),
+                    span: a.len() + 1 + b.len() + 1..a.len() + 1 + b.len() + 1 + c.len(),
+                }
+            ])
+        );
+
+        // empty range
+        assert!(super::parse("{:0..0}").is_err());
+        // start > end
+        assert!(super::parse("{:1..0}").is_err());
+        // out of 32-bit range
+        assert!(super::parse("{:0..32}").is_err());
+        // just inside 32-bit range
+        assert!(super::parse("{:0..31}").is_ok());
+
+        // missing parts
+        assert!(super::parse("{:0..4").is_err());
+        assert!(super::parse("{:0..}").is_err());
+        assert!(super::parse("{:..4}").is_err());
+        assert!(super::parse("{:0.4}").is_err());
+        assert!(super::parse("{:0...4}").is_err());
     }
 }
