@@ -1,5 +1,6 @@
 #[cfg(not(test))]
 use binfmt_macros::internp;
+use crate as binfmt;
 
 use crate::{Format, Formatter, Str};
 
