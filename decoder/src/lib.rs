@@ -10,7 +10,7 @@ use colored::Colorize;
 use binfmt_parser::Type;
 use common::Level;
 
-/// Interner table
+/// Interner table that holds log levels and maps format strings to indices
 #[derive(Debug)]
 pub struct Table {
     pub entries: BTreeMap<usize, String>,
@@ -108,7 +108,7 @@ pub enum Arg<'t> {
     // I8, I16, I24 and I32
     Ixx(i64),
     // Str
-    Str(&'t str),
+    Str(String),
     // Format
     Format { format: &'t str, args: Vec<Arg<'t>> },
     // Slice
@@ -122,13 +122,18 @@ impl fmt::Display for Arg<'_> {
             Arg::F32(x) => write!(f, "{}", ryu::Buffer::new().format(*x)),
             Arg::Uxx(x) => write!(f, "{}", x),
             Arg::Ixx(x) => write!(f, "{}", x),
-            Arg::Str(_) => todo!(),
+            Arg::Str(x) => write!(f, "{}", x),
             Arg::Format { format, args } => f.write_str(&format_args(format, args)),
-            Arg::Slice(_) => todo!(),
+            Arg::Slice(x) => write!(f, "{:?}", x),
         }
     }
 }
 
+/// decode the data sent by the device using the previosuly stored metadata
+///
+/// * bytes: contains the data sent by the device that logs.
+///          contains the [log string index, timestamp, optional fmt string args]
+/// * table: contains the mapping of log string indices to their format strings, as well as the log level.
 pub fn decode<'t>(
     mut bytes: &[u8],
     table: &'t Table,
@@ -156,18 +161,36 @@ pub fn decode<'t>(
 fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<Vec<Arg<'t>>, ()> {
     let mut args = vec![];
     let mut params = binfmt_parser::parse(format).map_err(drop)?;
+    // sort & dedup to ensure that format string args can be addressed by index too
     params.sort_by_key(|param| param.index);
     params.dedup_by_key(|param| param.index);
 
+    let mut bool_flags: u8 = 0; // the current group of consecutive bools
+    let mut bools_left: u8 = 0; // the number of bits that we can still set in bool_flag
+
     for param in params {
+        let mut is_bool = false;
         match param.ty {
             Type::U8 => {
                 let data = bytes.read_u8().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
             }
 
-            Type::BitField(_) => todo!(),
-            Type::Bool => todo!(),
+            Type::Bool => {
+                is_bool = true;
+                if bools_left == 0 {
+                    bools_left = 8;
+                    bool_flags = bytes.read_u8().map_err(drop)?;
+                }
+                // read out the lowest bit and turn it into a boolean
+                let val = (bool_flags & 1) != 0;
+                // drop the bit that we just read
+                bool_flags >>= 1;
+                bools_left -= 1;
+
+                args.push(Arg::Bool(val));
+            }
+
             Type::Format => {
                 let index = leb128::read::unsigned(bytes).map_err(drop)?;
                 let (level, format) = table.get(index as usize)?;
@@ -194,7 +217,6 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 let data = bytes.read_i8().map_err(drop)?;
                 args.push(Arg::Ixx(data as i64));
             }
-            Type::Str => todo!(),
             Type::U16 => {
                 let data = bytes.read_u16::<LE>().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
@@ -213,7 +235,36 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 let data = bytes.read_u32::<LE>().map_err(drop)?;
                 args.push(Arg::F32(f32::from_bits(data)));
             }
-            Type::Slice => todo!(),
+            Type::BitField(_) => todo!(),
+            Type::Str => {
+                let str_len = leb128::read::unsigned(bytes).map_err(drop)? as usize;
+                let mut arg_str_bytes = vec![];
+
+                // note: went for the suboptimal but simple solution; optimize if necessary
+                for _ in 0..str_len {
+                    arg_str_bytes.push(bytes.read_u8().map_err(drop)?);
+                }
+
+                // convert to utf8 (no copy)
+                let arg_str = String::from_utf8(arg_str_bytes).unwrap();
+
+                args.push(Arg::Str(arg_str));
+            },
+            Type::Slice => {
+                // only supports byte slices
+                let num_elements = leb128::read::unsigned(bytes).map_err(drop)? as usize;
+                let mut arg_slice = vec![];
+
+                // note: went for the suboptimal but simple solution; optimize if necessary
+                for _ in 0..num_elements {
+                    arg_slice.push(bytes.read_u8().map_err(drop)?);
+                }
+                args.push(Arg::Slice(arg_slice.to_vec()));
+            }
+        }
+
+        if !is_bool {
+            bools_left = 0;
         }
     }
 
@@ -247,6 +298,28 @@ mod tests {
 
     use super::{Frame, Table};
     use crate::Arg;
+
+    // helper function to initiate decoding and assert that the result is as expected.
+    //
+    // format:       format string to be expanded
+    // bytes:        arguments + metadata
+    // expectation:  the expected result
+    fn decode_and_expect(format: &str, bytes: &[u8], expectation: &str) {
+        let mut entries = BTreeMap::new();
+        entries.insert(bytes[0] as usize, format.to_owned());
+
+        let table = Table {
+            entries,
+            debug: 0..0,
+            error: 0..0,
+            info: 0..100, // enough space for many many args
+            trace: 0..0,
+            warn: 0..0,
+        };
+
+        let frame = super::decode(&bytes, &table).unwrap().0;
+        assert_eq!(frame.display(false).to_string(), expectation.to_owned());
+    }
 
     #[test]
     fn decode() {
@@ -473,5 +546,107 @@ mod tests {
             frame.display(false).to_string(),
             "0.000002 INFO x=Foo { x: 42 }"
         );
+    }
+
+    #[test]
+    fn test_bools_simple() {
+        let bytes = [
+            0,          // index
+            2,          // timestamp
+            true as u8, // the logged bool value
+        ];
+
+        decode_and_expect("my bool={:bool}", &bytes,
+                          "0.000002 INFO my bool=true");
+    }
+
+    #[test]
+    fn test_bools_more_than_fit_in_one_byte() {
+        let bytes = [
+            0,                // index
+            2,                // timestamp
+            0b10000110 as u8, // the first 8 logged bool values; in reverse order!
+            0b1 as u8,        // the final logged bool value
+        ];
+
+        decode_and_expect("bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+                          &bytes,
+                          "0.000002 INFO bool overflow false true true false false false false true true");
+    }
+
+    #[test]
+    fn test_bools_mixed() {
+        let bytes = [
+            0,         // index
+            2,         // timestamp
+            0b1 as u8, // the first logged bool value
+            9 as u8,   // a uint in between
+            0b10 as u8, // the final 2 logged bool values; in reverse order!
+        ];
+
+        decode_and_expect("hidden bools {:bool} {:u8} {:bool} {:bool}", &bytes,
+                          "0.000002 INFO hidden bools true 9 false true");
+    }
+
+    #[test]
+    fn slice() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            2, // length of the slice
+            23, 42, // slice content
+        ];
+        decode_and_expect("x={:[u8]}", &bytes,
+        "0.000002 INFO x=[23, 42]");
+    }
+
+    #[test]
+    fn slice_with_trailing_args() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            2, // length of the slice
+            23, 42, // slice content
+            1, // trailing arg
+        ];
+
+        decode_and_expect("x={:[u8]} trailing arg={:u8}", &bytes,
+                          "0.000002 INFO x=[23, 42] trailing arg=1");
+    }
+
+    #[test]
+    fn string_hello_world() {
+        let bytes = [
+            0,         // index
+            2,         // timestamp
+            5,         // length of the string
+            b'W',
+            b'o',
+            b'r',
+            b'l',
+            b'd',
+        ];
+
+        decode_and_expect("Hello {:str}", &bytes,
+                          "0.000002 INFO Hello World");
+    }
+
+
+    #[test]
+    fn string_with_trailing_data() {
+        let bytes = [
+            0,         // index
+            2,         // timestamp
+            5,         // length of the string
+            b'W',
+            b'o',
+            b'r',
+            b'l',
+            b'd',
+            125        // trailing data
+        ];
+
+        decode_and_expect("Hello {:str} {:u8}", &bytes,
+                          "0.000002 INFO Hello World 125");
     }
 }
