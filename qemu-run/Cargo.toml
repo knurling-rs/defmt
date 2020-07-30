@@ -1,0 +1,11 @@
+[package]
+name = "qemu-run"
+version = "0.1.0"
+authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.32"
+decoder = { path = "../decoder" }
+elf2table = { path = "../elf2table" }
+xmas-elf = "0.7.0"
