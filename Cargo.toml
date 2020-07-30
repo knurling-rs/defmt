@@ -12,6 +12,7 @@ common = { path = "common" }
 members = [
   ".",
   "decoder",
+  "elf2table",
   "macros",
   "parser",
 ]

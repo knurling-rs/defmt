@@ -11,6 +11,7 @@ use binfmt_parser::Type;
 use common::Level;
 
 /// Interner table
+#[derive(Debug)]
 pub struct Table {
     pub entries: BTreeMap<usize, String>,
     pub debug: Range<usize>,

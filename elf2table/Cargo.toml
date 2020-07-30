@@ -1,0 +1,10 @@
+[package]
+name = "elf2table"
+version = "0.1.0"
+authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+edition = "2018"
+
+[dependencies]
+decoder = { path = "../decoder" }
+xmas-elf = "0.7.0"
+anyhow = "1.0.32"
