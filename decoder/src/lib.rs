@@ -169,7 +169,6 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
     let mut bools_left: u8 = 0; // the number of bits that we can still set in bool_flag
 
     for param in params {
-        let mut is_bool = false;
         match param.ty {
             Type::U8 => {
                 let data = bytes.read_u8().map_err(drop)?;
@@ -177,7 +176,6 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
             }
 
             Type::Bool => {
-                is_bool = true;
                 if bools_left == 0 {
                     bools_left = 8;
                     bool_flags = bytes.read_u8().map_err(drop)?;
@@ -249,7 +247,7 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 let arg_str = String::from_utf8(arg_str_bytes).unwrap();
 
                 args.push(Arg::Str(arg_str));
-            },
+            }
             Type::Slice => {
                 // only supports byte slices
                 let num_elements = leb128::read::unsigned(bytes).map_err(drop)? as usize;
@@ -261,10 +259,6 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 }
                 args.push(Arg::Slice(arg_slice.to_vec()));
             }
-        }
-
-        if !is_bool {
-            bools_left = 0;
         }
     }
 
@@ -556,8 +550,7 @@ mod tests {
             true as u8, // the logged bool value
         ];
 
-        decode_and_expect("my bool={:bool}", &bytes,
-                          "0.000002 INFO my bool=true");
+        decode_and_expect("my bool={:bool}", &bytes, "0.000002 INFO my bool=true");
     }
 
     #[test]
@@ -569,23 +562,48 @@ mod tests {
             0b1 as u8,        // the final logged bool value
         ];
 
-        decode_and_expect("bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
-                          &bytes,
-                          "0.000002 INFO bool overflow false true true false false false false true true");
+        decode_and_expect(
+            "bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            &bytes,
+            "0.000002 INFO bool overflow false true true false false false false true true",
+        );
+
+        // Ensure that bools are compressed into the first byte even when there's non-bool values
+        // between them.
+        let bytes = [
+            0,                // index
+            2,                // timestamp
+            0b10000110 as u8, // the first 8 logged bool values; in reverse order!
+            0xff,             // a logged u8
+            0b1 as u8,        // the final logged bool value
+        ];
+
+        decode_and_expect(
+            "bool overflow {:bool} {:u8} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            &bytes,
+            "0.000002 INFO bool overflow false 255 true true false false false false true true",
+        );
+        decode_and_expect(
+            "bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:u8} {:bool}",
+            &bytes,
+            "0.000002 INFO bool overflow false true true false false false false true 255 true",
+        );
     }
 
     #[test]
     fn test_bools_mixed() {
         let bytes = [
-            0,         // index
-            2,         // timestamp
-            0b1 as u8, // the first logged bool value
-            9 as u8,   // a uint in between
-            0b10 as u8, // the final 2 logged bool values; in reverse order!
+            0,           // index
+            2,           // timestamp
+            0b101 as u8, // 3 packed bools
+            9 as u8,     // a uint in between
         ];
 
-        decode_and_expect("hidden bools {:bool} {:u8} {:bool} {:bool}", &bytes,
-                          "0.000002 INFO hidden bools true 9 false true");
+        decode_and_expect(
+            "hidden bools {:bool} {:u8} {:bool} {:bool}",
+            &bytes,
+            "0.000002 INFO hidden bools true 9 false true",
+        );
     }
 
     #[test]
@@ -596,8 +614,7 @@ mod tests {
             2, // length of the slice
             23, 42, // slice content
         ];
-        decode_and_expect("x={:[u8]}", &bytes,
-        "0.000002 INFO x=[23, 42]");
+        decode_and_expect("x={:[u8]}", &bytes, "0.000002 INFO x=[23, 42]");
     }
 
     #[test]
@@ -607,46 +624,41 @@ mod tests {
             2, // timestamp
             2, // length of the slice
             23, 42, // slice content
-            1, // trailing arg
+            1,  // trailing arg
         ];
 
-        decode_and_expect("x={:[u8]} trailing arg={:u8}", &bytes,
-                          "0.000002 INFO x=[23, 42] trailing arg=1");
+        decode_and_expect(
+            "x={:[u8]} trailing arg={:u8}",
+            &bytes,
+            "0.000002 INFO x=[23, 42] trailing arg=1",
+        );
     }
 
     #[test]
     fn string_hello_world() {
         let bytes = [
-            0,         // index
-            2,         // timestamp
-            5,         // length of the string
-            b'W',
-            b'o',
-            b'r',
-            b'l',
-            b'd',
+            0, // index
+            2, // timestamp
+            5, // length of the string
+            b'W', b'o', b'r', b'l', b'd',
         ];
 
-        decode_and_expect("Hello {:str}", &bytes,
-                          "0.000002 INFO Hello World");
+        decode_and_expect("Hello {:str}", &bytes, "0.000002 INFO Hello World");
     }
-
 
     #[test]
     fn string_with_trailing_data() {
         let bytes = [
-            0,         // index
-            2,         // timestamp
-            5,         // length of the string
-            b'W',
-            b'o',
-            b'r',
-            b'l',
-            b'd',
-            125        // trailing data
+            0, // index
+            2, // timestamp
+            5, // length of the string
+            b'W', b'o', b'r', b'l', b'd', 125, // trailing data
         ];
 
-        decode_and_expect("Hello {:str} {:u8}", &bytes,
-                          "0.000002 INFO Hello World 125");
+        decode_and_expect(
+            "Hello {:str} {:u8}",
+            &bytes,
+            "0.000002 INFO Hello World 125",
+        );
     }
 }
