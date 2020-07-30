@@ -4,25 +4,30 @@ pub use common::Level;
 
 #[cfg(target_arch = "x86_64")]
 thread_local! {
-    static I: core::sync::atomic::AtomicUsize =
-        core::sync::atomic::AtomicUsize::new(0);
-    static T: core::sync::atomic::AtomicU64 =
-        core::sync::atomic::AtomicU64::new(0);
+    static I: core::sync::atomic::AtomicU8 =
+        core::sync::atomic::AtomicU8::new(0);
+    static T: core::sync::atomic::AtomicU8 =
+        core::sync::atomic::AtomicU8::new(0);
 }
 
+// NOTE we limit these values to 7-bit to avoid LEB128 encoding while writing the expected answers
+// in unit tests
+/// For testing purposes
 #[cfg(target_arch = "x86_64")]
-pub fn fetch_string_index() -> usize {
-    I.with(|i| i.load(core::sync::atomic::Ordering::Relaxed))
+pub fn fetch_string_index() -> u8 {
+    I.with(|i| i.load(core::sync::atomic::Ordering::Relaxed)) & 0x7f
 }
 
+/// For testing purposes
 #[cfg(target_arch = "x86_64")]
 pub fn fetch_add_string_index() -> usize {
-    I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed))
+    (I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as usize
 }
 
+/// For testing purposes
 #[cfg(target_arch = "x86_64")]
-pub fn fetch_timestamp() -> u64 {
-    T.with(|i| i.load(core::sync::atomic::Ordering::Relaxed))
+pub fn fetch_timestamp() -> u8 {
+    T.with(|i| i.load(core::sync::atomic::Ordering::Relaxed)) & 0x7f
 }
 
 pub fn threshold() -> Level {
@@ -56,9 +61,10 @@ pub fn release(fmt: Formatter) {
 
 #[cfg(target_arch = "x86_64")]
 pub fn timestamp() -> u64 {
-    T.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed))
+    (T.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as u64
 }
 
+/// For testing purposes
 #[cfg(not(target_arch = "x86_64"))]
 pub fn timestamp() -> u64 {
     extern "Rust" {
@@ -70,9 +76,6 @@ pub fn timestamp() -> u64 {
 pub fn str(address: usize) -> Str {
     Str {
         // NOTE address is limited to 14 bits in the linker script
-        #[cfg(not(test))]
         address: address as *const u8 as u16,
-        #[cfg(test)]
-        address: crate::tests::STR,
     }
 }
