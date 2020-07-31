@@ -1,13 +1,5 @@
 # `binfmt`
 
----
-
-TODO
-- [ ] test in QEMU
-- [ ] work on macro interface
-
----
-
 ## Features
 
 - `println!`-like formatting
