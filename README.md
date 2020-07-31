@@ -96,6 +96,7 @@ The available types are:
 - `:{i,u}24`, 32-bit integer truncated to 24 bits
 - `:[u8; N]`, byte array
 - `:[u8]`, byte slice
+- `:str`, string slice
 
 ### Bitfields
 
