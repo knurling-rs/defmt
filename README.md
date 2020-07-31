@@ -199,6 +199,56 @@ The `global_logger` interface is **TBD**.
 
 > NOTE(japaric) for now see the "global logger" section under the design notes
 
+### Timestamp
+
+*Applications* that, directly or transitively, use any of `binfmt` logging macros need to define a `#[timestamp]` function or include one in their dependency graph.
+
+All logs are timestamped.
+The `#[timestamp]` function specifies how the timestamp is computed.
+This function must have signature `fn() -> u64` and on each invocation *should* return a non-decreasing value.
+The function is not `unsafe` meaning that it must be thread-safe and interrupt-safe.
+
+To omit timestamp information use this `#[timestamp]` function:
+
+``` rust
+#[binfmt::timestamp]
+fn timestamp() -> u64 {
+    0
+}
+```
+
+A simple `timestamp` function that does not depend on device specific features and it's good enough for development is shown below:
+
+``` rust
+#[binfmt::timestamp]
+fn timestamp() -> u64 {
+    static COUNT: AtomicU32 = AtomicU32::new(0);
+    COUNT.fetch_add(1, Ordering::Relaxed)
+}
+```
+
+> NOTE in long lived applications a 64-bit monotonic counter should be implemented
+
+A `timestamp` function that uses a device-specific monotonic timer can directly read a MMIO register.
+It's OK if the function returns `0` while the timer is disabled.
+
+``` rust
+#[binfmt::timestamp]
+fn timestamp() -> u64 {
+    // NOTE(interrupt-safe) single instruction volatile read operation
+    unsafe { monotonic_timer_counter_register().read_volatile() as u64 }
+}
+
+fn main() -> ! {
+    info!(..); // timestamp = 0
+    debug!(..); // timestamp = 0
+    enable_monotonic_counter();
+    info!(..); // timestamp >= 0
+}
+```
+
+> NOTE again this should be extended to 64-bit in long lived applications
+
 ### Linker script
 
 *Applications* MUST pass the `-Tbinfmt.x` flag to the linker.
@@ -220,7 +270,8 @@ rustflags = [
 *Printers* are *host* programs that receive log data, format it and display it.
 The following printers are currently available:
 
-> TODO list printers here (they don't exist yet)
+- `qemu-run`, parses data sent over semihosting (ARM Cortex-M only)
+- `probe-run`, parses data sent over RTT (ARM Cortex-M only)
 
 ## Design / implementation notes
 

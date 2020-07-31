@@ -43,8 +43,8 @@ fn main() -> ! {
     }
 }
 
-#[no_mangle]
-fn _binfmt_timestamp() -> u64 {
+#[binfmt::timestamp]
+fn timestamp() -> u64 {
     // monotonic counter
     static I: AtomicU32 = AtomicU32::new(0);
     I.fetch_add(1, Ordering::Relaxed) as u64

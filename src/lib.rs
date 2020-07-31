@@ -6,7 +6,7 @@ use core::{mem::MaybeUninit, ptr::NonNull};
 pub use binfmt_macros::intern;
 #[doc(hidden)]
 pub use binfmt_macros::winfo;
-pub use binfmt_macros::{info, trace, debug, warn, error, write, Format};
+pub use binfmt_macros::{debug, error, info, timestamp, trace, warn, write, Format};
 
 use crate as binfmt;
 
@@ -116,6 +116,11 @@ impl Formatter {
     #[cfg(not(target_arch = "x86_64"))]
     pub fn write(&mut self, bytes: &[u8]) {
         unsafe { self.writer.as_mut().write(bytes) }
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    pub unsafe fn from_raw(_: *mut dyn Write) -> Self {
+        unreachable!()
     }
 
     #[cfg(not(target_arch = "x86_64"))]

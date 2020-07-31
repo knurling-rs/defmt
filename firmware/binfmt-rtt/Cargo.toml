@@ -1,0 +1,9 @@
+[package]
+name = "binfmt-rtt"
+version = "0.1.0"
+authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+edition = "2018"
+
+[dependencies]
+binfmt = { path = "../.." }
+cortex-m = "0.6.3"

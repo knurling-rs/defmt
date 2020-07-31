@@ -1,0 +1,57 @@
+[package]
+authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+edition = "2018"
+name = "firmware"
+version = "0.1.0"
+
+[dependencies]
+cortex-m = "0.6.0"
+cortex-m-rt = "0.6.10"
+cortex-m-semihosting = "0.3.3"
+panic-halt = "0.2.0"
+binfmt = { path = "../.." }
+
+[features]
+binfmt-default = [] # log at INFO, or TRACE, level and up
+binfmt-trace = []   # log at TRACE level and up
+binfmt-debug = []   # log at DEBUG level and up
+binfmt-info = []    # log at INFO level and up
+binfmt-warn = []    # log at WARN level and up
+binfmt-error = []   # log at ERROR level
+default = ["binfmt-default"]
+
+[workspace]
+
+# optimize code in both profiles
+[profile.dev]
+codegen-units = 1
+debug = 1
+debug-assertions = true # !
+incremental = false
+lto = "fat"
+opt-level = 'z' # !
+overflow-checks = false
+
+[profile.release]
+codegen-units = 1
+debug = 1
+debug-assertions = false
+incremental = false
+lto = "fat"
+opt-level = 3
+overflow-checks = false
+
+# faster builds from scratch
+[profile.dev.build-override]
+codegen-units = 8
+debug = false
+debug-assertions = false
+opt-level = 0
+overflow-checks = false
+
+[profile.release.build-override]
+codegen-units = 8
+debug = false
+debug-assertions = false
+opt-level = 0
+overflow-checks = false

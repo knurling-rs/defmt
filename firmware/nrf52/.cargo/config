@@ -1,0 +1,11 @@
+[alias]
+rb = "run --target thumbv7em-none-eabi --bin"
+rrb = "run --target thumbv7em-none-eabi --release --bin"
+
+[target.thumbv7em-none-eabi]
+runner = "cargo run --manifest-path ../../probe-run/Cargo.toml -- --chip nRF52840_xxAA"
+
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=-Tbinfmt.x",
+]
