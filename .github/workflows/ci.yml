@@ -8,8 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: "--deny warnings"
   NO_STD_TARGET: thumbv7em-none-eabi  # firmware uses atomics
+  QEMU_TARGET: thumbv7m-none-eabi
 
 jobs:
   test:
@@ -40,7 +40,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
     - name: Build
-      run: cargo build
+      run: RUSTFLAGS='--deny warnings' cargo build
       # NOTE order is important; running `mdbook` at the end = duplicate crate errors
     - name: Run book tests
       working-directory: book
@@ -58,9 +58,31 @@ jobs:
         toolchain: stable
         override: true
         target: ${{ env.NO_STD_TARGET }}
-    - name: Build QEMU examples
-      working-directory: firmware/qemu
-      run: cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
+    - name: Install dependencies
+      run: rustup +stable target add ${{ env.NO_STD_TARGET }}
     - name: Build nRF52 examples
       working-directory: firmware/nrf52
-      run: cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
+      run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
+
+  qemu:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        target: ${{ env.QEMU_TARGET }}
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install qemu
+        rustup +stable target add ${{ env.QEMU_TARGET }}
+    - name: Build QEMU examples
+      working-directory: firmware/qemu
+      run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.QEMU_TARGET }} --bins
+    - name: Run QEMU examples
+      working-directory: firmware/qemu
+      run: |
+        cargo rb log
+        cargo rrb log
