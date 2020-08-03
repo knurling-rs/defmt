@@ -22,11 +22,21 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
         .to_compile_error()
         .into();
     }
-    let f = parse_macro_input!(input as ItemStruct);
-    let ident = &f.ident;
-    // TODO check no generics, no fields, etc.
+    let s = parse_macro_input!(input as ItemStruct);
+    let ident = &s.ident;
+    if !s.generics.params.is_empty()
+        || s.generics.where_clause.is_some()
+        || s.fields != Fields::Unit
+    {
+        return parse::Error::new(
+            ident.span(),
+            "struct must be a non-generic unit struct (e.g. `struct S;`)",
+        )
+        .to_compile_error()
+        .into();
+    }
 
-    let vis = &f.vis;
+    let vis = &s.vis;
     quote!(
         #vis struct #ident;
 
