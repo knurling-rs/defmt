@@ -580,10 +580,14 @@ struct Codegen {
 
 impl Codegen {
     fn new(parsed_params: &Vec<binfmt_parser::Parameter>, nargs: usize, span: Span2) -> parse::Result<Self> {
+        let actual_param_count = parsed_params.iter().map(|param| param.index + 1).max().unwrap_or(0);
+
         let mut exprs = vec![];
         let mut pats = vec![];
-        for param in parsed_params {
-            let arg = format_ident!("arg{}", param.index);
+
+        for i in 0..actual_param_count {
+            let arg = format_ident!("arg{}", i);
+            let param = parsed_params.iter().find(|param| param.index == i).unwrap();
             match param.ty {
                 binfmt_parser::Type::Format => {
                     exprs.push(quote!(_fmt_.fmt(#arg)));
@@ -616,26 +620,26 @@ impl Codegen {
                 binfmt_parser::Type::Bool => {todo!();}
                 binfmt_parser::Type::Slice => {todo!();}
                 binfmt_parser::Type::F32 => {todo!();}
-            };
+            }
             pats.push(arg);
         }
 
-        if nargs < parsed_params.len() {
+        if nargs < actual_param_count {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but only {} were provided",
-                    parsed_params.len(), nargs
+                    actual_param_count, nargs
                 ),
             ));
         }
 
-        if nargs > parsed_params.len() {
+        if nargs > actual_param_count {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but {} were provided",
-                    parsed_params.len(), nargs
+                    actual_param_count, nargs
                 ),
             ));
         }

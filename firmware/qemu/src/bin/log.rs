@@ -12,6 +12,8 @@ fn main() -> ! {
     binfmt::info!("Hello!");
     binfmt::info!("World!");
     binfmt::info!("The answer is {:u8}", 42);
+    binfmt::info!("Hello {0:u8} {0:u8}!", 42);
+    binfmt::info!("Hello {1:u16} {0:u8}", 42u8, 256u16);
 
     binfmt::trace!("log trace");
     binfmt::debug!("log debug");
