@@ -1,3 +1,4 @@
+#[cfg(target_arch = "x86_64")]
 use crate as binfmt;
 use binfmt_macros::internp;
 
