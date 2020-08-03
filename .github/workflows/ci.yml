@@ -17,11 +17,12 @@ jobs:
       matrix:
         rust:
           - stable
-          - nightly
+          #- nightly
         os:
           - ubuntu-latest
-          - macOS-latest
-          - windows-latest
+          #- macOS-latest
+          #- windows-latest
+          # FIXME: Reenable macOS, Windows, and nightly once binfmt is open-sourced.
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
