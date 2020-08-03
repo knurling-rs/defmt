@@ -8,9 +8,51 @@ use syn::{
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, LitInt, LitStr,
-    ReturnType, Token, Type,
+    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, ItemStruct, LitInt,
+    LitStr, ReturnType, Token, Type,
 };
+
+#[proc_macro_attribute]
+pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
+    if !args.is_empty() {
+        return parse::Error::new(
+            Span2::call_site(),
+            "`#[global_logger]` attribute takes no arguments",
+        )
+        .to_compile_error()
+        .into();
+    }
+    let s = parse_macro_input!(input as ItemStruct);
+    let ident = &s.ident;
+    let is_unit = match s.fields {
+        Fields::Unit => true,
+        _ => false,
+    };
+    if !s.generics.params.is_empty() || s.generics.where_clause.is_some() || !is_unit {
+        return parse::Error::new(
+            ident.span(),
+            "struct must be a non-generic unit struct (e.g. `struct S;`)",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    let vis = &s.vis;
+    quote!(
+        #vis struct #ident;
+
+        #[no_mangle]
+        unsafe fn _binfmt_acquire() -> Option<binfmt::Formatter> {
+            <#ident as binfmt::Logger>::acquire().map(|nn| binfmt::Formatter::from_raw(nn))
+        }
+
+        #[no_mangle]
+        unsafe fn _binfmt_release(f: binfmt::Formatter)  {
+            <#ident as binfmt::Logger>::release(f.into_raw())
+        }
+    )
+    .into()
+}
 
 #[proc_macro_attribute]
 pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -74,7 +116,7 @@ impl MLevel {
             MLevel::Debug => "debug",
             MLevel::Info => "info",
             MLevel::Warn => "warn",
-            MLevel::Error => "error"
+            MLevel::Error => "error",
         }
     }
 
@@ -100,17 +142,35 @@ impl MLevel {
             MLevel::Info => {
                 // binfmt-default is enabled for dev & release profile so debug_assertions
                 // does not matter
-                &["binfmt-info", "binfmt-debug", "binfmt-trace", "binfmt-default"]
+                &[
+                    "binfmt-info",
+                    "binfmt-debug",
+                    "binfmt-trace",
+                    "binfmt-default",
+                ]
             }
             MLevel::Warn => {
                 // binfmt-default is enabled for dev & release profile so debug_assertions
                 // does not matter
-                &["binfmt-warn", "binfmt-info", "binfmt-debug", "binfmt-trace", "binfmt-default"]
+                &[
+                    "binfmt-warn",
+                    "binfmt-info",
+                    "binfmt-debug",
+                    "binfmt-trace",
+                    "binfmt-default",
+                ]
             }
             MLevel::Error => {
                 // binfmt-default is enabled for dev & release profile so debug_assertions
                 // does not matter
-                &["binfmt-error", "binfmt-warn", "binfmt-info", "binfmt-debug", "binfmt-trace", "binfmt-default"]
+                &[
+                    "binfmt-error",
+                    "binfmt-warn",
+                    "binfmt-info",
+                    "binfmt-debug",
+                    "binfmt-trace",
+                    "binfmt-default",
+                ]
             }
         }
     }
@@ -316,8 +376,8 @@ fn is_logging_enabled(level: MLevel) -> TokenStream2 {
     let features_release = level.necessary_features(false);
 
     quote!(
-        cfg!(debug_assertions) && cfg!(any(#( feature = #features_dev ),*)) ||
-        !cfg!(debug_assertions) && cfg!(any(#( feature = #features_release ),*))
+        cfg!(debug_assertions) && cfg!(any(#( feature = #features_dev ),*))
+            || !cfg!(debug_assertions) && cfg!(any(#( feature = #features_release ),*))
     )
 }
 
@@ -579,8 +639,16 @@ struct Codegen {
 }
 
 impl Codegen {
-    fn new(parsed_params: &Vec<binfmt_parser::Parameter>, nargs: usize, span: Span2) -> parse::Result<Self> {
-        let actual_param_count = parsed_params.iter().map(|param| param.index + 1).max().unwrap_or(0);
+    fn new(
+        parsed_params: &Vec<binfmt_parser::Parameter>,
+        nargs: usize,
+        span: Span2,
+    ) -> parse::Result<Self> {
+        let actual_param_count = parsed_params
+            .iter()
+            .map(|param| param.index + 1)
+            .max()
+            .unwrap_or(0);
 
         let mut exprs = vec![];
         let mut pats = vec![];
@@ -616,10 +684,18 @@ impl Codegen {
                 binfmt_parser::Type::U8 => {
                     exprs.push(quote!(_fmt_.u8(#arg)));
                 }
-                binfmt_parser::Type::BitField(_) => {todo!();}
-                binfmt_parser::Type::Bool => {todo!();}
-                binfmt_parser::Type::Slice => {todo!();}
-                binfmt_parser::Type::F32 => {todo!();}
+                binfmt_parser::Type::BitField(_) => {
+                    todo!();
+                }
+                binfmt_parser::Type::Bool => {
+                    todo!();
+                }
+                binfmt_parser::Type::Slice => {
+                    todo!();
+                }
+                binfmt_parser::Type::F32 => {
+                    todo!();
+                }
             }
             pats.push(arg);
         }

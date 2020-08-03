@@ -1,4 +1,4 @@
-use crate::{self as binfmt, Format, Formatter};
+use crate as binfmt;
 
 #[test]
 fn leb() {

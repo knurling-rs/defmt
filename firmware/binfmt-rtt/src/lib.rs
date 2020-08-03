@@ -1,7 +1,12 @@
+//! `binfmt` global logger over RTT
+//!
+//! NOTE when using this crate it's not possible to use (link to) the `rtt-target` crate
+
 #![no_std]
 
 use core::{
-    cmp, ptr,
+    cmp,
+    ptr::{self, NonNull},
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
@@ -11,6 +16,7 @@ use cortex_m::{interrupt, register};
 // NOTE use a power of 2 for best performance
 const SIZE: usize = 1024;
 
+#[binfmt::global_logger]
 struct Logger;
 
 impl binfmt::Write for Logger {
@@ -22,36 +28,32 @@ impl binfmt::Write for Logger {
 static TAKEN: AtomicBool = AtomicBool::new(false);
 static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
 
-#[no_mangle]
-fn _binfmt_acquire() -> Option<binfmt::Formatter> {
-    let primask = register::primask::read();
-    interrupt::disable();
-    if !TAKEN.load(Ordering::Relaxed) {
-        // no need for CAS because interrupts are disabled
-        TAKEN.store(true, Ordering::Relaxed);
+unsafe impl binfmt::Logger for Logger {
+    fn acquire() -> Option<NonNull<dyn binfmt::Write>> {
+        let primask = register::primask::read();
+        interrupt::disable();
+        if !TAKEN.load(Ordering::Relaxed) {
+            // no need for CAS because interrupts are disabled
+            TAKEN.store(true, Ordering::Relaxed);
 
-        INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
+            INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
 
-        Some(unsafe {
-            binfmt::Formatter::from_raw(
-                &Logger as &dyn binfmt::Write as *const dyn binfmt::Write as *mut dyn binfmt::Write,
-            )
-        })
-    } else {
-        if primask.is_active() {
-            // re-enable interrupts
-            unsafe { interrupt::enable() }
+            Some(NonNull::from(&Logger as &dyn binfmt::Write))
+        } else {
+            if primask.is_active() {
+                // re-enable interrupts
+                unsafe { interrupt::enable() }
+            }
+            None
         }
-        None
     }
-}
 
-#[no_mangle]
-fn _binfmt_release(_: binfmt::Formatter) {
-    TAKEN.store(false, Ordering::Relaxed);
-    if INTERRUPTS_ACTIVE.load(Ordering::Relaxed) {
-        // re-enable interrupts
-        unsafe { interrupt::enable() }
+    unsafe fn release(_: NonNull<dyn binfmt::Write>) {
+        TAKEN.store(false, Ordering::Relaxed);
+        if INTERRUPTS_ACTIVE.load(Ordering::Relaxed) {
+            // re-enable interrupts
+            interrupt::enable()
+        }
     }
 }
 
