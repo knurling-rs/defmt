@@ -34,6 +34,8 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
             "-machine",
             "lm3s6965evb",
             "-nographic",
+            "-monitor",
+            "none",
             "-semihosting-config",
             "enable=on,target=native",
             "-kernel",
