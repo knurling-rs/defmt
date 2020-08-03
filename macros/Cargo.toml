@@ -8,6 +8,7 @@ version = "0.1.0"
 proc-macro = true
 
 [dependencies]
+binfmt-parser = { path = "../parser" }
 quote = "1.0.7"
 rand = "0.7.3"
 proc-macro2 = "1.0.18"
