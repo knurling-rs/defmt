@@ -30,6 +30,9 @@ jobs:
         profile: minimal
         toolchain: ${{ matrix.rust }}
         override: true
+    - name: Install C libraries for tooling
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install libudev-dev libusb-1.0-0-dev
     - name: Build
       run: cargo build --workspace --all-targets
     - name: Run tests

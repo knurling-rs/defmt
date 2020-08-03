@@ -1,5 +1,5 @@
 use core::fmt::Write as _;
-use proc_macro::TokenStream;
+use proc_macro::{Span, TokenStream};
 
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
@@ -8,8 +8,55 @@ use syn::{
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, LitInt, LitStr, Token, Type,
+    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, LitInt, LitStr,
+    ReturnType, Token, Type,
 };
+
+#[proc_macro_attribute]
+pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
+    if !args.is_empty() {
+        return parse::Error::new(
+            Span2::call_site(),
+            "`#[timestamp]` attribute takes no arguments",
+        )
+        .to_compile_error()
+        .into();
+    }
+    let f = parse_macro_input!(input as ItemFn);
+
+    let rety_is_ok = match &f.sig.output {
+        ReturnType::Default => false,
+        ReturnType::Type(_, ty) => match &**ty {
+            Type::Path(tp) => tp.path.get_ident().map(|id| id == "u64").unwrap_or(false),
+            _ => false,
+        },
+    };
+
+    let ident = &f.sig.ident;
+    if f.sig.constness.is_some()
+        || f.sig.asyncness.is_some()
+        || f.sig.unsafety.is_some()
+        || f.sig.abi.is_some()
+        || !f.sig.generics.params.is_empty()
+        || f.sig.generics.where_clause.is_some()
+        || f.sig.variadic.is_some()
+        || !f.sig.inputs.is_empty()
+        || !rety_is_ok
+    {
+        return parse::Error::new(ident.span(), "function must have signature `fn() -> u64`")
+            .to_compile_error()
+            .into();
+    }
+
+    let block = &f.block;
+    quote!(
+        #[export_name = "_binfmt_timestamp"]
+        fn #ident() -> u64 {
+            #block
+        }
+    )
+    .into()
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 enum MLevel {
@@ -447,7 +494,8 @@ pub fn internp(ts: TokenStream) -> TokenStream {
             static S: u8 = 0;
             &S as *const u8 as u8
         }
-    }).into()
+    })
+    .into()
 }
 
 #[proc_macro]
@@ -485,7 +533,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
 }
 
 fn mksym(string: &str, section: &str) -> TokenStream2 {
-    let id = rand::random::<u64>();
+    let id = format!("{:?}", Span::call_site());
     let section = format!(".binfmt.{}.{}", section, string);
     let sym = format!("{}@{}", string, id);
     quote!(match () {

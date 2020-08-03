@@ -1,23 +1,27 @@
 [package]
 authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
 edition = "2018"
-name = "firmware"
+readme = "README.md"
+name = "nrf52"
 version = "0.1.0"
 
 [dependencies]
+binfmt = { path = "../.." }
+binfmt-rtt = { path = "../binfmt-rtt" }
 cortex-m = "0.6.0"
 cortex-m-rt = "0.6.10"
 cortex-m-semihosting = "0.3.3"
+embedded-hal = "0.2.4"
+nrf52840-hal = "0.10.0"
 panic-halt = "0.2.0"
-binfmt = { path = ".." }
 
 [features]
-binfmt-default = [] # log at INFO, or TRACE, level and up
-binfmt-trace = []   # log at TRACE level and up
-binfmt-debug = []   # log at DEBUG level and up
-binfmt-info = []    # log at INFO level and up
-binfmt-warn = []    # log at WARN level and up
-binfmt-error = []   # log at ERROR level
+binfmt-default = []
+binfmt-trace = []
+binfmt-debug = []
+binfmt-info = []
+binfmt-warn = []
+binfmt-error = []
 default = ["binfmt-default"]
 
 # optimize code in both profiles
