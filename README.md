@@ -228,7 +228,7 @@ This synchronizes access to the single channel, from contexts running at differe
 The other approach uses multiple logging channels: e.g. one for each priority level in an application that uses interrupts.
 With this approach logging can be made lock-free: interrupts are not disabled while logging data.
 This approach requires channel multiplexing in the transport layer.
-RTT, for example, natively supports multiple channels so this is not an issue but other transports, like ITM, will require that each log frame to be tagged with the channel it belongs to (e.g. one logging channel = ITM channel).
+RTT, for example, natively supports multiple channels so this is not an issue, but other transports, like ITM, will require that each log frame to be tagged with the channel it belongs to (e.g. one logging channel = ITM channel).
 The trade-off of using more channels are:
 - higher memory usage on the target, for buffering, and/or
 - lower overall throughput, as either different channels need to be polled or log frames need to be tagged with the channel they belong to
