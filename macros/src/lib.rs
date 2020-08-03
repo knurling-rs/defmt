@@ -11,6 +11,64 @@ use syn::{
     Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, LitInt, LitStr, Token, Type,
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+enum MLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl MLevel {
+    fn as_str(self) -> &'static str {
+        match self {
+            MLevel::Trace => "trace",
+            MLevel::Debug => "debug",
+            MLevel::Info => "info",
+            MLevel::Warn => "warn",
+            MLevel::Error => "error"
+        }
+    }
+
+    // returns a list of features of which one has to be enabled for this Level to be active
+    fn necessary_features(self, debug_assertions: bool) -> &'static [&'static str] {
+        match self {
+            MLevel::Trace => {
+                if debug_assertions {
+                    // dev profile
+                    &["binfmt-trace", "binfmt-default"]
+                } else {
+                    &["binfmt-trace"]
+                }
+            }
+            MLevel::Debug => {
+                if debug_assertions {
+                    // dev profile
+                    &["binfmt-debug", "binfmt-trace", "binfmt-default"]
+                } else {
+                    &["binfmt-debug", "binfmt-trace"]
+                }
+            }
+            MLevel::Info => {
+                // binfmt-default is enabled for dev & release profile so debug_assertions
+                // does not matter
+                &["binfmt-info", "binfmt-debug", "binfmt-trace", "binfmt-default"]
+            }
+            MLevel::Warn => {
+                // binfmt-default is enabled for dev & release profile so debug_assertions
+                // does not matter
+                &["binfmt-warn", "binfmt-info", "binfmt-debug", "binfmt-trace", "binfmt-default"]
+            }
+            MLevel::Error => {
+                // binfmt-default is enabled for dev & release profile so debug_assertions
+                // does not matter
+                &["binfmt-error", "binfmt-warn", "binfmt-info", "binfmt-debug", "binfmt-trace", "binfmt-default"]
+            }
+        }
+    }
+}
+
 // `#[derive(Format)]`
 #[proc_macro_derive(Format)]
 pub fn format(ts: TokenStream) -> TokenStream {
@@ -206,9 +264,19 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
     list
 }
 
-// TODO other logging levels
-#[proc_macro]
-pub fn info(ts: TokenStream) -> TokenStream {
+fn is_logging_enabled(level: MLevel) -> TokenStream2 {
+    let features_dev = level.necessary_features(true);
+    let features_release = level.necessary_features(false);
+
+    quote!(
+        cfg!(debug_assertions) && cfg!(any(#( feature = #features_dev ),*)) ||
+        !cfg!(debug_assertions) && cfg!(any(#( feature = #features_release ),*))
+    )
+}
+
+// note that we are not using the `Level` type because we want to avoid dependencies on
+// `binfmt-common` due to Cargo bugs in crate sharing
+fn log(level: MLevel, ts: TokenStream) -> TokenStream {
     let log = parse_macro_input!(ts as Log);
     let ls = log.litstr.value();
     let params = match Param::parse(&ls) {
@@ -230,18 +298,17 @@ pub fn info(ts: TokenStream) -> TokenStream {
         Err(e) => return e.to_compile_error().into(),
     };
 
-    let sym = mksym(&ls, "info");
+    let sym = mksym(&ls, level.as_str());
+    let logging_enabled = is_logging_enabled(level);
     quote!({
-        if cfg!(feature = "binfmt-on") {
-            if binfmt::export::Level::Info >= binfmt::export::threshold() {
-                if let Some(mut _fmt_) = binfmt::export::acquire() {
-                    match (binfmt::export::timestamp(), #(&#args),*) {
-                        (ts, #(#pats),*) => {
-                            _fmt_.str(&binfmt::export::str(#sym));
-                            _fmt_.leb64(ts);
-                            #(#exprs;)*
-                            binfmt::export::release(_fmt_)
-                        }
+        if #logging_enabled {
+            if let Some(mut _fmt_) = binfmt::export::acquire() {
+                match (binfmt::export::timestamp(), #(&#args),*) {
+                    (ts, #(#pats),*) => {
+                        _fmt_.str(&binfmt::export::str(#sym));
+                        _fmt_.leb64(ts);
+                        #(#exprs;)*
+                        binfmt::export::release(_fmt_)
                     }
                 }
             }
@@ -250,7 +317,32 @@ pub fn info(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-// TODO share more code with `info`
+#[proc_macro]
+pub fn trace(ts: TokenStream) -> TokenStream {
+    log(MLevel::Trace, ts)
+}
+
+#[proc_macro]
+pub fn debug(ts: TokenStream) -> TokenStream {
+    log(MLevel::Debug, ts)
+}
+
+#[proc_macro]
+pub fn info(ts: TokenStream) -> TokenStream {
+    log(MLevel::Info, ts)
+}
+
+#[proc_macro]
+pub fn warn(ts: TokenStream) -> TokenStream {
+    log(MLevel::Warn, ts)
+}
+
+#[proc_macro]
+pub fn error(ts: TokenStream) -> TokenStream {
+    log(MLevel::Error, ts)
+}
+
+// TODO share more code with `log`
 #[proc_macro]
 pub fn winfo(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);

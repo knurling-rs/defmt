@@ -6,7 +6,7 @@ use core::{mem::MaybeUninit, ptr::NonNull};
 pub use binfmt_macros::intern;
 #[doc(hidden)]
 pub use binfmt_macros::winfo;
-pub use binfmt_macros::{info, write, Format};
+pub use binfmt_macros::{info, trace, debug, warn, error, write, Format};
 
 use crate as binfmt;
 
