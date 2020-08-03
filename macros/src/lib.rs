@@ -24,10 +24,11 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
     }
     let s = parse_macro_input!(input as ItemStruct);
     let ident = &s.ident;
-    if !s.generics.params.is_empty()
-        || s.generics.where_clause.is_some()
-        || s.fields != Fields::Unit
-    {
+    let is_unit = match s.fields {
+        Fields::Unit => true,
+        _ => false,
+    };
+    if !s.generics.params.is_empty() || s.generics.where_clause.is_some() || !is_unit {
         return parse::Error::new(
             ident.span(),
             "struct must be a non-generic unit struct (e.g. `struct S;`)",
