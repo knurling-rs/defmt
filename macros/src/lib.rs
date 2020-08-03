@@ -326,7 +326,7 @@ fn is_logging_enabled(level: MLevel) -> TokenStream2 {
 fn log(level: MLevel, ts: TokenStream) -> TokenStream {
     let log = parse_macro_input!(ts as Log);
     let ls = log.litstr.value();
-    let params = match Param::parse(&ls) {
+    let params = match binfmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(log.litstr.span(), e)
@@ -394,7 +394,7 @@ pub fn error(ts: TokenStream) -> TokenStream {
 pub fn winfo(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let params = match Param::parse(&ls) {
+    let params = match binfmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)
@@ -502,7 +502,7 @@ pub fn internp(ts: TokenStream) -> TokenStream {
 pub fn write(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let params = match Param::parse(&ls) {
+    let params = match binfmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)
@@ -579,208 +579,67 @@ struct Codegen {
 }
 
 impl Codegen {
-    fn new(params: &[Param], nargs: usize, span: Span2) -> parse::Result<Self> {
+    fn new(parsed_params: &Vec<binfmt_parser::Parameter>, nargs: usize, span: Span2) -> parse::Result<Self> {
         let mut exprs = vec![];
         let mut pats = vec![];
-        let mut n = 0;
-        for param in params {
-            match param {
-                Param::Fmt => {
-                    let arg = format_ident!("arg{}", n);
+        for param in parsed_params {
+            let arg = format_ident!("arg{}", param.index);
+            match param.ty {
+                binfmt_parser::Type::Format => {
                     exprs.push(quote!(_fmt_.fmt(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::I16 => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::I16 => {
                     exprs.push(quote!(_fmt_.i16(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::I32 => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::I32 => {
                     exprs.push(quote!(_fmt_.i32(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::I8 => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::I8 => {
                     exprs.push(quote!(_fmt_.i8(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::Str => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::Str => {
                     exprs.push(quote!(_fmt_.str(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::U16 => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::U16 => {
                     exprs.push(quote!(_fmt_.u16(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::U24 => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::U24 => {
                     exprs.push(quote!(_fmt_.u24(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::U32 => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::U32 => {
                     exprs.push(quote!(_fmt_.u32(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-
-                Param::U8 => {
-                    let arg = format_ident!("arg{}", n);
+                binfmt_parser::Type::U8 => {
                     exprs.push(quote!(_fmt_.u8(#arg)));
-                    pats.push(arg);
-                    n += 1;
                 }
-            }
+                binfmt_parser::Type::BitField(_) => {todo!();}
+                binfmt_parser::Type::Bool => {todo!();}
+                binfmt_parser::Type::Slice => {todo!();}
+                binfmt_parser::Type::F32 => {todo!();}
+            };
+            pats.push(arg);
         }
 
-        if nargs < n {
+        if nargs < parsed_params.len() {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but only {} were provided",
-                    n, nargs
+                    parsed_params.len(), nargs
                 ),
             ));
         }
 
-        if nargs > n {
+        if nargs > parsed_params.len() {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but {} were provided",
-                    n, nargs
+                    parsed_params.len(), nargs
                 ),
             ));
         }
 
         Ok(Codegen { pats, exprs })
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum Param {
-    Fmt, // "{:?}"
-    I16,
-    I32,
-    I8,
-    Str,
-    U16,
-    U24,
-    U32,
-    U8,
-}
-
-impl Param {
-    fn parse(s: &str) -> Result<Vec<Param>, &'static str> {
-        static EOF: &str = "expected `}` but string was terminated";
-
-        let mut chars = s.chars();
-
-        let mut args = vec![];
-        while let Some(c) = chars.next() {
-            match c {
-                '{' => {
-                    match chars.next() {
-                        // escaped `{`
-                        Some('{') => {}
-
-                        // format argument
-                        Some(':') => {
-                            static FMT: &str = "?}";
-                            static STR: &str = "str}";
-                            static U8: &str = "u8}";
-                            static U16: &str = "u16}";
-                            static U24: &str = "u24}";
-                            static U32: &str = "u32}";
-                            static I8: &str = "i8}";
-                            static I16: &str = "i16}";
-                            static I32: &str = "i32}";
-
-                            let s = chars.as_str();
-                            if s.starts_with(FMT) {
-                                (0..FMT.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::Fmt);
-                            } else if s.starts_with(STR) {
-                                (0..STR.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::Str);
-                            } else if s.starts_with(U8) {
-                                (0..U8.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::U8);
-                            } else if s.starts_with(U16) {
-                                (0..U16.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::U16);
-                            } else if s.starts_with(U24) {
-                                (0..U24.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::U24);
-                            } else if s.starts_with(U32) {
-                                (0..U32.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::U32);
-                            } else if s.starts_with(I8) {
-                                (0..I8.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::I8);
-                            } else if s.starts_with(I16) {
-                                (0..I16.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::I16);
-                            } else if s.starts_with(I32) {
-                                (0..I32.len()).for_each(|_| drop(chars.next()));
-                                args.push(Param::I32);
-                            } else {
-                                return Err("unknown format specifier");
-                            }
-                        }
-                        Some(_) => return Err("`{` must be followed by `:`"),
-                        None => return Err(EOF),
-                    }
-                }
-
-                '}' => {
-                    // must be a escaped `}`
-                    if chars.next() != Some('}') {
-                        return Err("unmatched `}` in format string");
-                    }
-                }
-
-                '@' => return Err("format string cannot contain the `@` character"),
-
-                _ => {}
-            }
-        }
-
-        Ok(args)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Param;
-
-    #[test]
-    fn args() {
-        assert_eq!(Param::parse("{:?}"), Ok(vec![Param::Fmt]));
-        assert_eq!(Param::parse("{:i16}"), Ok(vec![Param::I16]));
-        assert_eq!(Param::parse("{:i32}"), Ok(vec![Param::I32]));
-        assert_eq!(Param::parse("{:i8}"), Ok(vec![Param::I8]));
-        assert_eq!(Param::parse("{:str}"), Ok(vec![Param::Str]));
-        assert_eq!(Param::parse("{:u16}"), Ok(vec![Param::U16]));
-        assert_eq!(Param::parse("{:u24}"), Ok(vec![Param::U24]));
-        assert_eq!(Param::parse("{:u32}"), Ok(vec![Param::U32]));
-        assert_eq!(Param::parse("{:u8}"), Ok(vec![Param::U8]));
     }
 }
