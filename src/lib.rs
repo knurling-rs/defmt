@@ -2,18 +2,113 @@
 
 use core::{mem::MaybeUninit, ptr::NonNull};
 
-pub use binfmt_macros::intern;
-#[doc(hidden)]
-pub use binfmt_macros::winfo;
-pub use binfmt_macros::{debug, error, global_logger, info, timestamp, trace, warn, write, Format};
-
 #[doc(hidden)]
 pub mod export;
 mod impls;
 #[cfg(test)]
 mod tests;
 
-/// Global logger acquire-release mechanism
+/// Creates an interned string ([`Str`]) from a string literal.
+///
+/// This must be called on a string literal, and will allocate the literal in the object file. At
+/// runtime, only a small string index is required to refer to the string, represented as the
+/// [`Str`] type.
+///
+/// # Example
+///
+/// ```
+/// let interned = binfmt::intern!("long string literal taking up little space");
+/// ```
+///
+/// [`Str`]: struct.Str.html
+pub use binfmt_macros::intern;
+
+/// Logs data at *debug* level.
+pub use binfmt_macros::debug;
+/// Logs data at *error* level.
+pub use binfmt_macros::error;
+/// Logs data at *info* level.
+pub use binfmt_macros::info;
+/// Logs data at *trace* level.
+pub use binfmt_macros::trace;
+/// Logs data at *warn* level.
+pub use binfmt_macros::warn;
+
+/// Defines the global binfmt logger.
+///
+/// `#[global_logger]` needs to be put on a unit struct type declaration. This struct has to
+/// implement the [`Logger`] trait.
+///
+/// # Example
+///
+/// ```
+/// use binfmt::{Logger, Write, global_logger};
+/// use core::ptr::NonNull;
+///
+/// #[global_logger]
+/// struct MyLogger;
+///
+/// unsafe impl Logger for MyLogger {
+///     fn acquire() -> Option<NonNull<dyn Write>> {
+/// # todo!()
+///         // ...
+///     }
+///     unsafe fn release(writer: NonNull<dyn Write>) {
+/// # todo!()
+///         // ...
+///     }
+/// }
+/// ```
+///
+/// [`Logger`]: trait.Logger.html
+pub use binfmt_macros::global_logger;
+
+/// Defines the global timestamp provider for binfmt.
+///
+/// Every message logged with binfmt will include a timestamp. The function annotated with
+/// `#[timestamp]` will be used to obtain this timestamp.
+///
+/// The `#[timestamp]` attribute needs to be applied to a function with the signature `fn() -> u64`.
+/// The returned `u64` is the current timestamp in microseconds.
+///
+/// Some systems might not have a timer available. In that case, a dummy implementation such as this
+/// may be used:
+///
+/// ```
+/// # use binfmt_macros::timestamp;
+/// #[timestamp]
+/// fn dummy_timestamp() -> u64 {
+///     0
+/// }
+/// ```
+pub use binfmt_macros::timestamp;
+
+/// Writes binfmt-formatted data to a [`Formatter`].
+///
+/// This works similarly to the `write!` macro in libcore.
+///
+/// Usage:
+///
+/// ```
+/// # use binfmt::{Format, Formatter};
+/// # struct S;
+/// # impl Format for S {
+/// #     fn format(&self, formatter: &mut Formatter) {
+/// #         let arguments = 0u8;
+/// binfmt::write!(formatter, "format string {:?}", arguments)
+/// #     }
+/// # }
+/// ```
+///
+/// [`Formatter`]: struct.Formatter.html
+pub use binfmt_macros::write;
+
+#[doc(hidden)]
+pub use binfmt_macros::winfo;
+#[doc(hidden)] // documented as the `Format` trait instead
+pub use binfmt_macros::Format;
+
+/// Global logger acquire-release mechanism.
 ///
 /// # Safety contract
 ///
@@ -35,14 +130,16 @@ pub unsafe trait Logger {
     unsafe fn release(writer: NonNull<dyn Write>);
 }
 
-/// Interned string
+/// An interned string created via [`intern!`].
+///
+/// [`intern!`]: macro.intern.html
 #[derive(Clone, Copy)]
 pub struct Str {
     // 14-bit address
     address: u16,
 }
 
-/// Handler that owns the global logger
+/// Handle to a binfmt logger.
 pub struct Formatter {
     #[cfg(not(target_arch = "x86_64"))]
     writer: NonNull<dyn Write>,
@@ -241,10 +338,60 @@ impl Formatter {
     }
 }
 
+/// Trait for binfmt logging targets.
 pub trait Write {
+    /// Writes `bytes` to the destination.
+    ///
+    /// This will be called by the binfmt logging macros to transmit encoded data. The write
+    /// operation must not fail.
     fn write(&mut self, bytes: &[u8]);
 }
 
+/// Derivable trait for binfmt output.
+///
+/// This trait is used by the `{:?}` format specifier and can format a wide range of types.
+/// User-defined types can `#[derive(Format)]` to get an auto-generated implementation of this
+/// trait.
+///
+/// # Example
+///
+/// It is recommended to `#[derive]` implementations of this trait:
+///
+/// ```
+/// use binfmt::Format;
+///
+/// #[derive(Format)]
+/// struct Header {
+///     source: u8,
+///     destination: u8,
+///     sequence: u16,
+/// }
+/// ```
+///
+/// If necessary, implementations can also be written manually:
+///
+/// ```
+/// use binfmt::{Format, Formatter};
+///
+/// struct Header {
+///     source: u8,
+///     destination: u8,
+///     sequence: u16,
+/// }
+///
+/// impl Format for Header {
+///     fn format(&self, fmt: &mut Formatter) {
+///         binfmt::write!(
+///             fmt,
+///             "Header {{ source: {:u8}, destination: {:u8}, sequence: {:u16} }}",
+///             self.source,
+///             self.destination,
+///             self.sequence
+///         )
+///     }
+/// }
+/// ```
 pub trait Format {
+    /// Writes the binfmt representation of `self` to `fmt`.
     fn format(&self, fmt: &mut Formatter);
 }
