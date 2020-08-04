@@ -73,7 +73,8 @@ pub fn timestamp() -> u64 {
     unsafe { _binfmt_timestamp() }
 }
 
-pub fn str(address: usize) -> Str {
+/// Returns the interned string at `address`.
+pub fn istr(address: usize) -> Str {
     Str {
         // NOTE address is limited to 14 bits in the linker script
         address: address as *const u8 as u16,

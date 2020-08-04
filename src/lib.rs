@@ -265,9 +265,15 @@ impl Formatter {
         self.write(&b.to_le_bytes())
     }
 
+    #[doc(hidden)]
+    pub fn str(&mut self, s: &str) {
+        self.leb64(s.len() as u64);
+        self.write(s.as_bytes());
+    }
+
     /// Implementation detail
     #[doc(hidden)]
-    pub fn str(&mut self, s: &Str) {
+    pub fn istr(&mut self, s: &Str) {
         // LEB128 encoding
         if s.address < 128 {
             self.write(&[s.address as u8])
