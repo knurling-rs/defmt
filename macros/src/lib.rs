@@ -196,42 +196,46 @@ pub fn format(ts: TokenStream) -> TokenStream {
                 .into();
             }
 
-            let mut arms = vec![];
-            let mut first = true;
-            for (var, i) in de.variants.iter().zip(0u8..) {
-                let vident = &var.ident;
+            if de.variants.is_empty() {
+                exprs.push(quote!(match *self {}));
+            } else {
+                let mut arms = vec![];
+                let mut first = true;
+                for (var, i) in de.variants.iter().zip(0u8..) {
+                    let vident = &var.ident;
 
-                if first {
-                    first = false;
-                } else {
-                    fs.push('|');
-                }
-                fs.push_str(&vident.to_string());
-
-                let mut pats = quote!();
-                let exprs = fields(
-                    &var.fields,
-                    &mut fs,
-                    Kind::Enum {
-                        patterns: &mut pats,
-                    },
-                );
-
-                arms.push(quote!(
-                    #ident::#vident #pats => {
-                        f.u8(&#i);
-                        #(#exprs)*
+                    if first {
+                        first = false;
+                    } else {
+                        fs.push('|');
                     }
-                ))
-            }
+                    fs.push_str(&vident.to_string());
 
-            let sym = mksym(&fs, "fmt");
-            exprs.push(quote!(
-                f.str(&binfmt::export::str(#sym));
-            ));
-            exprs.push(quote!(match self {
-                #(#arms)*
-            }));
+                    let mut pats = quote!();
+                    let exprs = fields(
+                        &var.fields,
+                        &mut fs,
+                        Kind::Enum {
+                            patterns: &mut pats,
+                        },
+                    );
+
+                    arms.push(quote!(
+                        #ident::#vident #pats => {
+                            f.u8(&#i);
+                            #(#exprs)*
+                        }
+                    ))
+                }
+
+                let sym = mksym(&fs, "fmt");
+                exprs.push(quote!(
+                    f.str(&binfmt::export::str(#sym));
+                ));
+                exprs.push(quote!(match self {
+                    #(#arms)*
+                }));
+            }
         }
 
         Data::Struct(ds) => {
