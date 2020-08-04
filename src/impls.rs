@@ -54,7 +54,7 @@ impl Format for Str {
     fn format(&self, fmt: &mut Formatter) {
         let t = internp!("{:str}");
         fmt.u8(&t);
-        fmt.str(self);
+        fmt.istr(self);
     }
 }
 

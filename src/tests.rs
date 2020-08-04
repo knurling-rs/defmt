@@ -11,6 +11,11 @@ fn log_levels() {
 }
 
 #[test]
+fn str() {
+    binfmt::info!("Hello, {:str}", "world");
+}
+
+#[test]
 fn trailing_comma() {
     binfmt::trace!("test trace",);
     binfmt::debug!("test debug",);

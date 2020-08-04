@@ -412,7 +412,7 @@ fn log(level: MLevel, ts: TokenStream) -> TokenStream {
             if let Some(mut _fmt_) = binfmt::export::acquire() {
                 match (binfmt::export::timestamp(), #(&#args),*) {
                     (ts, #(#pats),*) => {
-                        _fmt_.str(&binfmt::export::str(#sym));
+                        _fmt_.istr(&binfmt::export::istr(#sym));
                         _fmt_.leb64(ts);
                         #(#exprs;)*
                         binfmt::export::release(_fmt_)
@@ -478,7 +478,7 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
     quote!({
         match (&mut #f, binfmt::export::timestamp(), #(&#args),*) {
             (_fmt_, ts, #(#pats),*) => {
-                _fmt_.str(&binfmt::export::str(#sym));
+                _fmt_.istr(&binfmt::export::istr(#sym));
                 _fmt_.leb64(ts);
                 #(#exprs;)*
             }
@@ -520,7 +520,7 @@ pub fn intern(ts: TokenStream) -> TokenStream {
 
     let sym = mksym(&ls, "str");
     quote!({
-        binfmt::export::str(#sym)
+        binfmt::export::istr(#sym)
     })
     .into()
 }
@@ -585,7 +585,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
     let sym = mksym(&ls, "fmt");
     quote!(match (#fmt, #(&#args),*) {
         (ref mut _fmt_, #(#pats),*) => {
-            _fmt_.str(&binfmt::export::str(#sym));
+            _fmt_.istr(&binfmt::export::istr(#sym));
             #(#exprs;)*
         }
     })
