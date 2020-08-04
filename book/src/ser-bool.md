@@ -4,6 +4,7 @@
 Booleans are compressed in bytes, bitflags-style.
 
 ``` rust
+# extern crate binfmt;
 binfmt::error!("x: {:bool}, y: {:bool}, z: {:bool}", false, false, true);
 // on the wire: [1, 0b001]
 //  string index ^  ^^^^^ the booleans: `0bxyz`
@@ -16,6 +17,7 @@ fits up to 7 more bools.
 If more than 0 but less than 8 `{:bool}`s have been encountered at the end of the log frame, a byte containing them will be emitted last.
 
 ``` rust
+# extern crate binfmt;
 binfmt::error!("x: {:bool}, y: {:u8}, z: {:bool}", false, 0xff, true);
 // on the wire: [1, 0xff, 0b01]
 //  string index ^  ^^^^^ ^^^^ the booleans: `0bxz`

@@ -12,6 +12,7 @@ The function is not `unsafe` meaning that it must be thread-safe and interrupt-s
 To omit timestamp information use this `#[timestamp]` function:
 
 ``` rust
+# extern crate binfmt;
 #[binfmt::timestamp]
 fn timestamp() -> u64 {
     0
@@ -23,6 +24,8 @@ fn timestamp() -> u64 {
 A simple `timestamp` function that does not depend on device specific features and it's good enough for development is shown below:
 
 ``` rust
+# extern crate binfmt;
+# use std::sync::atomic::{AtomicUsize, Ordering};
 // WARNING may overflow and wrap-around in long lived apps
 #[binfmt::timestamp]
 fn timestamp() -> u64 {
@@ -37,6 +40,11 @@ A `timestamp` function that uses a device-specific monotonic timer can directly 
 It's OK if the function returns `0` while the timer is disabled.
 
 ``` rust
+# extern crate binfmt;
+# fn monotonic_timer_counter_register() -> *mut u32 {
+#     static mut X: u32 = 0;
+#     unsafe { &mut X as *mut u32 }
+# }
 // WARNING may overflow and wrap-around in long lived apps
 #[binfmt::timestamp]
 fn timestamp() -> u64 {
@@ -44,11 +52,13 @@ fn timestamp() -> u64 {
     unsafe { monotonic_timer_counter_register().read_volatile() as u64 }
 }
 
-fn main() -> ! {
-    info!(..); // timestamp = 0
-    debug!(..); // timestamp = 0
+# fn enable_monotonic_counter() {}
+fn main() {
+    binfmt::info!(".."); // timestamp = 0
+    binfmt::debug!(".."); // timestamp = 0
     enable_monotonic_counter();
-    info!(..); // timestamp >= 0
+    binfmt::info!(".."); // timestamp >= 0
+    // ..
 }
 ```
 
@@ -59,10 +69,10 @@ Some of them may provide functionality to make one 32-bit counter increase the c
 Where that functionality is not available, a 64-bit counter can be emulated using interrupts:
 
 ``` rust
+# use std::sync::atomic::{AtomicU32, Ordering};
 static OVERFLOW_COUNT: AtomicU32 = AtomicU32::new(0);
 
-// NOTE must run at highest priority
-#[interrupt]
+// NOTE interrupt running at highest priority
 fn on_first_counter_overflow() {
     let ord = Ordering::Relaxed;
     OVERFLOW_COUNT.store(OVERFLOW_COUNT.load(ord) + 1, ord);

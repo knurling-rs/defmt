@@ -7,6 +7,12 @@ So the log macros may expand to something like this:
 (let's ignore data races / race conditions for now)
 
 ``` rust
+# struct Logger;
+# impl Logger {
+#     fn acquire() -> Option<Self> { None }
+#     fn serialize_interned_string_and_etc(&self) {}
+# }
+# fn release<T>(_: T) {}
 if let Some(logger) = Logger::acquire() {
     logger.serialize_interned_string_and_etc();
     release(logger); // <- logger can be acquired again after this

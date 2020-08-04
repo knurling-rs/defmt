@@ -4,6 +4,8 @@
 When paired with a positional parameter it can be used to display the bitfields of a register.
 
 ``` rust
+# extern crate binfmt;
+# let pcnf1 = 0u32;
 // -> TRACE: PCNF1 { MAXLEN: 125, STATLEN: 3, BALEN: 0b010 }
 binfmt::trace!(
     "PCNF1: {{ MAXLEN: {0:0..8}, STATLEN: {0:8..16}, BALEN: {0:16..19} }}",

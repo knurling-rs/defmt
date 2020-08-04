@@ -3,7 +3,7 @@
 The linker hates it when it finds two symbol that have the same name.
 For example, this is an error:
 
-``` rust
+``` rust,ignore
 #[no_mangle]
 static X: u32 = 0;
 
@@ -18,6 +18,7 @@ How can this occur in logging?
 The user may write:
 
 ``` rust
+# extern crate binfmt;
 fn foo() {
     binfmt::info!("foo started ..");
     // ..
@@ -46,16 +47,20 @@ Now these two macro invocations will produce something like this:
 
 ``` rust
 // first info! invocation
-#[export_name = ".. DONE@1379186119"]
-#[link_section = ".."]
-static SYM: u8 = 0;
+{
+    #[export_name = ".. DONE@1379186119"]
+    #[link_section = ".."]
+    static SYM: u8 = 0;
+}
 
 // ..
 
 // second info! invocation
-#[export_name = ".. DONE@346188945"]
-#[link_section = ".."]
-static SYM: u8 = 0;
+{
+    #[export_name = ".. DONE@346188945"]
+    #[link_section = ".."]
+    static SYM: u8 = 0;
+}
 ```
 
 These symbols do not collide and the program will link correctly.

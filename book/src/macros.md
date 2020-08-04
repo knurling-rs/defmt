@@ -8,12 +8,17 @@ Escaping rules are the same: the characters `{` and `}` are escaped as `{{` and 
 The biggest different is in the supported formatting parameters (`:?`, `:>4`, `:04`).
 
 ``` rust
+# extern crate binfmt;
+# let len = 80u8;
 // -> INFO:  message arrived (length=80)
 binfmt::info!(
     "message arrived (length={:?})",
     len /*: usize */,
 );
 
+# struct Message;
+# impl Message { fn header(&self) -> u8 { 0 } }
+# let message = Message;
 // -> DEBUG: Header { source: 2, destination: 3, sequence: 16 }
 binfmt::debug!("{:?}", message.header() /*: Header */);
 ```
@@ -23,6 +28,8 @@ The `:?` formatting parameter indicates that the `Format` trait will be used.
 When `:?` is used the corresponding argument must implement the `Format` trait.
 
 ``` rust
+# extern crate binfmt;
+# let x = 0;
 binfmt::trace!("{:?}", x);
 //                     ^ must implement the `Format` trait
 ```

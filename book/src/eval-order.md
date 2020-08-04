@@ -3,10 +3,12 @@
 Consider this log invocation:
 
 ``` rust
+# extern crate binfmt;
 binfmt::info!("x={:?}", foo());
 
-fn foo() {
+fn foo() -> u8 {
     binfmt::info!("Hello");
+    42
 }
 ```
 
@@ -16,6 +18,11 @@ Something like this:
 (`core::fmt` does a similar `match` operation)
 
 ``` rust
+# struct Logger;
+# impl Logger {
+#     fn acquire() -> Option<Self> { None }
+# }
+# fn foo() -> u8 { 0 }
 match (foo()) { // evaluate formatting arguments
     (_0) => {
         if let Some(logger) = Logger::acquire() {

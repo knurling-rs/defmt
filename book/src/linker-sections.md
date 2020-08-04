@@ -32,6 +32,7 @@ And the string interning that each logging macro does uses a different input lin
 So this code:
 
 ``` rust
+# extern crate binfmt;
 binfmt::warn!("Hello");
 binfmt::warn!("Hi");
 
@@ -43,16 +44,20 @@ Would expand to this:
 
 ``` rust
 // first warn! invocation
-#[export_name = "Hello@1379186119"]
-#[link_section = ".binfmt.warn.1379186119"]
-static SYM: u8 = 0;
+{
+    #[export_name = "Hello@1379186119"]
+    #[link_section = ".binfmt.warn.1379186119"]
+    static SYM: u8 = 0;
+}
 
 // ..
 
 // first error! invocation
-#[export_name = "Bye@346188945"]
-#[link_section = ".binfmt.error.346188945"]
-static SYM: u8 = 0;
+{
+    #[export_name = "Bye@346188945"]
+    #[link_section = ".binfmt.error.346188945"]
+    static SYM: u8 = 0;
+}
 ```
 
 Then after linking we'll see something like this in the output of `nm`:

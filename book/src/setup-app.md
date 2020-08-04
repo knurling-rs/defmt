@@ -57,6 +57,7 @@ The function should be implemented using a non-decreasing hardware counter but h
 No timestamps:
 
 ``` rust
+# extern crate binfmt;
 #[binfmt::timestamp]
 fn no_timestamp() -> u64 {
     0
@@ -66,6 +67,8 @@ fn no_timestamp() -> u64 {
 Virtual timestamps:
 
 ``` rust
+# extern crate binfmt;
+# use std::sync::atomic::{AtomicUsize, Ordering};
 // WARNING may overflow and wrap-around in long lived apps
 #[binfmt::timestamp]
 fn virtual_timestamp() -> u64 {
