@@ -13,7 +13,7 @@ cortex-m-rt = "0.6.10"
 cortex-m-semihosting = "0.3.3"
 embedded-hal = "0.2.4"
 nrf52840-hal = "0.10.0"
-panic-halt = "0.2.0"
+panic-probe = { path = "../panic-probe" }
 
 [features]
 binfmt-default = []
