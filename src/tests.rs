@@ -13,6 +13,9 @@ fn log_levels() {
 #[test]
 fn str() {
     binfmt::info!("Hello, {:str}", "world");
+
+    let world = binfmt::intern!("world");
+    binfmt::info!("Hello, {:istr}", world);
 }
 
 #[test]

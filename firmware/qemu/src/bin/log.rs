@@ -43,6 +43,10 @@ fn main() -> ! {
     binfmt::info!("{:?}", S { x: 1, y: 256 });
     binfmt::info!("{:?}", X { y: Y { z: 42 } });
 
+    let interned = binfmt::intern!("interned string");
+    binfmt::info!("&str = {:str}", "string slice");
+    binfmt::info!("&Str = {:istr}", interned);
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
