@@ -301,7 +301,7 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                             }
                             Kind::Enum { .. } => {
                                 let method = if ty == "?" {
-                                    format_ident!("format")
+                                    format_ident!("fmt")
                                 } else {
                                     format_ident!("{}", ty)
                                 };
@@ -320,7 +320,7 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                             Kind::Enum { .. } => {
                                 let ident = format_ident!("arg{}", i);
                                 let method = if ty == "?" {
-                                    format_ident!("format")
+                                    format_ident!("fmt")
                                 } else {
                                     format_ident!("{}", ty)
                                 };
