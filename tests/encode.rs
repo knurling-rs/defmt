@@ -140,7 +140,7 @@ fn tuple_struct() {
     cfi(
         Struct(0x1f, 0xaaaa),
         &[
-            index, // "X({:?}, {:?})"
+            index, // "Struct({:u8}, {:u16})"
             0x1f,  // u8
             0xaa, 0xaa, // u16
         ],
