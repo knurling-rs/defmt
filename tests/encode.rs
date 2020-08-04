@@ -132,6 +132,155 @@ fn nested_struct() {
 }
 
 #[test]
+fn tuple_struct() {
+    #[derive(Format)]
+    struct Struct(u8, u16);
+
+    let index = fetch_string_index();
+    cfi(
+        Struct(0x1f, 0xaaaa),
+        &[
+            index, // "X({:?}, {:?})"
+            0x1f,  // u8
+            0xaa, 0xaa, // u16
+        ],
+    );
+}
+
+#[test]
+fn c_like_enum() {
+    #[derive(Format)]
+    #[allow(dead_code)]
+    enum Enum {
+        A,
+        B,
+        C,
+    }
+
+    let index = fetch_string_index();
+    cfi(
+        Enum::A,
+        &[
+            index, //
+            0,     // `Enum::A`
+        ],
+    );
+    let index = fetch_string_index();
+    cfi(
+        Enum::B,
+        &[
+            index, //
+            1,     // `Enum::B`
+        ],
+    );
+}
+
+#[test]
+fn uninhabited_enum() {
+    #[derive(Format)]
+    enum Void {}
+}
+
+#[test]
+fn univariant_enum() {
+    #[derive(Format)]
+    enum NoData {
+        Variant,
+    }
+
+    let index = fetch_string_index();
+    cfi(
+        NoData::Variant,
+        &[
+            index, //
+            0,     // `NoData::Variant`
+        ],
+    );
+
+    #[derive(Format)]
+    enum Data {
+        Variant(u8, u16),
+    }
+
+    let index = fetch_string_index();
+    cfi(
+        Data::Variant(0x1f, 0xaaaa),
+        &[
+            index, //
+            0,     // `Data::Variant`
+            0x1f,  // u8
+            0xaa, 0xaa, // u16
+        ],
+    );
+}
+
+#[test]
+fn nested_enum() {
+    #[derive(Format)]
+    #[allow(dead_code)]
+    enum CLike {
+        A,
+        B,
+        C,
+    }
+
+    #[derive(Format)]
+    enum Inner {
+        A(CLike, u8),
+    }
+
+    #[derive(Format)]
+    enum Outer {
+        Variant1 { pre: u8, inner: Inner, post: u8 },
+        Variant2,
+        Variant3(Inner),
+    }
+
+    let index = fetch_string_index();
+    cfi(
+        Outer::Variant1 {
+            pre: 0xEE,
+            inner: Inner::A(CLike::B, 0x07),
+            post: 0xAB,
+        },
+        &[
+            index,         //
+            0,             // `Outer::Variant1`
+            0xEE,          // u8 pre
+            inc(index, 1), // `Inner`'s formatting string
+            0,             // `Inner::A`
+            inc(index, 2), // `CLike`'s formatting string
+            1,             // `CLike::B`
+            0x07,          // u8
+            0xAB,          // u8 post
+        ],
+    );
+
+    let index = fetch_string_index();
+    cfi(
+        Outer::Variant2,
+        &[
+            index, //
+            1,     // `Outer::Variant2`
+        ],
+    );
+
+    let index = fetch_string_index();
+    cfi(
+        Outer::Variant3(Inner::A(CLike::B, 0x07)),
+        &[
+            index,         //
+            2,             // `Outer::Variant3`
+            inc(index, 1), // `Inner`'s formatting string
+            0,             // `Inner::A`
+            inc(index, 2), // `CLike`'s formatting string
+            1,             // `CLike::B`
+            0x07,          // u8
+        ],
+    );
+}
+
+#[test]
 fn format_primitives() {
     let index = fetch_string_index();
     cfi(
