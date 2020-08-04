@@ -230,7 +230,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
                 let sym = mksym(&fs, "fmt");
                 exprs.push(quote!(
-                    f.str(&binfmt::export::str(#sym));
+                    f.istr(&binfmt::export::istr(#sym));
                 ));
                 exprs.push(quote!(match self {
                     #(#arms)*
