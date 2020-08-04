@@ -5,6 +5,7 @@ use core::{mem::MaybeUninit, ptr::NonNull};
 #[doc(hidden)]
 pub mod export;
 mod impls;
+mod leb;
 #[cfg(test)]
 mod tests;
 
@@ -147,68 +148,6 @@ pub struct Formatter {
     bytes: Vec<u8>,
 }
 
-/// # Unsafety
-/// `buf` must be large enough to hold the encoded value
-unsafe fn leb64(x: u64, buf: &mut [u8]) -> usize {
-    let mut low = x as u32;
-    let mut high = (x >> 32) as u32;
-
-    let mut i = 0;
-    loop {
-        let mut byte = (low & 0x7f) as u8;
-        low >>= 7;
-        if low != 0 {
-            byte |= 0x80;
-        }
-
-        *buf.get_unchecked_mut(i) = byte;
-        i += 1;
-        if low == 0 {
-            break;
-        }
-    }
-
-    if high == 0 {
-        return i;
-    }
-
-    for j in (i - 1)..4 {
-        *buf.get_unchecked_mut(j) = 0x80;
-    }
-
-    if i != 5 {
-        *buf.get_unchecked_mut(4) = 0;
-    }
-
-    i = 4;
-    *buf.get_unchecked_mut(i) |= (high as u8 & 0b111) << 4;
-    high >>= 3;
-
-    if high != 0 {
-        *buf.get_unchecked_mut(i) |= 0x80;
-    }
-
-    i += 1;
-
-    if high == 0 {
-        return i;
-    }
-
-    loop {
-        let mut byte = (high & 0x7f) as u8;
-        high >>= 7;
-        if high != 0 {
-            byte |= 0x80;
-        }
-
-        *buf.get_unchecked_mut(i) = byte;
-        i += 1;
-        if high == 0 {
-            return i;
-        }
-    }
-}
-
 impl Formatter {
     /// Only for testing on x86_64
     #[cfg(target_arch = "x86_64")]
@@ -273,7 +212,7 @@ impl Formatter {
     #[doc(hidden)]
     pub fn leb64(&mut self, x: u64) {
         let mut buf: [u8; 10] = unsafe { MaybeUninit::uninit().assume_init() };
-        let i = unsafe { leb64(x, &mut buf) };
+        let i = unsafe { leb::leb64(x, &mut buf) };
         self.write(unsafe { buf.get_unchecked(..i) })
     }
 
