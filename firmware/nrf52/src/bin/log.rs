@@ -12,8 +12,8 @@ use nrf52840_hal::{
 };
 use panic_halt as _; // <- panicking behavior
 
-#[no_mangle]
-fn _binfmt_timestamp() -> u64 {
+#[binfmt::timestamp]
+fn timestamp() -> u64 {
     unsafe {
         let timer = core::mem::transmute::<_, TIMER0>(());
         timer.tasks_capture[1].write(|w| w.bits(1));
