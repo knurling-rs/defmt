@@ -196,42 +196,46 @@ pub fn format(ts: TokenStream) -> TokenStream {
                 .into();
             }
 
-            let mut arms = vec![];
-            let mut first = true;
-            for (var, i) in de.variants.iter().zip(0u8..) {
-                let vident = &var.ident;
+            if de.variants.is_empty() {
+                exprs.push(quote!(match *self {}));
+            } else {
+                let mut arms = vec![];
+                let mut first = true;
+                for (var, i) in de.variants.iter().zip(0u8..) {
+                    let vident = &var.ident;
 
-                if first {
-                    first = false;
-                } else {
-                    fs.push('|');
-                }
-                fs.push_str(&vident.to_string());
-
-                let mut pats = quote!();
-                let exprs = fields(
-                    &var.fields,
-                    &mut fs,
-                    Kind::Enum {
-                        patterns: &mut pats,
-                    },
-                );
-
-                arms.push(quote!(
-                    #ident::#vident #pats => {
-                        f.u8(&#i);
-                        #(#exprs)*
+                    if first {
+                        first = false;
+                    } else {
+                        fs.push('|');
                     }
-                ))
-            }
+                    fs.push_str(&vident.to_string());
 
-            let sym = mksym(&fs, "fmt");
-            exprs.push(quote!(
-                f.str(&binfmt::export::str(#sym));
-            ));
-            exprs.push(quote!(match self {
-                #(#arms)*
-            }));
+                    let mut pats = quote!();
+                    let exprs = fields(
+                        &var.fields,
+                        &mut fs,
+                        Kind::Enum {
+                            patterns: &mut pats,
+                        },
+                    );
+
+                    arms.push(quote!(
+                        #ident::#vident #pats => {
+                            f.u8(&#i);
+                            #(#exprs;)*
+                        }
+                    ))
+                }
+
+                let sym = mksym(&fs, "fmt");
+                exprs.push(quote!(
+                    f.istr(&binfmt::export::istr(#sym));
+                ));
+                exprs.push(quote!(match self {
+                    #(#arms)*
+                }));
+            }
         }
 
         Data::Struct(ds) => {
@@ -287,30 +291,7 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                     } else {
                         format.push_str(", ");
                     }
-                    let ty = match &f.ty {
-                        Type::Path(p) => {
-                            if let Some(ident) = p.path.get_ident() {
-                                if ident == "u8" {
-                                    "u8"
-                                } else if ident == "u16" {
-                                    "u16"
-                                } else if ident == "u32" {
-                                    "u32"
-                                } else if ident == "i8" {
-                                    "i8"
-                                } else if ident == "i16" {
-                                    "i16"
-                                } else if ident == "i32" {
-                                    "i32"
-                                } else {
-                                    "?"
-                                }
-                            } else {
-                                "?"
-                            }
-                        }
-                        _ => "?",
-                    };
+                    let ty = as_native_type(&f.ty).unwrap_or_else(|| "?".to_string());
                     if let Some(ident) = f.ident.as_ref() {
                         core::write!(format, "{}: {{:{}}}", ident, ty).ok();
 
@@ -320,7 +301,7 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                             }
                             Kind::Enum { .. } => {
                                 let method = if ty == "?" {
-                                    format_ident!("format")
+                                    format_ident!("fmt")
                                 } else {
                                     format_ident!("{}", ty)
                                 };
@@ -339,7 +320,7 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                             Kind::Enum { .. } => {
                                 let ident = format_ident!("arg{}", i);
                                 let method = if ty == "?" {
-                                    format_ident!("format")
+                                    format_ident!("fmt")
                                 } else {
                                     format_ident!("{}", ty)
                                 };
@@ -357,9 +338,9 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
 
                 if let Kind::Enum { patterns } = &mut kind {
                     if named {
-                        **patterns = quote!({ #(#pats)* })
+                        **patterns = quote!({ #(#pats),* })
                     } else {
-                        **patterns = quote!((#(#pats)*))
+                        **patterns = quote!((#(#pats),*))
                     }
                 }
             }
@@ -369,6 +350,29 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
     }
 
     list
+}
+
+/// Returns `true` if `ty_name` refers to a builtin Rust type that has native support from binfmt
+/// and does not have to go through the `Format` trait.
+///
+/// This should return `true` for all types that can be used as `{:type}`.
+///
+/// Note: This is technically incorrect, since builtin types can be shadowed. However the efficiency
+/// gains are too big to pass up, so we expect user code to not do that.
+fn as_native_type(ty: &Type) -> Option<String> {
+    match ty {
+        Type::Path(p) => match p.path.get_ident() {
+            Some(ident) => {
+                let s = ident.to_string();
+                match &*s {
+                    "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "bool" => Some(s),
+                    _ => None,
+                }
+            }
+            None => None,
+        },
+        _ => None,
+    }
 }
 
 fn is_logging_enabled(level: MLevel) -> TokenStream2 {
