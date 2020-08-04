@@ -91,6 +91,13 @@ impl Format for &[u8] {
     }
 }
 
+impl Format for bool {
+    fn format(&self, fmt: &mut Formatter) {
+        let t = internp!("{:bool}");
+        fmt.write(&[t, *self as u8]);
+    }
+}
+
 macro_rules! arrays {
     ( $($len:literal $fmt:literal,)+ ) => { $(
         impl Format for [u8; $len] {
