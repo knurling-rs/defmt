@@ -223,7 +223,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     arms.push(quote!(
                         #ident::#vident #pats => {
                             f.u8(&#i);
-                            #(#exprs)*
+                            #(#exprs;)*
                         }
                     ))
                 }
@@ -338,9 +338,9 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
 
                 if let Kind::Enum { patterns } = &mut kind {
                     if named {
-                        **patterns = quote!({ #(#pats)* })
+                        **patterns = quote!({ #(#pats),* })
                     } else {
-                        **patterns = quote!((#(#pats)*))
+                        **patterns = quote!((#(#pats),*))
                     }
                 }
             }
