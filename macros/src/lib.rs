@@ -499,7 +499,7 @@ impl Parse for Log {
             rest: if input.is_empty() {
                 None
             } else {
-                Some((input.parse()?, Punctuated::parse_separated_nonempty(input)?))
+                Some((input.parse()?, Punctuated::parse_terminated(input)?))
             },
         })
     }
@@ -627,7 +627,7 @@ impl Parse for Write {
             rest: if input.is_empty() {
                 None
             } else {
-                Some((input.parse()?, Punctuated::parse_separated_nonempty(input)?))
+                Some((input.parse()?, Punctuated::parse_terminated(input)?))
             },
         })
     }

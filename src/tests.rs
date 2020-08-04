@@ -52,3 +52,26 @@ fn log_levels() {
     binfmt::warn!("test warn");
     binfmt::error!("test error");
 }
+
+#[test]
+fn trailing_comma() {
+    binfmt::trace!("test trace",);
+    binfmt::debug!("test debug",);
+    binfmt::info!("test info",);
+    binfmt::warn!("test warn",);
+    binfmt::error!("test error",);
+
+    binfmt::trace!("test trace {:?}", 0,);
+    binfmt::debug!("test debug {:?}", 0,);
+    binfmt::info!("test info {:?}", 0,);
+    binfmt::warn!("test warn {:?}", 0,);
+    binfmt::error!("test error {:?}", 0,);
+
+    // Don't run this code, just check that it builds.
+    #[allow(unreachable_code, unused_variables)]
+    if false {
+        let fmt: binfmt::Formatter = panic!();
+        binfmt::write!(fmt, "test write",);
+        binfmt::write!(fmt, "test write {:?}", 0,);
+    }
+}
