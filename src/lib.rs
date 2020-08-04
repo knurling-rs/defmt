@@ -298,6 +298,9 @@ pub trait Write {
 /// User-defined types can `#[derive(Format)]` to get an auto-generated implementation of this
 /// trait.
 ///
+/// **Note**: The implementation of `#[derive(Format)]` assumes that no builtin types are shadowed
+/// (for example by defining a `struct u8;`). This allows it to represent them more compactly.
+///
 /// # Example
 ///
 /// It is recommended to `#[derive]` implementations of this trait:
