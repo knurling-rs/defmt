@@ -695,7 +695,7 @@ impl Codegen {
                     todo!();
                 }
                 binfmt_parser::Type::Slice => {
-                    todo!();
+                    exprs.push(quote!(_fmt_.slice(#arg)));
                 }
                 binfmt_parser::Type::F32 => {
                     todo!();
