@@ -24,6 +24,7 @@ jobs:
           #- windows-latest
           # FIXME: Reenable macOS, Windows, and nightly once binfmt is open-sourced.
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
