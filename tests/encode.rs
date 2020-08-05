@@ -281,6 +281,21 @@ fn nested_enum() {
 }
 
 #[test]
+fn slice() {
+    let index = fetch_string_index();
+    let val: &[u8] = &[23u8, 42u8];
+    cfi(
+        val,
+        &[
+            index,
+            2,      // val.len()
+            23,     // val[0]
+            42,     // val[1]
+        ],
+    )
+}
+
+#[test]
 fn format_primitives() {
     let index = fetch_string_index();
     cfi(

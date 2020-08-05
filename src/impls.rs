@@ -58,6 +58,14 @@ impl Format for Str {
     }
 }
 
+impl Format for &[u8] {
+    fn format(&self, fmt: &mut Formatter) {
+        let t = internp!("{:[u8]}");
+        fmt.u8(&t);
+        fmt.slice(self);
+    }
+}
+
 impl<T> Format for Option<T>
 where
     T: Format,

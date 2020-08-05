@@ -209,6 +209,7 @@ impl Formatter {
     }
 
     /// Implementation detail
+    /// leb64-encode `x` and write it to self.bytes
     #[doc(hidden)]
     pub fn leb64(&mut self, x: u64) {
         let mut buf: [u8; 10] = unsafe { MaybeUninit::uninit().assume_init() };
@@ -269,6 +270,12 @@ impl Formatter {
     pub fn str(&mut self, s: &str) {
         self.leb64(s.len() as u64);
         self.write(s.as_bytes());
+    }
+
+    #[doc(hidden)]
+    pub fn slice(&mut self, s: &[u8]) {
+        self.leb64(s.len() as u64);
+        self.write(s);
     }
 
     /// Implementation detail
