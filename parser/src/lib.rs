@@ -31,7 +31,9 @@ pub enum Type {
     U24,
     U32,
     U8,
+    /// Byte slice `{:[u8]}`.
     Slice,
+    Array(usize),
     F32,
 }
 
@@ -44,7 +46,7 @@ fn is_digit(c: Option<char>) -> bool {
 
 static EOF: &str = "expected `}` but string was terminated";
 
-fn parse_usize(s: &str) -> Result<Option<(usize, usize)>, &'static str> {
+fn parse_usize(s: &str) -> Result<Option<(usize, usize /* consumed */)>, &'static str> {
     if is_digit(s.chars().next()) {
         if let Some(end) = s.chars().position(|c| !is_digit(Some(c))) {
             let x = s[..end]
@@ -127,6 +129,8 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         static F32: &str = "f32}";
                         static U8: &str = "u8}";
 
+                        static ARRAY_START: &str = "[u8;";
+
                         let s = chars.as_str();
                         let ty = if s.starts_with(FMT) {
                             (0..FMT.len()).for_each(|_| drop(chars.next()));
@@ -167,9 +171,24 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         } else if s.starts_with(SLICE) {
                             (0..SLICE.len()).for_each(|_| drop(chars.next()));
                             Type::Slice
+                        } else if s.starts_with(ARRAY_START) {
+                            (0..ARRAY_START.len()).for_each(|_| drop(chars.next()));
+                            let len_index = chars
+                                .as_str()
+                                .find(|c: char| c != ' ')
+                                .ok_or("invalid array specifier")?;
+                            (0..len_index).for_each(|_| drop(chars.next()));
+                            let (len, used) = parse_usize(chars.as_str())?
+                                .ok_or("expected array length literal")?;
+                            (0..used).for_each(|_| drop(chars.next()));
+                            if !chars.as_str().starts_with("]}") {
+                                return Err("missing `]}` after array length".into());
+                            }
+                            chars.next();
+                            chars.next();
+                            Type::Array(len)
                         } else {
-                            // Bitfield syntax
-                            let (range, used) = parse_range(s).ok_or("invalid bitfield range")?;
+                            let (range, used) = parse_range(s).ok_or("invalid format argument")?;
                             (0..used).for_each(|_| drop(chars.next()));
                             if !chars.as_str().starts_with("}") {
                                 return Err("missing `}` after bitfield range".into());
@@ -531,5 +550,54 @@ mod tests {
         assert!(super::parse("{:..4}").is_err());
         assert!(super::parse("{:0.4}").is_err());
         assert!(super::parse("{:0...4}").is_err());
+    }
+
+    #[test]
+    fn arrays() {
+        let fmt = "{:[u8; 0]}";
+        assert_eq!(
+            super::parse(fmt),
+            Ok(vec![Parameter {
+                index: 0,
+                ty: Type::Array(0),
+                span: 0..fmt.len(),
+            }])
+        );
+
+        // Space is optional.
+        let fmt = "{:[u8;42]}";
+        assert_eq!(
+            super::parse(fmt),
+            Ok(vec![Parameter {
+                index: 0,
+                ty: Type::Array(42),
+                span: 0..fmt.len(),
+            }])
+        );
+
+        // Multiple spaces are ok.
+        let fmt = "{:[u8;    257]}";
+        assert_eq!(
+            super::parse(fmt),
+            Ok(vec![Parameter {
+                index: 0,
+                ty: Type::Array(257),
+                span: 0..fmt.len(),
+            }])
+        );
+
+        // No tabs or other whitespace.
+        assert!(super::parse("{:[u8; \t 3]}").is_err());
+        assert!(super::parse("{:[u8; \n 3]}").is_err());
+        // Too large.
+        assert!(super::parse("{:[u8; 9999999999999999999999999]}").is_err());
+    }
+
+    #[test]
+    fn error_msg() {
+        assert_eq!(
+            super::parse("{:dunno}"),
+            Err("invalid format argument".into())
+        );
     }
 }

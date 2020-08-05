@@ -116,7 +116,7 @@ pub enum Arg<'t> {
         format: &'t str,
         args: Vec<Arg<'t>>,
     },
-    /// Slice
+    /// Slice or Array of bytes.
     Slice(Vec<u8>),
 }
 
@@ -272,6 +272,14 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
 
                 // note: went for the suboptimal but simple solution; optimize if necessary
                 for _ in 0..num_elements {
+                    arg_slice.push(bytes.read_u8().map_err(drop)?);
+                }
+                args.push(Arg::Slice(arg_slice.to_vec()));
+            }
+            Type::Array(len) => {
+                let mut arg_slice = vec![];
+                // note: went for the suboptimal but simple solution; optimize if necessary
+                for _ in 0..len {
                     arg_slice.push(bytes.read_u8().map_err(drop)?);
                 }
                 args.push(Arg::Slice(arg_slice.to_vec()));
