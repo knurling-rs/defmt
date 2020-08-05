@@ -287,8 +287,8 @@ fn slice() {
     cfi(
         val,
         &[
-            index, // todo
-            2,     // val.len()
+            index,
+            2,      // val.len()
             23,     // val[0]
             42,     // val[1]
         ],
