@@ -376,3 +376,16 @@ fn format_primitives() {
         ],
     );
 }
+
+#[test]
+fn istr() {
+    let index = fetch_string_index();
+    let interned = binfmt::intern!("interned string contents");
+    cfi(
+        interned,
+        &[
+            inc(index, 1), // "{:istr}"
+            index,
+        ],
+    );
+}

@@ -100,18 +100,23 @@ impl core::fmt::Display for DisplayFrame<'_> {
 // NOTE follows `parser::Type`
 #[derive(Debug, PartialEq)]
 pub enum Arg<'t> {
-    // Bool
+    /// Bool
     Bool(bool),
     F32(f32),
-    // U8, U16, U24 and U32
+    /// U8, U16, U24 and U32
     Uxx(u64),
-    // I8, I16, I24 and I32
+    /// I8, I16, I24 and I32
     Ixx(i64),
-    // Str
+    /// Str
     Str(String),
-    // Format
-    Format { format: &'t str, args: Vec<Arg<'t>> },
-    // Slice
+    /// Interned string
+    IStr(&'t str),
+    /// Format
+    Format {
+        format: &'t str,
+        args: Vec<Arg<'t>>,
+    },
+    /// Slice
     Slice(Vec<u8>),
 }
 
@@ -123,6 +128,7 @@ impl fmt::Display for Arg<'_> {
             Arg::Uxx(x) => write!(f, "{}", x),
             Arg::Ixx(x) => write!(f, "{}", x),
             Arg::Str(x) => write!(f, "{}", x),
+            Arg::IStr(x) => write!(f, "{}", x),
             Arg::Format { format, args } => f.write_str(&format_args(format, args)),
             Arg::Slice(x) => write!(f, "{:?}", x),
         }
@@ -192,7 +198,7 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
             Type::Format => {
                 let index = leb128::read::unsigned(bytes).map_err(drop)?;
                 let (level, format) = table.get(index as usize)?;
-                // not well-formed
+                // Auxiliary format strings must not have a log level associated with them.
                 if level != None {
                     return Err(());
                 }
@@ -247,6 +253,17 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 let arg_str = String::from_utf8(arg_str_bytes).unwrap();
 
                 args.push(Arg::Str(arg_str));
+            }
+            Type::IStr => {
+                let str_index = leb128::read::unsigned(bytes).map_err(drop)? as usize;
+
+                let (level, string) = table.get(str_index as usize)?;
+                // Interned strings must not have a log level associated with them.
+                if level != None {
+                    return Err(());
+                }
+
+                args.push(Arg::IStr(string));
             }
             Type::Slice => {
                 // only supports byte slices

@@ -676,6 +676,9 @@ impl Codegen {
                 binfmt_parser::Type::Str => {
                     exprs.push(quote!(_fmt_.str(#arg)));
                 }
+                binfmt_parser::Type::IStr => {
+                    exprs.push(quote!(_fmt_.istr(#arg)));
+                }
                 binfmt_parser::Type::U16 => {
                     exprs.push(quote!(_fmt_.u16(#arg)));
                 }

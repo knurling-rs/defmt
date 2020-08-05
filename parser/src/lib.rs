@@ -23,7 +23,10 @@ pub enum Type {
     I16,
     I32,
     I8,
-    Str, // used for string values (i.e. passed directly; not as interned string indices)
+    /// String slice (i.e. passed directly; not as interned string indices).
+    Str,
+    /// Interned string index.
+    IStr,
     U16,
     U24,
     U32,
@@ -117,6 +120,7 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         static I8: &str = "i8}";
                         static SLICE: &str = "[u8]}";
                         static STR: &str = "str}";
+                        static ISTR: &str = "istr}";
                         static U16: &str = "u16}";
                         static U24: &str = "u24}";
                         static U32: &str = "u32}";
@@ -130,6 +134,9 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         } else if s.starts_with(STR) {
                             (0..STR.len()).for_each(|_| drop(chars.next()));
                             Type::Str
+                        } else if s.starts_with(ISTR) {
+                            (0..ISTR.len()).for_each(|_| drop(chars.next()));
+                            Type::IStr
                         } else if s.starts_with(U8) {
                             (0..U8.len()).for_each(|_| drop(chars.next()));
                             Type::U8
