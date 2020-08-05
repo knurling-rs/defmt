@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
+use decoder::Table;
 use xmas_elf::ElfFile;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -51,32 +52,40 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     let mut frames = vec![];
     let mut readbuf = [0; 256];
-    let mut exit_code = None;
-    let mut exited = false;
+    let exit_code;
     loop {
         let n = stdout.read(&mut readbuf)?;
 
         if n != 0 {
             frames.extend_from_slice(&readbuf[..n]);
 
-            if let Ok((frame, consumed)) = decoder::decode(&frames, &table) {
-                println!("{}", frame.display(true));
-                let n = frames.len();
-                frames.rotate_left(consumed);
-                frames.truncate(n - consumed);
-            }
-        }
-
-        if exited {
-            break;
+            decode(&mut frames, &table);
         }
 
         if let Some(status) = child.try_wait()? {
             exit_code = status.code();
-            // try to read once more before breaking out from this loop
-            exited = true;
+
+            stdout.read_to_end(&mut frames)?;
+            decode(&mut frames, &table);
+            if !frames.is_empty() {
+                return Err(anyhow!(
+                    "couldn't decode all data (remaining: {:x?})",
+                    frames
+                ));
+            }
+
+            break;
         }
     }
 
     Ok(exit_code)
+}
+
+fn decode(frames: &mut Vec<u8>, table: &Table) {
+    while let Ok((frame, consumed)) = decoder::decode(&frames, &table) {
+        println!("{}", frame.display(true));
+        let n = frames.len();
+        frames.rotate_left(consumed);
+        frames.truncate(n - consumed);
+    }
 }
