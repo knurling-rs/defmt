@@ -365,7 +365,7 @@ fn as_native_type(ty: &Type) -> Option<String> {
             Some(ident) => {
                 let s = ident.to_string();
                 match &*s {
-                    "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "bool" => Some(s),
+                    "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "f32" | "bool" => Some(s),
                     _ => None,
                 }
             }
@@ -701,7 +701,7 @@ impl Codegen {
                     exprs.push(quote!(_fmt_.slice(#arg)));
                 }
                 binfmt_parser::Type::F32 => {
-                    todo!();
+                    exprs.push(quote!(_fmt_.f32(#arg)));
                 }
             }
             pats.push(arg);

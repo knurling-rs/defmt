@@ -344,16 +344,27 @@ fn format_primitives() {
     );
 
     cfi(
+        5.13f32,
+        &[
+            inc(index, 5), // "{:f32}"
+            246,
+            40,
+            164,
+            64,
+        ],
+    );
+
+    cfi(
         42i8,
         &[
-            inc(index, 5), // "{:i8}"
+            inc(index, 6), // "{:i8}"
             42,
         ],
     );
     cfi(
         -42i8,
         &[
-            inc(index, 6), // "{:i8}"
+            inc(index, 7), // "{:i8}"
             -42i8 as u8,
         ],
     );
@@ -361,7 +372,7 @@ fn format_primitives() {
     cfi(
         None::<u8>,
         &[
-            inc(index, 7), // "<option-format-string>"
+            inc(index, 8), // "<option-format-string>"
             0,             // None discriminant
         ],
     );
@@ -369,9 +380,9 @@ fn format_primitives() {
     cfi(
         Some(42u8),
         &[
-            inc(index, 8), // "<option-format-string>"
+            inc(index, 9), // "<option-format-string>"
             1,             // Some discriminant
-            inc(index, 9), // "{:u8}"
+            inc(index, 10), // "{:u8}"
             42,            // Some.0 field
         ],
     );

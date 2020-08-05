@@ -50,6 +50,15 @@ impl Format for u32 {
     }
 }
 
+impl Format for f32 {
+    fn format(&self, fmt: &mut Formatter) {
+        // to_bits then to_le_bytes
+        let t = internp!("{:f32}");
+        fmt.u8(&t);
+        fmt.f32(self);
+    }
+}
+
 impl Format for Str {
     fn format(&self, fmt: &mut Formatter) {
         let t = internp!("{:str}");
