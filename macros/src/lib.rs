@@ -664,7 +664,7 @@ impl Codegen {
             })
             .collect::<Vec<_>>();
 
-        let actual_param_count = parsed_params
+        let actual_argument_count = parsed_params
             .iter()
             .map(|param| param.index + 1)
             .max()
@@ -673,8 +673,9 @@ impl Codegen {
         let mut exprs = vec![];
         let mut pats = vec![];
 
-        for i in 0..actual_param_count {
+        for i in 0..actual_argument_count {
             let arg = format_ident!("arg{}", i);
+            // find first use of this argument and return its type
             let param = parsed_params.iter().find(|param| param.index == i).unwrap();
             match param.ty {
                 binfmt_parser::Type::Format => {
@@ -717,7 +718,31 @@ impl Codegen {
                     exprs.push(quote!(_fmt_.usize(#arg)));
                 }
                 binfmt_parser::Type::BitField(_) => {
-                    todo!();
+                    // TODO reused in decoder::parse_args(), can we share this somehow without Cargo bug troubles?
+                    let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
+                    let largest_bit_index = all_bitfields
+                        .map(|param| match &param.ty {
+                            binfmt_parser::Type::BitField(range) => range.end,
+                            _ => unreachable!(),
+                        })
+                        .max()
+                        .unwrap();
+
+                    match largest_bit_index {
+                        0..=8 => {
+                            exprs.push(quote!(_fmt_.u8(#arg)));
+                        }
+                        9..=16 => {
+                            exprs.push(quote!(_fmt_.u16(#arg)));
+                        }
+                        17..=24 => {
+                            exprs.push(quote!(_fmt_.u24(#arg)));
+                        }
+                        25..=32 => {
+                            exprs.push(quote!(_fmt_.u32(#arg)));
+                        }
+                        _ => unreachable!(),
+                    }
                 }
                 binfmt_parser::Type::Bool => {
                     exprs.push(quote!(_fmt_.bool(#arg)));
@@ -750,22 +775,22 @@ impl Codegen {
             pats.push(arg);
         }
 
-        if num_args < actual_param_count {
+        if num_args < actual_argument_count {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but only {} were provided",
-                    actual_param_count, num_args
+                    actual_argument_count, num_args
                 ),
             ));
         }
 
-        if num_args > actual_param_count {
+        if num_args > actual_argument_count {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but {} were provided",
-                    actual_param_count, num_args
+                    actual_argument_count, num_args
                 ),
             ));
         }

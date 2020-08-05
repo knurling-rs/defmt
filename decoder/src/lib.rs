@@ -2,7 +2,9 @@
 
 use core::fmt::{self, Write as _};
 use core::ops::Range;
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
+use std::mem;
 
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
@@ -250,13 +252,15 @@ fn get_format<'t>(
     Ok(format)
 }
 
+// Deserialize the arguments contained in `bytes`
+// based on information from the format string `format` and `table`
 fn parse_args<'t>(
     bytes: &mut &[u8],
     format: &str,
     table: &'t Table,
     format_list: &mut Option<FormatList<'_, 't>>,
 ) -> Result<Vec<Arg<'t>>, ()> {
-    let mut args = vec![];
+    let mut args = vec![]; // will contain the deserialized arguments on return
     let mut params = binfmt_parser::parse(format)
         .map_err(drop)?
         .iter()
@@ -267,16 +271,38 @@ fn parse_args<'t>(
         .collect::<Vec<_>>();
 
     // sort & dedup to ensure that format string args can be addressed by index too
-    params.sort_by_key(|param| param.index);
-    params.dedup_by_key(|param| param.index);
+    params.sort_by(|a, b| {
+        if a.index == b.index {
+            match (&a.ty, &b.ty) {
+                (Type::BitField(a_range), Type::BitField(b_range)) => b_range.end.cmp(&a_range.end),
+                _ => Ordering::Equal,
+            }
+        } else {
+            a.index.cmp(&b.index)
+        }
+    });
+
+    params.dedup_by(|a, b| {
+        if a.index == b.index {
+            match (&a.ty, &b.ty) {
+                (Type::BitField(a_range), Type::BitField(b_range)) => a_range.end < b_range.end,
+                /* reusing an arg for bitfield- and non bitfield params is not allowed */
+                (Type::BitField(_), _) => unreachable!(),
+                (_, Type::BitField(_)) => unreachable!(),
+                _ => true,
+            }
+        } else {
+            false
+        }
+    });
 
     const MAX_NUM_BOOL_FLAGS: usize = 8;
     let mut empty_bool_indices: Vec<usize> = vec![]; // points in `args` that need to be filled with
                                                      // booleans once the whole compression block has
                                                      // been consumed
 
-    for param in params {
-        match param.ty {
+    for param in &params {
+        match &param.ty {
             Type::U8 => {
                 let data = bytes.read_u8().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
@@ -401,7 +427,29 @@ fn parse_args<'t>(
                 let data = bytes.read_u32::<LE>().map_err(drop)?;
                 args.push(Arg::F32(f32::from_bits(data)));
             }
-            Type::BitField(_) => todo!(),
+            Type::BitField(range) => {
+                let data: u64;
+
+                match range.end {
+                    0..=8 => {
+                        data = bytes.read_u8().map_err(drop)? as u64;
+                    }
+                    0..=16 => {
+                        data = bytes.read_u16::<LE>().map_err(drop)? as u64;
+                    }
+                    0..=24 => {
+                        data = bytes.read_u24::<LE>().map_err(drop)? as u64;
+                    }
+                    0..=32 => {
+                        data = bytes.read_u32::<LE>().map_err(drop)? as u64;
+                    }
+                    _ => {
+                        unreachable!();
+                    }
+                }
+
+                args.push(Arg::Uxx(data));
+            }
             Type::Str => {
                 let str_len = leb128::read::unsigned(bytes).map_err(drop)? as usize;
                 let mut arg_str_bytes = vec![];
@@ -437,7 +485,7 @@ fn parse_args<'t>(
             Type::Array(len) => {
                 let mut arg_slice = vec![];
                 // note: went for the suboptimal but simple solution; optimize if necessary
-                for _ in 0..len {
+                for _ in 0..*len {
                     arg_slice.push(bytes.read_u8().map_err(drop)?);
                 }
                 args.push(Arg::Slice(arg_slice.to_vec()));
@@ -463,7 +511,23 @@ fn format_args(format: &str, args: &[Arg]) -> String {
                 buf.push_str(&lit);
             }
             Fragment::Parameter(param) => {
-                write!(&mut buf, "{}", args[param.index]).ok();
+                match param.ty {
+                    Type::BitField(range) => {
+                        match args[param.index] {
+                            Arg::Uxx(val) => {
+                                let left_zeroes = mem::size_of::<u64>() * 8 - range.end as usize;
+                                let right_zeroes = left_zeroes + range.start as usize;
+                                // isolate the desired bitfields
+                                let bitfields = (val << left_zeroes) >> right_zeroes;
+                                write!(&mut buf, "{:#b}", bitfields).ok();
+                            }
+                            _ => unreachable!(),
+                        };
+                    }
+                    _ => {
+                        write!(&mut buf, "{}", args[param.index]).ok();
+                    }
+                }
             }
         }
     }
@@ -881,6 +945,91 @@ mod tests {
         );
     }
     */
+
+    #[test]
+    fn bitfields() {
+        let bytes = [
+            0,           // index
+            2,           // timestamp
+            0b1110_0101, // u8
+        ];
+        decode_and_expect(
+            "x: {0:0..4}, y: {0:3..8}",
+            &bytes,
+            "0.000002 INFO x: 0b101, y: 0b11100",
+        );
+    }
+
+    #[test]
+    fn bitfields_reverse_order() {
+        let bytes = [
+            0,           // index
+            2,           // timestamp
+            0b1101_0010, // u8
+        ];
+        decode_and_expect(
+            "x: {0:0..7}, y: {0:3..5}",
+            &bytes,
+            "0.000002 INFO x: 0b1010010, y: 0b10",
+        );
+    }
+
+    #[test]
+    fn bitfields_different_indices() {
+        let bytes = [
+            0,           // index
+            2,           // timestamp
+            0b1111_0000, // u8
+            0b1110_0101, // u8
+        ];
+        decode_and_expect(
+            "#0: {0:0..5}, #1: {1:3..8}",
+            &bytes,
+            "0.000002 INFO #0: 0b10000, #1: 0b11100",
+        );
+    }
+
+    #[test]
+    fn bitfields_u16() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            0b1111_0000,
+            0b1110_0101, // u16
+        ];
+        decode_and_expect("x: {0:7..12}", &bytes, "0.000002 INFO x: 0b1011");
+    }
+
+    #[test]
+    fn bitfields_mixed_types() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            0b1111_0000,
+            0b1110_0101, // u16
+            0b1111_0001, // u8
+        ];
+        decode_and_expect(
+            "#0: {0:7..12}, #1: {1:0..5}",
+            &bytes,
+            "0.000002 INFO #0: 0b1011, #1: 0b10001",
+        );
+    }
+
+    #[test]
+    fn bitfields_across_boundaries() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            0b1101_0010,
+            0b0110_0011, // u16
+        ];
+        decode_and_expect(
+            "bitfields {0:0..7} {0:9..14}",
+            &bytes,
+            "0.000002 INFO bitfields 0b1010010 0b10001",
+        );
+    }
 
     #[test]
     fn slice() {
