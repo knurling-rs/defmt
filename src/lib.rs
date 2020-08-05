@@ -266,6 +266,12 @@ impl Formatter {
         self.write(&b.to_le_bytes())
     }
 
+    /// Implementation detail
+    #[doc(hidden)]
+    pub fn f32(&mut self, b: &f32) {
+        self.write(&f32::to_bits(*b).to_le_bytes())
+    }
+
     #[doc(hidden)]
     pub fn str(&mut self, s: &str) {
         self.leb64(s.len() as u64);
