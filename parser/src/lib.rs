@@ -20,17 +20,19 @@ pub enum Type {
     BitField(Range<u8>),
     Bool,
     Format, // "{:?}"
+    I8,
     I16,
     I32,
-    I8,
+    Isize,
     /// String slice (i.e. passed directly; not as interned string indices).
     Str,
     /// Interned string index.
     IStr,
+    U8,
     U16,
     U24,
     U32,
-    U8,
+    Usize,
     /// Byte slice `{:[u8]}`.
     Slice,
     Array(usize),
@@ -128,6 +130,8 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         static U32: &str = "u32}";
                         static F32: &str = "f32}";
                         static U8: &str = "u8}";
+                        static USIZE: &str = "usize}";
+                        static ISIZE: &str = "isize}";
 
                         static ARRAY_START: &str = "[u8;";
 
@@ -171,6 +175,12 @@ pub fn parse(format_string: &str) -> Result<Vec<Parameter>, Cow<'static, str>> {
                         } else if s.starts_with(SLICE) {
                             (0..SLICE.len()).for_each(|_| drop(chars.next()));
                             Type::Slice
+                        } else if s.starts_with(USIZE) {
+                            (0..USIZE.len()).for_each(|_| drop(chars.next()));
+                            Type::Usize
+                        } else if s.starts_with(ISIZE) {
+                            (0..ISIZE.len()).for_each(|_| drop(chars.next()));
+                            Type::Isize
                         } else if s.starts_with(ARRAY_START) {
                             (0..ARRAY_START.len()).for_each(|_| drop(chars.next()));
                             let len_index = chars
@@ -403,6 +413,26 @@ mod tests {
             Ok(vec![Parameter {
                 index: 0,
                 ty: Type::Slice,
+                span: 0..fmt.len(),
+            }])
+        );
+
+        let fmt = "{:usize}";
+        assert_eq!(
+            super::parse(fmt),
+            Ok(vec![Parameter {
+                index: 0,
+                ty: Type::Usize,
+                span: 0..fmt.len(),
+            }])
+        );
+
+        let fmt = "{:isize}";
+        assert_eq!(
+            super::parse(fmt),
+            Ok(vec![Parameter {
+                index: 0,
+                ty: Type::Isize,
                 span: 0..fmt.len(),
             }])
         );

@@ -20,6 +20,15 @@ fn main() -> ! {
     binfmt::info!("🍕 array {:[u8; 3]}", [3, 14, 1]);
     binfmt::info!("float like a butterfly {:f32}", 5.67f32);
 
+    binfmt::info!(
+        "isize: 0 = {:isize}, -1 = {:isize}, MAX = {:isize}, MIN = {:isize}",
+        0,
+        -1,
+        isize::max_value(),
+        isize::min_value()
+    );
+    binfmt::info!("usize: 0 = {:usize}, MAX = {:usize}", 0, usize::max_value());
+
     binfmt::trace!("log trace");
     binfmt::debug!("log debug");
     binfmt::info!("log info");

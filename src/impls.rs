@@ -27,6 +27,14 @@ impl Format for i32 {
     }
 }
 
+impl Format for isize {
+    fn format(&self, fmt: &mut Formatter) {
+        let t = internp!("{:isize}");
+        fmt.u8(&t);
+        fmt.isize(self);
+    }
+}
+
 impl Format for u8 {
     fn format(&self, fmt: &mut Formatter) {
         let t = internp!("{:u8}");
@@ -47,6 +55,14 @@ impl Format for u32 {
         let t = internp!("{:u32}");
         fmt.u8(&t);
         fmt.u32(self);
+    }
+}
+
+impl Format for usize {
+    fn format(&self, fmt: &mut Formatter) {
+        let t = internp!("{:usize}");
+        fmt.u8(&t);
+        fmt.usize(self);
     }
 }
 
