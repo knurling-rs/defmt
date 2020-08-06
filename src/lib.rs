@@ -242,9 +242,7 @@ impl Formatter {
     #[doc(hidden)]
     pub fn isize(&mut self, b: &isize) {
         // Zig-zag encode the signed value.
-        let v = *b as i64;
-        let unsigned = ((v << 1) ^ (v >> 63)) as u64;
-        self.leb64(unsigned);
+        self.leb64(leb::zigzag_encode(*b as i64));
     }
 
     // TODO remove
