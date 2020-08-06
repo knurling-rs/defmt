@@ -1,6 +1,7 @@
 #![cfg_attr(not(target_arch = "x86_64"), no_std)]
 
-use core::{mem::MaybeUninit, ptr::NonNull};
+use core::mem::MaybeUninit;
+use core::ptr::NonNull;
 
 #[doc(hidden)]
 pub mod export;
@@ -212,6 +213,8 @@ impl Formatter {
     /// leb64-encode `x` and write it to self.bytes
     #[doc(hidden)]
     pub fn leb64(&mut self, x: u64) {
+        // FIXME: Avoid 64-bit arithmetic on 32-bit systems. This should only be used for
+        // pointer-sized values.
         let mut buf: [u8; 10] = unsafe { MaybeUninit::uninit().assume_init() };
         let i = unsafe { leb::leb64(x, &mut buf) };
         self.write(unsafe { buf.get_unchecked(..i) })
@@ -233,6 +236,13 @@ impl Formatter {
     #[doc(hidden)]
     pub fn i32(&mut self, b: &i32) {
         self.write(&b.to_le_bytes())
+    }
+
+    /// Implementation detail
+    #[doc(hidden)]
+    pub fn isize(&mut self, b: &isize) {
+        // Zig-zag encode the signed value.
+        self.leb64(leb::zigzag_encode(*b as i64));
     }
 
     // TODO remove
@@ -264,6 +274,12 @@ impl Formatter {
     #[doc(hidden)]
     pub fn u32(&mut self, b: &u32) {
         self.write(&b.to_le_bytes())
+    }
+
+    /// Implementation detail
+    #[doc(hidden)]
+    pub fn usize(&mut self, b: &usize) {
+        self.leb64(*b as u64);
     }
 
     /// Implementation detail

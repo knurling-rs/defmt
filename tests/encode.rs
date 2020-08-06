@@ -385,6 +385,9 @@ fn format_primitives() {
             42,             // Some.0 field
         ],
     );
+
+    cfi(-1isize, &[inc(index, 11), 0b0000_0001]);
+    cfi(-128isize, &[inc(index, 12), 0xff, 0b0000_0001]);
 }
 
 #[test]

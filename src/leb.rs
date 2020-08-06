@@ -60,6 +60,10 @@ pub(crate) unsafe fn leb64(x: u64, buf: &mut [u8]) -> usize {
     }
 }
 
+pub fn zigzag_encode(v: i64) -> u64 {
+    ((v << 1) ^ (v >> 63)) as u64
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -221,6 +221,11 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 let data = bytes.read_i8().map_err(drop)?;
                 args.push(Arg::Ixx(data as i64));
             }
+            Type::Isize => {
+                // Signed isize is encoded in zigzag-encoding.
+                let unsigned = leb128::read::unsigned(bytes).map_err(drop)?;
+                args.push(Arg::Ixx(zigzag_decode(unsigned)))
+            }
             Type::U16 => {
                 let data = bytes.read_u16::<LE>().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
@@ -234,6 +239,10 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
             Type::U32 => {
                 let data = bytes.read_u32::<LE>().map_err(drop)?;
                 args.push(Arg::Uxx(data as u64));
+            }
+            Type::Usize => {
+                let unsigned = leb128::read::unsigned(bytes).map_err(drop)?;
+                args.push(Arg::Uxx(unsigned))
             }
             Type::F32 => {
                 let data = bytes.read_u32::<LE>().map_err(drop)?;
@@ -307,6 +316,10 @@ fn format_args(format: &str, args: &[Arg]) -> String {
     }
     buf.push_str(&unescape(&format[cursor..]));
     buf
+}
+
+fn zigzag_decode(unsigned: u64) -> i64 {
+    (unsigned >> 1) as i64 ^ -((unsigned & 1) as i64)
 }
 
 #[cfg(test)]
