@@ -287,10 +287,9 @@ fn slice() {
     cfi(
         val,
         &[
-            index,
-            2,      // val.len()
-            23,     // val[0]
-            42,     // val[1]
+            index, 2,  // val.len()
+            23, // val[0]
+            42, // val[1]
         ],
     )
 }
@@ -380,10 +379,10 @@ fn format_primitives() {
     cfi(
         Some(42u8),
         &[
-            inc(index, 9), // "<option-format-string>"
-            1,             // Some discriminant
+            inc(index, 9),  // "<option-format-string>"
+            1,              // Some discriminant
             inc(index, 10), // "{:u8}"
-            42,            // Some.0 field
+            42,             // Some.0 field
         ],
     );
 }
@@ -399,4 +398,16 @@ fn istr() {
             index,
         ],
     );
+}
+
+#[test]
+fn arrays() {
+    let index = fetch_string_index();
+    cfi([], &[index]);
+
+    let index = fetch_string_index();
+    cfi([0], &[index, 0]);
+
+    let index = fetch_string_index();
+    cfi([0xff, 0xab, 0x1f], &[index, 0xff, 0xab, 0x1f]);
 }

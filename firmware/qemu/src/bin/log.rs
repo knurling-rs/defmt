@@ -16,7 +16,8 @@ fn main() -> ! {
     binfmt::info!("The answer is {:u8}", 42);
     binfmt::info!("Hello {0:u8} {0:u8}!", 42);
     binfmt::info!("Hello {1:u16} {0:u8}", 42u8, 256u16);
-    binfmt::info!("🍕 {:[u8]}", [3,14]);
+    binfmt::info!("🍕 slice {:[u8]}", [3, 14]);
+    binfmt::info!("🍕 array {:[u8; 3]}", [3, 14, 1]);
     binfmt::info!("float like a butterfly {:f32}", 5.67f32);
 
     binfmt::trace!("log trace");
@@ -47,6 +48,22 @@ fn main() -> ! {
     let interned = binfmt::intern!("interned string");
     binfmt::info!("&str = {:str}", "string slice");
     binfmt::info!("&Str = {:istr}", interned);
+
+    #[derive(Format)]
+    struct Arr {
+        arr1: [u8; 1],
+        arr0: [u8; 0],
+        arr32: [u8; 32],
+    }
+
+    binfmt::info!(
+        "{:?}",
+        Arr {
+            arr1: [0x1f],
+            arr0: [],
+            arr32: [0x55; 32]
+        }
+    );
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)

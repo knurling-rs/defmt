@@ -284,6 +284,12 @@ impl Formatter {
         self.write(s);
     }
 
+    // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
+    #[doc(hidden)]
+    pub fn array(&mut self, a: &[u8]) {
+        self.write(a);
+    }
+
     /// Implementation detail
     #[doc(hidden)]
     pub fn istr(&mut self, s: &Str) {

@@ -700,6 +700,24 @@ impl Codegen {
                 binfmt_parser::Type::Slice => {
                     exprs.push(quote!(_fmt_.slice(#arg)));
                 }
+                binfmt_parser::Type::Array(len) => {
+                    // We cast to the expected array type (which should be a no-op cast) to provoke
+                    // a type mismatch error on mismatched lengths:
+                    // ```
+                    // error[E0308]: mismatched types
+                    //   --> src/bin/log.rs:20:5
+                    //    |
+                    // 20 |     binfmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
+                    //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    //    |     |
+                    //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
+                    //    |     expected due to this
+                    // ```
+                    exprs.push(quote!(_fmt_.array({
+                        let tmp: &[u8; #len] = #arg;
+                        tmp
+                    })));
+                }
                 binfmt_parser::Type::F32 => {
                     exprs.push(quote!(_fmt_.f32(#arg)));
                 }
