@@ -22,6 +22,7 @@ fn serialize(f: &mut Formatter) {
     write!(f, "{:[:?]}", &xs[..])
     // on-the-wire: [
     //     1,  // "{:[:?]}"
+    //     2,  // `leb(xs.len())`
     //     2,  // "X {{ y: {:?} }}"  / outer tag
     //     3,  // "Y {{ z: {:u8} }}" / inner tag
     //     42, // xs[0].y.z
