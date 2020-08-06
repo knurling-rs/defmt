@@ -6,23 +6,30 @@ use crate::{Format, Formatter, Str};
 
 impl Format for i8 {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:i8}");
-        fmt.write(&[t, *self as u8]);
+        if fmt.needs_tag() {
+            let t = internp!("{:i8}");
+            fmt.u8(&t);
+        }
+        fmt.u8(&(*self as u8));
     }
 }
 
 impl Format for i16 {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:i16}");
-        let x = *self as u16;
-        fmt.write(&[t, x as u8, (x >> 8) as u8]);
+        if fmt.needs_tag() {
+            let t = internp!("{:i16}");
+            fmt.u8(&t);
+        }
+        fmt.u16(&(*self as u16))
     }
 }
 
 impl Format for i32 {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:i32}");
-        fmt.u8(&t);
+        if fmt.needs_tag() {
+            let t = internp!("{:i32}");
+            fmt.u8(&t);
+        }
         fmt.i32(self);
     }
 }
@@ -37,23 +44,30 @@ impl Format for isize {
 
 impl Format for u8 {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:u8}");
-        fmt.write(&[t, *self]);
+        if fmt.needs_tag() {
+            let t = internp!("{:u8}");
+            fmt.u8(&t);
+        }
+        fmt.u8(self)
     }
 }
 
 impl Format for u16 {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:u16}");
-        fmt.u8(&t);
+        if fmt.needs_tag() {
+            let t = internp!("{:u16}");
+            fmt.u8(&t);
+        }
         fmt.u16(self);
     }
 }
 
 impl Format for u32 {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:u32}");
-        fmt.u8(&t);
+        if fmt.needs_tag() {
+            let t = internp!("{:u32}");
+            fmt.u8(&t);
+        }
         fmt.u32(self);
     }
 }
@@ -68,26 +82,52 @@ impl Format for usize {
 
 impl Format for f32 {
     fn format(&self, fmt: &mut Formatter) {
-        // to_bits then to_le_bytes
-        let t = internp!("{:f32}");
-        fmt.u8(&t);
+        if fmt.needs_tag() {
+            let t = internp!("{:f32}");
+            fmt.u8(&t);
+        }
         fmt.f32(self);
     }
 }
 
 impl Format for Str {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:str}");
-        fmt.u8(&t);
+        if fmt.needs_tag() {
+            let t = internp!("{:str}");
+            fmt.u8(&t);
+        }
         fmt.istr(self);
     }
 }
 
-impl Format for &[u8] {
+impl<T> Format for [T]
+where
+    T: Format,
+{
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:[u8]}");
-        fmt.u8(&t);
-        fmt.slice(self);
+        if fmt.needs_tag() {
+            let t = internp!("{:[?]}");
+            fmt.u8(&t);
+        }
+        fmt.format_slice(self)
+    }
+}
+
+impl<T> Format for &'_ T
+where
+    T: Format + ?Sized,
+{
+    fn format(&self, fmt: &mut Formatter) {
+        T::format(self, fmt)
+    }
+}
+
+impl<T> Format for &'_ mut T
+where
+    T: Format + ?Sized,
+{
+    fn format(&self, fmt: &mut Formatter) {
+        T::format(self, fmt)
     }
 }
 
@@ -102,8 +142,10 @@ macro_rules! arrays {
     ( $($len:literal $fmt:literal,)+ ) => { $(
         impl Format for [u8; $len] {
             fn format(&self, fmt: &mut Formatter) {
-                let t = internp!($fmt);
-                fmt.u8(&t);
+                if fmt.needs_tag() {
+                    let t = internp!($fmt);
+                    fmt.u8(&t);
+                }
                 fmt.array(self);
             }
         }
@@ -151,11 +193,14 @@ where
     T: Format,
 {
     fn format(&self, f: &mut Formatter) {
-        let t = internp!("None|Some({})");
+        if f.needs_tag() {
+            let t = internp!("None|Some({})");
+            f.u8(&t);
+        }
         match self {
-            None => f.write(&[t, 0]),
+            None => f.u8(&0),
             Some(x) => {
-                f.write(&[t, 1]);
+                f.u8(&1);
                 x.format(f);
             }
         }
@@ -168,14 +213,17 @@ where
     E: Format,
 {
     fn format(&self, f: &mut Formatter) {
-        let t = internp!("Err({:?})|Ok({:?})");
+        if f.needs_tag() {
+            let t = internp!("Err({:?})|Ok({:?})");
+            f.u8(&t);
+        }
         match self {
             Err(e) => {
-                f.write(&[t, 0]);
+                f.u8(&0);
                 e.format(f)
             }
             Ok(x) => {
-                f.write(&[t, 1]);
+                f.u8(&1);
                 x.format(f);
             }
         }

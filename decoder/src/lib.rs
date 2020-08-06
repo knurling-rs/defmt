@@ -217,6 +217,7 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 }
             }
 
+            Type::FormatSlice => todo!(),
             Type::Format => {
                 let index = leb128::read::unsigned(bytes).map_err(drop)?;
                 let (level, format) = table.get(index as usize)?;

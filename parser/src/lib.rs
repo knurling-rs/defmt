@@ -30,7 +30,8 @@ struct Param {
 pub enum Type {
     BitField(Range<u8>),
     Bool,
-    Format, // "{:?}"
+    Format,      // "{:?}"
+    FormatSlice, // "{:[?]}"
     I8,
     I16,
     I32,
@@ -122,6 +123,7 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         "istr" => Type::IStr,
         "[u8]" => Type::Slice,
         "?" => Type::Format,
+        "[?]" => Type::FormatSlice,
         _ if s.starts_with(ARRAY_START) => {
             s = &s[ARRAY_START.len()..];
 

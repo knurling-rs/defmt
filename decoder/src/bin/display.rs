@@ -16,9 +16,9 @@ fn main() {
     };
 
     let mut bytes = vec![
-        0,  // index
-        2,  // timestamp
-        1,  // index of the struct
+        0, // index
+        2, // timestamp
+        1, // index of the struct
     ];
     bytes.extend_from_slice(&f32::to_bits(1.1e-10).to_le_bytes());
 
