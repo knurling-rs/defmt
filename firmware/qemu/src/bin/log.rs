@@ -27,6 +27,13 @@ fn main() -> ! {
         isize::max_value(),
         isize::min_value()
     );
+    binfmt::info!(
+        "isize: 0 = {:?}, -1 = {:?}, MAX = {:?}, MIN = {:?}",
+        0,
+        -1,
+        isize::max_value(),
+        isize::min_value()
+    );
     binfmt::info!("usize: 0 = {:usize}, MAX = {:usize}", 0, usize::max_value());
 
     binfmt::trace!("log trace");
