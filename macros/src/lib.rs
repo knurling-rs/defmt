@@ -231,7 +231,9 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
                 let sym = mksym(&fs, "fmt");
                 exprs.push(quote!(
-                    f.istr(&binfmt::export::istr(#sym));
+                    if f.needs_tag() {
+                        f.istr(&binfmt::export::istr(#sym));
+                    }
                 ));
                 exprs.push(quote!(match self {
                     #(#arms)*
@@ -242,6 +244,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
         Data::Struct(ds) => {
             fs = ident.to_string();
             let args = fields(&ds.fields, &mut fs, Kind::Struct);
+            // FIXME expand this `write!` and conditionally omit the tag (string index)
             exprs.push(quote!(binfmt::export::write!(f, #fs #(,#args)*);))
         }
 
@@ -301,12 +304,12 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                                 list.push(quote!(self.#ident));
                             }
                             Kind::Enum { .. } => {
-                                let method = if ty == "?" {
-                                    format_ident!("fmt")
+                                if ty == "?" {
+                                    list.push(quote!(f.fmt(#ident, false)));
                                 } else {
-                                    format_ident!("{}", ty)
-                                };
-                                list.push(quote!(f.#method(#ident)));
+                                    let method = format_ident!("{}", ty);
+                                    list.push(quote!(f.#method(#ident)));
+                                }
                                 pats.push(ident.clone());
                             }
                         }
@@ -320,12 +323,13 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                             }
                             Kind::Enum { .. } => {
                                 let ident = format_ident!("arg{}", i);
-                                let method = if ty == "?" {
-                                    format_ident!("fmt")
+                                if ty == "?" {
+                                    list.push(quote!(f.fmt(#ident, false)));
                                 } else {
-                                    format_ident!("{}", ty)
-                                };
-                                list.push(quote!(f.#method(#ident)));
+                                    let method = format_ident!("{}", ty);
+                                    list.push(quote!(f.#method(#ident)));
+                                }
+
                                 pats.push(ident);
                             }
                         }
@@ -593,7 +597,10 @@ pub fn write(ts: TokenStream) -> TokenStream {
     let sym = mksym(&ls, "fmt");
     quote!(match (#fmt, #(&(#args)),*) {
         (ref mut _fmt_, #(#pats),*) => {
-            _fmt_.istr(&binfmt::export::istr(#sym));
+            // HACK conditional should not be here; see FIXME in `format`
+            if _fmt_.needs_tag() {
+                _fmt_.istr(&binfmt::export::istr(#sym));
+            }
             #(#exprs;)*
             _fmt_.finalize();
         }
@@ -671,7 +678,10 @@ impl Codegen {
             let param = parsed_params.iter().find(|param| param.index == i).unwrap();
             match param.ty {
                 binfmt_parser::Type::Format => {
-                    exprs.push(quote!(_fmt_.fmt(#arg)));
+                    exprs.push(quote!(_fmt_.fmt(#arg, false)));
+                }
+                binfmt_parser::Type::FormatSlice => {
+                    exprs.push(quote!(_fmt_.fmt_slice(#arg)));
                 }
                 binfmt_parser::Type::I16 => {
                     exprs.push(quote!(_fmt_.i16(#arg)));
