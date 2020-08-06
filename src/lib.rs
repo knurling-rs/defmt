@@ -1,4 +1,12 @@
+//! `binfmt`
+//!
+//! A highly efficient logging framework that targets resource-constrained devices, like
+//! microcontrollers.
+//!
+//! For more details check the book at https://binfmt.ferrous-systems.com
+
 #![cfg_attr(not(target_arch = "x86_64"), no_std)]
+#![warn(missing_docs)]
 
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
@@ -125,7 +133,13 @@ pub use binfmt_macros::Format;
 /// ensure this is to implement `Logger` on a *private* `struct` and mark that `struct` as the
 /// `#[global_logger]`.
 pub unsafe trait Logger {
+    /// Returns a handle to the global logger
+    ///
+    /// For the requirements of the method see the documentation of the `Logger` trait
     fn acquire() -> Option<NonNull<dyn Write>>;
+
+    /// Releases the global logger
+    ///
     /// # Safety
     /// `writer` argument must be a value previously returned by `Self::acquire` and not, say,
     /// `NonNull::dangling()`
