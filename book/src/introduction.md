@@ -1,5 +1,9 @@
 # `binfmt`
 
+> **PRE-ALPHA PREVIEW** `binfmt` wire format has not been finalized yet. When
+> using the framework make sure you use the *same* "version" (commit hash) for
+> all components (target side and host side).
+
 `binfmt` is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
 ## Features
