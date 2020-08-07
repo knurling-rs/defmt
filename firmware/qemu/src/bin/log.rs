@@ -19,6 +19,7 @@ fn main() -> ! {
     binfmt::info!("🍕 slice {:[u8]}", [3, 14]);
     binfmt::info!("🍕 array {:[u8; 3]}", [3, 14, 1]);
     binfmt::info!("float like a butterfly {:f32}", 5.67f32);
+    binfmt::info!("Hello {:u8}", 42u16 as u8);
 
     binfmt::info!(
         "isize: 0 = {:isize}, -1 = {:isize}, MAX = {:isize}, MIN = {:isize}",
