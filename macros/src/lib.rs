@@ -1,6 +1,7 @@
 use core::fmt::Write as _;
 use proc_macro::{Span, TokenStream};
 
+use binfmt_parser::Fragment;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{
@@ -391,7 +392,7 @@ fn is_logging_enabled(level: MLevel) -> TokenStream2 {
 fn log(level: MLevel, ts: TokenStream) -> TokenStream {
     let log = parse_macro_input!(ts as Log);
     let ls = log.litstr.value();
-    let params = match binfmt_parser::parse(&ls) {
+    let fragments = match binfmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(log.litstr.span(), e)
@@ -405,7 +406,7 @@ fn log(level: MLevel, ts: TokenStream) -> TokenStream {
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or(vec![]);
 
-    let (pats, exprs) = match Codegen::new(&params, args.len(), log.litstr.span()) {
+    let (pats, exprs) = match Codegen::new(&fragments, args.len(), log.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
         Err(e) => return e.to_compile_error().into(),
     };
@@ -460,7 +461,7 @@ pub fn error(ts: TokenStream) -> TokenStream {
 pub fn winfo(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let params = match binfmt_parser::parse(&ls) {
+    let fragments = match binfmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)
@@ -474,7 +475,7 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or(vec![]);
 
-    let (pats, exprs) = match Codegen::new(&params, args.len(), write.litstr.span()) {
+    let (pats, exprs) = match Codegen::new(&fragments, args.len(), write.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
         Err(e) => return e.to_compile_error().into(),
     };
@@ -569,7 +570,7 @@ pub fn internp(ts: TokenStream) -> TokenStream {
 pub fn write(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let params = match binfmt_parser::parse(&ls) {
+    let fragments = match binfmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)
@@ -583,7 +584,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or(vec![]);
 
-    let (pats, exprs) = match Codegen::new(&params, args.len(), write.litstr.span()) {
+    let (pats, exprs) = match Codegen::new(&fragments, args.len(), write.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
         Err(e) => return e.to_compile_error().into(),
     };
@@ -647,11 +648,15 @@ struct Codegen {
 }
 
 impl Codegen {
-    fn new(
-        parsed_params: &Vec<binfmt_parser::Parameter>,
-        num_args: usize,
-        span: Span2,
-    ) -> parse::Result<Self> {
+    fn new(fragments: &Vec<Fragment<'_>>, num_args: usize, span: Span2) -> parse::Result<Self> {
+        let parsed_params = fragments
+            .iter()
+            .filter_map(|frag| match frag {
+                Fragment::Parameter(param) => Some(param.clone()),
+                Fragment::Literal(_) => None,
+            })
+            .collect::<Vec<_>>();
+
         let actual_param_count = parsed_params
             .iter()
             .map(|param| param.index + 1)
