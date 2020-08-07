@@ -164,6 +164,21 @@ pub fn decode<'t>(
     Ok((frame, consumed))
 }
 
+// read bools compressed into `bool_flags` and insert them into `args` at the correct indices
+fn sprinkle_bools_in_place(bool_flags: u8, args: &mut Vec<Arg>, indices: &Vec<usize>) {
+    let mut flag_index = indices.len();
+
+    for index in indices {
+        flag_index -= 1;
+
+        // read out the leftmost unread bit and turn it into a boolean
+        let flag_mask = 1 << flag_index;
+        let nth_flag = (bool_flags & flag_mask) != 0;
+
+        args.insert(*index, Arg::Bool(nth_flag));
+    }
+}
+
 fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<Vec<Arg<'t>>, ()> {
     let mut args = vec![];
     let mut params = binfmt_parser::parse(format).map_err(drop)?;
@@ -171,8 +186,10 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
     params.sort_by_key(|param| param.index);
     params.dedup_by_key(|param| param.index);
 
-    let mut bool_flags: u8 = 0; // the current group of consecutive bools
-    let mut bools_left: u8 = 0; // the number of bits that we can still set in bool_flag
+    const MAX_NUM_BOOL_FLAGS: usize = 8;
+    let mut empty_bool_indices: Vec<usize> = vec![]; // points in `args` that need to be filled with
+                                                     // booleans once the whole compression block has
+                                                     // been consumed
 
     for param in params {
         match param.ty {
@@ -182,17 +199,14 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
             }
 
             Type::Bool => {
-                if bools_left == 0 {
-                    bools_left = 8;
-                    bool_flags = bytes.read_u8().map_err(drop)?;
+                // store index
+                empty_bool_indices.push(param.index);
+                if empty_bool_indices.len() == MAX_NUM_BOOL_FLAGS {
+                    // reached end of compression block: sprinkle values into args
+                    let bool_flags = bytes.read_u8().map_err(drop)?;
+                    sprinkle_bools_in_place(bool_flags, &mut args, &empty_bool_indices);
+                    empty_bool_indices.clear();
                 }
-                // read out the lowest bit and turn it into a boolean
-                let val = (bool_flags & 1) != 0;
-                // drop the bit that we just read
-                bool_flags >>= 1;
-                bools_left -= 1;
-
-                args.push(Arg::Bool(val));
             }
 
             Type::Format => {
@@ -294,6 +308,12 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 args.push(Arg::Slice(arg_slice.to_vec()));
             }
         }
+    }
+
+    if empty_bool_indices.len() > 0 {
+        // flush end of compression block
+        let bool_flags = bytes.read_u8().map_err(drop)?;
+        sprinkle_bools_in_place(bool_flags, &mut args, &empty_bool_indices);
     }
 
     Ok(args)
@@ -581,7 +601,7 @@ mod tests {
     }
 
     #[test]
-    fn test_bools_simple() {
+    fn bools_simple() {
         let bytes = [
             0,          // index
             2,          // timestamp
@@ -592,12 +612,27 @@ mod tests {
     }
 
     #[test]
-    fn test_bools_more_than_fit_in_one_byte() {
+    fn bools_max_capacity() {
         let bytes = [
             0,                // index
             2,                // timestamp
-            0b10000110 as u8, // the first 8 logged bool values; in reverse order!
-            0b1 as u8,        // the final logged bool value
+            0b0110_0001,      // the first 8 logged bool values
+        ];
+
+        decode_and_expect(
+            "bool capacity {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            &bytes,
+            "0.000002 INFO bool capacity false true true false false false false true",
+        );
+    }
+
+    #[test]
+    fn bools_more_than_fit_in_one_byte() {
+        let bytes = [
+            0,                // index
+            2,                // timestamp
+            0b0110_0001,      // the first 8 logged bool values
+            0b1,              // the final logged bool value
         ];
 
         decode_and_expect(
@@ -611,9 +646,9 @@ mod tests {
         let bytes = [
             0,                // index
             2,                // timestamp
-            0b10000110 as u8, // the first 8 logged bool values; in reverse order!
-            0xff,             // a logged u8
-            0b1 as u8,        // the final logged bool value
+            0xff,             // the logged u8
+            0b0110_0001,      // the first 8 logged bool values
+            0b1,              // the final logged bool value
         ];
 
         decode_and_expect(
@@ -621,6 +656,17 @@ mod tests {
             &bytes,
             "0.000002 INFO bool overflow false 255 true true false false false false true true",
         );
+
+        // Ensure that bools are compressed into the first byte even when there's a non-bool value
+        // right between between the two compression blocks.
+        let bytes = [
+            0,                // index
+            2,                // timestamp
+            0b0110_0001,      // the first 8 logged bool values
+            0xff,             // the logged u8
+            0b1,              // the final logged bool value
+        ];
+
         decode_and_expect(
             "bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:u8} {:bool}",
             &bytes,
@@ -629,12 +675,12 @@ mod tests {
     }
 
     #[test]
-    fn test_bools_mixed() {
+    fn bools_mixed() {
         let bytes = [
             0,           // index
             2,           // timestamp
-            0b101 as u8, // 3 packed bools
             9 as u8,     // a uint in between
+            0b101,       // 3 packed bools
         ];
 
         decode_and_expect(
@@ -643,6 +689,66 @@ mod tests {
             "0.000002 INFO hidden bools true 9 false true",
         );
     }
+
+    #[test]
+    fn bools_mixed_no_trailing_bool() {
+        let bytes = [
+            0,           // index
+            2,           // timestamp
+            9,     // a u8 in between
+            0b0,         // 3 packed bools
+        ];
+
+        decode_and_expect(
+            "no trailing bools {:bool} {:u8}",
+            &bytes,
+            "0.000002 INFO no trailing bools false 9",
+        );
+    }
+
+    /*
+    // NOTE: currently failing due to known bug– uncomment and fix this one :)
+    #[test]
+    fn bools_bool_struct() {
+        /*
+        emulate
+        #[derive(Format)]
+        struct Flags {
+            a: bool,
+            b: bool,
+            c: bool,
+        }
+
+        binfmt::info!("{:bool} {:?}", true, Flags {a: true, b: false, c: true });
+        */
+
+        let mut entries = BTreeMap::new();
+        entries.insert(0, "{:bool} {:?}".to_owned());
+        entries.insert(1, "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned());
+
+        let table = Table {
+            entries,
+            debug: 0..0,
+            error: 0..0,
+            info: 0..1,
+            trace: 0..0,
+            warn: 0..0,
+        };
+
+        let bytes = [
+            0,          // index
+            2,          // timestamp
+            1,          // index of Flags { a: {:bool}, b: {:bool}, c: {:bool} }
+            0b1101,     // 4 packed bools
+        ];
+
+        let frame = super::decode(&bytes, &table).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO true Flags { a: true, b: false, c: true }"
+        );
+    }
+    */
 
     #[test]
     fn slice() {

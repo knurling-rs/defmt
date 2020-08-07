@@ -420,6 +420,7 @@ fn log(level: MLevel, ts: TokenStream) -> TokenStream {
                         _fmt_.istr(&binfmt::export::istr(#sym));
                         _fmt_.leb64(ts);
                         #(#exprs;)*
+                        _fmt_.finalize();
                         binfmt::export::release(_fmt_)
                     }
                 }
@@ -486,6 +487,7 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
                 _fmt_.istr(&binfmt::export::istr(#sym));
                 _fmt_.leb64(ts);
                 #(#exprs;)*
+                _fmt_.finalize();
             }
         }
     })
@@ -592,6 +594,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
         (ref mut _fmt_, #(#pats),*) => {
             _fmt_.istr(&binfmt::export::istr(#sym));
             #(#exprs;)*
+            _fmt_.finalize();
         }
     })
     .into()
@@ -646,7 +649,7 @@ struct Codegen {
 impl Codegen {
     fn new(
         parsed_params: &Vec<binfmt_parser::Parameter>,
-        nargs: usize,
+        num_args: usize,
         span: Span2,
     ) -> parse::Result<Self> {
         let actual_param_count = parsed_params
@@ -702,7 +705,7 @@ impl Codegen {
                     todo!();
                 }
                 binfmt_parser::Type::Bool => {
-                    todo!();
+                    exprs.push(quote!(_fmt_.bool(#arg)));
                 }
                 binfmt_parser::Type::Slice => {
                     exprs.push(quote!(_fmt_.slice(#arg)));
@@ -732,22 +735,22 @@ impl Codegen {
             pats.push(arg);
         }
 
-        if nargs < actual_param_count {
+        if num_args < actual_param_count {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but only {} were provided",
-                    actual_param_count, nargs
+                    actual_param_count, num_args
                 ),
             ));
         }
 
-        if nargs > actual_param_count {
+        if num_args > actual_param_count {
             return Err(parse::Error::new(
                 span,
                 format!(
                     "format string requires {} arguments but {} were provided",
-                    actual_param_count, nargs
+                    actual_param_count, num_args
                 ),
             ));
         }

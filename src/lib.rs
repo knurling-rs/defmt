@@ -122,7 +122,7 @@ pub use binfmt_macros::winfo;
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use binfmt_macros::Format;
 
-/// Global logger acquire-release mechanism.
+/// Global logger acquire-release mechanism
 ///
 /// # Safety contract
 ///
@@ -165,13 +165,21 @@ pub struct Formatter {
     writer: NonNull<dyn Write>,
     #[cfg(target_arch = "x86_64")]
     bytes: Vec<u8>,
+    bool_flags: u8, // the current group of consecutive bools
+    bools_left: u8, // the number of bits that we can still set in bool_flag
 }
+
+/// the maximum number of booleans that can be compressed together
+const MAX_NUM_BOOL_FLAGS: u8 = 8;
 
 impl Formatter {
     /// Only for testing on x86_64
     #[cfg(target_arch = "x86_64")]
     pub fn new() -> Self {
-        Self { bytes: vec![] }
+        Self { bytes: vec![],
+               bool_flags: 0,
+               bools_left: MAX_NUM_BOOL_FLAGS,
+             }
     }
 
     /// Only for testing on x86_64
@@ -203,7 +211,10 @@ impl Formatter {
     #[cfg(not(target_arch = "x86_64"))]
     #[doc(hidden)]
     pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
-        Self { writer }
+        Self { writer,
+               bool_flags:0,
+               bools_left: MAX_NUM_BOOL_FLAGS,
+             }
     }
 
     /// Implementation detail
@@ -333,6 +344,34 @@ impl Formatter {
         } else {
             self.write(&[s.address as u8 | (1 << 7), (s.address >> 7) as u8])
         }
+    }
+
+    /// Implementation detail
+    pub fn bool(&mut self, b: &bool) {
+        let b_u8 = *b as u8;
+        // set n'th bool flag
+        self.bool_flags = (self.bool_flags << 1) | b_u8;
+        self.bools_left -= 1;
+
+        // if we've filled max compression space, flush and begin anew
+        if self.bools_left == 0 {
+            self.flush_and_reset_bools();
+        }
+    }
+
+    /// The last pass in a formatting run: clean up & flush leftovers
+    pub fn finalize(&mut self) {
+        if self.bools_left < MAX_NUM_BOOL_FLAGS {
+            // there are bools in compression that haven't been flushed yet
+            self.flush_and_reset_bools();
+        }
+    }
+
+    fn flush_and_reset_bools(&mut self) {
+        let flags = self.bool_flags;
+        self.u8(&flags);
+        self.bools_left = MAX_NUM_BOOL_FLAGS;
+        self.bool_flags = 0;
     }
 }
 

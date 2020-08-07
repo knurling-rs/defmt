@@ -51,8 +51,7 @@ fn inc(index: u8, n: u8) -> u8 {
     index.wrapping_add(n) & 0x7F
 }
 
-// CFI = Check Format Implementation
-fn cfi(val: impl Format, expected_encoding: &[u8]) {
+fn check_format_implementation(val: impl Format, expected_encoding: &[u8]) {
     let mut f = Formatter::new();
     val.format(&mut f);
     assert_eq!(f.bytes(), expected_encoding);
@@ -88,6 +87,138 @@ fn info() {
 }
 
 #[test]
+fn booleans_max_num_bool_flags() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "encode 8 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+           false, true, true, false, true, false, true, true);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,       // "encode 8 bools {:bool} {:bool} [...]",
+            timestamp,   //
+            0b0110_1011, // compressed bools (dec value = 107)
+        ]
+    );
+}
+
+#[test]
+fn booleans_less_than_max_num_bool_flags() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "encode 3 bools {:bool} {:bool} {:bool}", false, true, true);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,       // "encode 3 bools {:bool} {:bool} {:bool}",
+            timestamp,   //
+            0b011,       // compressed bools
+        ]
+    );
+}
+
+#[test]
+fn booleans_more_than_max_num_bool_flags() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+           false, true, true, false, true, false, true, true, false, true);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,       // "encode 8 bools {:bool} {:bool} {:bool} [...]",
+            timestamp,   //
+            0b0110_1011, // first 8 compressed bools
+            0b01,        // final compressed bools
+        ]
+    );
+}
+
+#[test]
+fn booleans_mixed() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "encode mixed bools {:bool} {:bool} {:u8} {:bool}", true, false, 42, true);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,       // "encode mixed bools {:bool} {:bool} {:u8} {:bool}",
+            timestamp,   //
+            42u8,
+            0b101,       // all compressed bools
+        ]
+    );
+}
+
+#[test]
+fn booleans_mixed_no_trailing_bool() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "encode mixed bools {:bool} {:u8}", false, 42);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,       // "encode mixed bools {:bool} {:u8}",
+            timestamp,   //
+            42u8,
+            0b0,         // bool is put at the end of the args
+        ]
+    );
+}
+
+#[test]
+fn boolean_struct() {
+    #[derive(Format)]
+    struct X {
+        y: bool,
+        z: bool,
+    }
+
+    let index = fetch_string_index();
+    check_format_implementation(
+        X { y: false, z: true },
+        &[
+            index,    // "X {{ x: {:bool}, y: {:bool} }}"
+            0b01,     // y and z compressed together
+        ],
+    )
+}
+
+#[test]
+fn boolean_struct_mixed() {
+    #[derive(Format)]
+    struct X {
+        y: bool,
+        z: bool,
+    }
+
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "mixed formats {:bool} {:?}", true, X {y: false, z: true });
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,          // "mixed formats {:bool} {:?}",
+            timestamp,
+            inc(index, 1),  // "X {{ x: {:bool}, y: {:bool} }}"
+            0b101,          // compressed struct bools
+        ]
+    );
+}
+
+#[test]
 fn single_struct() {
     #[derive(Format)]
     struct X {
@@ -96,7 +227,7 @@ fn single_struct() {
     }
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         X { y: 1, z: 2 },
         &[
             index, // "X {{ x: {:u8}, y: {:u16} }}"
@@ -121,7 +252,7 @@ fn nested_struct() {
 
     let val = 42;
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         X { y: Y { z: val } },
         &[
             index,         // "X {{ y: {:?} }}"
@@ -137,7 +268,7 @@ fn tuple_struct() {
     struct Struct(u8, u16);
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         Struct(0x1f, 0xaaaa),
         &[
             index, // "Struct({:u8}, {:u16})"
@@ -158,7 +289,7 @@ fn c_like_enum() {
     }
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         Enum::A,
         &[
             index, //
@@ -166,7 +297,7 @@ fn c_like_enum() {
         ],
     );
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         Enum::B,
         &[
             index, //
@@ -189,7 +320,7 @@ fn univariant_enum() {
     }
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         NoData::Variant,
         &[
             index, //
@@ -203,7 +334,7 @@ fn univariant_enum() {
     }
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         Data::Variant(0x1f, 0xaaaa),
         &[
             index, //
@@ -237,7 +368,7 @@ fn nested_enum() {
     }
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         Outer::Variant1 {
             pre: 0xEE,
             inner: Inner::A(CLike::B, 0x07),
@@ -257,7 +388,7 @@ fn nested_enum() {
     );
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         Outer::Variant2,
         &[
             index, //
@@ -266,7 +397,7 @@ fn nested_enum() {
     );
 
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         Outer::Variant3(Inner::A(CLike::B, 0x07)),
         &[
             index,         //
@@ -284,7 +415,7 @@ fn nested_enum() {
 fn slice() {
     let index = fetch_string_index();
     let val: &[u8] = &[23u8, 42u8];
-    cfi(
+    check_format_implementation(
         val,
         &[
             index, 2,  // val.len()
@@ -297,14 +428,14 @@ fn slice() {
 #[test]
 fn format_primitives() {
     let index = fetch_string_index();
-    cfi(
+    check_format_implementation(
         42u8,
         &[
             index, // "{:u8}"
             42,
         ],
     );
-    cfi(
+    check_format_implementation(
         42u16,
         &[
             inc(index, 1), // "{:u16}"
@@ -312,7 +443,7 @@ fn format_primitives() {
             0,
         ],
     );
-    cfi(
+    check_format_implementation(
         513u16,
         &[
             inc(index, 2), // "{:u16}"
@@ -321,7 +452,7 @@ fn format_primitives() {
         ],
     );
 
-    cfi(
+    check_format_implementation(
         42u32,
         &[
             inc(index, 3), // "{:u32}"
@@ -331,7 +462,7 @@ fn format_primitives() {
             0,
         ],
     );
-    cfi(
+    check_format_implementation(
         513u32,
         &[
             inc(index, 4), // "{:u32}"
@@ -342,7 +473,7 @@ fn format_primitives() {
         ],
     );
 
-    cfi(
+    check_format_implementation(
         5.13f32,
         &[
             inc(index, 5), // "{:f32}"
@@ -353,14 +484,14 @@ fn format_primitives() {
         ],
     );
 
-    cfi(
+    check_format_implementation(
         42i8,
         &[
             inc(index, 6), // "{:i8}"
             42,
         ],
     );
-    cfi(
+    check_format_implementation(
         -42i8,
         &[
             inc(index, 7), // "{:i8}"
@@ -368,7 +499,7 @@ fn format_primitives() {
         ],
     );
 
-    cfi(
+    check_format_implementation(
         None::<u8>,
         &[
             inc(index, 8), // "<option-format-string>"
@@ -376,7 +507,7 @@ fn format_primitives() {
         ],
     );
 
-    cfi(
+    check_format_implementation(
         Some(42u8),
         &[
             inc(index, 9),  // "<option-format-string>"
@@ -386,15 +517,23 @@ fn format_primitives() {
         ],
     );
 
-    cfi(-1isize, &[inc(index, 11), 0b0000_0001]);
-    cfi(-128isize, &[inc(index, 12), 0xff, 0b0000_0001]);
+    check_format_implementation(-1isize, &[inc(index, 11), 0b0000_0001]);
+    check_format_implementation(-128isize, &[inc(index, 12), 0xff, 0b0000_0001]);
+
+    check_format_implementation(
+        true,
+        &[
+            inc(index, 13), // "{:bool}"
+            0b1,
+        ],
+    );
 }
 
 #[test]
 fn istr() {
     let index = fetch_string_index();
     let interned = binfmt::intern!("interned string contents");
-    cfi(
+    check_format_implementation(
         interned,
         &[
             inc(index, 1), // "{:istr}"
@@ -406,11 +545,11 @@ fn istr() {
 #[test]
 fn arrays() {
     let index = fetch_string_index();
-    cfi([], &[index]);
+    check_format_implementation([], &[index]);
 
     let index = fetch_string_index();
-    cfi([0], &[index, 0]);
+    check_format_implementation([0], &[index, 0]);
 
     let index = fetch_string_index();
-    cfi([0xff, 0xab, 0x1f], &[index, 0xff, 0xab, 0x1f]);
+    check_format_implementation([0xff, 0xab, 0x1f], &[index, 0xff, 0xab, 0x1f]);
 }

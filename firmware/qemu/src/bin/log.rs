@@ -15,7 +15,7 @@ fn main() -> ! {
     binfmt::info!("World!");
     binfmt::info!("The answer is {:u8}", 42);
     binfmt::info!("Hello {0:u8} {0:u8}!", 42);
-    binfmt::info!("Hello {1:u16} {0:u8}", 42u8, 256u16);
+    binfmt::info!("Hello {1:u16} {0:u8} {:bool}", 42u8, 256u16, false);
     binfmt::info!("🍕 slice {:[u8]}", [3, 14]);
     binfmt::info!("🍕 array {:[u8; 3]}", [3, 14, 1]);
     binfmt::info!("float like a butterfly {:f32}", 5.67f32);
