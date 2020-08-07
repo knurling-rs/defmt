@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-use binfmt_parser::Type;
+use binfmt_parser::{Fragment, Type};
 use common::Level;
 
 /// Interner table that holds log levels and maps format strings to indices
@@ -181,7 +181,15 @@ fn sprinkle_bools_in_place(bool_flags: u8, args: &mut Vec<Arg>, indices: &Vec<us
 
 fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<Vec<Arg<'t>>, ()> {
     let mut args = vec![];
-    let mut params = binfmt_parser::parse(format).map_err(drop)?;
+    let mut params = binfmt_parser::parse(format)
+        .map_err(drop)?
+        .iter()
+        .filter_map(|frag| match frag {
+            Fragment::Parameter(param) => Some(param.clone()),
+            Fragment::Literal(_) => None,
+        })
+        .collect::<Vec<_>>();
+
     // sort & dedup to ensure that format string args can be addressed by index too
     params.sort_by_key(|param| param.index);
     params.dedup_by_key(|param| param.index);
@@ -320,21 +328,18 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
 }
 
 fn format_args(format: &str, args: &[Arg]) -> String {
-    fn unescape(literal: &str) -> String {
-        literal.replace("{{", "{").replace("}}", "}")
-    }
-
     let params = binfmt_parser::parse(format).unwrap();
     let mut buf = String::new();
-    let mut cursor = 0;
     for param in params {
-        let literal = &format[cursor..param.span.start];
-        buf.push_str(&unescape(literal));
-        cursor = param.span.end;
-
-        write!(&mut buf, "{}", args[param.index]).ok();
+        match param {
+            Fragment::Literal(lit) => {
+                buf.push_str(&lit);
+            }
+            Fragment::Parameter(param) => {
+                write!(&mut buf, "{}", args[param.index]).ok();
+            }
+        }
     }
-    buf.push_str(&unescape(&format[cursor..]));
     buf
 }
 
@@ -614,9 +619,9 @@ mod tests {
     #[test]
     fn bools_max_capacity() {
         let bytes = [
-            0,                // index
-            2,                // timestamp
-            0b0110_0001,      // the first 8 logged bool values
+            0,           // index
+            2,           // timestamp
+            0b0110_0001, // the first 8 logged bool values
         ];
 
         decode_and_expect(
@@ -629,10 +634,10 @@ mod tests {
     #[test]
     fn bools_more_than_fit_in_one_byte() {
         let bytes = [
-            0,                // index
-            2,                // timestamp
-            0b0110_0001,      // the first 8 logged bool values
-            0b1,              // the final logged bool value
+            0,           // index
+            2,           // timestamp
+            0b0110_0001, // the first 8 logged bool values
+            0b1,         // the final logged bool value
         ];
 
         decode_and_expect(
@@ -644,11 +649,11 @@ mod tests {
         // Ensure that bools are compressed into the first byte even when there's non-bool values
         // between them.
         let bytes = [
-            0,                // index
-            2,                // timestamp
-            0xff,             // the logged u8
-            0b0110_0001,      // the first 8 logged bool values
-            0b1,              // the final logged bool value
+            0,           // index
+            2,           // timestamp
+            0xff,        // the logged u8
+            0b0110_0001, // the first 8 logged bool values
+            0b1,         // the final logged bool value
         ];
 
         decode_and_expect(
@@ -660,11 +665,11 @@ mod tests {
         // Ensure that bools are compressed into the first byte even when there's a non-bool value
         // right between between the two compression blocks.
         let bytes = [
-            0,                // index
-            2,                // timestamp
-            0b0110_0001,      // the first 8 logged bool values
-            0xff,             // the logged u8
-            0b1,              // the final logged bool value
+            0,           // index
+            2,           // timestamp
+            0b0110_0001, // the first 8 logged bool values
+            0xff,        // the logged u8
+            0b1,         // the final logged bool value
         ];
 
         decode_and_expect(
@@ -677,10 +682,10 @@ mod tests {
     #[test]
     fn bools_mixed() {
         let bytes = [
-            0,           // index
-            2,           // timestamp
-            9 as u8,     // a uint in between
-            0b101,       // 3 packed bools
+            0,       // index
+            2,       // timestamp
+            9 as u8, // a uint in between
+            0b101,   // 3 packed bools
         ];
 
         decode_and_expect(
@@ -693,10 +698,10 @@ mod tests {
     #[test]
     fn bools_mixed_no_trailing_bool() {
         let bytes = [
-            0,           // index
-            2,           // timestamp
-            9,     // a u8 in between
-            0b0,         // 3 packed bools
+            0,   // index
+            2,   // timestamp
+            9,   // a u8 in between
+            0b0, // 3 packed bools
         ];
 
         decode_and_expect(
