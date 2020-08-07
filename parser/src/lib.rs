@@ -197,6 +197,7 @@ fn push_literal<'f>(
         return Err("unmatched `}` in format string".into());
     }
 
+    // FIXME: This always allocates a `String`, so the `Cow` is useless.
     let literal = unescaped_literal.replace("{{", "{").replace("}}", "}");
     frag.push(Fragment::Literal(literal.into()));
     Ok(())
