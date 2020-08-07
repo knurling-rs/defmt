@@ -97,26 +97,6 @@ pub use binfmt_macros::global_logger;
 /// ```
 pub use binfmt_macros::timestamp;
 
-/// Writes binfmt-formatted data to a [`Formatter`].
-///
-/// This works similarly to the `write!` macro in libcore.
-///
-/// Usage:
-///
-/// ```
-/// # use binfmt::{Format, Formatter};
-/// # struct S;
-/// # impl Format for S {
-/// #     fn format(&self, formatter: &mut Formatter) {
-/// #         let arguments = 0u8;
-/// binfmt::write!(formatter, "format string {:?}", arguments)
-/// #     }
-/// # }
-/// ```
-///
-/// [`Formatter`]: struct.Formatter.html
-pub use binfmt_macros::write;
-
 #[doc(hidden)]
 pub use binfmt_macros::winfo;
 #[doc(hidden)] // documented as the `Format` trait instead
