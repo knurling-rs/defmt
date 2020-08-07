@@ -298,7 +298,7 @@ impl Formatter {
 
     /// Implementation detail
     #[doc(hidden)]
-    pub fn format_slice(&mut self, values: &[impl Format]) {
+    pub fn fmt_slice(&mut self, values: &[impl Format]) {
         self.leb64(values.len() as u64);
         let mut is_first = true;
         for value in values {

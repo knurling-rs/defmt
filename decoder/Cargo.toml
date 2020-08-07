@@ -6,8 +6,8 @@ version = "0.1.0"
 
 [dependencies]
 binfmt-parser = { path = "../parser" }
-common = { path = "../common" }
-leb128 = "0.2.4"
 byteorder = "1"
 colored = "2.0.0"
+common = { path = "../common" }
+leb128 = "0.2.4"
 ryu = "1"
