@@ -82,6 +82,18 @@ fn main() -> ! {
         }
     );
 
+    let slice: &[u16] = &[256, 257, 258];
+    binfmt::info!("{:[?]}", slice);
+
+    let ss: &[S] = &[S { x: 128, y: 256 }, S { x: 129, y: 257 }];
+    binfmt::info!("{:[?]}", ss);
+
+    let xs: &[X] = &[X { y: Y { z: 128 } }, X { y: Y { z: 129 } }];
+    binfmt::info!("{:[?]}", xs);
+
+    let slices: &[&[u16]] = &[&[256, 257, 258], &[259, 260]];
+    binfmt::info!("{:[?]}", slices);
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

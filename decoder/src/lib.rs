@@ -24,7 +24,7 @@ pub struct Table {
 impl Table {
     // TODO constructor
 
-    fn get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
+    fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
         let lvl = if self.debug.contains(&index) {
             Some(Level::Debug)
         } else if self.error.contains(&index) {
@@ -40,6 +40,20 @@ impl Table {
         };
 
         Ok((lvl, self.entries.get(&index).ok_or_else(|| ())?))
+    }
+
+    fn get_with_level(&self, index: usize) -> Result<(Level, &str), ()> {
+        let (lvl, format) = self._get(index)?;
+        Ok((lvl.ok_or(())?, format))
+    }
+
+    fn get_without_level(&self, index: usize) -> Result<&str, ()> {
+        let (lvl, format) = self._get(index)?;
+        if lvl.is_none() {
+            Ok(format)
+        } else {
+            Err(())
+        }
     }
 }
 
@@ -116,8 +130,18 @@ pub enum Arg<'t> {
         format: &'t str,
         args: Vec<Arg<'t>>,
     },
+    FormatSlice(FormatSlice<'t>),
     /// Slice or Array of bytes.
     Slice(Vec<u8>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum FormatSlice<'t> {
+    Empty,
+    NotEmpty {
+        format: &'t str,
+        elements: Vec<Vec<Arg<'t>>>,
+    },
 }
 
 impl fmt::Display for Arg<'_> {
@@ -130,6 +154,19 @@ impl fmt::Display for Arg<'_> {
             Arg::Str(x) => write!(f, "{}", x),
             Arg::IStr(x) => write!(f, "{}", x),
             Arg::Format { format, args } => f.write_str(&format_args(format, args)),
+            Arg::FormatSlice(FormatSlice::Empty) => f.write_str("[]"),
+            Arg::FormatSlice(FormatSlice::NotEmpty { format, elements }) => {
+                f.write_str("[")?;
+                let mut is_first = true;
+                for args in elements {
+                    if !is_first {
+                        f.write_str(", ")?;
+                    }
+                    is_first = false;
+                    f.write_str(&format_args(format, args))?;
+                }
+                f.write_str("]")
+            }
             Arg::Slice(x) => write!(f, "{:?}", x),
         }
     }
@@ -148,10 +185,9 @@ pub fn decode<'t>(
     let index = leb128::read::unsigned(&mut bytes).map_err(drop)?;
     let timestamp = leb128::read::unsigned(&mut bytes).map_err(drop)?;
 
-    let (level, format) = table.get(index as usize)?;
-    let level = level.ok_or(())?;
+    let (level, format) = table.get_with_level(index as usize)?;
 
-    let args = parse_args(&mut bytes, format, table)?;
+    let args = parse_args(&mut bytes, format, table, &mut None)?;
 
     let frame = Frame {
         level,
@@ -179,7 +215,47 @@ fn sprinkle_bools_in_place(bool_flags: u8, args: &mut Vec<Arg>, indices: &Vec<us
     }
 }
 
-fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<Vec<Arg<'t>>, ()> {
+/// List of format strings; used when decoding a `FormatSlice` (`{:[?]}`) argument
+#[derive(Debug)]
+enum FormatList<'s, 't> {
+    /// Build the list; used when decoding the first element
+    Build { formats: &'s mut Vec<&'t str> },
+    /// Use the list; used when decoding the rest of elements
+    Use {
+        formats: &'s [&'t str],
+        cursor: usize,
+    },
+}
+
+/// Gets a format string from
+/// - the `FormatList`, if it's in `Use` mode, or
+/// - from `bytes` and `table` if the `FormatList` is in `Build` mode or was not provided
+fn get_format<'t>(
+    list: &mut Option<FormatList<'_, 't>>,
+    bytes: &mut &[u8],
+    table: &'t Table,
+) -> Result<&'t str, ()> {
+    if let Some(FormatList::Use { formats, cursor }) = list.as_mut() {
+        let format = formats[*cursor];
+        *cursor += 1;
+        return Ok(format);
+    }
+
+    let index = leb128::read::unsigned(bytes).map_err(drop)? as usize;
+    let format = table.get_without_level(index as usize)?;
+
+    if let Some(FormatList::Build { formats }) = list.as_mut() {
+        formats.push(format)
+    }
+    Ok(format)
+}
+
+fn parse_args<'t>(
+    bytes: &mut &[u8],
+    format: &str,
+    table: &'t Table,
+    format_list: &mut Option<FormatList<'_, 't>>,
+) -> Result<Vec<Arg<'t>>, ()> {
     let mut args = vec![];
     let mut params = binfmt_parser::parse(format)
         .map_err(drop)?
@@ -217,15 +293,69 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
                 }
             }
 
-            Type::FormatSlice => todo!(),
+            Type::FormatSlice => {
+                let num_elements = leb128::read::unsigned(bytes).map_err(drop)? as usize;
+
+                let arg = if num_elements == 0 {
+                    Arg::FormatSlice(FormatSlice::Empty)
+                } else {
+                    let format = get_format(format_list, bytes, table)?;
+
+                    let mut elements = Vec::with_capacity(num_elements);
+                    let formats = &mut vec![];
+                    let mut cursor = 0;
+                    for i in 0..num_elements {
+                        let is_first = i == 0;
+
+                        let args = if let Some(list) = format_list {
+                            match list {
+                                FormatList::Use { .. } => {
+                                    parse_args(bytes, format, table, format_list)?
+                                }
+
+                                FormatList::Build { formats } => {
+                                    if is_first {
+                                        cursor = formats.len();
+                                        parse_args(bytes, format, table, format_list)?
+                                    } else {
+                                        parse_args(
+                                            bytes,
+                                            format,
+                                            table,
+                                            &mut Some(FormatList::Use { formats, cursor }),
+                                        )?
+                                    }
+                                }
+                            }
+                        } else {
+                            if is_first {
+                                parse_args(
+                                    bytes,
+                                    format,
+                                    table,
+                                    &mut Some(FormatList::Build { formats }),
+                                )?
+                            } else {
+                                parse_args(
+                                    bytes,
+                                    format,
+                                    table,
+                                    &mut Some(FormatList::Use { formats, cursor: 0 }),
+                                )?
+                            }
+                        };
+
+                        elements.push(args);
+                    }
+
+                    Arg::FormatSlice(FormatSlice::NotEmpty { format, elements })
+                };
+
+                args.push(arg);
+            }
             Type::Format => {
-                let index = leb128::read::unsigned(bytes).map_err(drop)?;
-                let (level, format) = table.get(index as usize)?;
-                // Auxiliary format strings must not have a log level associated with them.
-                if level != None {
-                    return Err(());
-                }
-                let inner_args = parse_args(bytes, format, table)?;
+                let format = get_format(format_list, bytes, table)?;
+                let inner_args = parse_args(bytes, format, table, format_list)?;
 
                 args.push(Arg::Format {
                     format,
@@ -289,11 +419,7 @@ fn parse_args<'t>(bytes: &mut &[u8], format: &str, table: &'t Table) -> Result<V
             Type::IStr => {
                 let str_index = leb128::read::unsigned(bytes).map_err(drop)? as usize;
 
-                let (level, string) = table.get(str_index as usize)?;
-                // Interned strings must not have a log level associated with them.
-                if level != None {
-                    return Err(());
-                }
+                let string = table.get_without_level(str_index as usize)?;
 
                 args.push(Arg::IStr(string));
             }

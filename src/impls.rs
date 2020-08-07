@@ -109,7 +109,7 @@ where
             let t = internp!("{:[?]}");
             fmt.u8(&t);
         }
-        fmt.format_slice(self)
+        fmt.fmt_slice(self)
     }
 }
 
