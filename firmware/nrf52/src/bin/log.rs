@@ -10,7 +10,7 @@ use nrf52840_hal::{
     target::{self, TIMER0},
     timer::Timer,
 };
-use panic_halt as _; // <- panicking behavior
+use panic_probe as _; // <- panicking behavior
 
 #[binfmt::timestamp]
 fn timestamp() -> u64 {

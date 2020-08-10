@@ -9,7 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "--deny warnings"
-  NO_STD_TARGET: thumbv7m-none-eabi  # firmware uses atomics
+  NO_STD_TARGET: thumbv7em-none-eabi  # firmware uses atomics
 
 jobs:
   test:
@@ -50,6 +50,9 @@ jobs:
         toolchain: stable
         override: true
         target: ${{ env.NO_STD_TARGET }}
-    - name: Build
-      working-directory: firmware
-      run: cargo build --verbose --no-default-features --target ${{ env.NO_STD_TARGET }}
+    - name: Build QEMU examples
+      working-directory: firmware/qemu
+      run: cargo build --verbose --no-default-features --target ${{ env.NO_STD_TARGET }} --bins
+    - name: Build nRF52 examples
+      working-directory: firmware/nrf52
+      run: cargo build --verbose --no-default-features --target ${{ env.NO_STD_TARGET }} --bins
