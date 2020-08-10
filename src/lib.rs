@@ -375,7 +375,7 @@ pub trait Write {
 ///
 /// # Example
 ///
-/// It is recommended to `#[derive]` implementations of this trait:
+/// It is required to `#[derive]` implementations of this trait:
 ///
 /// ```
 /// use binfmt::Format;
@@ -385,30 +385,6 @@ pub trait Write {
 ///     source: u8,
 ///     destination: u8,
 ///     sequence: u16,
-/// }
-/// ```
-///
-/// If necessary, implementations can also be written manually:
-///
-/// ```
-/// use binfmt::{Format, Formatter};
-///
-/// struct Header {
-///     source: u8,
-///     destination: u8,
-///     sequence: u16,
-/// }
-///
-/// impl Format for Header {
-///     fn format(&self, fmt: &mut Formatter) {
-///         binfmt::write!(
-///             fmt,
-///             "Header {{ source: {:u8}, destination: {:u8}, sequence: {:u16} }}",
-///             self.source,
-///             self.destination,
-///             self.sequence
-///         )
-///     }
 /// }
 /// ```
 pub trait Format {

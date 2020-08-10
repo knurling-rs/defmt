@@ -36,7 +36,7 @@ fn trailing_comma() {
     #[allow(unreachable_code, unused_variables)]
     if false {
         let fmt: binfmt::Formatter = panic!();
-        binfmt::write!(fmt, "test write",);
-        binfmt::write!(fmt, "test write {:?}", 0,);
+        binfmt::export::write!(fmt, "test write",);
+        binfmt::export::write!(fmt, "test write {:?}", 0,);
     }
 }
