@@ -97,26 +97,6 @@ pub use binfmt_macros::global_logger;
 /// ```
 pub use binfmt_macros::timestamp;
 
-/// Writes binfmt-formatted data to a [`Formatter`].
-///
-/// This works similarly to the `write!` macro in libcore.
-///
-/// Usage:
-///
-/// ```
-/// # use binfmt::{Format, Formatter};
-/// # struct S;
-/// # impl Format for S {
-/// #     fn format(&self, formatter: &mut Formatter) {
-/// #         let arguments = 0u8;
-/// binfmt::write!(formatter, "format string {:?}", arguments)
-/// #     }
-/// # }
-/// ```
-///
-/// [`Formatter`]: struct.Formatter.html
-pub use binfmt_macros::write;
-
 #[doc(hidden)]
 pub use binfmt_macros::winfo;
 #[doc(hidden)] // documented as the `Format` trait instead
@@ -395,7 +375,7 @@ pub trait Write {
 ///
 /// # Example
 ///
-/// It is recommended to `#[derive]` implementations of this trait:
+/// It is required to `#[derive]` implementations of this trait:
 ///
 /// ```
 /// use binfmt::Format;
@@ -405,30 +385,6 @@ pub trait Write {
 ///     source: u8,
 ///     destination: u8,
 ///     sequence: u16,
-/// }
-/// ```
-///
-/// If necessary, implementations can also be written manually:
-///
-/// ```
-/// use binfmt::{Format, Formatter};
-///
-/// struct Header {
-///     source: u8,
-///     destination: u8,
-///     sequence: u16,
-/// }
-///
-/// impl Format for Header {
-///     fn format(&self, fmt: &mut Formatter) {
-///         binfmt::write!(
-///             fmt,
-///             "Header {{ source: {:u8}, destination: {:u8}, sequence: {:u16} }}",
-///             self.source,
-///             self.destination,
-///             self.sequence
-///         )
-///     }
 /// }
 /// ```
 pub trait Format {

@@ -242,7 +242,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
         Data::Struct(ds) => {
             fs = ident.to_string();
             let args = fields(&ds.fields, &mut fs, Kind::Struct);
-            exprs.push(quote!(binfmt::write!(f, #fs #(,#args)*);))
+            exprs.push(quote!(binfmt::export::write!(f, #fs #(,#args)*);))
         }
 
         Data::Union(..) => {

@@ -1,6 +1,6 @@
 # `#[derive(Format)]`
 
-The preferred way to implement the `Format` trait for a struct or enum is to use the `derive` attribute.
+To implement the `Format` trait for a struct or enum use the `derive` attribute.
 
 ``` rust
 #[derive(Format)]

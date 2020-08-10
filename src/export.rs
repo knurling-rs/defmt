@@ -1,5 +1,6 @@
 use crate::{Formatter, Str};
 
+pub use binfmt_macros::write;
 pub use common::Level;
 
 #[cfg(target_arch = "x86_64")]
