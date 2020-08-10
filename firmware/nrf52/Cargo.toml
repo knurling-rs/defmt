@@ -31,3 +31,11 @@ test = false
 [[bin]]
 name = "panic"
 test = false
+
+[[bin]]
+name = "exception"
+test = false
+
+[[bin]]
+name = "hello"
+test = false
