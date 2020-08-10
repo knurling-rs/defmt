@@ -39,7 +39,7 @@ impl Table {
             None
         };
 
-        Ok((lvl, &self.entries[&index]))
+        Ok((lvl, self.entries.get(&index).ok_or_else(|| ())?))
     }
 }
 

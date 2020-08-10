@@ -5,7 +5,6 @@
 #![no_std]
 
 use core::{
-    cmp,
     ptr::{self, NonNull},
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
@@ -99,7 +98,8 @@ impl Channel {
         }
 
         let cursor = write % SIZE;
-        let len = cmp::min(bytes.len(), available);
+        let len = bytes.len().min(available);
+
         unsafe {
             if cursor + len > SIZE {
                 // split memcpy
@@ -123,7 +123,8 @@ impl Channel {
                 );
             }
         }
-        self.write.store(write.wrapping_add(len), Ordering::Release);
+        self.write.store(write.wrapping_add(len) % SIZE, Ordering::Release);
+
         len
     }
 }
