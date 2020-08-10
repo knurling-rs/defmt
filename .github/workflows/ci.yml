@@ -35,8 +35,6 @@ jobs:
     - name: Install C libraries for tooling
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
-    - name: Build
-      run: cargo build --workspace --all-targets
     - name: Run tests
       run: cargo test --workspace
 
