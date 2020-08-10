@@ -2,7 +2,7 @@
 rb = "run --target thumbv7m-none-eabi --bin"
 rrb = "run --target thumbv7m-none-eabi --release --bin"
 
-[target.thumbv7m-none-eabi]
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
 # runner = "qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel"
 runner = "cargo run --manifest-path ../../qemu-run/Cargo.toml"
 
