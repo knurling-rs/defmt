@@ -147,6 +147,9 @@ pub struct Formatter {
     bytes: Vec<u8>,
     bool_flags: u8, // the current group of consecutive bools
     bools_left: u8, // the number of bits that we can still set in bool_flag
+    // whether to include a tag before a `Format` value
+    // this is only disabled while formatting a `{:[?]}` value
+    include_tag: bool,
 }
 
 /// the maximum number of booleans that can be compressed together
@@ -156,10 +159,12 @@ impl Formatter {
     /// Only for testing on x86_64
     #[cfg(target_arch = "x86_64")]
     pub fn new() -> Self {
-        Self { bytes: vec![],
-               bool_flags: 0,
-               bools_left: MAX_NUM_BOOL_FLAGS,
-             }
+        Self {
+            bytes: vec![],
+            bool_flags: 0,
+            bools_left: MAX_NUM_BOOL_FLAGS,
+            include_tag: true,
+        }
     }
 
     /// Only for testing on x86_64
@@ -191,10 +196,12 @@ impl Formatter {
     #[cfg(not(target_arch = "x86_64"))]
     #[doc(hidden)]
     pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
-        Self { writer,
-               bool_flags:0,
-               bools_left: MAX_NUM_BOOL_FLAGS,
-             }
+        Self {
+            writer,
+            bool_flags: 0,
+            bools_left: MAX_NUM_BOOL_FLAGS,
+            include_tag: true,
+        }
     }
 
     /// Implementation detail
@@ -214,8 +221,23 @@ impl Formatter {
     // TODO turn these public methods in `export` free functions
     /// Implementation detail
     #[doc(hidden)]
-    pub fn fmt(&mut self, f: &impl Format) {
-        f.format(self)
+    pub fn fmt(&mut self, f: &impl Format, omit_tag: bool) {
+        let include_tag = self.include_tag;
+        if omit_tag {
+            // override
+            self.include_tag = false;
+        }
+        f.format(self);
+        if omit_tag {
+            // restore
+            self.include_tag = include_tag;
+        }
+    }
+
+    /// Implementation detail
+    #[doc(hidden)]
+    pub fn needs_tag(&self) -> bool {
+        self.include_tag
     }
 
     /// Implementation detail
@@ -252,6 +274,18 @@ impl Formatter {
     pub fn isize(&mut self, b: &isize) {
         // Zig-zag encode the signed value.
         self.leb64(leb::zigzag_encode(*b as i64));
+    }
+
+    /// Implementation detail
+    #[doc(hidden)]
+    pub fn fmt_slice(&mut self, values: &[impl Format]) {
+        self.leb64(values.len() as u64);
+        let mut is_first = true;
+        for value in values {
+            let omit_tag = !is_first;
+            self.fmt(value, omit_tag);
+            is_first = false;
+        }
     }
 
     // TODO remove
