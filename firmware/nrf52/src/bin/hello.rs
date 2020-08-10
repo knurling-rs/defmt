@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::sync::atomic::{AtomicUsize, Ordering};
+
 use binfmt_rtt as _; // <- global logger
 use cortex_m::asm;
 use cortex_m_rt::entry;
@@ -9,13 +11,14 @@ use panic_probe as _; // <- panicking behavior
 
 #[binfmt::timestamp]
 fn timestamp() -> u64 {
-    0
+    static N: AtomicUsize = AtomicUsize::new(0);
+    N.fetch_add(1, Ordering::Relaxed) as u64
 }
 
 #[entry]
 fn main() -> ! {
-    binfmt::info!("main");
-    assert!(false);
+    binfmt::info!("Hello, world!");
+
     loop {
         asm::bkpt()
     }
