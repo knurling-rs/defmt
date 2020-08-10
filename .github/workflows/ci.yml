@@ -52,7 +52,7 @@ jobs:
         target: ${{ env.NO_STD_TARGET }}
     - name: Build QEMU examples
       working-directory: firmware/qemu
-      run: cargo build --verbose --no-default-features --target ${{ env.NO_STD_TARGET }} --bins
+      run: cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
     - name: Build nRF52 examples
       working-directory: firmware/nrf52
-      run: cargo build --verbose --no-default-features --target ${{ env.NO_STD_TARGET }} --bins
+      run: cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
