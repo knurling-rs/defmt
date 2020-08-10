@@ -1,4 +1,5 @@
 #![no_std]
+#![cfg(target_os = "none")]
 
 use core::panic::PanicInfo;
 
