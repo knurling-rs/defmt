@@ -226,7 +226,7 @@ fn notmain() -> Result<i32, anyhow::Error> {
     })?;
 
     // todo one clone too many?
-    let logging_channel = setup_logging_channel(rtt_addr, core.clone(), &sess);
+    let mut logging_channel = setup_logging_channel(rtt_addr, core.clone(), &sess);
 
     // wait for breakpoint
     let stdout = io::stdout();
@@ -235,18 +235,17 @@ fn notmain() -> Result<i32, anyhow::Error> {
     let mut frames = vec![];
     let mut was_halted = false;
     while CONTINUE.load(Ordering::Relaxed) {
-        if logging_channel.is_ok() {
-            // todo rename n
-            let n = logging_channel.as_ref().unwrap().read(&mut read_buf)?;
+        if let Ok(ref mut logging_channel)= logging_channel {
+            let num_bytes_read = logging_channel.read(&mut read_buf)?;
 
-            if n != 0 {
-                frames.extend_from_slice(&read_buf[..n]);
+            if num_bytes_read != 0 {
+                frames.extend_from_slice(&read_buf[..num_bytes_read]);
 
                 while let Ok((frame, consumed)) = decoder::decode(&frames, &table) {
                     writeln!(stdout, "{}", frame.display(true))?;
-                    let n = frames.len();
+                    let num_frames = frames.len();
                     frames.rotate_left(consumed);
-                    frames.truncate(n - consumed);
+                    frames.truncate(num_frames - consumed);
                 }
             }
         }
