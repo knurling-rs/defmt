@@ -26,7 +26,6 @@ codegen-units = 1
 debug = 1
 debug-assertions = true # !
 incremental = false
-lto = "fat"
 opt-level = 'z' # !
 overflow-checks = false
 
