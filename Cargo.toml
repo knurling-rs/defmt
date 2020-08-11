@@ -20,15 +20,6 @@ members = [
   "firmware/*",
 ]
 
-# optimize code in both profiles
-[profile.dev]
-codegen-units = 1
-debug = 1
-debug-assertions = true # !
-incremental = false
-opt-level = 'z' # !
-overflow-checks = false
-
 [profile.release]
 codegen-units = 1
 debug = 1
