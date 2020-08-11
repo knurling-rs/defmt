@@ -25,9 +25,9 @@ use gimli::{
 };
 use probe_rs::{
     flashing::{self, Format},
-    Core, CoreRegisterAddress, Probe,
+    Core, CoreRegisterAddress, Probe, Session
 };
-use probe_rs_rtt::{Rtt, ScanRegion};
+use probe_rs_rtt::{Rtt, ScanRegion, UpChannel};
 use structopt::StructOpt;
 use xmas_elf::{
     header::HeaderPt2, program::Type, sections::SectionData, symbol_table::Entry, ElfFile,
@@ -218,37 +218,8 @@ fn notmain() -> Result<i32, anyhow::Error> {
     eprintln!("resetting device");
 
     let core = Rc::new(core);
-    let rtt_addr_res = rtt_addr.ok_or_else(|| anyhow!("RTT control block not available"))?;
-    let mut rtt_res: Result<Rtt, probe_rs_rtt::Error> =
-        Err(probe_rs_rtt::Error::ControlBlockNotFound);
-    const NUM_RETRIES: usize = 5; // picked at random, increase if necessary
 
-    for try_index in 0..=NUM_RETRIES {
-        rtt_res = Rtt::attach_region(core.clone(), &sess, &ScanRegion::Exact(rtt_addr_res));
-        match rtt_res {
-            Ok(_) => {
-                log::info!("Successfully attached RTT");
-                break;
-            }
-            Err(probe_rs_rtt::Error::ControlBlockNotFound) => {
-                if try_index < NUM_RETRIES {
-                    log::info!("Could not attach because the target's RTT control block isn't initialized (yet). retrying");
-                } else {
-                    log::info!("Max number of RTT attach retries exceeded. Did you call dk::init() first thing in your program?");
-                    return Err(anyhow!(probe_rs_rtt::Error::ControlBlockNotFound));
-                }
-            }
-            Err(e) => {
-                return Err(anyhow!(e));
-            }
-        }
-    }
-
-    let channel = rtt_res
-        .expect("unreachable") // this block is only executed when rtt was successfully attached before
-        .up_channels()
-        .take(0)
-        .ok_or_else(|| anyhow!("RTT up channel 0 not found"))?;
+    let logging_channel = setup_logging_channel(rtt_addr, &core, &sess);
 
     static CONTINUE: AtomicBool = AtomicBool::new(true);
 
@@ -263,16 +234,19 @@ fn notmain() -> Result<i32, anyhow::Error> {
     let mut frames = vec![];
     let mut was_halted = false;
     while CONTINUE.load(Ordering::Relaxed) {
-        let n = channel.read(&mut read_buf)?;
+        if logging_channel.is_ok() {
+            // todo rename n
+            let n = logging_channel.unwrap().read(&mut read_buf)?;
 
-        if n != 0 {
-            frames.extend_from_slice(&read_buf[..n]);
+            if n != 0 {
+                frames.extend_from_slice(&read_buf[..n]);
 
-            while let Ok((frame, consumed)) = decoder::decode(&frames, &table) {
-                writeln!(stdout, "{}", frame.display(true))?;
-                let n = frames.len();
-                frames.rotate_left(consumed);
-                frames.truncate(n - consumed);
+                while let Ok((frame, consumed)) = decoder::decode(&frames, &table) {
+                    writeln!(stdout, "{}", frame.display(true))?;
+                    let n = frames.len();
+                    frames.rotate_left(consumed);
+                    frames.truncate(n - consumed);
+                }
             }
         }
 
@@ -314,6 +288,44 @@ const SIGABRT: i32 = 134;
 enum TopException {
     HardFault,
     Other,
+}
+
+fn setup_logging_channel(rtt_addr: Option<u32>, core: &Rc<Core>, sess: &Session) -> Result<UpChannel, anyhow::Error> {
+    if let Some(rtt_addr_res) = rtt_addr {
+        const NUM_RETRIES: usize = 5; // picked at random, increase if necessary
+        let mut rtt_res: Result<Rtt, probe_rs_rtt::Error> = Err(probe_rs_rtt::Error::ControlBlockNotFound);
+
+        for try_index in 0..=NUM_RETRIES {
+            // todo: deref?
+            rtt_res = Rtt::attach_region(*core.clone(), sess, &ScanRegion::Exact(rtt_addr_res));
+            match rtt_res {
+                Ok(_) => {
+                    log::info!("Successfully attached RTT");
+                    break;
+                }
+                Err(probe_rs_rtt::Error::ControlBlockNotFound) => {
+                    if try_index < NUM_RETRIES {
+                        log::info!("Could not attach because the target's RTT control block isn't initialized (yet). retrying");
+                    } else {
+                        log::info!("Max number of RTT attach retries exceeded. Did you call dk::init() first thing in your program?");
+                        return Err(anyhow!(probe_rs_rtt::Error::ControlBlockNotFound));
+                    }
+                }
+                Err(e) => {
+                    return Err(anyhow!(e));
+                }
+            }
+        }
+
+        let channel = rtt_res
+            .expect("unreachable") // this block is only executed when rtt was successfully attached before
+            .up_channels()
+            .take(0)
+            .ok_or_else(|| anyhow!("RTT up channel 0 not found"))?;
+        Ok(channel)
+    } else {
+        Err(anyhow!("No logs available, waiting for device to halt at breakpoint")) // todo more useful err type?
+    }
 }
 
 fn backtrace(
