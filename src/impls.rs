@@ -194,7 +194,7 @@ where
 {
     fn format(&self, f: &mut Formatter) {
         if f.needs_tag() {
-            let t = internp!("None|Some({})");
+            let t = internp!("None|Some({:?})");
             f.u8(&t);
         }
         match self {

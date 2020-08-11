@@ -355,12 +355,29 @@ fn parse_args<'t>(
             }
             Type::Format => {
                 let format = get_format(format_list, bytes, table)?;
-                let inner_args = parse_args(bytes, format, table, format_list)?;
 
-                args.push(Arg::Format {
-                    format,
-                    args: inner_args,
-                });
+                if format.contains('|') {
+                    // enum
+                    let enum_string = format;
+                    let discriminant = bytes.read_u8().map_err(drop)?;
+                    // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
+                    // required: "A|B({:?})" where "{:?}" -> "C|D"
+                    let variant = enum_string
+                        .split('|')
+                        .nth(usize::from(discriminant))
+                        .ok_or(())?;
+                    let inner_args = parse_args(bytes, variant, table, format_list)?;
+                    args.push(Arg::Format {
+                        format: variant,
+                        args: inner_args,
+                    });
+                } else {
+                    let inner_args = parse_args(bytes, format, table, format_list)?;
+                    args.push(Arg::Format {
+                        format,
+                        args: inner_args,
+                    });
+                }
             }
             Type::I16 => {
                 let data = bytes.read_i16::<LE>().map_err(drop)?;
@@ -936,5 +953,44 @@ mod tests {
             &bytes,
             "0.000002 INFO Hello World 125",
         );
+    }
+
+    #[test]
+    fn option() {
+        let mut entries = BTreeMap::new();
+        entries.insert(4, "x={:?}".to_owned());
+        entries.insert(3, "None|Some({:?})".to_owned());
+        entries.insert(2, "{:u8}".to_owned());
+
+        let table = Table {
+            entries,
+            debug: 0..0,
+            error: 0..0,
+            info: 4..5,
+            trace: 0..0,
+            warn: 0..0,
+        };
+
+        let bytes = [
+            4,  // string index (INFO)
+            0,  // timestamp
+            3,  // string index (enum)
+            1,  // Some discriminant
+            2,  // string index (u8)
+            42, // Some.0
+        ];
+
+        let frame = super::decode(&bytes, &table).unwrap().0;
+        assert_eq!(frame.display(false).to_string(), "0.000000 INFO x=Some(42)");
+
+        let bytes = [
+            4,  // string index (INFO)
+            1,  // timestamp
+            3,  // string index (enum)
+            0,  // None discriminant
+        ];
+
+        let frame = super::decode(&bytes, &table).unwrap().0;
+        assert_eq!(frame.display(false).to_string(), "0.000001 INFO x=None");
     }
 }

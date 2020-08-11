@@ -94,6 +94,23 @@ fn main() -> ! {
     let slices: &[&[u16]] = &[&[256, 257, 258], &[259, 260]];
     binfmt::info!("{:[?]}", slices);
 
+    #[derive(Format)]
+    enum E {
+        A,
+        B,
+    }
+
+    binfmt::info!("e1={:?}", E::A);
+    binfmt::info!("e2={:?}", E::B);
+
+    binfmt::info!("e3={:?}", Some(42u8));
+    binfmt::info!("e4={:?}", None::<u8>);
+
+    binfmt::info!("e5={:?}", Ok::<u8, u16>(42u8));
+    binfmt::info!("e6={:?}", Err::<u8, u16>(256u16));
+
+    binfmt::info!("e7={:?}", Some(X { y: Y { z: 42 } }));
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
