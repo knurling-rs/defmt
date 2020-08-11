@@ -198,6 +198,42 @@ fn booleans_mixed_no_trailing_bool() {
 }
 
 #[test]
+fn bitfields_mixed() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "bitfields {0:7..12}, {1:0..5}", 0b1110_0101_1111_0000u16, 0b1111_0000u8);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,                    // bitfields {0:7..12}, {1:0..5}",
+            timestamp,
+            0b1111_0000, 0b1110_0101, // u16
+            0b1111_0000u8,            // u8
+        ]
+    );
+}
+
+#[test]
+fn bitfields_across_octets() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,                    // bitfields {0:7..12}, {1:0..5}",
+            timestamp,
+            0b1101_0010, 0b0110_0011, // u16
+        ]
+    );
+}
+
+
+#[test]
 fn boolean_struct() {
     #[derive(Format)]
     struct X {

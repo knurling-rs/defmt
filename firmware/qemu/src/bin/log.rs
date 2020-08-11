@@ -36,6 +36,7 @@ fn main() -> ! {
         isize::min_value()
     );
     binfmt::info!("usize: 0 = {:usize}, MAX = {:usize}", 0, usize::max_value());
+    binfmt::info!("bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
 
     binfmt::trace!("log trace");
     binfmt::debug!("log debug");
