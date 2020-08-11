@@ -12,19 +12,46 @@ use colored::Colorize;
 use binfmt_parser::{Fragment, Type};
 use common::Level;
 
+/// Supported `binfmt` wire format
+const BINFMT_VERSION: usize = 1;
+
 /// Interner table that holds log levels and maps format strings to indices
 #[derive(Debug)]
 pub struct Table {
-    pub entries: BTreeMap<usize, String>,
-    pub debug: Range<usize>,
-    pub error: Range<usize>,
-    pub info: Range<usize>,
-    pub trace: Range<usize>,
-    pub warn: Range<usize>,
+    entries: BTreeMap<usize, String>,
+    debug: Range<usize>,
+    error: Range<usize>,
+    info: Range<usize>,
+    trace: Range<usize>,
+    warn: Range<usize>,
 }
 
 impl Table {
     // TODO constructor
+    pub fn new(
+        entries: BTreeMap<usize, String>,
+        debug: Range<usize>,
+        error: Range<usize>,
+        info: Range<usize>,
+        trace: Range<usize>,
+        warn: Range<usize>,
+        version: usize,
+    ) -> Result<Self, &'static str> {
+        if version != BINFMT_VERSION {
+            return Err("unsupported binfmt version");
+        }
+
+        // TODO check that the ranges don't overlap
+
+        Ok(Self {
+            entries,
+            debug,
+            error,
+            info,
+            trace,
+            warn,
+        })
+    }
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
         let lvl = if self.debug.contains(&index) {
@@ -1133,10 +1160,10 @@ mod tests {
         assert_eq!(frame.display(false).to_string(), "0.000000 INFO x=Some(42)");
 
         let bytes = [
-            4,  // string index (INFO)
-            1,  // timestamp
-            3,  // string index (enum)
-            0,  // None discriminant
+            4, // string index (INFO)
+            1, // timestamp
+            3, // string index (enum)
+            0, // None discriminant
         ];
 
         let frame = super::decode(&bytes, &table).unwrap().0;

@@ -35,6 +35,8 @@ SECTIONS
 
     /* User interned strings (Str) */
     *(.binfmt.str.*);
+
+    _binfmt_version_ = 1;
   }
 }
 

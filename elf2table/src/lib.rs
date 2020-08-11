@@ -26,6 +26,7 @@ pub fn parse(elf: &ElfFile) -> Result<Table, anyhow::Error> {
         .ok_or_else(|| anyhow!("`.symtab` section not found"))?;
 
     let mut map = BTreeMap::new();
+    let mut version = None;
     let mut trace_start = None;
     let mut trace_end = None;
     let mut debug_start = None;
@@ -40,8 +41,16 @@ pub fn parse(elf: &ElfFile) -> Result<Table, anyhow::Error> {
         // NOTE assuming 32-bit target
         SectionData::SymbolTable32(entries) => {
             for entry in entries {
+                let name = entry.get_name(&elf);
+
+                // not in the `.binfmt` section because it's not tied to the address of any symbol
+                // in `.binfmt`
+                if name == Ok("_binfmt_version_") {
+                    version = Some(entry.value() as usize);
+                }
+
                 if entry.shndx() == binfmt_shndx {
-                    let name = entry.get_name(&elf).map_err(anyhow::Error::msg)?;
+                    let name = name.map_err(anyhow::Error::msg)?;
                     match name {
                         "_binfmt_trace_start" => trace_start = Some(entry.value() as usize),
                         "_binfmt_trace_end" => trace_end = Some(entry.value() as usize),
@@ -64,23 +73,17 @@ pub fn parse(elf: &ElfFile) -> Result<Table, anyhow::Error> {
     }
 
     // unify errors
-    let (error, warn, info, debug, trace) = (|| -> Option<_> {
+    let (error, warn, info, debug, trace, version) = (|| -> Option<_> {
         Some((
             error_start?..error_end?,
             warn_start?..warn_end?,
             info_start?..info_end?,
             debug_start?..debug_end?,
             trace_start?..trace_end?,
+            version?,
         ))
     })()
     .ok_or_else(|| anyhow!("`_binfmt_*` symbol not found"))?;
 
-    Ok(Table {
-        entries: map,
-        trace,
-        debug,
-        info,
-        warn,
-        error,
-    })
+    Table::new(map, trace, debug, info, warn, error, version).map_err(anyhow::Error::msg)
 }
