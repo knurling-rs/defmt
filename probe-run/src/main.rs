@@ -219,13 +219,14 @@ fn notmain() -> Result<i32, anyhow::Error> {
 
     let core = Rc::new(core);
 
-    let logging_channel = setup_logging_channel(rtt_addr, &core, &sess);
-
     static CONTINUE: AtomicBool = AtomicBool::new(true);
 
     ctrlc::set_handler(|| {
         CONTINUE.store(false, Ordering::Relaxed);
     })?;
+
+    // todo one clone too many?
+    let logging_channel = setup_logging_channel(rtt_addr, core.clone(), &sess);
 
     // wait for breakpoint
     let stdout = io::stdout();
@@ -236,7 +237,7 @@ fn notmain() -> Result<i32, anyhow::Error> {
     while CONTINUE.load(Ordering::Relaxed) {
         if logging_channel.is_ok() {
             // todo rename n
-            let n = logging_channel.unwrap().read(&mut read_buf)?;
+            let n = logging_channel.as_ref().unwrap().read(&mut read_buf)?;
 
             if n != 0 {
                 frames.extend_from_slice(&read_buf[..n]);
@@ -290,14 +291,13 @@ enum TopException {
     Other,
 }
 
-fn setup_logging_channel(rtt_addr: Option<u32>, core: &Rc<Core>, sess: &Session) -> Result<UpChannel, anyhow::Error> {
+fn setup_logging_channel(rtt_addr: Option<u32>, core: Rc<Core>, sess: &Session) -> Result<UpChannel, anyhow::Error> {
     if let Some(rtt_addr_res) = rtt_addr {
         const NUM_RETRIES: usize = 5; // picked at random, increase if necessary
         let mut rtt_res: Result<Rtt, probe_rs_rtt::Error> = Err(probe_rs_rtt::Error::ControlBlockNotFound);
 
         for try_index in 0..=NUM_RETRIES {
-            // todo: deref?
-            rtt_res = Rtt::attach_region(*core.clone(), sess, &ScanRegion::Exact(rtt_addr_res));
+            rtt_res = Rtt::attach_region(core.clone(), sess, &ScanRegion::Exact(rtt_addr_res));
             match rtt_res {
                 Ok(_) => {
                     log::info!("Successfully attached RTT");
