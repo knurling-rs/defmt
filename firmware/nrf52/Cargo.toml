@@ -4,6 +4,7 @@ edition = "2018"
 readme = "README.md"
 name = "nrf52"
 version = "0.1.0"
+publish = false
 
 [dependencies]
 binfmt = { path = "../.." }

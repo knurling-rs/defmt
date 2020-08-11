@@ -3,6 +3,7 @@ authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
 edition = "2018"
 name = "binfmt-semihosting"
 version = "0.1.0"
+publish = false
 
 [dependencies]
 binfmt = { path = "../.." }
