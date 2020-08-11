@@ -275,6 +275,10 @@ fn notmain() -> Result<i32, anyhow::Error> {
 
     core.reset_and_halt()?;
 
+    if let Err(err) = logging_channel {
+        return Err(err);
+    }
+
     Ok(if top_exception == Some(TopException::HardFault) {
         SIGABRT
     } else {
@@ -323,7 +327,7 @@ fn setup_logging_channel(rtt_addr: Option<u32>, core: Rc<Core>, sess: &Session) 
             .ok_or_else(|| anyhow!("RTT up channel 0 not found"))?;
         Ok(channel)
     } else {
-        Err(anyhow!("No logs available, waiting for device to halt at breakpoint")) // todo more useful err type?
+        Err(anyhow!("No log messages to print, waited for device to halt"))
     }
 }
 
