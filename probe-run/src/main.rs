@@ -225,8 +225,7 @@ fn notmain() -> Result<i32, anyhow::Error> {
         CONTINUE.store(false, Ordering::Relaxed);
     })?;
 
-    // todo one clone too many?
-    let mut logging_channel = setup_logging_channel(rtt_addr, core.clone(), &sess);
+    let mut logging_channel = setup_logging_channel(rtt_addr, &core, &sess);
 
     // wait for breakpoint
     let stdout = io::stdout();
@@ -294,7 +293,7 @@ enum TopException {
     Other,
 }
 
-fn setup_logging_channel(rtt_addr: Option<u32>, core: Rc<Core>, sess: &Session) -> Result<UpChannel, anyhow::Error> {
+fn setup_logging_channel(rtt_addr: Option<u32>, core: &Rc<Core>, sess: &Session) -> Result<UpChannel, anyhow::Error> {
     if let Some(rtt_addr_res) = rtt_addr {
         const NUM_RETRIES: usize = 5; // picked at random, increase if necessary
         let mut rtt_res: Result<Rtt, probe_rs_rtt::Error> = Err(probe_rs_rtt::Error::ControlBlockNotFound);
