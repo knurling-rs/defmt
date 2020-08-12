@@ -28,6 +28,7 @@ binfmt::error!("x: {:bool}, y: {:u8}, z: {:bool}", false, 0xff, true);
 ⚠️ If the final parameter is not a `{:bool}` but there are yet to be compressed `{:bool}`s present in the format string beforehand, the final output byte containing all compressed booleans will be at the end.
 
 ``` rust
+# extern crate binfmt;
 binfmt::error!("x: {:bool}, y: {:u8}", false, 0xff);
 // on the wire: [1, 0xff, 0b0,]
 //  string index ^  ^^^^^ ^^^^ the booleans: `0bx`
@@ -38,6 +39,9 @@ binfmt::error!("x: {:bool}, y: {:u8}", false, 0xff);
 ⚠️ If some `{:bool}`s are nested inside a struct, they will still be compressed as if they were passed as regular arguments.
 
 ``` rust
+# extern crate binfmt;
+# use binfmt::Format;
+#[derive(Format)]
 struct Flags {
          a: bool,
          b: bool,

@@ -9,7 +9,7 @@ First let's see how a primitive implements the `Format` trait:
 # trait Format { fn format(&self, f: &mut binfmt::Formatter); }
 impl Format for u8 {
     fn format(&self, f: &mut binfmt::Formatter) {
-        binfmt::write!(f, "{:u8}", self)
+        binfmt::export::write!(f, "{:u8}", self)
         // on the wire: [1, 42]
         //  string index ^  ^^ `self`
         //  ^ = intern("{:u8}")
@@ -32,6 +32,3 @@ binfmt::error!("The answer is {:?}!", 42u8);
 ```
 
 This will send the string index of "The answer is {:?}!" and invoke the argument's `Format::format` method.
-
-> TODO(japaric) a naive `[T]`'s `Format` implementation (`slice.for_each(format)`) has high overhead: the string index of e.g. `{:u8}` would be repeated N times.
-> We'll need to some specialization to avoid that repetition.

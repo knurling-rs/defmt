@@ -21,6 +21,7 @@ Bit indices are little-endian: the 0th bit is the rightmost bit.
 
 Bitfields are not range inclusive, e.g.
 ``` rust
+# extern crate binfmt;
 binfmt::trace!("first two bits: {0:0..3}", 254);
 ```
 will evaluate to `0b10`.
@@ -28,7 +29,8 @@ will evaluate to `0b10`.
 
 ⚠️ Currently, the bitfielded argument must be of the smallest type that can contain the largest end index.
 
-``` rust
+``` rust,compile_fail
+# extern crate binfmt;
 // this will not compile
 binfmt::trace!("{0:0..3}", 555u16);
 
@@ -37,6 +39,7 @@ binfmt::trace!("{0:0..3}", 555u16 as u8);
 ```
 
 ⚠️ You can not reuse the same argument in a bitfield- and a non bitfield parameter. This will not compile:
-``` rust
-binfmt::trace!("{0:0..3} {0:u16}", 256u16);
+``` rust,compile_fail
+# extern crate binfmt;
+binfmt::trace!("{0:5..13} {0:u16}", 256u16);
 ```
