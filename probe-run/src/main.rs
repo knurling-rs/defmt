@@ -41,14 +41,14 @@ fn main() -> Result<(), anyhow::Error> {
     notmain().map(|code| process::exit(code))
 }
 
-#[derive(StructOpt)]
+#[derive(Debug, StructOpt)]
 #[structopt(name = "probe-run")]
 struct Opts {
-    #[structopt(long = "list-chips")]
-    list_chips: bool,
     #[structopt(long)]
+    list_chips: bool,
+    #[structopt(long, required_unless = "list_chips")]
     chip: String,
-    #[structopt(name = "ELF", parse(from_os_str))]
+    #[structopt(name = "ELF", parse(from_os_str), required_unless = "list_chips")]
     elf: PathBuf,
 }
 
