@@ -3,8 +3,7 @@
 The linker hates it when it finds two symbol that have the same name.
 For example, this is an error:
 
-<!-- TODO remove ',ignore' -->
-``` rust,ignore
+``` rust,compile_fail
 #[no_mangle]
 static X: u32 = 0;
 
