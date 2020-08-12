@@ -36,7 +36,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
     - name: Build
-      run: cargo build --workspace --all-targets
+      run: cargo build
       # NOTE order is important; running `mdbook` at the end = duplicate crate errors
     - name: Run book tests
       working-directory: book
