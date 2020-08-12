@@ -235,7 +235,7 @@ fn notmain() -> Result<i32, anyhow::Error> {
     let mut frames = vec![];
     let mut was_halted = false;
     while CONTINUE.load(Ordering::Relaxed) {
-        if let Ok(ref mut logging_channel)= logging_channel {
+        if let Ok(logging_channel) = &mut logging_channel {
             let num_bytes_read = logging_channel.read(&mut read_buf)?;
 
             if num_bytes_read != 0 {
