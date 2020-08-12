@@ -9,8 +9,8 @@ use std::mem;
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-use defmt_parser::{Fragment, Type};
 use common::Level;
+use defmt_parser::{Fragment, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -171,34 +171,6 @@ pub enum FormatSlice<'t> {
         format: &'t str,
         elements: Vec<Vec<Arg<'t>>>,
     },
-}
-
-impl fmt::Display for Arg<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Arg::Bool(x) => write!(f, "{:?}", x),
-            Arg::F32(x) => write!(f, "{}", ryu::Buffer::new().format(*x)),
-            Arg::Uxx(x) => write!(f, "{}", x),
-            Arg::Ixx(x) => write!(f, "{}", x),
-            Arg::Str(x) => write!(f, "{}", x),
-            Arg::IStr(x) => write!(f, "{}", x),
-            Arg::Format { format, args } => f.write_str(&format_args(format, args)),
-            Arg::FormatSlice(FormatSlice::Empty) => f.write_str("[]"),
-            Arg::FormatSlice(FormatSlice::NotEmpty { format, elements }) => {
-                f.write_str("[")?;
-                let mut is_first = true;
-                for args in elements {
-                    if !is_first {
-                        f.write_str(", ")?;
-                    }
-                    is_first = false;
-                    f.write_str(&format_args(format, args))?;
-                }
-                f.write_str("]")
-            }
-            Arg::Slice(x) => write!(f, "{:?}", x),
-        }
-    }
 }
 
 /// decode the data sent by the device using the previosuly stored metadata
@@ -547,6 +519,10 @@ fn parse_args<'t>(
 }
 
 fn format_args(format: &str, args: &[Arg]) -> String {
+    format_args_real(format, args).unwrap() // cannot fail, we only write to a `String`
+}
+
+fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
     let params = defmt_parser::parse(format).unwrap();
     let mut buf = String::new();
     for param in params {
@@ -555,27 +531,44 @@ fn format_args(format: &str, args: &[Arg]) -> String {
                 buf.push_str(&lit);
             }
             Fragment::Parameter(param) => {
-                match param.ty {
-                    Type::BitField(range) => {
-                        match args[param.index] {
-                            Arg::Uxx(val) => {
+                match &args[param.index] {
+                    Arg::Bool(x) => write!(buf, "{:?}", x)?,
+                    Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
+                    Arg::Uxx(x) => {
+                        match param.ty {
+                            Type::BitField(range) => {
                                 let left_zeroes = mem::size_of::<u64>() * 8 - range.end as usize;
                                 let right_zeroes = left_zeroes + range.start as usize;
                                 // isolate the desired bitfields
-                                let bitfields = (val << left_zeroes) >> right_zeroes;
-                                write!(&mut buf, "{:#b}", bitfields).ok();
+                                let bitfields = (*x << left_zeroes) >> right_zeroes;
+                                write!(&mut buf, "{:#b}", bitfields)?
                             }
-                            _ => unreachable!(),
-                        };
+                            _ => write!(buf, "{}", x)?,
+                        }
                     }
-                    _ => {
-                        write!(&mut buf, "{}", args[param.index]).ok();
+                    Arg::Ixx(x) => write!(buf, "{}", x)?,
+                    Arg::Str(x) => write!(buf, "{}", x)?,
+                    Arg::IStr(x) => write!(buf, "{}", x)?,
+                    Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
+                    Arg::FormatSlice(FormatSlice::Empty) => buf.push_str("[]"),
+                    Arg::FormatSlice(FormatSlice::NotEmpty { format, elements }) => {
+                        buf.write_str("[")?;
+                        let mut is_first = true;
+                        for args in elements {
+                            if !is_first {
+                                buf.write_str(", ")?;
+                            }
+                            is_first = false;
+                            buf.write_str(&format_args(format, args))?;
+                        }
+                        buf.write_str("]")?;
                     }
+                    Arg::Slice(x) => write!(buf, "{:?}", x)?,
                 }
             }
         }
     }
-    buf
+    Ok(buf)
 }
 
 fn zigzag_decode(unsigned: u64) -> i64 {
