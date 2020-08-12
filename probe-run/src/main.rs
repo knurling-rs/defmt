@@ -9,6 +9,7 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
 };
 use std::{
+    borrow::Cow,
     collections::{btree_map, BTreeMap},
     fs,
     io::{self, Write as _},
@@ -23,6 +24,7 @@ use gimli::{
     read::{CfaRule, DebugFrame, UnwindSection},
     BaseAddresses, EndianSlice, LittleEndian, RegisterRule, UninitializedUnwindContext,
 };
+use probe_rs::config::registry;
 use probe_rs::{
     flashing::{self, Format},
     Core, CoreRegisterAddress, Probe,
@@ -42,6 +44,8 @@ fn main() -> Result<(), anyhow::Error> {
 #[derive(StructOpt)]
 #[structopt(name = "probe-run")]
 struct Opts {
+    #[structopt(long = "list-chips")]
+    list_chips: bool,
     #[structopt(long)]
     chip: String,
     #[structopt(name = "ELF", parse(from_os_str))]
@@ -52,6 +56,11 @@ fn notmain() -> Result<i32, anyhow::Error> {
     env_logger::init();
 
     let opts = Opts::from_args();
+
+    if opts.list_chips {
+        return print_chips();
+    }
+
     let bytes = fs::read(&opts.elf)?;
     let elf = ElfFile::new(&bytes).map_err(|s| anyhow!("{}", s))?;
 
@@ -467,6 +476,25 @@ fn backtrace(
     }
 
     Ok(top_exception)
+}
+
+fn print_chips() -> Result<i32, anyhow::Error> {
+    let registry = registry::families().expect("Could not retrieve chip family registry");
+    for chip_family in registry {
+        let cf_variants = chip_family
+            .variants
+            .iter()
+            .map(|chip| Cow::Borrowed(&chip.name))
+            .collect::<Vec<_>>();
+
+        println!("{}", chip_family.name);
+        println!("    Variants:");
+        for variant in cf_variants {
+            println!("        {}", Cow::Borrowed(&variant));
+        }
+    }
+
+    Ok(0)
 }
 
 /// Registers stacked on exception entry
