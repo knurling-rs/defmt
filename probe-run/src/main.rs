@@ -41,14 +41,16 @@ fn main() -> Result<(), anyhow::Error> {
     notmain().map(|code| process::exit(code))
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(StructOpt)]
 #[structopt(name = "probe-run")]
 struct Opts {
     #[structopt(long)]
     list_chips: bool,
-    #[structopt(long, required_unless = "list_chips")]
+    // note: default_value is a hacky way to avoid errors when --list_chips is passed –
+    // `required_if("list_chips", "true")` does not kick in for some reason
+    #[structopt(long, default_value = "nop")]
     chip: String,
-    #[structopt(name = "ELF", parse(from_os_str), required_unless = "list_chips")]
+    #[structopt(name = "ELF", parse(from_os_str), default_value = "nop")]
     elf: PathBuf,
 }
 
