@@ -5,8 +5,7 @@ Compared to the `{:str}` parameter, which transmits a complete string, `{:istr}`
 The `{:istr}` parameter expects an argument with type `binfmt::Str`.
 A `Str` value is created using the `intern!` macro; the argument to this macro must be a string literal.
 
-<!-- TODO remove ',ignore' -->
-``` rust,ignore
+``` rust
 # extern crate binfmt;
 let s = "The quick brown fox jumps over the lazy dog";
 binfmt::info!("{:str}", s);

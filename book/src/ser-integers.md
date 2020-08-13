@@ -3,8 +3,7 @@
 Integers will be serialized in little endian order using `to_le_bytes()`.
 `usize` and `isize` values will be subject to LEB128 compression.
 
-<!-- TODO remove ',ignore' -->
-``` rust,ignore
+``` rust
 # extern crate binfmt;
 binfmt::error!("The answer is {:i16}!", 300);
 // on the wire: [3, 44, 1]
