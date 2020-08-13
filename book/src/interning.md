@@ -60,7 +60,7 @@ The four columns in the output, from left to right, contain:
 As you can see the interned string is the symbol name.
 Although we cannot write:
 
-``` rust
+``` rust,ignore
 static "USB controller is ready": u8 = 0;
 ```
 

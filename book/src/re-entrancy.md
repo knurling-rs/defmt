@@ -5,6 +5,8 @@ Turns out that with global singletons it can occur about anywhere; you don't nee
 See below:
 
 ``` rust
+# extern crate binfmt;
+# let x = 0u8;
 binfmt::info!("The answer is {:?}!", x /*: Struct */);
 ```
 
@@ -12,8 +14,10 @@ As you have seen before this will first send the string index of "The answer is 
 The re-entrancy issue arises if the `Format` implementation calls a logging macro:
 
 ``` rust
-impl Format for X {
-    fn format(&self, f: &mut Formatter) {
+# extern crate binfmt;
+# struct X;
+impl binfmt::Format for X {
+    fn format(&self, f: &mut binfmt::Formatter) {
         //           ^ this is a handle to the global logger
         binfmt::info!("Hello!");
         // ..

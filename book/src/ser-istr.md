@@ -4,6 +4,7 @@ Let's ignore timestamps for now and also ignore how access to the global logger 
 This is the simplest case: logging a string literal with no formatting.
 
 ``` rust
+# extern crate binfmt;
 binfmt::info!("Hello, world!");
 ```
 

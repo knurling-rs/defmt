@@ -3,6 +3,9 @@
 To implement the `Format` trait for a struct or enum use the `derive` attribute.
 
 ``` rust
+# extern crate binfmt;
+use binfmt::Format;
+
 #[derive(Format)]
 struct Header {
     source: u8,
@@ -10,6 +13,8 @@ struct Header {
     sequence: u16,
 }
 
+# #[derive(Format)]
+# struct Descriptor;
 #[derive(Format)]
 enum Request {
     GetDescriptor { descriptor: Descriptor, length: u16 },

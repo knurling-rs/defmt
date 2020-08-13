@@ -4,13 +4,15 @@ The `{:[?]}` parameter can be used to log a slices of values that implement the 
 The expected argument is a slice.
 
 ``` rust
+# extern crate binfmt;
+# use binfmt::{Format, info};
 #[derive(Format)]
 struct X {
     y: u16,
     z: u8,
 }
 let xs: &[X] = &[/* .. */];
-info!("xs={:[?]}")
+info!("xs={:[?]}", xs);
 ```
 
 Note that for slices of bytes `{:[u8]}` should be preferred as it's better compressed.
