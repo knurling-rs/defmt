@@ -37,7 +37,8 @@ impl Table {
         version: usize,
     ) -> Result<Self, &'static str> {
         if version != BINFMT_VERSION {
-            return Err("unsupported binfmt version");
+            return Err("binfmt version mismatch; \
+are you using the same git version of binfmt and related tools?");
         }
 
         // TODO check that the ranges don't overlap
