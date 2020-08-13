@@ -6,9 +6,12 @@ use anyhow::{anyhow, bail};
 pub use decoder::Table;
 use xmas_elf::{sections::SectionData, symbol_table::Entry as _, ElfFile};
 
-pub fn parse(elf: &ElfFile) -> Result<Table, anyhow::Error> {
+/// Parses an ELF file and returns the decoded `binfmt` table
+///
+/// This function returns `None` if the ELF file contains no `.binfmt` section
+pub fn parse(elf: &ElfFile) -> Result<Option<Table>, anyhow::Error> {
     // find the index of the `.binfmt` section
-    let binfmt_shndx = elf
+    let binfmt_shndx = if let Some(shndx) = elf
         .section_iter()
         .zip(0..)
         .filter_map(|(sect, shndx)| {
@@ -19,7 +22,11 @@ pub fn parse(elf: &ElfFile) -> Result<Table, anyhow::Error> {
             }
         })
         .next()
-        .ok_or_else(|| anyhow!("`.binfmt` section not found"))?;
+    {
+        shndx
+    } else {
+        return Ok(None);
+    };
 
     let symtab = elf
         .find_section_by_name(".symtab")
@@ -85,5 +92,7 @@ pub fn parse(elf: &ElfFile) -> Result<Table, anyhow::Error> {
     })()
     .ok_or_else(|| anyhow!("`_binfmt_*` symbol not found"))?;
 
-    Table::new(map, trace, debug, info, warn, error, version).map_err(anyhow::Error::msg)
+    Table::new(map, trace, debug, info, warn, error, version)
+        .map_err(anyhow::Error::msg)
+        .map(Some)
 }

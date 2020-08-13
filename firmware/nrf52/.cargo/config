@@ -3,7 +3,7 @@ rb = "run --target thumbv7em-none-eabi --bin"
 rrb = "run --target thumbv7em-none-eabi --release --bin"
 
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "cargo run --manifest-path ../../probe-run/Cargo.toml -- --chip nRF52840_xxAA"
+runner = "cargo run --manifest-path ../../probe-run/Cargo.toml -- --binfmt --chip nRF52840_xxAA"
 
 rustflags = [
   "-C", "link-arg=-Tlink.x",
