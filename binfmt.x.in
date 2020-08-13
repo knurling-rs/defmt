@@ -36,7 +36,7 @@ SECTIONS
     /* User interned strings (Str) */
     *(.binfmt.str.*);
 
-    _binfmt_version_ = 1;
+    _binfmt_version_ = $BINFMT_VERSION;
   }
 }
 

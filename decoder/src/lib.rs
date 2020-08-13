@@ -12,8 +12,7 @@ use colored::Colorize;
 use binfmt_parser::{Fragment, Type};
 use common::Level;
 
-/// Supported `binfmt` wire format
-const BINFMT_VERSION: usize = 1;
+include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 /// Interner table that holds log levels and maps format strings to indices
 #[derive(Debug)]
