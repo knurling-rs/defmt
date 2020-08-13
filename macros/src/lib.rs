@@ -730,16 +730,16 @@ impl Codegen {
 
                     match largest_bit_index {
                         0..=8 => {
-                            exprs.push(quote!(_fmt_.u8(#arg)));
+                            exprs.push(quote!(_fmt_.u8(&binfmt::export::truncate(*#arg))));
                         }
                         9..=16 => {
-                            exprs.push(quote!(_fmt_.u16(#arg)));
+                            exprs.push(quote!(_fmt_.u16(&binfmt::export::truncate(*#arg))));
                         }
                         17..=24 => {
-                            exprs.push(quote!(_fmt_.u24(#arg)));
+                            exprs.push(quote!(_fmt_.u24(&binfmt::export::truncate(*#arg))));
                         }
                         25..=32 => {
-                            exprs.push(quote!(_fmt_.u32(#arg)));
+                            exprs.push(quote!(_fmt_.u32(&binfmt::export::truncate(*#arg))));
                         }
                         _ => unreachable!(),
                     }

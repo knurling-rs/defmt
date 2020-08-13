@@ -81,3 +81,77 @@ pub fn istr(address: usize) -> Str {
         address: address as *const u8 as u16,
     }
 }
+
+mod sealed {
+    pub trait Truncate<U> {
+        fn truncate(self) -> U;
+    }
+
+    impl Truncate<u8> for u8 {
+        fn truncate(self) -> u8 {
+            self
+        }
+    }
+
+    impl Truncate<u8> for u16 {
+        fn truncate(self) -> u8 {
+            self as u8
+        }
+    }
+
+    impl Truncate<u8> for u32 {
+        fn truncate(self) -> u8 {
+            self as u8
+        }
+    }
+
+    impl Truncate<u8> for u64 {
+        fn truncate(self) -> u8 {
+            self as u8
+        }
+    }
+
+    // needed so we can call truncate() without having to check whether truncation is necessary first
+    impl Truncate<u16> for u16 {
+        fn truncate(self) -> u16 {
+            self
+        }
+    }
+
+    impl Truncate<u16> for u32 {
+        fn truncate(self) -> u16 {
+            self as u16
+        }
+    }
+
+
+    impl Truncate<u16> for u64 {
+        fn truncate(self) -> u16 {
+            self as u16
+        }
+    }
+
+    // needed so we can call truncate() without having to check whether truncation is necessary first
+    impl Truncate<u32> for u32 {
+        fn truncate(self) -> u32 {
+            self
+        }
+    }
+
+    impl Truncate<u32> for u64 {
+        fn truncate(self) -> u32 {
+            self as u32
+        }
+    }
+
+    // needed so we can call truncate() without having to check whether truncation is necessary first
+    impl Truncate<u64> for u64 {
+        fn truncate(self) -> u64 {
+            self
+        }
+    }
+}
+
+pub fn truncate<T>(x: impl sealed::Truncate<T>) -> T {
+    x.truncate()
+}
