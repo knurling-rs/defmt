@@ -92,7 +92,7 @@ pub fn parse(elf: &ElfFile) -> Result<Option<Table>, anyhow::Error> {
     })()
     .ok_or_else(|| anyhow!("`_binfmt_*` symbol not found"))?;
 
-    Table::new(map, trace, debug, info, warn, error, version)
+    Table::new(map, debug, error, info, trace, warn, version)
         .map_err(anyhow::Error::msg)
         .map(Some)
 }
