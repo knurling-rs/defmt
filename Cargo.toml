@@ -15,7 +15,6 @@ members = [
   "elf2table",
   "macros",
   "parser",
-  "probe-run",
   "qemu-run",
   "firmware/*",
 ]

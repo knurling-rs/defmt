@@ -15,10 +15,8 @@
   - [#[timestamp]](./timestamp.md)
   - [#[global_logger]](./global-logger.md)
   - [Printers](./printers.md)
-- [`probe-run`](./probe-run.md)
-  - [Setup](./probe-run-setup.md)
-  - [Stack backtraces](./probe-run-backtrace.md)
-  - [Non-zero exit code](./probe-run-panic.md)
+  <!-- TODO remove this section and file after panic-probe has been migrated -->
+  <!-- - [Non-zero exit code](./probe-run-panic.md) -->
 - [Design & impl details](./design.md)
   - [Interning](./interning.md)
     - [Dealing with duplicates](./duplicates.md)
