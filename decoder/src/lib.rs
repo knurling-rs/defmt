@@ -4,7 +4,13 @@ use core::fmt::{self, Write as _};
 use core::ops::Range;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-use std::mem;
+use std::{
+    mem,
+    sync::{
+        atomic::{self, AtomicBool},
+        Arc,
+    },
+};
 
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
@@ -140,11 +146,36 @@ impl core::fmt::Display for DisplayFrame<'_> {
     }
 }
 
+#[derive(Debug)]
+struct Bool(AtomicBool);
+
+impl Bool {
+    const FALSE: Self = Self(AtomicBool::new(false));
+
+    fn set(&self, value: bool) {
+        self.0.store(value, atomic::Ordering::Relaxed);
+    }
+}
+
+impl fmt::Display for Bool {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.0.load(atomic::Ordering::Relaxed))
+    }
+}
+
+impl PartialEq for Bool {
+    fn eq(&self, other: &Self) -> bool {
+        self.0
+            .load(atomic::Ordering::Relaxed)
+            .eq(&other.0.load(atomic::Ordering::Relaxed))
+    }
+}
+
 // NOTE follows `parser::Type`
 #[derive(Debug, PartialEq)]
 enum Arg<'t> {
     /// Bool
-    Bool(bool),
+    Bool(Arc<Bool>),
     F32(f32),
     /// U8, U16, U24 and U32
     Uxx(u64),
@@ -192,6 +223,7 @@ pub fn decode<'t>(
         table,
         bytes,
         format_list: None,
+        bools_tbd: Vec::new(),
     };
     let args = decoder.decode_format(format)?;
 
@@ -210,27 +242,28 @@ struct Decoder<'t, 'b> {
     table: &'t Table,
     bytes: &'b [u8],
     format_list: Option<FormatList<'t>>,
+    bools_tbd: Vec<Arc<Bool>>,
 }
+
+const MAX_NUM_BOOL_FLAGS: usize = 8;
 
 impl<'t, 'b> Decoder<'t, 'b> {
     /// Reads a byte of packed bools and unpacks them into `args` at the given indices.
-    fn read_and_unpack_bools(
-        &mut self,
-        args: &mut Vec<Arg<'t>>,
-        indices: &[usize],
-    ) -> Result<(), ()> {
+    fn read_and_unpack_bools(&mut self) -> Result<(), ()> {
         let bool_flags = self.bytes.read_u8().map_err(drop)?;
-        let mut flag_index = indices.len();
+        let mut flag_index = self.bools_tbd.len();
 
-        for index in indices {
+        for bool in self.bools_tbd.iter() {
             flag_index -= 1;
 
             // read out the leftmost unread bit and turn it into a boolean
             let flag_mask = 1 << flag_index;
             let nth_flag = (bool_flags & flag_mask) != 0;
 
-            args[*index] = Arg::Bool(nth_flag);
+            bool.set(nth_flag);
         }
+
+        self.bools_tbd.clear();
 
         Ok(())
     }
@@ -294,11 +327,6 @@ impl<'t, 'b> Decoder<'t, 'b> {
             }
         });
 
-        const MAX_NUM_BOOL_FLAGS: usize = 8;
-        let mut empty_bool_indices: Vec<usize> = vec![]; // points in `args` that need to be filled with
-                                                         // booleans once the whole compression block has
-                                                         // been consumed
-
         for param in &params {
             match &param.ty {
                 Type::U8 => {
@@ -307,13 +335,12 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 }
 
                 Type::Bool => {
-                    let index = args.len();
-                    args.push(Arg::Bool(false));
-                    empty_bool_indices.push(index);
-                    if empty_bool_indices.len() == MAX_NUM_BOOL_FLAGS {
+                    let arc = Arc::new(Bool::FALSE);
+                    args.push(Arg::Bool(arc.clone()));
+                    self.bools_tbd.push(arc.clone());
+                    if self.bools_tbd.len() == MAX_NUM_BOOL_FLAGS {
                         // reached end of compression block: sprinkle values into args
-                        self.read_and_unpack_bools(&mut args, &empty_bool_indices)?;
-                        empty_bool_indices.clear();
+                        self.read_and_unpack_bools()?;
                     }
                 }
 
@@ -517,9 +544,9 @@ impl<'t, 'b> Decoder<'t, 'b> {
             }
         }
 
-        if empty_bool_indices.len() > 0 {
+        if self.bools_tbd.len() > 0 {
             // flush end of compression block
-            self.read_and_unpack_bools(&mut args, &empty_bool_indices)?;
+            self.read_and_unpack_bools()?;
         }
 
         Ok(args)
@@ -552,7 +579,7 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
             }
             Fragment::Parameter(param) => {
                 match &args[param.index] {
-                    Arg::Bool(x) => write!(buf, "{:?}", x)?,
+                    Arg::Bool(x) => write!(buf, "{}", x)?,
                     Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
                     Arg::Uxx(x) => {
                         match param.ty {
