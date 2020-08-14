@@ -89,11 +89,11 @@ are you using the same git version of defmt and related tools?");
 /// A log frame
 #[derive(Debug, PartialEq)]
 pub struct Frame<'t> {
-    pub level: Level,
+    level: Level,
     // Format string
-    pub format: &'t str,
-    pub timestamp: u64,
-    pub args: Vec<Arg<'t>>,
+    format: &'t str,
+    timestamp: u64,
+    args: Vec<Arg<'t>>,
 }
 
 impl<'t> Frame<'t> {
@@ -142,7 +142,7 @@ impl core::fmt::Display for DisplayFrame<'_> {
 
 // NOTE follows `parser::Type`
 #[derive(Debug, PartialEq)]
-pub enum Arg<'t> {
+enum Arg<'t> {
     /// Bool
     Bool(bool),
     F32(f32),
@@ -165,7 +165,7 @@ pub enum Arg<'t> {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum FormatSlice<'t> {
+enum FormatSlice<'t> {
     Empty,
     NotEmpty {
         format: &'t str,
