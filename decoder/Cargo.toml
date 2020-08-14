@@ -5,7 +5,7 @@ name = "decoder"
 version = "0.1.0"
 
 [dependencies]
-binfmt-parser = { path = "../parser" }
+defmt-parser = { path = "../parser" }
 byteorder = "1"
 colored = "2.0.0"
 common = { path = "../common" }

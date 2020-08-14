@@ -1,48 +1,48 @@
 #![no_std]
 #![no_main]
 
-use binfmt::Format;
+use defmt::Format;
 use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
 
-use binfmt_semihosting as _; // global logger
+use defmt_semihosting as _; // global logger
 use panic_halt as _; // panicking behavior
 
 #[entry]
 fn main() -> ! {
-    binfmt::info!("Hello!");
-    binfmt::info!("World!");
-    binfmt::info!("The answer is {:u8}", 42);
-    binfmt::info!("Hello {0:u8} {0:u8}!", 42);
-    binfmt::info!("Hello {1:u16} {0:u8} {2:bool}", 42u8, 256u16, false);
-    binfmt::info!("🍕 slice {:[u8]}", [3, 14]);
-    binfmt::info!("🍕 array {:[u8; 3]}", [3, 14, 1]);
-    binfmt::info!("float like a butterfly {:f32}", 5.67f32);
-    binfmt::info!("Hello {:u8}", 42u16 as u8);
+    defmt::info!("Hello!");
+    defmt::info!("World!");
+    defmt::info!("The answer is {:u8}", 42);
+    defmt::info!("Hello {0:u8} {0:u8}!", 42);
+    defmt::info!("Hello {1:u16} {0:u8} {2:bool}", 42u8, 256u16, false);
+    defmt::info!("🍕 slice {:[u8]}", [3, 14]);
+    defmt::info!("🍕 array {:[u8; 3]}", [3, 14, 1]);
+    defmt::info!("float like a butterfly {:f32}", 5.67f32);
+    defmt::info!("Hello {:u8}", 42u16 as u8);
 
-    binfmt::info!(
+    defmt::info!(
         "isize: 0 = {:isize}, -1 = {:isize}, MAX = {:isize}, MIN = {:isize}",
         0,
         -1,
         isize::max_value(),
         isize::min_value()
     );
-    binfmt::info!(
+    defmt::info!(
         "isize: 0 = {:?}, -1 = {:?}, MAX = {:?}, MIN = {:?}",
         0,
         -1,
         isize::max_value(),
         isize::min_value()
     );
-    binfmt::info!("usize: 0 = {:usize}, MAX = {:usize}", 0, usize::max_value());
-    binfmt::info!("bitfields {0:0..3} {0:5..7}", 0b0110_0011_1101_0110u16);
+    defmt::info!("usize: 0 = {:usize}, MAX = {:usize}", 0, usize::max_value());
+    defmt::info!("bitfields {0:0..3} {0:5..7}", 0b0110_0011_1101_0110u16);
 
-    binfmt::trace!("log trace");
-    binfmt::debug!("log debug");
-    binfmt::info!("log info");
-    binfmt::warn!("log warn");
-    binfmt::error!("log error");
+    defmt::trace!("log trace");
+    defmt::debug!("log debug");
+    defmt::info!("log info");
+    defmt::warn!("log warn");
+    defmt::error!("log error");
 
     #[derive(Format)]
     struct S {
@@ -60,12 +60,12 @@ fn main() -> ! {
         z: u8,
     }
 
-    binfmt::info!("{:?}", S { x: 1, y: 256 });
-    binfmt::info!("{:?}", X { y: Y { z: 42 } });
+    defmt::info!("{:?}", S { x: 1, y: 256 });
+    defmt::info!("{:?}", X { y: Y { z: 42 } });
 
-    let interned = binfmt::intern!("interned string");
-    binfmt::info!("&str = {:str}", "string slice");
-    binfmt::info!("&Str = {:istr}", interned);
+    let interned = defmt::intern!("interned string");
+    defmt::info!("&str = {:str}", "string slice");
+    defmt::info!("&Str = {:istr}", interned);
 
     #[derive(Format)]
     struct Arr {
@@ -74,7 +74,7 @@ fn main() -> ! {
         arr32: [u8; 32],
     }
 
-    binfmt::info!(
+    defmt::info!(
         "{:?}",
         Arr {
             arr1: [0x1f],
@@ -84,16 +84,16 @@ fn main() -> ! {
     );
 
     let slice: &[u16] = &[256, 257, 258];
-    binfmt::info!("{:[?]}", slice);
+    defmt::info!("{:[?]}", slice);
 
     let ss: &[S] = &[S { x: 128, y: 256 }, S { x: 129, y: 257 }];
-    binfmt::info!("{:[?]}", ss);
+    defmt::info!("{:[?]}", ss);
 
     let xs: &[X] = &[X { y: Y { z: 128 } }, X { y: Y { z: 129 } }];
-    binfmt::info!("{:[?]}", xs);
+    defmt::info!("{:[?]}", xs);
 
     let slices: &[&[u16]] = &[&[256, 257, 258], &[259, 260]];
-    binfmt::info!("{:[?]}", slices);
+    defmt::info!("{:[?]}", slices);
 
     #[derive(Format)]
     enum E {
@@ -101,23 +101,23 @@ fn main() -> ! {
         B,
     }
 
-    binfmt::info!("e1={:?}", E::A);
-    binfmt::info!("e2={:?}", E::B);
+    defmt::info!("e1={:?}", E::A);
+    defmt::info!("e2={:?}", E::B);
 
-    binfmt::info!("e3={:?}", Some(42u8));
-    binfmt::info!("e4={:?}", None::<u8>);
+    defmt::info!("e3={:?}", Some(42u8));
+    defmt::info!("e4={:?}", None::<u8>);
 
-    binfmt::info!("e5={:?}", Ok::<u8, u16>(42u8));
-    binfmt::info!("e6={:?}", Err::<u8, u16>(256u16));
+    defmt::info!("e5={:?}", Ok::<u8, u16>(42u8));
+    defmt::info!("e6={:?}", Err::<u8, u16>(256u16));
 
-    binfmt::info!("e7={:?}", Some(X { y: Y { z: 42 } }));
+    defmt::info!("e7={:?}", Some(X { y: Y { z: 42 } }));
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
 }
 
-#[binfmt::timestamp]
+#[defmt::timestamp]
 fn timestamp() -> u64 {
     // monotonic counter
     static COUNT: AtomicU32 = AtomicU32::new(0);

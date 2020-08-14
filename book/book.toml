@@ -3,4 +3,4 @@ authors = ["James Munns"]
 language = "en"
 multilingual = false
 src = "src"
-title = "binfmt book"
+title = "defmt book"

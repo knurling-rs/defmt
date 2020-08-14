@@ -9,20 +9,20 @@ Add these Cargo features to your app's `Cargo.toml`:
 # under the features section, copy these
 [features]
 # ↓↓↓↓↓
-binfmt-default = []
-binfmt-trace = []
-binfmt-debug = []
-binfmt-info = []
-binfmt-warn = []
-binfmt-error = []
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
 # ↑↑↑↑↑
 ```
 
 ## Linker script
 
-The application must be linked using a custom linking process that includes the `binfmt.x` linker script.
+The application must be linked using a custom linking process that includes the `defmt.x` linker script.
 Custom linking is usual for embedded applications and configured in the `.cargo/config` file.
-To pass `binfmt.x` to the linker add the `-C link-arg=-Tbinfmt.x` flag to the rustflags section of `.cargo/config`.
+To pass `defmt.x` to the linker add the `-C link-arg=-Tdefmt.x` flag to the rustflags section of `.cargo/config`.
 
 ``` toml
 # .cargo/config
@@ -30,7 +30,7 @@ To pass `binfmt.x` to the linker add the `-C link-arg=-Tbinfmt.x` flag to the ru
 rustflags = [
   # likely, there's another `link-arg` flag already there; KEEP it
   "-C", "link-arg=-Tlink.x",
-  "-C", "link-arg=-Tbinfmt.x", # <- ADD this one
+  "-C", "link-arg=-Tdefmt.x", # <- ADD this one
 ]
 ```
 
@@ -42,8 +42,8 @@ The application must link to exactly one `global_logger`.
 The `global_logger` can appear anywhere in the dependency graph and usually it will be its own crate.
 The following `global_logger`s are provided as part of the project:
 
-- `binfmt-semihosting`, logs over semihosting. Meant only for testing `binfmt` on a virtual Cortex-M device (QEMU).
-- `binfmt-rtt`, logs over RTT. Note that this crate can *not* be used together with `rtt-target`.
+- `defmt-semihosting`, logs over semihosting. Meant only for testing `defmt` on a virtual Cortex-M device (QEMU).
+- `defmt-rtt`, logs over RTT. Note that this crate can *not* be used together with `rtt-target`.
 
 Information about how to write a `global_logger` can be found in the [`#[global_logger]` section](./global-logger.md).
 
@@ -57,8 +57,8 @@ The function should be implemented using a non-decreasing hardware counter but h
 No timestamps:
 
 ``` rust
-# extern crate binfmt;
-#[binfmt::timestamp]
+# extern crate defmt;
+#[defmt::timestamp]
 fn no_timestamp() -> u64 {
     0
 }
@@ -67,10 +67,10 @@ fn no_timestamp() -> u64 {
 Virtual timestamps:
 
 ``` rust
-# extern crate binfmt;
+# extern crate defmt;
 # use std::sync::atomic::{AtomicUsize, Ordering};
 // WARNING may overflow and wrap-around in long lived apps
-#[binfmt::timestamp]
+#[defmt::timestamp]
 fn virtual_timestamp() -> u64 {
     static COUNT: AtomicUsize = AtomicUsize::new(0);
     COUNT.fetch_add(1, Ordering::Relaxed) as u64
@@ -83,13 +83,13 @@ More information about how to write a `timestamp` function can be found in the [
 
 All logging is *disabled* by default.
 Logging can be enabled at the *crate* level.
-At the very least you'll want to enable logging for the top level application crate so we recommend adding `binfmt-default` to your crate's `default` feature.
+At the very least you'll want to enable logging for the top level application crate so we recommend adding `defmt-default` to your crate's `default` feature.
 
 ``` toml
 # Cargo.toml
 [features]
 default = [
-  "binfmt-default", # <- ADD this feature
+  "defmt-default", # <- ADD this feature
 ]
 ```
 

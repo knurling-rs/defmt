@@ -3,11 +3,11 @@
 Consider this log invocation:
 
 ``` rust
-# extern crate binfmt;
-binfmt::info!("x={:?}", foo());
+# extern crate defmt;
+defmt::info!("x={:?}", foo());
 
 fn foo() -> u8 {
-    binfmt::info!("Hello");
+    defmt::info!("Hello");
     42
 }
 ```

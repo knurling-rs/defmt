@@ -1,6 +1,6 @@
 # #[global_logger]
 
-*Applications* that, directly or transitively, use any of `binfmt` logging macros need to define a `#[global_logger]` or include one in their dependency graph.
+*Applications* that, directly or transitively, use any of `defmt` logging macros need to define a `#[global_logger]` or include one in their dependency graph.
 This is similar to how the `alloc` crate depends on a `#[global_allocator]`.
 
 The `global_logger` defines how data is moved from the *device*, where the application runs, to the host, where logs will be formatted and displayed.
@@ -32,7 +32,7 @@ This means that all execution contexts (i.e. threads OR `main` + interrupt handl
 In an application that uses interrupts this means that `acquire` must disable interrupts and `release` must re-enable interrupts.
 This synchronizes access to the single channel, from contexts running at different priority levels.
 
-`binfmt-semihosting` is an example of this single logging channel approach.
+`defmt-semihosting` is an example of this single logging channel approach.
 
 ## Multiple logging channels
 

@@ -1,13 +1,13 @@
-//! `binfmt`
+//! `defmt`
 //!
-//! > **PRE-ALPHA PREVIEW** `binfmt` wire format has not been finalized yet. When using the
+//! > **PRE-ALPHA PREVIEW** `defmt` wire format has not been finalized yet. When using the
 //! > framework make sure you use the *same* "version" (commit hash) for all components (target side
 //! > and host side).
 //!
 //! A highly efficient logging framework that targets resource-constrained devices, like
 //! microcontrollers.
 //!
-//! For more details check the book at https://binfmt.ferrous-systems.com
+//! For more details check the book at https://defmt.ferrous-systems.com
 
 #![cfg_attr(not(target_arch = "x86_64"), no_std)]
 #![warn(missing_docs)]
@@ -31,24 +31,24 @@ mod tests;
 /// # Example
 ///
 /// ```
-/// let interned = binfmt::intern!("long string literal taking up little space");
+/// let interned = defmt::intern!("long string literal taking up little space");
 /// ```
 ///
 /// [`Str`]: struct.Str.html
-pub use binfmt_macros::intern;
+pub use defmt_macros::intern;
 
 /// Logs data at *debug* level.
-pub use binfmt_macros::debug;
+pub use defmt_macros::debug;
 /// Logs data at *error* level.
-pub use binfmt_macros::error;
+pub use defmt_macros::error;
 /// Logs data at *info* level.
-pub use binfmt_macros::info;
+pub use defmt_macros::info;
 /// Logs data at *trace* level.
-pub use binfmt_macros::trace;
+pub use defmt_macros::trace;
 /// Logs data at *warn* level.
-pub use binfmt_macros::warn;
+pub use defmt_macros::warn;
 
-/// Defines the global binfmt logger.
+/// Defines the global defmt logger.
 ///
 /// `#[global_logger]` needs to be put on a unit struct type declaration. This struct has to
 /// implement the [`Logger`] trait.
@@ -56,7 +56,7 @@ pub use binfmt_macros::warn;
 /// # Example
 ///
 /// ```
-/// use binfmt::{Logger, Write, global_logger};
+/// use defmt::{Logger, Write, global_logger};
 /// use core::ptr::NonNull;
 ///
 /// #[global_logger]
@@ -75,11 +75,11 @@ pub use binfmt_macros::warn;
 /// ```
 ///
 /// [`Logger`]: trait.Logger.html
-pub use binfmt_macros::global_logger;
+pub use defmt_macros::global_logger;
 
-/// Defines the global timestamp provider for binfmt.
+/// Defines the global timestamp provider for defmt.
 ///
-/// Every message logged with binfmt will include a timestamp. The function annotated with
+/// Every message logged with defmt will include a timestamp. The function annotated with
 /// `#[timestamp]` will be used to obtain this timestamp.
 ///
 /// The `#[timestamp]` attribute needs to be applied to a function with the signature `fn() -> u64`.
@@ -89,18 +89,18 @@ pub use binfmt_macros::global_logger;
 /// may be used:
 ///
 /// ```
-/// # use binfmt_macros::timestamp;
+/// # use defmt_macros::timestamp;
 /// #[timestamp]
 /// fn dummy_timestamp() -> u64 {
 ///     0
 /// }
 /// ```
-pub use binfmt_macros::timestamp;
+pub use defmt_macros::timestamp;
 
 #[doc(hidden)]
-pub use binfmt_macros::winfo;
+pub use defmt_macros::winfo;
 #[doc(hidden)] // documented as the `Format` trait instead
-pub use binfmt_macros::Format;
+pub use defmt_macros::Format;
 
 /// Global logger acquire-release mechanism
 ///
@@ -139,7 +139,7 @@ pub struct Str {
     address: u16,
 }
 
-/// Handle to a binfmt logger.
+/// Handle to a defmt logger.
 pub struct Formatter {
     #[cfg(not(target_arch = "x86_64"))]
     writer: NonNull<dyn Write>,
@@ -389,16 +389,16 @@ impl Formatter {
     }
 }
 
-/// Trait for binfmt logging targets.
+/// Trait for defmt logging targets.
 pub trait Write {
     /// Writes `bytes` to the destination.
     ///
-    /// This will be called by the binfmt logging macros to transmit encoded data. The write
+    /// This will be called by the defmt logging macros to transmit encoded data. The write
     /// operation must not fail.
     fn write(&mut self, bytes: &[u8]);
 }
 
-/// Derivable trait for binfmt output.
+/// Derivable trait for defmt output.
 ///
 /// This trait is used by the `{:?}` format specifier and can format a wide range of types.
 /// User-defined types can `#[derive(Format)]` to get an auto-generated implementation of this
@@ -412,7 +412,7 @@ pub trait Write {
 /// It is required to `#[derive]` implementations of this trait:
 ///
 /// ```
-/// use binfmt::Format;
+/// use defmt::Format;
 ///
 /// #[derive(Format)]
 /// struct Header {
@@ -422,6 +422,6 @@ pub trait Write {
 /// }
 /// ```
 pub trait Format {
-    /// Writes the binfmt representation of `self` to `fmt`.
+    /// Writes the defmt representation of `self` to `fmt`.
     fn format(&self, fmt: &mut Formatter);
 }

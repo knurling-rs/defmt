@@ -5,19 +5,19 @@ These parameters follow the syntax `:<type>`, for example: `:u8`, `:bool`.
 This type information lets the framework further compress the logs resulting in higher throughput.
 
 ``` rust
-# extern crate binfmt;
+# extern crate defmt;
 # let enabled = false;
 # let ready = false;
 # let timeout = false;
 // arguments can be compressed into a single byte
-binfmt::info!(
+defmt::info!(
     "enabled: {:bool}, ready: {:bool}, timeout: {:bool}",
     enabled, ready, timeout,
 );
 
 # let x = 0u16;
 // arguments will be type checked
-binfmt::trace!("{:u16}", x);
+defmt::trace!("{:u16}", x);
 //                       ^ must have type `u16`
 ```
 

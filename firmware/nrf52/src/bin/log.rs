@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 
-use binfmt::Format;
-use binfmt_rtt as _; // <- global logger
+use defmt::Format;
+use defmt_rtt as _; // <- global logger
 use cortex_m::asm;
 use cortex_m_rt::entry;
 use embedded_hal::timer::CountDown as _;
@@ -12,7 +12,7 @@ use nrf52840_hal::{
 };
 use panic_probe as _; // <- panicking behavior
 
-#[binfmt::timestamp]
+#[defmt::timestamp]
 fn timestamp() -> u64 {
     unsafe {
         let timer = core::mem::transmute::<_, TIMER0>(());
@@ -28,11 +28,11 @@ fn main() -> ! {
 
     let mut timer = Timer::periodic(periph.TIMER0);
     timer.start(u32::max_value());
-    drop(timer); // will only be accessed from `_binfmt_timestamp`
+    drop(timer); // will only be accessed from `_defmt_timestamp`
 
-    binfmt::info!("Hello!");
-    binfmt::info!("World!");
-    binfmt::info!("The answer is {:u8}", 42);
+    defmt::info!("Hello!");
+    defmt::info!("World!");
+    defmt::info!("The answer is {:u8}", 42);
 
     #[derive(Format)]
     struct S {
@@ -50,8 +50,8 @@ fn main() -> ! {
         z: u8,
     }
 
-    binfmt::info!("{:?}", S { x: 1, y: 256 });
-    binfmt::info!("{:?}", X { y: Y { z: 42 } });
+    defmt::info!("{:?}", S { x: 1, y: 256 });
+    defmt::info!("{:?}", X { y: Y { z: 42 } });
 
     loop {
         asm::bkpt()

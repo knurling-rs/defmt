@@ -4,10 +4,10 @@
 When paired with a positional parameter it can be used to display the bitfields of a register.
 
 ``` rust
-# extern crate binfmt;
+# extern crate defmt;
 # let pcnf1 = 0u32;
 // -> TRACE: PCNF1 { MAXLEN: 125, STATLEN: 3, BALEN: 0b010 }
-binfmt::trace!(
+defmt::trace!(
     "PCNF1: {{ MAXLEN: {0:0..8}, STATLEN: {0:8..16}, BALEN: {0:16..19} }}",
     //                  ^                  ^                 ^ same argument
     pcnf1, // <- type must be `u32`
@@ -21,13 +21,13 @@ Bit indices are little-endian: the 0th bit is the rightmost bit.
 
 Bitfields are not range inclusive, e.g.
 ``` rust
-# extern crate binfmt;
-binfmt::trace!("first two bits: {0:0..3}", 254u32);
+# extern crate defmt;
+defmt::trace!("first two bits: {0:0..3}", 254u32);
 ```
 will evaluate to `0b10`.
 
 ⚠️ You can not reuse the same argument in a bitfield- and a non bitfield parameter. This will not compile:
 ``` rust,compile_fail
-# extern crate binfmt;
-binfmt::trace!("{0:5..13} {0:u16}", 256u16);
+# extern crate defmt;
+defmt::trace!("{0:5..13} {0:u16}", 256u16);
 ```

@@ -1,6 +1,6 @@
 #[cfg(target_arch = "x86_64")]
-use crate as binfmt;
-use binfmt_macros::internp;
+use crate as defmt;
+use defmt_macros::internp;
 
 use crate::{Format, Formatter, Str};
 

@@ -7,5 +7,5 @@
 [probe-rs]: https://probe.rs/
 
 - flashes Rust firmware onto a microcontroller
-- collects `binfmt` logs while the firmware runs, and
+- collects `defmt` logs while the firmware runs, and
 - prints a backtrace when the device halts

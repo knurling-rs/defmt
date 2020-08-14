@@ -4,8 +4,8 @@ The `{:[?]}` parameter can be used to log a slices of values that implement the 
 The expected argument is a slice.
 
 ``` rust
-# extern crate binfmt;
-# use binfmt::{Format, info};
+# extern crate defmt;
+# use defmt::{Format, info};
 #[derive(Format)]
 struct X {
     y: u16,

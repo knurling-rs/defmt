@@ -5,21 +5,21 @@ Turns out that with global singletons it can occur about anywhere; you don't nee
 See below:
 
 ``` rust
-# extern crate binfmt;
+# extern crate defmt;
 # let x = 0u8;
-binfmt::info!("The answer is {:?}!", x /*: Struct */);
+defmt::info!("The answer is {:?}!", x /*: Struct */);
 ```
 
 As you have seen before this will first send the string index of "The answer is {:?}!" and then call `x`'s `Format::format` method.
 The re-entrancy issue arises if the `Format` implementation calls a logging macro:
 
 ``` rust
-# extern crate binfmt;
+# extern crate defmt;
 # struct X;
-impl binfmt::Format for X {
-    fn format(&self, f: &mut binfmt::Formatter) {
+impl defmt::Format for X {
+    fn format(&self, f: &mut defmt::Formatter) {
         //           ^ this is a handle to the global logger
-        binfmt::info!("Hello!");
+        defmt::info!("Hello!");
         // ..
     }
 }

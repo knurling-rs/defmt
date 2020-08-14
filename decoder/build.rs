@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     fs::write(
         out.join("version.rs"),
         format!("\
-/// Supported `binfmt` wire format
+/// Supported `defmt` wire format
 const BINFMT_VERSION: usize = {};", hash),
     )?;
     Ok(())

@@ -17,9 +17,9 @@ You can now run your firmware using `cargo run`.
 For example,
 
 ``` rust,ignore
-// a binfmt application
+// a defmt application
 fn main() -> ! {
-    binfmt::info!("Hello, world!");
+    defmt::info!("Hello, world!");
     loop { asm::bkpt() }
 }
 ```

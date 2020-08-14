@@ -9,7 +9,7 @@ use std::mem;
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-use binfmt_parser::{Fragment, Type};
+use defmt_parser::{Fragment, Type};
 use common::Level;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
@@ -37,8 +37,8 @@ impl Table {
         version: usize,
     ) -> Result<Self, &'static str> {
         if version != BINFMT_VERSION {
-            return Err("binfmt version mismatch; \
-are you using the same git version of binfmt and related tools?");
+            return Err("defmt version mismatch; \
+are you using the same git version of defmt and related tools?");
         }
 
         // TODO check that the ranges don't overlap
@@ -288,7 +288,7 @@ fn parse_args<'t>(
     format_list: &mut Option<FormatList<'_, 't>>,
 ) -> Result<Vec<Arg<'t>>, ()> {
     let mut args = vec![]; // will contain the deserialized arguments on return
-    let mut params = binfmt_parser::parse(format)
+    let mut params = defmt_parser::parse(format)
         .map_err(drop)?
         .iter()
         .filter_map(|frag| match frag {
@@ -547,7 +547,7 @@ fn parse_args<'t>(
 }
 
 fn format_args(format: &str, args: &[Arg]) -> String {
-    let params = binfmt_parser::parse(format).unwrap();
+    let params = defmt_parser::parse(format).unwrap();
     let mut buf = String::new();
     for param in params {
         match param {
@@ -959,7 +959,7 @@ mod tests {
             c: bool,
         }
 
-        binfmt::info!("{:bool} {:?}", true, Flags {a: true, b: false, c: true });
+        defmt::info!("{:bool} {:?}", true, Flags {a: true, b: false, c: true });
         */
 
         let mut entries = BTreeMap::new();

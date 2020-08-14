@@ -1,5 +1,5 @@
-// NOTE these tests should live in `binfmt-macros` but the expansion of the macros defined there
-// depend on `binfmt` and `binfmt` depends on `binfmt-macros` -- the circular dependency may get in
+// NOTE these tests should live in `defmt-macros` but the expansion of the macros defined there
+// depend on `defmt` and `defmt` depends on `defmt-macros` -- the circular dependency may get in
 // the way of `cargo test`
 
 // NOTE string interning is mocked on x86 to aid testing so it does not do real interning. Instead
@@ -19,7 +19,7 @@
 //
 // ```
 // let mut f = Formatter::new();
-// let index = binfmt::export::fetch_string_index();
+// let index = defmt::export::fetch_string_index();
 // foo(&mut f); // NOTE increases the interner index
 // assert_eq!(f.bytes(), &[index]);
 //
@@ -40,7 +40,7 @@
 // - the family of `info!` macros do nothing on x86; instead use `winfo!` which take a formatter
 // argument like `write!`
 
-use binfmt::{
+use defmt::{
     export::{fetch_string_index, fetch_timestamp},
     winfo, Format, Formatter,
 };
@@ -596,7 +596,7 @@ fn format_primitives() {
 #[test]
 fn istr() {
     let index = fetch_string_index();
-    let interned = binfmt::intern!("interned string contents");
+    let interned = defmt::intern!("interned string contents");
     check_format_implementation(
         &interned,
         &[

@@ -5,11 +5,11 @@ The untyped argument (`:?`) requires one level of indirection during serializati
 First let's see how a primitive implements the `Format` trait:
 
 ``` rust
-# extern crate binfmt;
-# trait Format { fn format(&self, f: &mut binfmt::Formatter); }
+# extern crate defmt;
+# trait Format { fn format(&self, f: &mut defmt::Formatter); }
 impl Format for u8 {
-    fn format(&self, f: &mut binfmt::Formatter) {
-        binfmt::export::write!(f, "{:u8}", self)
+    fn format(&self, f: &mut defmt::Formatter) {
+        defmt::export::write!(f, "{:u8}", self)
         // on the wire: [1, 42]
         //  string index ^  ^^ `self`
         //  ^ = intern("{:u8}")
@@ -24,8 +24,8 @@ In general, `write!` can use `{:?}` so `Format` nesting is possible.
 Now let's look into a log invocation:
 
 ``` rust
-# extern crate binfmt;
-binfmt::error!("The answer is {:?}!", 42u8);
+# extern crate defmt;
+defmt::error!("The answer is {:?}!", 42u8);
 // on the wire: [2, 1, 42]
 //  string index ^  ^^^^^ `42u8.format(/*..*/)`
 //  ^ = intern("The answer is {:?}!")

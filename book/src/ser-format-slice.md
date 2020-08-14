@@ -7,8 +7,8 @@
 Example:
 
 ``` rust
-# extern crate binfmt;
-use binfmt::Format;
+# extern crate defmt;
+use defmt::Format;
 
 #[derive(Format)]
 struct X {
@@ -22,7 +22,7 @@ struct Y {
 
 fn serialize() {
     let xs = [X { y: Y { z: 42 }}, X { y: Y { z: 24 }}];
-    binfmt::info!("{:[?]}", &xs[..]);
+    defmt::info!("{:[?]}", &xs[..]);
     // on-the-wire: [
     //     1,  // "{:[?]}"
     //     2,  // `leb(xs.len())`

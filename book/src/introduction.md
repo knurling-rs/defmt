@@ -1,10 +1,10 @@
-# `binfmt`
+# `defmt`
 
-> **PRE-ALPHA PREVIEW** `binfmt` wire format has not been finalized yet. When
+> **PRE-ALPHA PREVIEW** `defmt` wire format has not been finalized yet. When
 > using the framework make sure you use the *same* "version" (commit hash) for
 > all components (target side and host side).
 
-`binfmt` is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
+`defmt` is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
 ## Features
 
@@ -25,17 +25,17 @@
 
 ## Intended use
 
-In its current iteration `binfmt` mainly targets tiny embedded devices that have no mean to display information to the developer, e.g. a screen.
+In its current iteration `defmt` mainly targets tiny embedded devices that have no mean to display information to the developer, e.g. a screen.
 In this scenario logs need to be transferred to a second machine, usually a PC/laptop, before they can be displayed to the developer/end-user.
 
-`binfmt` operating principles, however, are applicable to beefier machines and could be use to improve the logging performance of x86 web server applications and the like.
+`defmt` operating principles, however, are applicable to beefier machines and could be use to improve the logging performance of x86 web server applications and the like.
 
 ## Operating principle
 
-`binfmt` achieves high performance using deferred formatting and string compression.
+`defmt` achieves high performance using deferred formatting and string compression.
 
 Deferred formatting means that formatting is not done on the machine that's logging data but on a second machine.
 That is, instead of formatting `255u8` into `"255"` and sending the string, the single-byte binary data is sent to a second machine, the *host*, and the formatting happens there.
 
-`binfmt`'s string compression consists of building a table of string literals, like `"Hello, world"` or `"The answer is {:?}"`, at compile time.
+`defmt`'s string compression consists of building a table of string literals, like `"Hello, world"` or `"The answer is {:?}"`, at compile time.
 At runtime the logging machine sends *indices* instead of complete strings.

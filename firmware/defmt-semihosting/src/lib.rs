@@ -1,8 +1,8 @@
-//! `binfmt` global logger over semihosting
+//! `defmt` global logger over semihosting
 //!
 //! NOTE this is meant to only be used with QEMU
 //!
-//! WARNING using `cortex_m_semihosting`'s `hprintln!` macro or `HStdout` API will corrupt `binfmt`
+//! WARNING using `cortex_m_semihosting`'s `hprintln!` macro or `HStdout` API will corrupt `defmt`
 //! log frames so don't use those APIs.
 
 #![no_std]
@@ -15,10 +15,10 @@ use core::{
 use cortex_m::{interrupt, register};
 use cortex_m_semihosting::hio;
 
-#[binfmt::global_logger]
+#[defmt::global_logger]
 struct Logger;
 
-impl binfmt::Write for Logger {
+impl defmt::Write for Logger {
     fn write(&mut self, bytes: &[u8]) {
         // using QEMU; it shouldn't mind us opening several handles (I hope)
         if let Ok(mut hstdout) = hio::hstdout() {
@@ -30,8 +30,8 @@ impl binfmt::Write for Logger {
 static TAKEN: AtomicBool = AtomicBool::new(false);
 static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
 
-unsafe impl binfmt::Logger for Logger {
-    fn acquire() -> Option<NonNull<dyn binfmt::Write>> {
+unsafe impl defmt::Logger for Logger {
+    fn acquire() -> Option<NonNull<dyn defmt::Write>> {
         let primask = register::primask::read();
         interrupt::disable();
 
@@ -41,7 +41,7 @@ unsafe impl binfmt::Logger for Logger {
 
             INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
 
-            Some(NonNull::from(&Logger as &dyn binfmt::Write))
+            Some(NonNull::from(&Logger as &dyn defmt::Write))
         } else {
             if primask.is_active() {
                 // re-enable interrupts
@@ -51,7 +51,7 @@ unsafe impl binfmt::Logger for Logger {
         }
     }
 
-    unsafe fn release(_: NonNull<dyn binfmt::Write>) {
+    unsafe fn release(_: NonNull<dyn defmt::Write>) {
         // NOTE(no-CAS) interrupts still disabled
         TAKEN.store(false, Ordering::Relaxed);
 

@@ -1,7 +1,7 @@
 use core::fmt::Write as _;
 use proc_macro::{Span, TokenStream};
 
-use binfmt_parser::Fragment;
+use defmt_parser::Fragment;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{
@@ -43,13 +43,13 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
         #vis struct #ident;
 
         #[no_mangle]
-        unsafe fn _binfmt_acquire() -> Option<binfmt::Formatter> {
-            <#ident as binfmt::Logger>::acquire().map(|nn| binfmt::Formatter::from_raw(nn))
+        unsafe fn _defmt_acquire() -> Option<defmt::Formatter> {
+            <#ident as defmt::Logger>::acquire().map(|nn| defmt::Formatter::from_raw(nn))
         }
 
         #[no_mangle]
-        unsafe fn _binfmt_release(f: binfmt::Formatter)  {
-            <#ident as binfmt::Logger>::release(f.into_raw())
+        unsafe fn _defmt_release(f: defmt::Formatter)  {
+            <#ident as defmt::Logger>::release(f.into_raw())
         }
     )
     .into()
@@ -93,7 +93,7 @@ pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let block = &f.block;
     quote!(
-        #[export_name = "_binfmt_timestamp"]
+        #[export_name = "_defmt_timestamp"]
         fn #ident() -> u64 {
             #block
         }
@@ -127,50 +127,50 @@ impl MLevel {
             MLevel::Trace => {
                 if debug_assertions {
                     // dev profile
-                    &["binfmt-trace", "binfmt-default"]
+                    &["defmt-trace", "defmt-default"]
                 } else {
-                    &["binfmt-trace"]
+                    &["defmt-trace"]
                 }
             }
             MLevel::Debug => {
                 if debug_assertions {
                     // dev profile
-                    &["binfmt-debug", "binfmt-trace", "binfmt-default"]
+                    &["defmt-debug", "defmt-trace", "defmt-default"]
                 } else {
-                    &["binfmt-debug", "binfmt-trace"]
+                    &["defmt-debug", "defmt-trace"]
                 }
             }
             MLevel::Info => {
-                // binfmt-default is enabled for dev & release profile so debug_assertions
+                // defmt-default is enabled for dev & release profile so debug_assertions
                 // does not matter
                 &[
-                    "binfmt-info",
-                    "binfmt-debug",
-                    "binfmt-trace",
-                    "binfmt-default",
+                    "defmt-info",
+                    "defmt-debug",
+                    "defmt-trace",
+                    "defmt-default",
                 ]
             }
             MLevel::Warn => {
-                // binfmt-default is enabled for dev & release profile so debug_assertions
+                // defmt-default is enabled for dev & release profile so debug_assertions
                 // does not matter
                 &[
-                    "binfmt-warn",
-                    "binfmt-info",
-                    "binfmt-debug",
-                    "binfmt-trace",
-                    "binfmt-default",
+                    "defmt-warn",
+                    "defmt-info",
+                    "defmt-debug",
+                    "defmt-trace",
+                    "defmt-default",
                 ]
             }
             MLevel::Error => {
-                // binfmt-default is enabled for dev & release profile so debug_assertions
+                // defmt-default is enabled for dev & release profile so debug_assertions
                 // does not matter
                 &[
-                    "binfmt-error",
-                    "binfmt-warn",
-                    "binfmt-info",
-                    "binfmt-debug",
-                    "binfmt-trace",
-                    "binfmt-default",
+                    "defmt-error",
+                    "defmt-warn",
+                    "defmt-info",
+                    "defmt-debug",
+                    "defmt-trace",
+                    "defmt-default",
                 ]
             }
         }
@@ -232,7 +232,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
                 let sym = mksym(&fs, "fmt");
                 exprs.push(quote!(
                     if f.needs_tag() {
-                        f.istr(&binfmt::export::istr(#sym));
+                        f.istr(&defmt::export::istr(#sym));
                     }
                 ));
                 exprs.push(quote!(match self {
@@ -245,7 +245,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
             fs = ident.to_string();
             let args = fields(&ds.fields, &mut fs, Kind::Struct);
             // FIXME expand this `write!` and conditionally omit the tag (string index)
-            exprs.push(quote!(binfmt::export::write!(f, #fs #(,#args)*);))
+            exprs.push(quote!(defmt::export::write!(f, #fs #(,#args)*);))
         }
 
         Data::Union(..) => {
@@ -256,8 +256,8 @@ pub fn format(ts: TokenStream) -> TokenStream {
     }
 
     quote!(
-        impl binfmt::Format for #ident {
-            fn format(&self, f: &mut binfmt::Formatter) {
+        impl defmt::Format for #ident {
+            fn format(&self, f: &mut defmt::Formatter) {
                 #(#exprs)*
             }
         }
@@ -357,7 +357,7 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
     list
 }
 
-/// Returns `true` if `ty_name` refers to a builtin Rust type that has native support from binfmt
+/// Returns `true` if `ty_name` refers to a builtin Rust type that has native support from defmt
 /// and does not have to go through the `Format` trait.
 ///
 /// This should return `true` for all types that can be used as `{:type}`.
@@ -392,11 +392,11 @@ fn is_logging_enabled(level: MLevel) -> TokenStream2 {
 }
 
 // note that we are not using the `Level` type because we want to avoid dependencies on
-// `binfmt-common` due to Cargo bugs in crate sharing
+// `defmt-common` due to Cargo bugs in crate sharing
 fn log(level: MLevel, ts: TokenStream) -> TokenStream {
     let log = parse_macro_input!(ts as Log);
     let ls = log.litstr.value();
-    let fragments = match binfmt_parser::parse(&ls) {
+    let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(log.litstr.span(), e)
@@ -419,14 +419,14 @@ fn log(level: MLevel, ts: TokenStream) -> TokenStream {
     let logging_enabled = is_logging_enabled(level);
     quote!({
         if #logging_enabled {
-            if let Some(mut _fmt_) = binfmt::export::acquire() {
-                match (binfmt::export::timestamp(), #(&(#args)),*) {
+            if let Some(mut _fmt_) = defmt::export::acquire() {
+                match (defmt::export::timestamp(), #(&(#args)),*) {
                     (ts, #(#pats),*) => {
-                        _fmt_.istr(&binfmt::export::istr(#sym));
+                        _fmt_.istr(&defmt::export::istr(#sym));
                         _fmt_.leb64(ts);
                         #(#exprs;)*
                         _fmt_.finalize();
-                        binfmt::export::release(_fmt_)
+                        defmt::export::release(_fmt_)
                     }
                 }
             }
@@ -465,7 +465,7 @@ pub fn error(ts: TokenStream) -> TokenStream {
 pub fn winfo(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let fragments = match binfmt_parser::parse(&ls) {
+    let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)
@@ -487,9 +487,9 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
     let f = &write.fmt;
     let sym = mksym(&ls, "info");
     quote!({
-        match (&mut #f, binfmt::export::timestamp(), #(&(#args)),*) {
+        match (&mut #f, defmt::export::timestamp(), #(&(#args)),*) {
             (_fmt_, ts, #(#pats),*) => {
-                _fmt_.istr(&binfmt::export::istr(#sym));
+                _fmt_.istr(&defmt::export::istr(#sym));
                 _fmt_.leb64(ts);
                 #(#exprs;)*
                 _fmt_.finalize();
@@ -532,7 +532,7 @@ pub fn intern(ts: TokenStream) -> TokenStream {
 
     let sym = mksym(&ls, "str");
     quote!({
-        binfmt::export::istr(#sym)
+        defmt::export::istr(#sym)
     })
     .into()
 }
@@ -552,12 +552,12 @@ pub fn internp(ts: TokenStream) -> TokenStream {
     }
 
     // NOTE(no random id) these won't collide because they are limited in use
-    let section = format!(".binfmt.prim.{}", ls);
+    let section = format!(".defmt.prim.{}", ls);
     let sym = ls;
     quote!(match () {
         #[cfg(target_arch = "x86_64")]
         () => {
-            binfmt::export::fetch_add_string_index() as u8
+            defmt::export::fetch_add_string_index() as u8
         }
         #[cfg(not(target_arch = "x86_64"))]
         () => {
@@ -574,7 +574,7 @@ pub fn internp(ts: TokenStream) -> TokenStream {
 pub fn write(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let fragments = match binfmt_parser::parse(&ls) {
+    let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)
@@ -599,7 +599,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
         (ref mut _fmt_, #(#pats),*) => {
             // HACK conditional should not be here; see FIXME in `format`
             if _fmt_.needs_tag() {
-                _fmt_.istr(&binfmt::export::istr(#sym));
+                _fmt_.istr(&defmt::export::istr(#sym));
             }
             #(#exprs;)*
             _fmt_.finalize();
@@ -610,12 +610,12 @@ pub fn write(ts: TokenStream) -> TokenStream {
 
 fn mksym(string: &str, section: &str) -> TokenStream2 {
     let id = format!("{:?}", Span::call_site());
-    let section = format!(".binfmt.{}.{}", section, string);
+    let section = format!(".defmt.{}.{}", section, string);
     let sym = format!("{}@{}", string, id);
     quote!(match () {
         #[cfg(target_arch = "x86_64")]
         () => {
-            binfmt::export::fetch_add_string_index()
+            defmt::export::fetch_add_string_index()
         }
         #[cfg(not(target_arch = "x86_64"))]
         () => {
@@ -678,51 +678,51 @@ impl Codegen {
             // find first use of this argument and return its type
             let param = parsed_params.iter().find(|param| param.index == i).unwrap();
             match param.ty {
-                binfmt_parser::Type::Format => {
+                defmt_parser::Type::Format => {
                     exprs.push(quote!(_fmt_.fmt(#arg, false)));
                 }
-                binfmt_parser::Type::FormatSlice => {
+                defmt_parser::Type::FormatSlice => {
                     exprs.push(quote!(_fmt_.fmt_slice(#arg)));
                 }
-                binfmt_parser::Type::I16 => {
+                defmt_parser::Type::I16 => {
                     exprs.push(quote!(_fmt_.i16(#arg)));
                 }
-                binfmt_parser::Type::I32 => {
+                defmt_parser::Type::I32 => {
                     exprs.push(quote!(_fmt_.i32(#arg)));
                 }
-                binfmt_parser::Type::I8 => {
+                defmt_parser::Type::I8 => {
                     exprs.push(quote!(_fmt_.i8(#arg)));
                 }
-                binfmt_parser::Type::Isize => {
+                defmt_parser::Type::Isize => {
                     exprs.push(quote!(_fmt_.isize(#arg)));
                 }
-                binfmt_parser::Type::Str => {
+                defmt_parser::Type::Str => {
                     exprs.push(quote!(_fmt_.str(#arg)));
                 }
-                binfmt_parser::Type::IStr => {
+                defmt_parser::Type::IStr => {
                     exprs.push(quote!(_fmt_.istr(#arg)));
                 }
-                binfmt_parser::Type::U16 => {
+                defmt_parser::Type::U16 => {
                     exprs.push(quote!(_fmt_.u16(#arg)));
                 }
-                binfmt_parser::Type::U24 => {
+                defmt_parser::Type::U24 => {
                     exprs.push(quote!(_fmt_.u24(#arg)));
                 }
-                binfmt_parser::Type::U32 => {
+                defmt_parser::Type::U32 => {
                     exprs.push(quote!(_fmt_.u32(#arg)));
                 }
-                binfmt_parser::Type::U8 => {
+                defmt_parser::Type::U8 => {
                     exprs.push(quote!(_fmt_.u8(#arg)));
                 }
-                binfmt_parser::Type::Usize => {
+                defmt_parser::Type::Usize => {
                     exprs.push(quote!(_fmt_.usize(#arg)));
                 }
-                binfmt_parser::Type::BitField(_) => {
+                defmt_parser::Type::BitField(_) => {
                     // TODO reused in decoder::parse_args(), can we share this somehow without Cargo bug troubles?
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
                     let largest_bit_index = all_bitfields
                         .map(|param| match &param.ty {
-                            binfmt_parser::Type::BitField(range) => range.end,
+                            defmt_parser::Type::BitField(range) => range.end,
                             _ => unreachable!(),
                         })
                         .max()
@@ -730,34 +730,34 @@ impl Codegen {
 
                     match largest_bit_index {
                         0..=8 => {
-                            exprs.push(quote!(_fmt_.u8(&binfmt::export::truncate(*#arg))));
+                            exprs.push(quote!(_fmt_.u8(&defmt::export::truncate(*#arg))));
                         }
                         9..=16 => {
-                            exprs.push(quote!(_fmt_.u16(&binfmt::export::truncate(*#arg))));
+                            exprs.push(quote!(_fmt_.u16(&defmt::export::truncate(*#arg))));
                         }
                         17..=24 => {
-                            exprs.push(quote!(_fmt_.u24(&binfmt::export::truncate(*#arg))));
+                            exprs.push(quote!(_fmt_.u24(&defmt::export::truncate(*#arg))));
                         }
                         25..=32 => {
-                            exprs.push(quote!(_fmt_.u32(&binfmt::export::truncate(*#arg))));
+                            exprs.push(quote!(_fmt_.u32(&defmt::export::truncate(*#arg))));
                         }
                         _ => unreachable!(),
                     }
                 }
-                binfmt_parser::Type::Bool => {
+                defmt_parser::Type::Bool => {
                     exprs.push(quote!(_fmt_.bool(#arg)));
                 }
-                binfmt_parser::Type::Slice => {
+                defmt_parser::Type::Slice => {
                     exprs.push(quote!(_fmt_.slice(#arg)));
                 }
-                binfmt_parser::Type::Array(len) => {
+                defmt_parser::Type::Array(len) => {
                     // We cast to the expected array type (which should be a no-op cast) to provoke
                     // a type mismatch error on mismatched lengths:
                     // ```
                     // error[E0308]: mismatched types
                     //   --> src/bin/log.rs:20:5
                     //    |
-                    // 20 |     binfmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
+                    // 20 |     defmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
                     //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                     //    |     |
                     //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
@@ -768,7 +768,7 @@ impl Codegen {
                         tmp
                     })));
                 }
-                binfmt_parser::Type::F32 => {
+                defmt_parser::Type::F32 => {
                     exprs.push(quote!(_fmt_.f32(#arg)));
                 }
             }
