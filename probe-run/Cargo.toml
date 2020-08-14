@@ -22,4 +22,4 @@ elf2table = { path = "../elf2table", optional = true }
 decoder = { path = "../decoder", optional = true }
 
 [features]
-binfmt = ["elf2table", "decoder"]
+defmt = ["elf2table", "decoder"]

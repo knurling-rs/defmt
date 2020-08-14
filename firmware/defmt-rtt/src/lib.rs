@@ -1,4 +1,4 @@
-//! `binfmt` global logger over RTT
+//! `defmt` global logger over RTT
 //!
 //! NOTE when using this crate it's not possible to use (link to) the `rtt-target` crate
 
@@ -15,10 +15,10 @@ use cortex_m::{interrupt, register};
 // NOTE use a power of 2 for best performance
 const SIZE: usize = 1024;
 
-#[binfmt::global_logger]
+#[defmt::global_logger]
 struct Logger;
 
-impl binfmt::Write for Logger {
+impl defmt::Write for Logger {
     fn write(&mut self, bytes: &[u8]) {
         unsafe { handle().write_all(bytes) }
     }
@@ -27,8 +27,8 @@ impl binfmt::Write for Logger {
 static TAKEN: AtomicBool = AtomicBool::new(false);
 static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
 
-unsafe impl binfmt::Logger for Logger {
-    fn acquire() -> Option<NonNull<dyn binfmt::Write>> {
+unsafe impl defmt::Logger for Logger {
+    fn acquire() -> Option<NonNull<dyn defmt::Write>> {
         let primask = register::primask::read();
         interrupt::disable();
         if !TAKEN.load(Ordering::Relaxed) {
@@ -37,7 +37,7 @@ unsafe impl binfmt::Logger for Logger {
 
             INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
 
-            Some(NonNull::from(&Logger as &dyn binfmt::Write))
+            Some(NonNull::from(&Logger as &dyn defmt::Write))
         } else {
             if primask.is_active() {
                 // re-enable interrupts
@@ -47,7 +47,7 @@ unsafe impl binfmt::Logger for Logger {
         }
     }
 
-    unsafe fn release(_: NonNull<dyn binfmt::Write>) {
+    unsafe fn release(_: NonNull<dyn defmt::Write>) {
         TAKEN.store(false, Ordering::Relaxed);
         if INTERRUPTS_ACTIVE.load(Ordering::Relaxed) {
             // re-enable interrupts
@@ -135,7 +135,7 @@ impl Channel {
 /// contexts (e.g. thread-mode, interrupt context)
 unsafe fn handle() -> &'static Channel {
     // NOTE the `rtt-target` API is too permissive. It allows writing arbitrary data to any
-    // channel (`set_print_channel` + `rprint*`) and that can corrupt binfmt log frames.
+    // channel (`set_print_channel` + `rprint*`) and that can corrupt defmt log frames.
     // So we declare the RTT control block here and make it impossible to use `rtt-target` together
     // with this crate.
     #[no_mangle]
@@ -153,10 +153,10 @@ unsafe fn handle() -> &'static Channel {
         },
     };
 
-    #[link_section = ".uninit.binfmt-rtt.BUFFER"]
+    #[link_section = ".uninit.defmt-rtt.BUFFER"]
     static mut BUFFER: [u8; SIZE] = [0; SIZE];
 
-    static NAME: &[u8] = b"binfmt\0";
+    static NAME: &[u8] = b"defmt\0";
 
     &_SEGGER_RTT.up_channel
 }

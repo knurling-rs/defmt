@@ -6,7 +6,7 @@ This panic handler can be used to write unit tests: `assert!`-like macros will m
 ``` rust,ignore
 #[entry]
 fn main() -> ! {
-    binfmt::info!("main");
+    defmt::info!("main");
     assert!(false);
     loop { asm::bkpt() }
 }

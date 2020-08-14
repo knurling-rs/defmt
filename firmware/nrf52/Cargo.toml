@@ -7,8 +7,8 @@ version = "0.1.0"
 publish = false
 
 [dependencies]
-binfmt = { path = "../.." }
-binfmt-rtt = { path = "../binfmt-rtt" }
+defmt = { path = "../.." }
+defmt-rtt = { path = "../defmt-rtt" }
 cortex-m = "0.6.0"
 cortex-m-rt = "0.6.10"
 cortex-m-semihosting = "0.3.3"
@@ -17,13 +17,13 @@ nrf52840-hal = "0.10.0"
 panic-probe = { path = "../panic-probe" }
 
 [features]
-binfmt-default = []
-binfmt-trace = []
-binfmt-debug = []
-binfmt-info = []
-binfmt-warn = []
-binfmt-error = []
-default = ["binfmt-default"]
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
+default = ["defmt-default"]
 
 [[bin]]
 name = "log"

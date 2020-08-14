@@ -5,8 +5,8 @@ Consider this log call:
 (let's include the timestamp this time)
 
 ``` rust
-# extern crate binfmt;
-binfmt::info!("answer={:u8}", 42);
+# extern crate defmt;
+defmt::info!("answer={:u8}", 42);
 // on the wire: [2, 125, 42] <- arguments
 //  string index ^  ^^^ timestamp
 ```

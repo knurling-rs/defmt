@@ -1,11 +1,11 @@
 [package]
 authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
 edition = "2018"
-name = "binfmt"
+name = "defmt"
 version = "0.1.0"
 
 [dependencies]
-binfmt-macros = { path = "macros" }
+defmt-macros = { path = "macros" }
 common = { path = "common" }
 
 [workspace]

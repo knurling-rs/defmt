@@ -6,16 +6,16 @@ use anyhow::{anyhow, bail};
 pub use decoder::Table;
 use xmas_elf::{sections::SectionData, symbol_table::Entry as _, ElfFile};
 
-/// Parses an ELF file and returns the decoded `binfmt` table
+/// Parses an ELF file and returns the decoded `defmt` table
 ///
-/// This function returns `None` if the ELF file contains no `.binfmt` section
+/// This function returns `None` if the ELF file contains no `.defmt` section
 pub fn parse(elf: &ElfFile) -> Result<Option<Table>, anyhow::Error> {
-    // find the index of the `.binfmt` section
-    let binfmt_shndx = if let Some(shndx) = elf
+    // find the index of the `.defmt` section
+    let defmt_shndx = if let Some(shndx) = elf
         .section_iter()
         .zip(0..)
         .filter_map(|(sect, shndx)| {
-            if sect.get_name(elf) == Ok(".binfmt") {
+            if sect.get_name(elf) == Ok(".defmt") {
                 Some(shndx)
             } else {
                 None
@@ -50,25 +50,25 @@ pub fn parse(elf: &ElfFile) -> Result<Option<Table>, anyhow::Error> {
             for entry in entries {
                 let name = entry.get_name(&elf);
 
-                // not in the `.binfmt` section because it's not tied to the address of any symbol
-                // in `.binfmt`
-                if name == Ok("_binfmt_version_") {
+                // not in the `.defmt` section because it's not tied to the address of any symbol
+                // in `.defmt`
+                if name == Ok("_defmt_version_") {
                     version = Some(entry.value() as usize);
                 }
 
-                if entry.shndx() == binfmt_shndx {
+                if entry.shndx() == defmt_shndx {
                     let name = name.map_err(anyhow::Error::msg)?;
                     match name {
-                        "_binfmt_trace_start" => trace_start = Some(entry.value() as usize),
-                        "_binfmt_trace_end" => trace_end = Some(entry.value() as usize),
-                        "_binfmt_debug_start" => debug_start = Some(entry.value() as usize),
-                        "_binfmt_debug_end" => debug_end = Some(entry.value() as usize),
-                        "_binfmt_info_start" => info_start = Some(entry.value() as usize),
-                        "_binfmt_info_end" => info_end = Some(entry.value() as usize),
-                        "_binfmt_warn_start" => warn_start = Some(entry.value() as usize),
-                        "_binfmt_warn_end" => warn_end = Some(entry.value() as usize),
-                        "_binfmt_error_start" => error_start = Some(entry.value() as usize),
-                        "_binfmt_error_end" => error_end = Some(entry.value() as usize),
+                        "_defmt_trace_start" => trace_start = Some(entry.value() as usize),
+                        "_defmt_trace_end" => trace_end = Some(entry.value() as usize),
+                        "_defmt_debug_start" => debug_start = Some(entry.value() as usize),
+                        "_defmt_debug_end" => debug_end = Some(entry.value() as usize),
+                        "_defmt_info_start" => info_start = Some(entry.value() as usize),
+                        "_defmt_info_end" => info_end = Some(entry.value() as usize),
+                        "_defmt_warn_start" => warn_start = Some(entry.value() as usize),
+                        "_defmt_warn_end" => warn_end = Some(entry.value() as usize),
+                        "_defmt_error_start" => error_start = Some(entry.value() as usize),
+                        "_defmt_error_end" => error_end = Some(entry.value() as usize),
                         _ => {
                             map.insert(entry.value() as usize, name.to_string());
                         }
@@ -90,7 +90,7 @@ pub fn parse(elf: &ElfFile) -> Result<Option<Table>, anyhow::Error> {
             version?,
         ))
     })()
-    .ok_or_else(|| anyhow!("`_binfmt_*` symbol not found"))?;
+    .ok_or_else(|| anyhow!("`_defmt_*` symbol not found"))?;
 
     Table::new(map, debug, error, info, trace, warn, version)
         .map_err(anyhow::Error::msg)

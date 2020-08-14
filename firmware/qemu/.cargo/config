@@ -9,5 +9,5 @@ runner = "cargo run --manifest-path ../../qemu-run/Cargo.toml"
 rustflags = [
   # LLD (shipped with the Rust toolchain) is used as the default linker
   "-C", "link-arg=-Tlink.x",
-  "-C", "link-arg=-Tbinfmt.x",
+  "-C", "link-arg=-Tdefmt.x",
 ]

@@ -1,4 +1,4 @@
-// fork of dk-run with binfmt support
+// fork of dk-run with defmt support
 // (https://github.com/ferrous-systems/embedded-trainings-2020 @ 8ada5dc5d8a0befdc4169088b0a0868c1536a56e)
 
 use core::{
@@ -46,9 +46,9 @@ fn main() -> Result<(), anyhow::Error> {
 struct Opts {
     #[structopt(long)]
     list_chips: bool,
-    #[cfg(feature = "binfmt")]
+    #[cfg(feature = "defmt")]
     #[structopt(long)]
-    binfmt: bool,
+    defmt: bool,
     // note: default_value is a hacky way to avoid errors when --list_chips is passed –
     // `required_if("list_chips", "true")` does not kick in for some reason
     #[structopt(long, default_value = "nop")]
@@ -69,14 +69,14 @@ fn notmain() -> Result<i32, anyhow::Error> {
     let bytes = fs::read(&opts.elf)?;
     let elf = ElfFile::new(&bytes).map_err(|s| anyhow!("{}", s))?;
 
-    #[cfg(feature = "binfmt")]
+    #[cfg(feature = "defmt")]
     let table = {
         let table = elf2table::parse(&elf)?;
 
-        if table.is_none() && opts.binfmt {
-            bail!(".`.binfmt` section not found")
-        } else if table.is_some() && !opts.binfmt {
-            eprintln!("warning: application may be using `binfmt` but `--binfmt` flag was not used");
+        if table.is_none() && opts.defmt {
+            bail!(".`.defmt` section not found")
+        } else if table.is_some() && !opts.defmt {
+            eprintln!("warning: application may be using `defmt` but `--defmt` flag was not used");
         }
 
         table
@@ -256,7 +256,7 @@ fn notmain() -> Result<i32, anyhow::Error> {
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
     let mut read_buf = [0; 1024];
-    #[cfg(feature = "binfmt")]
+    #[cfg(feature = "defmt")]
     let mut frames = vec![];
     let mut was_halted = false;
     while CONTINUE.load(Ordering::Relaxed) {
@@ -265,9 +265,9 @@ fn notmain() -> Result<i32, anyhow::Error> {
 
             if num_bytes_read != 0 {
                 match () {
-                    #[cfg(feature = "binfmt")]
+                    #[cfg(feature = "defmt")]
                     () => {
-                        if opts.binfmt {
+                        if opts.defmt {
                             frames.extend_from_slice(&read_buf[..num_bytes_read]);
 
                             while let Ok((frame, consumed)) =
@@ -282,7 +282,7 @@ fn notmain() -> Result<i32, anyhow::Error> {
                             stdout.write_all(&read_buf[..num_bytes_read])?;
                         }
                     }
-                    #[cfg(not(feature = "binfmt"))]
+                    #[cfg(not(feature = "defmt"))]
                     () => {
                         stdout.write_all(&read_buf[..num_bytes_read])?;
                     }

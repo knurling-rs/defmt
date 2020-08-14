@@ -1,42 +1,42 @@
-use crate as binfmt;
+use crate as defmt;
 
 #[test]
 fn log_levels() {
     // just make sure they build OK for now
-    binfmt::trace!("test trace");
-    binfmt::debug!("test debug");
-    binfmt::info!("test info");
-    binfmt::warn!("test warn");
-    binfmt::error!("test error");
+    defmt::trace!("test trace");
+    defmt::debug!("test debug");
+    defmt::info!("test info");
+    defmt::warn!("test warn");
+    defmt::error!("test error");
 }
 
 #[test]
 fn str() {
-    binfmt::info!("Hello, {:str}", "world");
+    defmt::info!("Hello, {:str}", "world");
 
-    let world = binfmt::intern!("world");
-    binfmt::info!("Hello, {:istr}", world);
+    let world = defmt::intern!("world");
+    defmt::info!("Hello, {:istr}", world);
 }
 
 #[test]
 fn trailing_comma() {
-    binfmt::trace!("test trace",);
-    binfmt::debug!("test debug",);
-    binfmt::info!("test info",);
-    binfmt::warn!("test warn",);
-    binfmt::error!("test error",);
+    defmt::trace!("test trace",);
+    defmt::debug!("test debug",);
+    defmt::info!("test info",);
+    defmt::warn!("test warn",);
+    defmt::error!("test error",);
 
-    binfmt::trace!("test trace {:?}", 0,);
-    binfmt::debug!("test debug {:?}", 0,);
-    binfmt::info!("test info {:?}", 0,);
-    binfmt::warn!("test warn {:?}", 0,);
-    binfmt::error!("test error {:?}", 0,);
+    defmt::trace!("test trace {:?}", 0,);
+    defmt::debug!("test debug {:?}", 0,);
+    defmt::info!("test info {:?}", 0,);
+    defmt::warn!("test warn {:?}", 0,);
+    defmt::error!("test error {:?}", 0,);
 
     // Don't run this code, just check that it builds.
     #[allow(unreachable_code, unused_variables)]
     if false {
-        let fmt: binfmt::Formatter = panic!();
-        binfmt::export::write!(fmt, "test write",);
-        binfmt::export::write!(fmt, "test write {:?}", 0,);
+        let fmt: defmt::Formatter = panic!();
+        defmt::export::write!(fmt, "test write",);
+        defmt::export::write!(fmt, "test write {:?}", 0,);
     }
 }

@@ -6,12 +6,12 @@ If your library will use any of the logging macros (`trace!`, `debug!`, `info!`,
 # under the features section, copy these
 [features]
 # ↓↓↓↓↓
-binfmt-default = []
-binfmt-trace = []
-binfmt-debug = []
-binfmt-info = []
-binfmt-warn = []
-binfmt-error = []
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
 # ↑↑↑↑↑
 ```
 

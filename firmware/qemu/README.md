@@ -1,6 +1,6 @@
 # `firmware`
 
-Firmware configured to run on QEMU to try out binfmt end-to-end (encoder + decoder + singleton) on an emulated microcontroller
+Firmware configured to run on QEMU to try out defmt end-to-end (encoder + decoder + singleton) on an emulated microcontroller
 
 ## dependencies
 - [qemu](https://www.qemu.org/download/)

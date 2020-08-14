@@ -1,6 +1,6 @@
 use crate::{Formatter, Str};
 
-pub use binfmt_macros::write;
+pub use defmt_macros::write;
 pub use common::Level;
 
 #[cfg(target_arch = "x86_64")]
@@ -44,9 +44,9 @@ pub fn acquire() -> Option<Formatter> {
 #[cfg(not(target_arch = "x86_64"))]
 pub fn acquire() -> Option<Formatter> {
     extern "Rust" {
-        fn _binfmt_acquire() -> Option<Formatter>;
+        fn _defmt_acquire() -> Option<Formatter>;
     }
-    unsafe { _binfmt_acquire() }
+    unsafe { _defmt_acquire() }
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -55,9 +55,9 @@ pub fn release(_: Formatter) {}
 #[cfg(not(target_arch = "x86_64"))]
 pub fn release(fmt: Formatter) {
     extern "Rust" {
-        fn _binfmt_release(fmt: Formatter);
+        fn _defmt_release(fmt: Formatter);
     }
-    unsafe { _binfmt_release(fmt) }
+    unsafe { _defmt_release(fmt) }
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -69,9 +69,9 @@ pub fn timestamp() -> u64 {
 #[cfg(not(target_arch = "x86_64"))]
 pub fn timestamp() -> u64 {
     extern "Rust" {
-        fn _binfmt_timestamp() -> u64;
+        fn _defmt_timestamp() -> u64;
     }
-    unsafe { _binfmt_timestamp() }
+    unsafe { _defmt_timestamp() }
 }
 
 /// Returns the interned string at `address`.

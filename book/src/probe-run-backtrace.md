@@ -8,16 +8,16 @@ This backtrace follows the format of the `std` backtraces you get from `std::pan
 ``` rust,ignore
 #[entry]
 fn main() -> ! {
-    binfmt::info!("main");
+    defmt::info!("main");
     SCB::set_pendsv();
-    binfmt::info!("after PendSV");
+    defmt::info!("after PendSV");
 
     loop { asm::bkpt() }
 }
 
 #[exception]
 fn PendSV() {
-    binfmt::info!("PendSV");
+    defmt::info!("PendSV");
     asm::bkpt()
 }
 ```
@@ -29,7 +29,7 @@ $ cargo run --bin exception
 stack backtrace:
    0: 0x0000048a - __bkpt
       <exception entry>
-   1: 0x000003d4 - _binfmt_acquire
+   1: 0x000003d4 - _defmt_acquire
    2: 0x0000016e - exception::__cortex_m_rt_main
    3: 0x00000108 - main
    4: 0x00000466 - Reset

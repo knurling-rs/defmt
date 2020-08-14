@@ -18,17 +18,17 @@ How can this occur in logging?
 The user may write:
 
 ``` rust
-# extern crate binfmt;
+# extern crate defmt;
 fn foo() {
-    binfmt::info!("foo started ..");
+    defmt::info!("foo started ..");
     // ..
-    binfmt::info!(".. DONE"); // <-
+    defmt::info!(".. DONE"); // <-
 }
 
 fn bar() {
-    binfmt::info!("bar started ..");
+    defmt::info!("bar started ..");
     // ..
-    binfmt::info!(".. DONE"); // <-
+    defmt::info!(".. DONE"); // <-
 }
 ```
 
@@ -91,6 +91,6 @@ Because `@` is special it is not allowed in format strings.
 So this code is considered an error:
 
 ``` console
-binfmt::info!("DONE @ foo");
+defmt::info!("DONE @ foo");
 //                  ^ error: `@` not allowed in format strings
 ```
