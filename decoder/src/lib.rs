@@ -188,7 +188,12 @@ pub fn decode<'t>(
 
     let (level, format) = table.get_with_level(index as usize)?;
 
-    let args = parse_args(&mut bytes, format, table, &mut None)?;
+    let mut decoder = Decoder {
+        table,
+        bytes,
+        format_list: None,
+    };
+    let args = decoder.decode_format(format)?;
 
     let frame = Frame {
         level,
@@ -197,325 +202,339 @@ pub fn decode<'t>(
         args,
     };
 
-    let consumed = len - bytes.len();
+    let consumed = len - decoder.bytes.len();
     Ok((frame, consumed))
 }
 
-// read bools compressed into `bool_flags` and insert them into `args` at the correct indices
-fn sprinkle_bools_in_place(bool_flags: u8, args: &mut Vec<Arg>, indices: &Vec<usize>) {
-    let mut flag_index = indices.len();
+struct Decoder<'t, 'b> {
+    table: &'t Table,
+    bytes: &'b [u8],
+    format_list: Option<FormatList<'t>>,
+}
 
-    for index in indices {
-        flag_index -= 1;
+impl<'t, 'b> Decoder<'t, 'b> {
+    /// Reads a byte of packed bools and unpacks them into `args` at the given indices.
+    fn read_and_unpack_bools(
+        &mut self,
+        args: &mut Vec<Arg<'t>>,
+        indices: &[usize],
+    ) -> Result<(), ()> {
+        let bool_flags = self.bytes.read_u8().map_err(drop)?;
+        let mut flag_index = indices.len();
 
-        // read out the leftmost unread bit and turn it into a boolean
-        let flag_mask = 1 << flag_index;
-        let nth_flag = (bool_flags & flag_mask) != 0;
+        for index in indices {
+            flag_index -= 1;
 
-        args.insert(*index, Arg::Bool(nth_flag));
+            // read out the leftmost unread bit and turn it into a boolean
+            let flag_mask = 1 << flag_index;
+            let nth_flag = (bool_flags & flag_mask) != 0;
+
+            args.insert(*index, Arg::Bool(nth_flag));
+        }
+
+        Ok(())
+    }
+
+    /// Gets a format string from
+    /// - the `FormatList`, if it's in `Use` mode, or
+    /// - from `bytes` and `table` if the `FormatList` is in `Build` mode or was not provided
+    fn get_format(&mut self) -> Result<&'t str, ()> {
+        if let Some(FormatList::Use { formats, cursor }) = self.format_list.as_mut() {
+            let format = formats[*cursor];
+            *cursor += 1;
+            return Ok(format);
+        }
+
+        let index = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+        let format = self.table.get_without_level(index as usize)?;
+
+        if let Some(FormatList::Build { formats }) = self.format_list.as_mut() {
+            formats.push(format)
+        }
+        Ok(format)
+    }
+
+    /// Decodes arguments from the stream, according to `format`.
+    fn decode_format(&mut self, format: &str) -> Result<Vec<Arg<'t>>, ()> {
+        let mut args = vec![]; // will contain the deserialized arguments on return
+        let mut params = defmt_parser::parse(format)
+            .map_err(drop)?
+            .iter()
+            .filter_map(|frag| match frag {
+                Fragment::Parameter(param) => Some(param.clone()),
+                Fragment::Literal(_) => None,
+            })
+            .collect::<Vec<_>>();
+
+        // sort & dedup to ensure that format string args can be addressed by index too
+        params.sort_by(|a, b| {
+            if a.index == b.index {
+                match (&a.ty, &b.ty) {
+                    (Type::BitField(a_range), Type::BitField(b_range)) => {
+                        b_range.end.cmp(&a_range.end)
+                    }
+                    _ => Ordering::Equal,
+                }
+            } else {
+                a.index.cmp(&b.index)
+            }
+        });
+
+        params.dedup_by(|a, b| {
+            if a.index == b.index {
+                match (&a.ty, &b.ty) {
+                    (Type::BitField(a_range), Type::BitField(b_range)) => a_range.end < b_range.end,
+                    /* reusing an arg for bitfield- and non bitfield params is not allowed */
+                    (Type::BitField(_), _) => unreachable!(),
+                    (_, Type::BitField(_)) => unreachable!(),
+                    _ => true,
+                }
+            } else {
+                false
+            }
+        });
+
+        const MAX_NUM_BOOL_FLAGS: usize = 8;
+        let mut empty_bool_indices: Vec<usize> = vec![]; // points in `args` that need to be filled with
+                                                         // booleans once the whole compression block has
+                                                         // been consumed
+
+        for param in &params {
+            match &param.ty {
+                Type::U8 => {
+                    let data = self.bytes.read_u8().map_err(drop)?;
+                    args.push(Arg::Uxx(data as u64));
+                }
+
+                Type::Bool => {
+                    // store index
+                    empty_bool_indices.push(param.index);
+                    if empty_bool_indices.len() == MAX_NUM_BOOL_FLAGS {
+                        // reached end of compression block: sprinkle values into args
+                        self.read_and_unpack_bools(&mut args, &empty_bool_indices)?;
+                        empty_bool_indices.clear();
+                    }
+                }
+
+                Type::FormatSlice => {
+                    let num_elements =
+                        leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+
+                    let arg = if num_elements == 0 {
+                        Arg::FormatSlice(FormatSlice::Empty)
+                    } else {
+                        let format = self.get_format()?;
+
+                        let mut elements = Vec::with_capacity(num_elements);
+                        let mut formats = vec![];
+                        let mut cursor = 0;
+                        for i in 0..num_elements {
+                            let is_first = i == 0;
+
+                            let args = if let Some(list) = &mut self.format_list {
+                                match list {
+                                    FormatList::Use { .. } => self.decode_format(format)?,
+
+                                    FormatList::Build { formats } => {
+                                        if is_first {
+                                            cursor = formats.len();
+                                            self.decode_format(format)?
+                                        } else {
+                                            let formats = formats.clone();
+                                            let old = mem::replace(
+                                                &mut self.format_list,
+                                                Some(FormatList::Use { formats, cursor }),
+                                            );
+                                            let args = self.decode_format(format)?;
+                                            self.format_list = old;
+                                            args
+                                        }
+                                    }
+                                }
+                            } else {
+                                if is_first {
+                                    let mut old = mem::replace(
+                                        &mut self.format_list,
+                                        Some(FormatList::Build { formats }),
+                                    );
+                                    let args = self.decode_format(format)?;
+                                    mem::swap(&mut self.format_list, &mut old);
+                                    formats = match old {
+                                        Some(FormatList::Build { formats }) => formats,
+                                        _ => unreachable!(),
+                                    };
+                                    args
+                                } else {
+                                    let formats = formats.clone();
+                                    let old = mem::replace(
+                                        &mut self.format_list,
+                                        Some(FormatList::Use { formats, cursor: 0 }),
+                                    );
+                                    let args = self.decode_format(format)?;
+                                    self.format_list = old;
+                                    args
+                                }
+                            };
+
+                            elements.push(args);
+                        }
+
+                        Arg::FormatSlice(FormatSlice::NotEmpty { format, elements })
+                    };
+
+                    args.push(arg);
+                }
+                Type::Format => {
+                    let format = self.get_format()?;
+
+                    if format.contains('|') {
+                        // enum
+                        let enum_string = format;
+                        let discriminant = self.bytes.read_u8().map_err(drop)?;
+                        // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
+                        // required: "A|B({:?})" where "{:?}" -> "C|D"
+                        let variant = enum_string
+                            .split('|')
+                            .nth(usize::from(discriminant))
+                            .ok_or(())?;
+                        let inner_args = self.decode_format(variant)?;
+                        args.push(Arg::Format {
+                            format: variant,
+                            args: inner_args,
+                        });
+                    } else {
+                        let inner_args = self.decode_format(format)?;
+                        args.push(Arg::Format {
+                            format,
+                            args: inner_args,
+                        });
+                    }
+                }
+                Type::I16 => {
+                    let data = self.bytes.read_i16::<LE>().map_err(drop)?;
+                    args.push(Arg::Ixx(data as i64));
+                }
+                Type::I32 => {
+                    let data = self.bytes.read_i32::<LE>().map_err(drop)?;
+                    args.push(Arg::Ixx(data as i64));
+                }
+                Type::I8 => {
+                    let data = self.bytes.read_i8().map_err(drop)?;
+                    args.push(Arg::Ixx(data as i64));
+                }
+                Type::Isize => {
+                    // Signed isize is encoded in zigzag-encoding.
+                    let unsigned = leb128::read::unsigned(&mut self.bytes).map_err(drop)?;
+                    args.push(Arg::Ixx(zigzag_decode(unsigned)))
+                }
+                Type::U16 => {
+                    let data = self.bytes.read_u16::<LE>().map_err(drop)?;
+                    args.push(Arg::Uxx(data as u64));
+                }
+                Type::U24 => {
+                    let data_low = self.bytes.read_u8().map_err(drop)?;
+                    let data_high = self.bytes.read_u16::<LE>().map_err(drop)?;
+                    let data = data_low as u64 | (data_high as u64) << 8;
+                    args.push(Arg::Uxx(data as u64));
+                }
+                Type::U32 => {
+                    let data = self.bytes.read_u32::<LE>().map_err(drop)?;
+                    args.push(Arg::Uxx(data as u64));
+                }
+                Type::Usize => {
+                    let unsigned = leb128::read::unsigned(&mut self.bytes).map_err(drop)?;
+                    args.push(Arg::Uxx(unsigned))
+                }
+                Type::F32 => {
+                    let data = self.bytes.read_u32::<LE>().map_err(drop)?;
+                    args.push(Arg::F32(f32::from_bits(data)));
+                }
+                Type::BitField(range) => {
+                    let data: u64;
+
+                    match range.end {
+                        0..=8 => {
+                            data = self.bytes.read_u8().map_err(drop)? as u64;
+                        }
+                        0..=16 => {
+                            data = self.bytes.read_u16::<LE>().map_err(drop)? as u64;
+                        }
+                        0..=24 => {
+                            data = self.bytes.read_u24::<LE>().map_err(drop)? as u64;
+                        }
+                        0..=32 => {
+                            data = self.bytes.read_u32::<LE>().map_err(drop)? as u64;
+                        }
+                        _ => {
+                            unreachable!();
+                        }
+                    }
+
+                    args.push(Arg::Uxx(data));
+                }
+                Type::Str => {
+                    let str_len = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+                    let mut arg_str_bytes = vec![];
+
+                    // note: went for the suboptimal but simple solution; optimize if necessary
+                    for _ in 0..str_len {
+                        arg_str_bytes.push(self.bytes.read_u8().map_err(drop)?);
+                    }
+
+                    // convert to utf8 (no copy)
+                    let arg_str = String::from_utf8(arg_str_bytes).unwrap();
+
+                    args.push(Arg::Str(arg_str));
+                }
+                Type::IStr => {
+                    let str_index = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+
+                    let string = self.table.get_without_level(str_index as usize)?;
+
+                    args.push(Arg::IStr(string));
+                }
+                Type::Slice => {
+                    // only supports byte slices
+                    let num_elements =
+                        leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+                    let mut arg_slice = vec![];
+
+                    // note: went for the suboptimal but simple solution; optimize if necessary
+                    for _ in 0..num_elements {
+                        arg_slice.push(self.bytes.read_u8().map_err(drop)?);
+                    }
+                    args.push(Arg::Slice(arg_slice.to_vec()));
+                }
+                Type::Array(len) => {
+                    let mut arg_slice = vec![];
+                    // note: went for the suboptimal but simple solution; optimize if necessary
+                    for _ in 0..*len {
+                        arg_slice.push(self.bytes.read_u8().map_err(drop)?);
+                    }
+                    args.push(Arg::Slice(arg_slice.to_vec()));
+                }
+            }
+        }
+
+        if empty_bool_indices.len() > 0 {
+            // flush end of compression block
+            self.read_and_unpack_bools(&mut args, &empty_bool_indices)?;
+        }
+
+        Ok(args)
     }
 }
 
 /// List of format strings; used when decoding a `FormatSlice` (`{:[?]}`) argument
 #[derive(Debug)]
-enum FormatList<'s, 't> {
+enum FormatList<'t> {
     /// Build the list; used when decoding the first element
-    Build { formats: &'s mut Vec<&'t str> },
+    Build { formats: Vec<&'t str> },
     /// Use the list; used when decoding the rest of elements
     Use {
-        formats: &'s [&'t str],
+        formats: Vec<&'t str>,
         cursor: usize,
     },
-}
-
-/// Gets a format string from
-/// - the `FormatList`, if it's in `Use` mode, or
-/// - from `bytes` and `table` if the `FormatList` is in `Build` mode or was not provided
-fn get_format<'t>(
-    list: &mut Option<FormatList<'_, 't>>,
-    bytes: &mut &[u8],
-    table: &'t Table,
-) -> Result<&'t str, ()> {
-    if let Some(FormatList::Use { formats, cursor }) = list.as_mut() {
-        let format = formats[*cursor];
-        *cursor += 1;
-        return Ok(format);
-    }
-
-    let index = leb128::read::unsigned(bytes).map_err(drop)? as usize;
-    let format = table.get_without_level(index as usize)?;
-
-    if let Some(FormatList::Build { formats }) = list.as_mut() {
-        formats.push(format)
-    }
-    Ok(format)
-}
-
-// Deserialize the arguments contained in `bytes`
-// based on information from the format string `format` and `table`
-fn parse_args<'t>(
-    bytes: &mut &[u8],
-    format: &str,
-    table: &'t Table,
-    format_list: &mut Option<FormatList<'_, 't>>,
-) -> Result<Vec<Arg<'t>>, ()> {
-    let mut args = vec![]; // will contain the deserialized arguments on return
-    let mut params = defmt_parser::parse(format)
-        .map_err(drop)?
-        .iter()
-        .filter_map(|frag| match frag {
-            Fragment::Parameter(param) => Some(param.clone()),
-            Fragment::Literal(_) => None,
-        })
-        .collect::<Vec<_>>();
-
-    // sort & dedup to ensure that format string args can be addressed by index too
-    params.sort_by(|a, b| {
-        if a.index == b.index {
-            match (&a.ty, &b.ty) {
-                (Type::BitField(a_range), Type::BitField(b_range)) => b_range.end.cmp(&a_range.end),
-                _ => Ordering::Equal,
-            }
-        } else {
-            a.index.cmp(&b.index)
-        }
-    });
-
-    params.dedup_by(|a, b| {
-        if a.index == b.index {
-            match (&a.ty, &b.ty) {
-                (Type::BitField(a_range), Type::BitField(b_range)) => a_range.end < b_range.end,
-                /* reusing an arg for bitfield- and non bitfield params is not allowed */
-                (Type::BitField(_), _) => unreachable!(),
-                (_, Type::BitField(_)) => unreachable!(),
-                _ => true,
-            }
-        } else {
-            false
-        }
-    });
-
-    const MAX_NUM_BOOL_FLAGS: usize = 8;
-    let mut empty_bool_indices: Vec<usize> = vec![]; // points in `args` that need to be filled with
-                                                     // booleans once the whole compression block has
-                                                     // been consumed
-
-    for param in &params {
-        match &param.ty {
-            Type::U8 => {
-                let data = bytes.read_u8().map_err(drop)?;
-                args.push(Arg::Uxx(data as u64));
-            }
-
-            Type::Bool => {
-                // store index
-                empty_bool_indices.push(param.index);
-                if empty_bool_indices.len() == MAX_NUM_BOOL_FLAGS {
-                    // reached end of compression block: sprinkle values into args
-                    let bool_flags = bytes.read_u8().map_err(drop)?;
-                    sprinkle_bools_in_place(bool_flags, &mut args, &empty_bool_indices);
-                    empty_bool_indices.clear();
-                }
-            }
-
-            Type::FormatSlice => {
-                let num_elements = leb128::read::unsigned(bytes).map_err(drop)? as usize;
-
-                let arg = if num_elements == 0 {
-                    Arg::FormatSlice(FormatSlice::Empty)
-                } else {
-                    let format = get_format(format_list, bytes, table)?;
-
-                    let mut elements = Vec::with_capacity(num_elements);
-                    let formats = &mut vec![];
-                    let mut cursor = 0;
-                    for i in 0..num_elements {
-                        let is_first = i == 0;
-
-                        let args = if let Some(list) = format_list {
-                            match list {
-                                FormatList::Use { .. } => {
-                                    parse_args(bytes, format, table, format_list)?
-                                }
-
-                                FormatList::Build { formats } => {
-                                    if is_first {
-                                        cursor = formats.len();
-                                        parse_args(bytes, format, table, format_list)?
-                                    } else {
-                                        parse_args(
-                                            bytes,
-                                            format,
-                                            table,
-                                            &mut Some(FormatList::Use { formats, cursor }),
-                                        )?
-                                    }
-                                }
-                            }
-                        } else {
-                            if is_first {
-                                parse_args(
-                                    bytes,
-                                    format,
-                                    table,
-                                    &mut Some(FormatList::Build { formats }),
-                                )?
-                            } else {
-                                parse_args(
-                                    bytes,
-                                    format,
-                                    table,
-                                    &mut Some(FormatList::Use { formats, cursor: 0 }),
-                                )?
-                            }
-                        };
-
-                        elements.push(args);
-                    }
-
-                    Arg::FormatSlice(FormatSlice::NotEmpty { format, elements })
-                };
-
-                args.push(arg);
-            }
-            Type::Format => {
-                let format = get_format(format_list, bytes, table)?;
-
-                if format.contains('|') {
-                    // enum
-                    let enum_string = format;
-                    let discriminant = bytes.read_u8().map_err(drop)?;
-                    // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
-                    // required: "A|B({:?})" where "{:?}" -> "C|D"
-                    let variant = enum_string
-                        .split('|')
-                        .nth(usize::from(discriminant))
-                        .ok_or(())?;
-                    let inner_args = parse_args(bytes, variant, table, format_list)?;
-                    args.push(Arg::Format {
-                        format: variant,
-                        args: inner_args,
-                    });
-                } else {
-                    let inner_args = parse_args(bytes, format, table, format_list)?;
-                    args.push(Arg::Format {
-                        format,
-                        args: inner_args,
-                    });
-                }
-            }
-            Type::I16 => {
-                let data = bytes.read_i16::<LE>().map_err(drop)?;
-                args.push(Arg::Ixx(data as i64));
-            }
-            Type::I32 => {
-                let data = bytes.read_i32::<LE>().map_err(drop)?;
-                args.push(Arg::Ixx(data as i64));
-            }
-            Type::I8 => {
-                let data = bytes.read_i8().map_err(drop)?;
-                args.push(Arg::Ixx(data as i64));
-            }
-            Type::Isize => {
-                // Signed isize is encoded in zigzag-encoding.
-                let unsigned = leb128::read::unsigned(bytes).map_err(drop)?;
-                args.push(Arg::Ixx(zigzag_decode(unsigned)))
-            }
-            Type::U16 => {
-                let data = bytes.read_u16::<LE>().map_err(drop)?;
-                args.push(Arg::Uxx(data as u64));
-            }
-            Type::U24 => {
-                let data_low = bytes.read_u8().map_err(drop)?;
-                let data_high = bytes.read_u16::<LE>().map_err(drop)?;
-                let data = data_low as u64 | (data_high as u64) << 8;
-                args.push(Arg::Uxx(data as u64));
-            }
-            Type::U32 => {
-                let data = bytes.read_u32::<LE>().map_err(drop)?;
-                args.push(Arg::Uxx(data as u64));
-            }
-            Type::Usize => {
-                let unsigned = leb128::read::unsigned(bytes).map_err(drop)?;
-                args.push(Arg::Uxx(unsigned))
-            }
-            Type::F32 => {
-                let data = bytes.read_u32::<LE>().map_err(drop)?;
-                args.push(Arg::F32(f32::from_bits(data)));
-            }
-            Type::BitField(range) => {
-                let data: u64;
-
-                match range.end {
-                    0..=8 => {
-                        data = bytes.read_u8().map_err(drop)? as u64;
-                    }
-                    0..=16 => {
-                        data = bytes.read_u16::<LE>().map_err(drop)? as u64;
-                    }
-                    0..=24 => {
-                        data = bytes.read_u24::<LE>().map_err(drop)? as u64;
-                    }
-                    0..=32 => {
-                        data = bytes.read_u32::<LE>().map_err(drop)? as u64;
-                    }
-                    _ => {
-                        unreachable!();
-                    }
-                }
-
-                args.push(Arg::Uxx(data));
-            }
-            Type::Str => {
-                let str_len = leb128::read::unsigned(bytes).map_err(drop)? as usize;
-                let mut arg_str_bytes = vec![];
-
-                // note: went for the suboptimal but simple solution; optimize if necessary
-                for _ in 0..str_len {
-                    arg_str_bytes.push(bytes.read_u8().map_err(drop)?);
-                }
-
-                // convert to utf8 (no copy)
-                let arg_str = String::from_utf8(arg_str_bytes).unwrap();
-
-                args.push(Arg::Str(arg_str));
-            }
-            Type::IStr => {
-                let str_index = leb128::read::unsigned(bytes).map_err(drop)? as usize;
-
-                let string = table.get_without_level(str_index as usize)?;
-
-                args.push(Arg::IStr(string));
-            }
-            Type::Slice => {
-                // only supports byte slices
-                let num_elements = leb128::read::unsigned(bytes).map_err(drop)? as usize;
-                let mut arg_slice = vec![];
-
-                // note: went for the suboptimal but simple solution; optimize if necessary
-                for _ in 0..num_elements {
-                    arg_slice.push(bytes.read_u8().map_err(drop)?);
-                }
-                args.push(Arg::Slice(arg_slice.to_vec()));
-            }
-            Type::Array(len) => {
-                let mut arg_slice = vec![];
-                // note: went for the suboptimal but simple solution; optimize if necessary
-                for _ in 0..*len {
-                    arg_slice.push(bytes.read_u8().map_err(drop)?);
-                }
-                args.push(Arg::Slice(arg_slice.to_vec()));
-            }
-        }
-    }
-
-    if empty_bool_indices.len() > 0 {
-        // flush end of compression block
-        let bool_flags = bytes.read_u8().map_err(drop)?;
-        sprinkle_bools_in_place(bool_flags, &mut args, &empty_bool_indices);
-    }
-
-    Ok(args)
 }
 
 fn format_args(format: &str, args: &[Arg]) -> String {
