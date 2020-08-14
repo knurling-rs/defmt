@@ -38,8 +38,16 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
 
         // not in the `.defmt` section because it's not tied to the address of any symbol
         // in `.defmt`
-        if name == "_defmt_version_" {
-            version = Some(entry.address() as usize);
+        if name.starts_with("_defmt_version_") {
+            let new_version = name.trim_start_matches("_defmt_version_");
+            if let Some(version) = version {
+                return Err(anyhow!(
+                    "multiple defmt versions in use: {} and {} (only one is supported)",
+                    version,
+                    new_version
+                ));
+            }
+            version = Some(new_version);
         }
 
         if entry.section_index() == Some(defmt_shndx) {
