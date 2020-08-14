@@ -229,7 +229,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
             let flag_mask = 1 << flag_index;
             let nth_flag = (bool_flags & flag_mask) != 0;
 
-            args.insert(*index, Arg::Bool(nth_flag));
+            args[*index] = Arg::Bool(nth_flag);
         }
 
         Ok(())
@@ -307,8 +307,9 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 }
 
                 Type::Bool => {
-                    // store index
-                    empty_bool_indices.push(param.index);
+                    let index = args.len();
+                    args.push(Arg::Bool(false));
+                    empty_bool_indices.push(index);
                     if empty_bool_indices.len() == MAX_NUM_BOOL_FLAGS {
                         // reached end of compression block: sprinkle values into args
                         self.read_and_unpack_bools(&mut args, &empty_bool_indices)?;
