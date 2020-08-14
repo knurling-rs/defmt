@@ -1,3 +1,4 @@
+<!-- TODO remove once panic-probe has been migrated -->
 # Non-zero exit code
 
 The `panic-probe` crate is a panic handler that makes the `probe-run` program exit with non-zero exit code.
