@@ -119,6 +119,7 @@ fn main() -> ! {
         c: bool,
     }
 
+    // issue 74
     defmt::info!(
         "{:bool} {:?}",
         true,
@@ -128,6 +129,9 @@ fn main() -> ! {
             c: true
         }
     );
+
+    // issue #111
+    defmt::info!("{:[?]}", [true, true, false]);
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)
