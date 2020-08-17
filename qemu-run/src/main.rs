@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use decoder::Table;
+use process::Child;
 
 fn main() -> Result<(), anyhow::Error> {
     notmain().map(|opt_code| {
@@ -26,24 +27,27 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     let bytes = fs::read(path)?;
     let table = elf2table::parse(&bytes)?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
 
-    let mut child = Command::new("qemu-system-arm")
-        .args(&[
-            "-cpu",
-            "cortex-m3",
-            "-machine",
-            "lm3s6965evb",
-            "-nographic",
-            "-monitor",
-            "none",
-            "-semihosting-config",
-            "enable=on,target=native",
-            "-kernel",
-        ])
-        .arg(path)
-        .stdout(Stdio::piped())
-        .spawn()?;
+    let mut child = KillOnDrop(
+        Command::new("qemu-system-arm")
+            .args(&[
+                "-cpu",
+                "cortex-m3",
+                "-machine",
+                "lm3s6965evb",
+                "-nographic",
+                "-monitor",
+                "none",
+                "-semihosting-config",
+                "enable=on,target=native",
+                "-kernel",
+            ])
+            .arg(path)
+            .stdout(Stdio::piped())
+            .spawn()?,
+    );
 
     let mut stdout = child
+        .0
         .stdout
         .take()
         .ok_or_else(|| anyhow!("failed to acquire child's stdout handle"))?;
@@ -60,7 +64,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
             decode(&mut frames, &table);
         }
 
-        if let Some(status) = child.try_wait()? {
+        if let Some(status) = child.0.try_wait()? {
             exit_code = status.code();
 
             stdout.read_to_end(&mut frames)?;
@@ -85,5 +89,13 @@ fn decode(frames: &mut Vec<u8>, table: &Table) {
         let n = frames.len();
         frames.rotate_left(consumed);
         frames.truncate(n - consumed);
+    }
+}
+
+struct KillOnDrop(Child);
+
+impl Drop for KillOnDrop {
+    fn drop(&mut self) {
+        self.0.kill().ok();
     }
 }
