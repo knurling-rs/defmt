@@ -36,7 +36,9 @@ SECTIONS
     /* User interned strings (Str) */
     *(.defmt.str.*);
 
-    _defmt_version_ = $BINFMT_VERSION;
+    /* $DEFMT_VERSION may contain special chars, so we quote the symbol name */
+    /* Note that the quotes actually become part of the symbol name though! */
+    "_defmt_version_ = $DEFMT_VERSION" = 1;
   }
 }
 

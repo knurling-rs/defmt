@@ -40,11 +40,14 @@ impl Table {
         info: Range<usize>,
         trace: Range<usize>,
         warn: Range<usize>,
-        version: usize,
-    ) -> Result<Self, &'static str> {
-        if version != BINFMT_VERSION {
-            return Err("defmt version mismatch; \
-are you using the same git version of defmt and related tools?");
+        version: &str,
+    ) -> Result<Self, String> {
+        if version != DEFMT_VERSION {
+            return Err(format!(
+                "defmt version mismatch (firmware is using {}, host is using {}); \
+                 are you using the same git version of defmt and related tools?",
+                version, DEFMT_VERSION,
+            ));
         }
 
         // TODO check that the ranges don't overlap

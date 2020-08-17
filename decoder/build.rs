@@ -1,19 +1,18 @@
-use std::{
-    collections::hash_map::DefaultHasher, env, error::Error, fs, hash::Hasher, path::PathBuf,
-    process::Command,
-};
+use std::{env, error::Error, fs, path::PathBuf, process::Command};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let out = &PathBuf::from(env::var("OUT_DIR")?);
-    let mut hasher = DefaultHasher::new();
     let output = Command::new("git").args(&["rev-parse", "HEAD"]).output()?;
-    hasher.write(&output.stdout);
-    let hash = hasher.finish() as u32;
+    let commit = String::from_utf8(output.stdout).unwrap();
     fs::write(
         out.join("version.rs"),
-        format!("\
+        format!(
+            r#"
 /// Supported `defmt` wire format
-const BINFMT_VERSION: usize = {};", hash),
+const DEFMT_VERSION: &str = "{}";
+"#,
+            commit.trim(),
+        ),
     )?;
     Ok(())
 }
