@@ -1,10 +1,10 @@
 #![no_std]
 #![no_main]
 
-use defmt::Format;
 use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
+use defmt::Format;
 
 use defmt_semihosting as _; // global logger
 use panic_halt as _; // panicking behavior
@@ -111,6 +111,23 @@ fn main() -> ! {
     defmt::info!("e6={:?}", Err::<u8, u16>(256u16));
 
     defmt::info!("e7={:?}", Some(X { y: Y { z: 42 } }));
+
+    #[derive(Format)]
+    struct Flags {
+        a: bool,
+        b: bool,
+        c: bool,
+    }
+
+    defmt::info!(
+        "{:bool} {:?}",
+        true,
+        Flags {
+            a: true,
+            b: false,
+            c: true
+        }
+    );
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)
