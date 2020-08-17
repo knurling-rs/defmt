@@ -149,7 +149,13 @@ pub struct Formatter {
     bools_left: u8, // the number of bits that we can still set in bool_flag
     // whether to include a tag before a `Format` value
     // this is only disabled while formatting a `{:[?]}` value
-    include_tag: bool,
+    tag: Tag,
+}
+
+#[derive(Clone, Copy)]
+enum Tag {
+    MayBeOmitted { omit: bool },
+    MustBeIncluded,
 }
 
 /// the maximum number of booleans that can be compressed together
@@ -163,7 +169,7 @@ impl Formatter {
             bytes: vec![],
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
-            include_tag: true,
+            tag: Tag::MayBeOmitted { omit: false },
         }
     }
 
@@ -200,7 +206,7 @@ impl Formatter {
             writer,
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
-            include_tag: true,
+            tag: Tag::MayBeOmitted { omit: false },
         }
     }
 
@@ -222,22 +228,41 @@ impl Formatter {
     /// Implementation detail
     #[doc(hidden)]
     pub fn fmt(&mut self, f: &impl Format, omit_tag: bool) {
-        let include_tag = self.include_tag;
-        if omit_tag {
-            // override
-            self.include_tag = false;
-        }
+        let tag = if omit_tag {
+            match self.tag {
+                Tag::MayBeOmitted { omit } => {
+                    self.tag = Tag::MayBeOmitted { omit: true };
+                    Some(Tag::MayBeOmitted { omit })
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+
         f.format(self);
-        if omit_tag {
+        if let Some(tag) = tag {
             // restore
-            self.include_tag = include_tag;
+            self.tag = tag;
         }
     }
 
     /// Implementation detail
     #[doc(hidden)]
     pub fn needs_tag(&self) -> bool {
-        self.include_tag
+        match self.tag {
+            Tag::MayBeOmitted { omit } => !omit,
+            Tag::MustBeIncluded => true,
+        }
+    }
+
+    /// Implementation detail
+    #[doc(hidden)]
+    pub fn with_tag(&mut self, f: impl FnOnce(&mut Self)) {
+        let tag = self.tag;
+        self.tag = Tag::MustBeIncluded;
+        f(self);
+        self.tag = tag;
     }
 
     /// Implementation detail

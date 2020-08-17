@@ -204,7 +204,7 @@ where
             None => f.u8(&0),
             Some(x) => {
                 f.u8(&1);
-                x.format(f);
+                f.with_tag(|f| x.format(f))
             }
         }
     }
@@ -223,11 +223,11 @@ where
         match self {
             Err(e) => {
                 f.u8(&0);
-                e.format(f)
+                f.with_tag(|f| e.format(f))
             }
             Ok(x) => {
                 f.u8(&1);
-                x.format(f);
+                f.with_tag(|f| x.format(f))
             }
         }
     }

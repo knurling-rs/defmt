@@ -256,6 +256,49 @@ fn main() -> ! {
         defmt::info!("{:?}", E::C { y: 49u8 });
     }
 
+    // slice + built-in enum
+    defmt::info!("{:[?]}", &[None, Some(42u8)][..]);
+    defmt::info!("{:[?]}", &[Ok(42u8), Err(43u8)][..]);
+
+    // slice + user-defined enum
+    {
+        #[derive(Format)]
+        enum E {
+            A,
+            B(u8),
+        }
+        defmt::info!("{:[?]}", &[E::A, E::B(42)][..]);
+    }
+
+    // slice + struct + built-in enum
+    {
+        #[derive(Format)]
+        struct S {
+            x: u8,
+            y: Option<u8>,
+        }
+
+        defmt::info!(
+            "{:[?]}",
+            &[S { x: 42, y: None }, S { x: 43, y: Some(44) }][..]
+        );
+    }
+
+    // slice + built-in enum + struct
+    {
+        #[derive(Format)]
+        struct S {
+            x: u8,
+            y: u16,
+        }
+
+        defmt::info!("{:[?]}", &[None, Some(S { x: 42, y: 256 })][..]);
+    }
+
+    // FIXME slice + built-in enum + slice
+    // let s: &[u8] = &[42, 43];
+    // defmt::info!("{:[?]}", &[None, Some(s)][..]);
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

@@ -221,7 +221,9 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     arms.push(quote!(
                         #ident::#vident #pats => {
                             f.u8(&#i);
-                            #(#exprs;)*
+                            f.with_tag(|f| {
+                                #(#exprs;)*
+                            });
                         }
                     ))
                 }

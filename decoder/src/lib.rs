@@ -193,18 +193,19 @@ enum Arg<'t> {
         format: &'t str,
         args: Vec<Arg<'t>>,
     },
-    FormatSlice(FormatSlice<'t>),
+    FormatSlice {
+        elements: Vec<FormatSliceElement<'t>>,
+    },
     /// Slice or Array of bytes.
     Slice(Vec<u8>),
 }
 
 #[derive(Debug, PartialEq)]
-enum FormatSlice<'t> {
-    Empty,
-    NotEmpty {
-        format: &'t str,
-        elements: Vec<Vec<Arg<'t>>>,
-    },
+struct FormatSliceElement<'t> {
+    // this will usually be the same format string for all elements; except when the format string
+    // is an enum -- in that case `format` will be the variant
+    format: &'t str,
+    args: Vec<Arg<'t>>,
 }
 
 /// decode the data sent by the device using the previosuly stored metadata
@@ -276,18 +277,30 @@ impl<'t, 'b> Decoder<'t, 'b> {
     /// - from `bytes` and `table` if the `FormatList` is in `Build` mode or was not provided
     fn get_format(&mut self) -> Result<&'t str, ()> {
         if let Some(FormatList::Use { formats, cursor }) = self.format_list.as_mut() {
-            let format = formats[*cursor];
-            *cursor += 1;
-            return Ok(format);
+            if let Some(format) = formats.get(*cursor) {
+                *cursor += 1;
+                return Ok(format);
+            }
         }
 
         let index = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
         let format = self.table.get_without_level(index as usize)?;
 
-        if let Some(FormatList::Build { formats }) = self.format_list.as_mut() {
-            formats.push(format)
+        if let Some(FormatList::Build { formats, stop }) = self.format_list.as_mut() {
+            if !*stop {
+                formats.push(format)
+            }
         }
         Ok(format)
+    }
+
+    fn get_variant(&mut self, format: &'t str) -> Result<&'t str, ()> {
+        assert!(format.contains("|"));
+        let discriminant = self.bytes.read_u8().map_err(drop)?;
+
+        // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
+        // required: "A|B({:?})" where "{:?}" -> "C|D"
+        format.split('|').nth(usize::from(discriminant)).ok_or(())
     }
 
     /// Decodes arguments from the stream, according to `format`.
@@ -352,9 +365,12 @@ impl<'t, 'b> Decoder<'t, 'b> {
                         leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
 
                     let arg = if num_elements == 0 {
-                        Arg::FormatSlice(FormatSlice::Empty)
+                        Arg::FormatSlice { elements: vec![] }
                     } else {
                         let format = self.get_format()?;
+
+                        // let variant_format = if
+                        let is_enum = format.contains('|');
 
                         let mut elements = Vec::with_capacity(num_elements);
                         let mut formats = vec![];
@@ -362,11 +378,21 @@ impl<'t, 'b> Decoder<'t, 'b> {
                         for i in 0..num_elements {
                             let is_first = i == 0;
 
+                            let format = if is_enum {
+                                self.get_variant(format)?
+                            } else {
+                                format
+                            };
+
                             let args = if let Some(list) = &mut self.format_list {
                                 match list {
                                     FormatList::Use { .. } => self.decode_format(format)?,
 
-                                    FormatList::Build { formats } => {
+                                    FormatList::Build { formats, stop } => {
+                                        if is_enum {
+                                            *stop = true;
+                                        }
+
                                         if is_first {
                                             cursor = formats.len();
                                             self.decode_format(format)?
@@ -386,12 +412,16 @@ impl<'t, 'b> Decoder<'t, 'b> {
                                 if is_first {
                                     let mut old = mem::replace(
                                         &mut self.format_list,
-                                        Some(FormatList::Build { formats }),
+                                        Some(FormatList::Build {
+                                            formats,
+                                            // no caching of format strings beneath an enum
+                                            stop: is_enum,
+                                        }),
                                     );
                                     let args = self.decode_format(format)?;
                                     mem::swap(&mut self.format_list, &mut old);
                                     formats = match old {
-                                        Some(FormatList::Build { formats }) => formats,
+                                        Some(FormatList::Build { formats, .. }) => formats,
                                         _ => unreachable!(),
                                     };
                                     args
@@ -399,7 +429,12 @@ impl<'t, 'b> Decoder<'t, 'b> {
                                     let formats = formats.clone();
                                     let old = mem::replace(
                                         &mut self.format_list,
-                                        Some(FormatList::Use { formats, cursor: 0 }),
+                                        if is_enum {
+                                            // no caching of format strings beneath an enum
+                                            None
+                                        } else {
+                                            Some(FormatList::Use { formats, cursor: 0 })
+                                        },
                                     );
                                     let args = self.decode_format(format)?;
                                     self.format_list = old;
@@ -407,10 +442,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                                 }
                             };
 
-                            elements.push(args);
+                            elements.push(FormatSliceElement { format, args });
                         }
 
-                        Arg::FormatSlice(FormatSlice::NotEmpty { format, elements })
+                        Arg::FormatSlice { elements }
                     };
 
                     args.push(arg);
@@ -420,14 +455,8 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                     if format.contains('|') {
                         // enum
-                        let enum_string = format;
-                        let discriminant = self.bytes.read_u8().map_err(drop)?;
-                        // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
-                        // required: "A|B({:?})" where "{:?}" -> "C|D"
-                        let variant = enum_string
-                            .split('|')
-                            .nth(usize::from(discriminant))
-                            .ok_or(())?;
+                        let variant = self.get_variant(format)?;
+                        self.stop_building_format_list();
                         let inner_args = self.decode_format(variant)?;
                         args.push(Arg::Format {
                             format: variant,
@@ -554,13 +583,23 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
         Ok(args)
     }
+
+    fn stop_building_format_list(&mut self) {
+        if let Some(FormatList::Build { stop, .. }) = &mut self.format_list {
+            *stop = true;
+        }
+    }
 }
 
 /// List of format strings; used when decoding a `FormatSlice` (`{:[?]}`) argument
 #[derive(Debug)]
 enum FormatList<'t> {
     /// Build the list; used when decoding the first element
-    Build { formats: Vec<&'t str> },
+    Build {
+        formats: Vec<&'t str>,
+        // we stop building the list if we encounter an `enum`
+        stop: bool,
+    },
     /// Use the list; used when decoding the rest of elements
     Use {
         formats: Vec<&'t str>,
@@ -600,16 +639,15 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                     Arg::Str(x) => write!(buf, "{}", x)?,
                     Arg::IStr(x) => write!(buf, "{}", x)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
-                    Arg::FormatSlice(FormatSlice::Empty) => buf.push_str("[]"),
-                    Arg::FormatSlice(FormatSlice::NotEmpty { format, elements }) => {
+                    Arg::FormatSlice { elements } => {
                         buf.write_str("[")?;
                         let mut is_first = true;
-                        for args in elements {
+                        for element in elements {
                             if !is_first {
                                 buf.write_str(", ")?;
                             }
                             is_first = false;
-                            buf.write_str(&format_args(format, args))?;
+                            buf.write_str(&format_args(element.format, &element.args))?;
                         }
                         buf.write_str("]")?;
                     }
