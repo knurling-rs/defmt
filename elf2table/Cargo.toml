@@ -6,5 +6,9 @@ edition = "2018"
 
 [dependencies]
 decoder = { path = "../decoder" }
-xmas-elf = "0.7.0"
 anyhow = "1.0.32"
+
+[dependencies.object]
+version = "0.21.0"
+default-features = false
+features = ["read_core", "elf", "std"]

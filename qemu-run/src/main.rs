@@ -6,7 +6,6 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use decoder::Table;
-use xmas_elf::ElfFile;
 
 fn main() -> Result<(), anyhow::Error> {
     notmain().map(|opt_code| {
@@ -25,8 +24,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     let path = &args[0];
     let bytes = fs::read(path)?;
-    let elf = ElfFile::new(&bytes).map_err(anyhow::Error::msg)?;
-    let table = elf2table::parse(&elf)?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
+    let table = elf2table::parse(&bytes)?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
 
     let mut child = Command::new("qemu-system-arm")
         .args(&[

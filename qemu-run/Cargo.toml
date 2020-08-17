@@ -9,4 +9,3 @@ publish = false
 anyhow = "1.0.32"
 decoder = { path = "../decoder" }
 elf2table = { path = "../elf2table" }
-xmas-elf = "0.7.0"
