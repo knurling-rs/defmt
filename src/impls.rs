@@ -133,8 +133,11 @@ where
 
 impl Format for bool {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:bool}");
-        fmt.write(&[t, *self as u8]);
+        if fmt.needs_tag() {
+            let t = internp!("{:bool}");
+            fmt.u8(&t);
+        }
+        fmt.u8(&(*self as u8));
     }
 }
 
