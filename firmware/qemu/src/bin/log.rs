@@ -190,7 +190,7 @@ fn main() -> ! {
             y: T,
         }
 
-            defmt::info!("{:?}", S { x: Some(&48), y: 49u8 });
+        defmt::info!("{:?}", S { x: Some(&48), y: 49u8 });
     }
 
     // plain generic enum
@@ -251,9 +251,9 @@ fn main() -> ! {
             C { y: T },
         }
 
-            defmt::info!("{:?}", E::<u8>::A);
-            defmt::info!("{:?}", E::<u8>::B(Some(&48)));
-            defmt::info!("{:?}", E::C { y: 49u8 });
+        defmt::info!("{:?}", E::<u8>::A);
+        defmt::info!("{:?}", E::<u8>::B(Some(&48)));
+        defmt::info!("{:?}", E::C { y: 49u8 });
     }
 
     loop {
