@@ -228,6 +228,7 @@ pub fn decode<'t>(
         bytes,
         format_list: None,
         bools_tbd: Vec::new(),
+        below_enum: false,
     };
     let args = decoder.decode_format(format)?;
 
@@ -246,6 +247,8 @@ struct Decoder<'t, 'b> {
     table: &'t Table,
     bytes: &'b [u8],
     format_list: Option<FormatList<'t>>,
+    // below an enum tags must be included
+    below_enum: bool,
     bools_tbd: Vec<Arc<Bool>>,
 }
 
@@ -286,8 +289,8 @@ impl<'t, 'b> Decoder<'t, 'b> {
         let index = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
         let format = self.table.get_without_level(index as usize)?;
 
-        if let Some(FormatList::Build { formats, stop }) = self.format_list.as_mut() {
-            if !*stop {
+        if let Some(FormatList::Build { formats }) = self.format_list.as_mut() {
+            if !self.below_enum {
                 formats.push(format)
             }
         }
@@ -371,6 +374,11 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                         // let variant_format = if
                         let is_enum = format.contains('|');
+                        let below_enum = self.below_enum;
+
+                        if is_enum {
+                            self.below_enum = true;
+                        }
 
                         let mut elements = Vec::with_capacity(num_elements);
                         let mut formats = vec![];
@@ -388,11 +396,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                                 match list {
                                     FormatList::Use { .. } => self.decode_format(format)?,
 
-                                    FormatList::Build { formats, stop } => {
-                                        if is_enum {
-                                            *stop = true;
-                                        }
-
+                                    FormatList::Build { formats } => {
                                         if is_first {
                                             cursor = formats.len();
                                             self.decode_format(format)?
@@ -412,11 +416,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                                 if is_first {
                                     let mut old = mem::replace(
                                         &mut self.format_list,
-                                        Some(FormatList::Build {
-                                            formats,
-                                            // no caching of format strings beneath an enum
-                                            stop: is_enum,
-                                        }),
+                                        Some(FormatList::Build { formats }),
                                     );
                                     let args = self.decode_format(format)?;
                                     mem::swap(&mut self.format_list, &mut old);
@@ -429,12 +429,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                                     let formats = formats.clone();
                                     let old = mem::replace(
                                         &mut self.format_list,
-                                        if is_enum {
-                                            // no caching of format strings beneath an enum
-                                            None
-                                        } else {
-                                            Some(FormatList::Use { formats, cursor: 0 })
-                                        },
+                                        Some(FormatList::Use { formats, cursor: 0 }),
                                     );
                                     let args = self.decode_format(format)?;
                                     self.format_list = old;
@@ -443,6 +438,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                             };
 
                             elements.push(FormatSliceElement { format, args });
+                        }
+
+                        if is_enum {
+                            self.below_enum = below_enum;
                         }
 
                         Arg::FormatSlice { elements }
@@ -456,8 +455,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     if format.contains('|') {
                         // enum
                         let variant = self.get_variant(format)?;
-                        self.stop_building_format_list();
+                        let below_enum = self.below_enum;
+                        self.below_enum = true;
                         let inner_args = self.decode_format(variant)?;
+                        self.below_enum = below_enum;
                         args.push(Arg::Format {
                             format: variant,
                             args: inner_args,
@@ -583,23 +584,13 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
         Ok(args)
     }
-
-    fn stop_building_format_list(&mut self) {
-        if let Some(FormatList::Build { stop, .. }) = &mut self.format_list {
-            *stop = true;
-        }
-    }
 }
 
 /// List of format strings; used when decoding a `FormatSlice` (`{:[?]}`) argument
 #[derive(Debug)]
 enum FormatList<'t> {
     /// Build the list; used when decoding the first element
-    Build {
-        formats: Vec<&'t str>,
-        // we stop building the list if we encounter an `enum`
-        stop: bool,
-    },
+    Build { formats: Vec<&'t str> },
     /// Use the list; used when decoding the rest of elements
     Use {
         formats: Vec<&'t str>,
