@@ -179,6 +179,20 @@ fn main() -> ! {
         );
     }
 
+    // generic struct with lifetimes and lifetime bounds
+    {
+        #[derive(Format)]
+        struct S<'a, T>
+        where
+            T: 'a,
+        {
+            x: Option<&'a u8>,
+            y: T,
+        }
+
+            defmt::info!("{:?}", S { x: Some(&48), y: 49u8 });
+    }
+
     // plain generic enum
     {
         #[derive(Format)]
@@ -223,6 +237,23 @@ fn main() -> ! {
         defmt::info!("{:?}", E::<u8, u8>::A);
         defmt::info!("{:?}", E::<u8, u8>::B(Some(46)));
         defmt::info!("{:?}", E::<u8, u8>::C { y: Ok(47) });
+    }
+
+    // generic enum with lifetimes and lifetime bounds
+    {
+        #[derive(Format)]
+        enum E<'a, T>
+        where
+            T: 'a,
+        {
+            A,
+            B(Option<&'a u8>),
+            C { y: T },
+        }
+
+            defmt::info!("{:?}", E::<u8>::A);
+            defmt::info!("{:?}", E::<u8>::B(Some(&48)));
+            defmt::info!("{:?}", E::C { y: 49u8 });
     }
 
     loop {
