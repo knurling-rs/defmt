@@ -21,3 +21,38 @@ enum Request {
     SetAddress { address: u8 },
 }
 ```
+
+NOTE: for generic structs and enums the `derive` macro adds `Format` bounds to the *types of the generic fields* rather than to all the generic (input) parameters of the struct / enum.
+Built-in `derive` attributes like `#[derive(Debug)]` use the latter approach.
+To our knowledge `derive(Format)` approach is more accurate in that it doesn't over-constrain the generic type parameters.
+The different between the two approaches is depicted below:
+
+``` rust
+#[derive(Format)]
+struct S<'a, T> {
+   x: Option<&'a T>,
+   y: u8,
+}
+
+// `Format` produces this implementation
+impl<'a, T> Format for S<'a, T>
+where
+    Option<&'a T>: Format
+{
+    // ..
+}
+
+#[derive(Debug)]
+struct S<'a, T> {
+   x: Option<&'a T>,
+   y: u8,
+}
+
+// `Debug` produces this implementation
+impl<'a, T> Format for S<'a, T>
+where
+    T: Format
+{
+    // ..
+}
+```
