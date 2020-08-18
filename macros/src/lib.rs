@@ -143,12 +143,7 @@ impl MLevel {
             MLevel::Info => {
                 // defmt-default is enabled for dev & release profile so debug_assertions
                 // does not matter
-                &[
-                    "defmt-info",
-                    "defmt-debug",
-                    "defmt-trace",
-                    "defmt-default",
-                ]
+                &["defmt-info", "defmt-debug", "defmt-trace", "defmt-default"]
             }
             MLevel::Warn => {
                 // defmt-default is enabled for dev & release profile so debug_assertions
@@ -185,6 +180,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
     let ident = input.ident;
     let mut fs = String::new();
+    let mut field_types = vec![];
     let mut exprs = vec![];
     match input.data {
         Data::Enum(de) => {
@@ -216,6 +212,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     let exprs = fields(
                         &var.fields,
                         &mut fs,
+                        &mut field_types,
                         Kind::Enum {
                             patterns: &mut pats,
                         },
@@ -243,7 +240,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
         Data::Struct(ds) => {
             fs = ident.to_string();
-            let args = fields(&ds.fields, &mut fs, Kind::Struct);
+            let args = fields(&ds.fields, &mut fs, &mut field_types, Kind::Struct);
             // FIXME expand this `write!` and conditionally omit the tag (string index)
             exprs.push(quote!(defmt::export::write!(f, #fs #(,#args)*);))
         }
@@ -255,8 +252,30 @@ pub fn format(ts: TokenStream) -> TokenStream {
         }
     }
 
+    let params = input.generics.params;
+    let predicates = if params.is_empty() {
+        vec![]
+    } else {
+        // `Format` bounds for non-native field types
+        let mut preds = field_types
+            .into_iter()
+            .map(|ty| quote!(#ty: defmt::Format))
+            .collect::<Vec<_>>();
+        // extend with the where clause from the struct/enum declaration
+        if let Some(where_clause) = input.generics.where_clause {
+            preds.extend(
+                where_clause
+                    .predicates
+                    .into_iter()
+                    .map(|pred| quote!(#pred)),
+            )
+        }
+        preds
+    };
     quote!(
-        impl defmt::Format for #ident {
+        impl<#params> defmt::Format for #ident<#params>
+        where #(#predicates),*
+        {
             fn format(&self, f: &mut defmt::Formatter) {
                 #(#exprs)*
             }
@@ -270,7 +289,13 @@ enum Kind<'p> {
     Enum { patterns: &'p mut TokenStream2 },
 }
 
-fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStream2> {
+fn fields(
+    fields: &Fields,
+    format: &mut String,
+    // collect all *non-native* types that appear as fields
+    field_types: &mut Vec<Type>,
+    mut kind: Kind,
+) -> Vec<TokenStream2> {
     let mut list = vec![];
     match fields {
         Fields::Named(FieldsNamed { named: fs, .. })
@@ -295,7 +320,10 @@ fn fields(fields: &Fields, format: &mut String, mut kind: Kind) -> Vec<TokenStre
                     } else {
                         format.push_str(", ");
                     }
-                    let ty = as_native_type(&f.ty).unwrap_or_else(|| "?".to_string());
+                    let ty = as_native_type(&f.ty).unwrap_or_else(|| {
+                        field_types.push(f.ty.clone());
+                        "?".to_string()
+                    });
                     if let Some(ident) = f.ident.as_ref() {
                         core::write!(format, "{}: {{:{}}}", ident, ty).ok();
 

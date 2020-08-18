@@ -133,6 +133,98 @@ fn main() -> ! {
     // issue #111
     defmt::info!("{:[?]}", [true, true, false]);
 
+    /* issue #124 (start) */
+    // plain generic struct
+    {
+        #[derive(Format)]
+        struct S<T> {
+            x: u8,
+            y: T,
+        }
+
+        defmt::info!("{:?}", S { x: 42, y: 43u8 });
+    }
+
+    // generic struct with bounds
+    {
+        #[derive(Format)]
+        struct S<T>
+        where
+            T: Copy,
+        {
+            x: u8,
+            y: T,
+        }
+
+        defmt::info!("{:?}", S { x: 44, y: 45u8 });
+    }
+
+    // generic struct with `Option` field
+    {
+        #[derive(Format)]
+        struct S<T>
+        where
+            T: Copy,
+        {
+            x: u8,
+            y: Option<T>,
+        }
+
+        defmt::info!(
+            "{:?}",
+            S {
+                x: 46,
+                y: Some(47u8)
+            }
+        );
+    }
+
+    // plain generic enum
+    {
+        #[derive(Format)]
+        enum E<X, Y> {
+            A,
+            B(X),
+            C { y: Y },
+        }
+
+        defmt::info!("{:?}", E::<u8, u8>::A);
+        defmt::info!("{:?}", E::<u8, u8>::B(42));
+        defmt::info!("{:?}", E::<u8, u8>::C { y: 43 });
+    }
+
+    // generic enum with bounds
+    {
+        #[derive(Format)]
+        enum E<X, Y>
+        where
+            X: Copy,
+        {
+            A,
+            B(X),
+            C { y: Y },
+        }
+
+        defmt::info!("{:?}", E::<u8, u8>::A);
+        defmt::info!("{:?}", E::<u8, u8>::B(44));
+        defmt::info!("{:?}", E::<u8, u8>::C { y: 45 });
+    }
+
+    /* issue #124 (end) */
+    // generic enum with `Option`/`Result` fields
+    {
+        #[derive(Format)]
+        enum E<X, Y> {
+            A,
+            B(Option<X>),
+            C { y: Result<Y, u8> },
+        }
+
+        defmt::info!("{:?}", E::<u8, u8>::A);
+        defmt::info!("{:?}", E::<u8, u8>::B(Some(46)));
+        defmt::info!("{:?}", E::<u8, u8>::C { y: Ok(47) });
+    }
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
