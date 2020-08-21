@@ -89,7 +89,7 @@ impl Channel {
             return 0;
         }
 
-        let read = self.write.load(Ordering::Relaxed);
+        let read = self.read.load(Ordering::Relaxed);
         let write = self.write.load(Ordering::Acquire);
         let available = SIZE.wrapping_add(read).wrapping_sub(write);
 
