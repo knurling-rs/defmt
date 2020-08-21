@@ -147,15 +147,10 @@ pub struct Formatter {
     bytes: Vec<u8>,
     bool_flags: u8, // the current group of consecutive bools
     bools_left: u8, // the number of bits that we can still set in bool_flag
-    // whether to include a tag before a `Format` value
-    // this is only disabled while formatting a `{:[?]}` value
-    tag: Tag,
-}
-
-#[derive(Clone, Copy)]
-enum Tag {
-    MayBeOmitted { omit: bool },
-    MustBeIncluded,
+    // whether to omit the tag of a `Format` value
+    // this is disabled while formatting a `{:[?]}` value (second element on-wards)
+    // this is force-enable while formatting enums
+    omit_tag: bool,
 }
 
 /// the maximum number of booleans that can be compressed together
@@ -169,7 +164,7 @@ impl Formatter {
             bytes: vec![],
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
-            tag: Tag::MayBeOmitted { omit: false },
+            omit_tag: false,
         }
     }
 
@@ -206,7 +201,7 @@ impl Formatter {
             writer,
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
-            tag: Tag::MayBeOmitted { omit: false },
+            omit_tag: false,
         }
     }
 
@@ -228,41 +223,33 @@ impl Formatter {
     /// Implementation detail
     #[doc(hidden)]
     pub fn fmt(&mut self, f: &impl Format, omit_tag: bool) {
-        let tag = if omit_tag {
-            match self.tag {
-                Tag::MayBeOmitted { omit } => {
-                    self.tag = Tag::MayBeOmitted { omit: true };
-                    Some(Tag::MayBeOmitted { omit })
-                }
-                _ => None,
-            }
-        } else {
-            None
-        };
+        let old_omit_tag = self.omit_tag;
+        if omit_tag {
+            self.omit_tag = true;
+        }
 
         f.format(self);
-        if let Some(tag) = tag {
+
+        if omit_tag {
             // restore
-            self.tag = tag;
+            self.omit_tag = old_omit_tag;
         }
     }
 
     /// Implementation detail
     #[doc(hidden)]
     pub fn needs_tag(&self) -> bool {
-        match self.tag {
-            Tag::MayBeOmitted { omit } => !omit,
-            Tag::MustBeIncluded => true,
-        }
+        !self.omit_tag
     }
 
     /// Implementation detail
     #[doc(hidden)]
     pub fn with_tag(&mut self, f: impl FnOnce(&mut Self)) {
-        let tag = self.tag;
-        self.tag = Tag::MustBeIncluded;
+        let omit_tag = self.omit_tag;
+        self.omit_tag = false;
         f(self);
-        self.tag = tag;
+        // restore
+        self.omit_tag = omit_tag;
     }
 
     /// Implementation detail

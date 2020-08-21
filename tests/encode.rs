@@ -203,14 +203,20 @@ fn bitfields_mixed() {
     let timestamp = fetch_timestamp();
     let mut f = Formatter::new();
 
-    winfo!(f, "bitfields {0:7..12}, {1:0..5}", 0b1110_0101_1111_0000u16, 0b1111_0000u8);
+    winfo!(
+        f,
+        "bitfields {0:7..12}, {1:0..5}",
+        0b1110_0101_1111_0000u16,
+        0b1111_0000u8
+    );
     assert_eq!(
         f.bytes(),
         &[
-            index,                    // bitfields {0:7..12}, {1:0..5}",
+            index, // bitfields {0:7..12}, {1:0..5}",
             timestamp,
-            0b1111_0000, 0b1110_0101, // u16
-            0b1111_0000u8,            // u8
+            0b1111_0000,
+            0b1110_0101,   // u16
+            0b1111_0000u8, // u8
         ]
     );
 }
@@ -225,13 +231,13 @@ fn bitfields_across_octets() {
     assert_eq!(
         f.bytes(),
         &[
-            index,                    // bitfields {0:7..12}, {1:0..5}",
+            index, // bitfields {0:7..12}, {1:0..5}",
             timestamp,
-            0b1101_0010, 0b0110_0011, // u16
+            0b1101_0010,
+            0b0110_0011, // u16
         ]
     );
 }
-
 
 #[test]
 fn boolean_struct() {
@@ -694,6 +700,60 @@ fn format_slice_of_slices() {
             1, // [1][1].high
             4, // [1][2].low
             1, // [1][2].high
+        ],
+    );
+}
+
+#[test]
+fn format_slice_enum_slice() {
+    let index = fetch_string_index();
+    let slice: &[Option<&[u8]>] = &[None, Some(&[42, 43])];
+    check_format_implementation(
+        slice,
+        &[
+            index,             // "{:[?]}"
+            slice.len() as u8, //
+            // first optional slice
+            inc(index, 1), // "None|Some({:?})"
+            0,             // discriminant
+            // second optional slice
+            // omitted: "None|Some({:?})" index
+            1,             // discriminant
+            inc(index, 2), // "{:[?]}" (the ? behind "Some({:?})")
+            2,             // length of second optional slice
+            inc(index, 3), // "{:u8}" (the ? behind "{:[?]}")
+            42,
+            // omitted: "{:u8}" index
+            43,
+        ],
+    );
+}
+
+#[test]
+fn format_slice_enum_generic_struct() {
+    #[derive(Format)]
+    struct S<T> {
+        x: u8,
+        y: T,
+    }
+
+    let index = fetch_string_index();
+    let slice: &[Option<S<u8>>] = &[None, Some(S { x: 42, y: 43 })];
+    check_format_implementation(
+        slice,
+        &[
+            index,             // "{:[?]}"
+            slice.len() as u8, //
+            // first optional element
+            inc(index, 1), // "None|Some({:?})"
+            0,             // discriminant
+            // second optional element
+            // omitted: "None|Some({:?})" index
+            1,             // discriminant
+            inc(index, 2), // "S {{ x: {:u8}, y: {:?} }}" (the ? behind "Some({:?})")
+            42,            // S.x
+            inc(index, 3), // "{:u8}" (the ? behind S.y)
+            43,            // S. y
         ],
     );
 }
