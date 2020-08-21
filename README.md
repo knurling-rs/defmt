@@ -16,7 +16,7 @@ For more details about the framework check the book at https://defmt.ferrous-sys
 
 ## Support
 
-`probe-run` is part of the [Knurling] project, [Ferrous Systems]' effort at
+`defmt` is part of the [Knurling] project, [Ferrous Systems]' effort at
 improving tooling used to develop for embedded systems.
 
 If you think that our work is useful, consider sponsoring it via [GitHub
