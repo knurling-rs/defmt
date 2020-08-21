@@ -89,15 +89,21 @@ impl Channel {
             return 0;
         }
 
-        let read = self.write.load(Ordering::Relaxed);
+        let read = self.read.load(Ordering::Relaxed);
         let write = self.write.load(Ordering::Acquire);
-        let available = SIZE.wrapping_add(read).wrapping_sub(write);
+        let available = if read > write {
+            read - write - 1
+        } else if read == 0 {
+            SIZE - write - 1
+        } else {
+            SIZE - write
+        };
 
         if available == 0 {
             return 0;
         }
 
-        let cursor = write % SIZE;
+        let cursor = write;
         let len = bytes.len().min(available);
 
         unsafe {
@@ -123,7 +129,8 @@ impl Channel {
                 );
             }
         }
-        self.write.store(write.wrapping_add(len) % SIZE, Ordering::Release);
+        self.write
+            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
 
         len
     }
