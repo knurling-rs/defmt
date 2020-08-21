@@ -1,8 +1,9 @@
 [package]
+authors = ["The Knurling-rs developers"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
 name = "defmt-rtt"
 version = "0.1.0"
-authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
-edition = "2018"
 
 [dependencies]
 defmt = { path = "../.." }

@@ -1,9 +1,10 @@
 [package]
-name = "qemu-run"
-version = "0.1.0"
-authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+authors = ["The Knurling-rs developers"]
 edition = "2018"
+license = "MIT OR Apache-2.0"
+name = "qemu-run"
 publish = false
+version = "0.1.0"
 
 [dependencies]
 anyhow = "1.0.32"
