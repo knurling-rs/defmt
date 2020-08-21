@@ -295,7 +295,7 @@ fn main() -> ! {
         defmt::info!("{:[?]}", &[None, Some(S { x: 42, y: 256 })][..]);
     }
 
-    // FIXME slice + built-in enum + slice
+    // slice + built-in enum + slice
     let s: &[u8] = &[42, 43];
     defmt::info!("{:[?]}", &[None, Some(s)][..]);
 
