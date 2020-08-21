@@ -13,10 +13,11 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     let elf = File::parse(elf)?;
 
     // find the index of the `.defmt` section
-    let defmt_shndx = elf
-        .section_by_name(".defmt")
-        .ok_or_else(|| anyhow!("`.defmt` section is missing"))?
-        .index();
+    let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
+        section.index()
+    } else {
+        return Ok(None);
+    };
 
     let mut map = BTreeMap::new();
     let mut version = None;
