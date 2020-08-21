@@ -1,6 +1,6 @@
 # `defmt`
 
-> **PRE-ALPHA PREVIEW** `defmt` wire format has not been finalized yet. When
+> **ALPHA PREVIEW** `defmt` wire format has not been finalized yet. When
 > using the framework make sure you use the *same* "version" (commit hash) for
 > all components (target side and host side).
 

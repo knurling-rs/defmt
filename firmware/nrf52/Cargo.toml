@@ -1,10 +1,11 @@
 [package]
-authors = ["Jorge Aparicio <jorge.aparicio@ferrous-systems.com>"]
+authors = ["The Knurling-rs developers"]
 edition = "2018"
-readme = "README.md"
+license = "MIT OR Apache-2.0"
 name = "nrf52"
-version = "0.1.0"
 publish = false
+readme = "README.md"
+version = "0.1.0"
 
 [dependencies]
 defmt = { path = "../.." }
