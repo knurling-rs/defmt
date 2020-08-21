@@ -296,8 +296,8 @@ fn main() -> ! {
     }
 
     // FIXME slice + built-in enum + slice
-    // let s: &[u8] = &[42, 43];
-    // defmt::info!("{:[?]}", &[None, Some(s)][..]);
+    let s: &[u8] = &[42, 43];
+    defmt::info!("{:[?]}", &[None, Some(s)][..]);
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)
