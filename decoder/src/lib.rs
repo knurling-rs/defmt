@@ -50,7 +50,15 @@ impl Table {
             ));
         }
 
-        // TODO check that the ranges don't overlap
+        let mut ranges = [&debug, &error, &info, &trace, &warn];
+        ranges.sort_by(|a, b| a.start.cmp(&b.start));
+        for i in 0..ranges.len() - 1 {
+            if ranges[i].contains(&ranges[i + 1].start) {
+                return Err(
+                    "one or more of debug, error, info, trace, warn ranges overlap".to_string(),
+                );
+            }
+        }
 
         Ok(Self {
             entries,
