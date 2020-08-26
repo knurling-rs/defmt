@@ -37,11 +37,14 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
             None => continue,
         };
 
-        // not in the `.defmt` section because it's not tied to the address of any symbol
-        // in `.defmt`
-        if name.starts_with("\"_defmt_version_ = ") {
+        // Not in the `.defmt` section because it's not tied to the address of any symbol
+        // in `.defmt`.
+        // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
+        // makes it keep the quotes from the linker script.
+        if name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ") {
             let new_version = name
                 .trim_start_matches("\"_defmt_version_ = ")
+                .trim_start_matches("_defmt_version_ = ")
                 .trim_end_matches('"');
             if let Some(version) = version {
                 return Err(anyhow!(
