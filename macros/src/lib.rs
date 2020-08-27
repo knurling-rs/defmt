@@ -228,7 +228,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     ))
                 }
 
-                let sym = mksym(&fs, "fmt");
+                let sym = mksym(&fs, "fmt", false);
                 exprs.push(quote!(
                     if f.needs_tag() {
                         f.istr(&defmt::export::istr(#sym));
@@ -445,7 +445,7 @@ fn log(level: MLevel, ts: TokenStream) -> TokenStream {
         Err(e) => return e.to_compile_error().into(),
     };
 
-    let sym = mksym(&ls, level.as_str());
+    let sym = mksym(&ls, level.as_str(), true);
     let logging_enabled = is_logging_enabled(level);
     quote!({
         if #logging_enabled {
@@ -515,7 +515,7 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
     };
 
     let f = &write.fmt;
-    let sym = mksym(&ls, "info");
+    let sym = mksym(&ls, "info", false /* don't care */);
     quote!({
         match (&mut #f, defmt::export::timestamp(), #(&(#args)),*) {
             (_fmt_, ts, #(#pats),*) => {
@@ -560,7 +560,7 @@ pub fn intern(ts: TokenStream) -> TokenStream {
         .into();
     }
 
-    let sym = mksym(&ls, "str");
+    let sym = mksym(&ls, "str", false);
     quote!({
         defmt::export::istr(#sym)
     })
@@ -624,7 +624,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
     };
 
     let fmt = &write.fmt;
-    let sym = mksym(&ls, "fmt");
+    let sym = mksym(&ls, "fmt", false);
     quote!(match (#fmt, #(&(#args)),*) {
         (ref mut _fmt_, #(#pats),*) => {
             // HACK conditional should not be here; see FIXME in `format`
@@ -638,10 +638,18 @@ pub fn write(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-fn mksym(string: &str, section: &str) -> TokenStream2 {
+fn mksym(string: &str, section: &str, is_log_statement: bool) -> TokenStream2 {
     let id = format!("{:?}", Span::call_site());
     let section = format!(".defmt.{}.{}", section, string);
     let sym = format!("{}@{}", string, id);
+    // NOTE we rely on this variable name when extracting file location information from the DWARF
+    // without it we have no other mean to differentiate static variables produced by `info!` vs
+    // produced by `intern!` (or `internp`)
+    let varname = if is_log_statement {
+        format_ident!("DEFMT_LOG_STATEMENT")
+    } else {
+        format_ident!("S")
+    };
     quote!(match () {
         #[cfg(target_arch = "x86_64")]
         () => {
@@ -651,8 +659,8 @@ fn mksym(string: &str, section: &str) -> TokenStream2 {
         () => {
             #[link_section = #section]
             #[export_name = #sym]
-            static S: u8 = 0;
-            &S as *const u8 as usize
+            static #varname: u8 = 0;
+            &#varname as *const u8 as usize
         }
     })
 }

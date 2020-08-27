@@ -109,6 +109,7 @@ impl Table {
 #[derive(Debug, PartialEq)]
 pub struct Frame<'t> {
     level: Level,
+    index: u64,
     // Format string
     format: &'t str,
     timestamp: u64,
@@ -121,6 +122,10 @@ impl<'t> Frame<'t> {
             frame: self,
             colored,
         }
+    }
+
+    pub fn index(&self) -> u64 {
+        self.index
     }
 }
 
@@ -244,6 +249,7 @@ pub fn decode<'t>(
 
     let frame = Frame {
         level,
+        index,
         format,
         timestamp,
         args,
