@@ -53,7 +53,9 @@ impl Table {
         let mut ranges = [&debug, &error, &info, &trace, &warn];
         ranges.sort_by(|a, b| a.start.cmp(&b.start));
         for i in 0..ranges.len() - 1 {
-            if ranges[i].contains(&ranges[i + 1].start) {
+            let next = &ranges[i + 1];
+            let next_is_nonempty = next.start < next.end;
+            if ranges[i].contains(&next.start) && next_is_nonempty {
                 return Err(
                     "one or more of debug, error, info, trace, warn ranges overlap".to_string(),
                 );
