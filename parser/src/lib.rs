@@ -93,7 +93,7 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
     let mut index = None;
     let colon_pos = s
         .find(|c: char| !c.is_digit(10))
-        .ok_or("malformed format string")?;
+        .ok_or("malformed format string (missing `:`)")?;
 
     if colon_pos != 0 {
         index = Some(s[..colon_pos].parse::<usize>().map_err(|e| e.to_string())?);
@@ -227,7 +227,6 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
             chars.next(); // Move after both `{`s.
             continue;
         }
-        chars.next(); // Move after the `{`.
 
         if brace_pos > end_pos {
             // There's a literal fragment with at least 1 character before this parameter fragment.
@@ -239,8 +238,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
         let len = chars
             .as_str()
             .find('}')
-            .ok_or("missing `}` in format string")?
-            + 1;
+            .ok_or("missing `}` in format string")?;
         end_pos = brace_pos + 1 + len + 1;
 
         // Parse the contents inside the braces.
@@ -586,6 +584,14 @@ mod tests {
         assert_eq!(
             parse("{:dunno}"),
             Err("malformed format string (invalid type specifier `dunno`)".into())
+        );
+        assert_eq!(
+            parse("{}"),
+            Err("malformed format string (missing `:`)".into())
+        );
+        assert_eq!(
+            parse("{0}"),
+            Err("malformed format string (missing `:`)".into())
         );
     }
 
