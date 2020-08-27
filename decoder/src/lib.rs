@@ -196,6 +196,8 @@ enum Arg<'t> {
     Str(String),
     /// Interned string
     IStr(&'t str),
+    /// Byte slice as string
+    BStr(Vec<u8>),
     /// Format
     Format {
         format: &'t str,
@@ -562,6 +564,17 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                     args.push(Arg::IStr(string));
                 }
+                Type::BStr => {
+                    let num_elements =
+                        leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+                    let mut arg_slice = vec![];
+
+                    // note: went for the suboptimal but simple solution; optimize if necessary
+                    for _ in 0..num_elements {
+                        arg_slice.push(self.bytes.read_u8().map_err(drop)?);
+                    }
+                    args.push(Arg::BStr(arg_slice.to_vec()));
+                }
                 Type::Slice => {
                     // only supports byte slices
                     let num_elements =
@@ -637,6 +650,7 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                     Arg::Ixx(x) => write!(buf, "{}", x)?,
                     Arg::Str(x) => write!(buf, "{}", x)?,
                     Arg::IStr(x) => write!(buf, "{}", x)?,
+                    Arg::BStr(x) => format_byte_string(&mut buf, x)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
                     Arg::FormatSlice { elements } => {
                         buf.write_str("[")?;
@@ -660,6 +674,18 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
 
 fn zigzag_decode(unsigned: u64) -> i64 {
     (unsigned >> 1) as i64 ^ -((unsigned & 1) as i64)
+}
+
+/// Format a byte slice as an ASCII string, with non-printable and non-ASCII
+/// bytes represented in hexadecimal by <FF>.
+fn format_byte_string(buf: &mut String, slice: &[u8]) -> Result<(), fmt::Error> {
+    for &byte in slice {
+        match byte {
+            b' '..=b'~' => buf.push(byte as char),
+            _ => write!(buf, "<{:02X}>", byte)?,
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1209,6 +1235,18 @@ mod tests {
             &bytes,
             "0.000002 INFO Hello World 125",
         );
+    }
+
+    #[test]
+    fn byte_string() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            5, // length of the slice
+            b'W', 0, 0xFF, b'l', b'd',
+        ];
+
+        decode_and_expect("Hello {:bstr}", &bytes, "0.000002 INFO Hello W<00><FF>ld");
     }
 
     #[test]

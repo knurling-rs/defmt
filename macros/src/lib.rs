@@ -777,7 +777,7 @@ impl Codegen {
                 defmt_parser::Type::Bool => {
                     exprs.push(quote!(_fmt_.bool(#arg)));
                 }
-                defmt_parser::Type::Slice => {
+                defmt_parser::Type::Slice | defmt_parser::Type::BStr => {
                     exprs.push(quote!(_fmt_.slice(#arg)));
                 }
                 defmt_parser::Type::Array(len) => {

@@ -29,4 +29,5 @@ The available types are:
 - `:f32`, 32-bit floating point type
 - `:[u8; N]`, byte array
 - `:[u8]`, byte slice
+- `:bstr`, byte slice represented as ASCII string
 - `:str`, string slice

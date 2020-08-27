@@ -40,6 +40,8 @@ pub enum Type {
     Str,
     /// Interned string index.
     IStr,
+    /// Byte slice formatted as ASCII string.
+    BStr,
     U8,
     U16,
     U24,
@@ -121,6 +123,7 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         "bool" => Type::Bool,
         "str" => Type::Str,
         "istr" => Type::IStr,
+        "bstr" => Type::BStr,
         "[u8]" => Type::Slice,
         "?" => Type::Format,
         "[?]" => Type::FormatSlice,
@@ -356,6 +359,14 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::Str,
+            })])
+        );
+
+        assert_eq!(
+            parse("{:bstr}"),
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::BStr,
             })])
         );
 

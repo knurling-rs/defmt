@@ -16,6 +16,8 @@ fn str() {
 
     let world = defmt::intern!("world");
     defmt::info!("Hello, {:istr}", world);
+
+    defmt::info!("Hello, {:bstr}", &b"world"[..]);
 }
 
 #[test]
