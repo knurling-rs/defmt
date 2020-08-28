@@ -103,6 +103,10 @@ impl Table {
             Err(())
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 /// A log frame
