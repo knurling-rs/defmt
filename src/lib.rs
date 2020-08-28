@@ -437,3 +437,8 @@ pub trait Format {
     /// Writes the defmt representation of `self` to `fmt`.
     fn format(&self, fmt: &mut Formatter);
 }
+
+#[export_name = "__defmt_default_timestamp"]
+fn default_timestamp() -> u64 {
+    0
+}

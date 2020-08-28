@@ -1,15 +1,16 @@
 # #[timestamp]
 
-*Applications* that, directly or transitively, use any of `defmt` logging macros need to define a `#[timestamp]` function or include one in their dependency graph.
+*Applications* that, directly or transitively, use any of `defmt` logging macros may define a `#[timestamp]` function or include one in their dependency graph.
 
 All logs are timestamped.
 The `#[timestamp]` function specifies how the timestamp is computed.
+By default (if no `#[timestamp]` function is provided), a timestamp of 0 will be used.
 This function must have signature `fn() -> u64` and on each invocation *should* return a non-decreasing value.
 The function is not `unsafe` meaning that it must be thread-safe and interrupt-safe.
 
-## No timestamp
+## No timestamp (default behavior)
 
-To omit timestamp information use this `#[timestamp]` function:
+When no `#[timestamp]` function is used, defmt will use one equivalent to this:
 
 ``` rust
 # extern crate defmt;
@@ -21,7 +22,7 @@ fn timestamp() -> u64 {
 
 ## Atomic timestamp
 
-A simple `timestamp` function that does not depend on device specific features and it's good enough for development is shown below:
+A simple `timestamp` function that does not depend on device specific features and is good enough for development is shown below:
 
 ``` rust
 # extern crate defmt;
