@@ -9,7 +9,8 @@ use object::{Object, ObjectSection};
 /// Parses an ELF file and returns the decoded `defmt` table
 ///
 /// This function returns `None` if the ELF file contains no `.defmt` section
-pub fn parse(elf: &object::File) -> Result<Option<Table>, anyhow::Error> {
+pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+    let elf = object::File::parse(elf)?;
     // find the index of the `.defmt` section
     let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
         section.index()
@@ -99,7 +100,8 @@ pub struct Location {
 
 pub type Locations = BTreeMap<u64, Location>;
 
-pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> {
+pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
+    let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
     } else {
