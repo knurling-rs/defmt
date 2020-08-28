@@ -1,6 +1,10 @@
 //! Reads ELF metadata and builds an interner table
 
-use std::{borrow::Cow, collections::BTreeMap, path::PathBuf};
+use std::{
+    borrow::Cow,
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{anyhow, bail, ensure};
 pub use decoder::Table;
@@ -193,8 +197,7 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
 
                         if name == "DEFMT_LOG_STATEMENT" {
                             let addr = exprloc2address(unit.encoding(), &loc)?;
-                            let file =
-                                PathBuf::from(file_index_to_string(file_index, &unit, &dwarf)?);
+                            let file = file_index_to_path(file_index, &unit, &dwarf)?;
 
                             let loc = Location { file, line };
 
@@ -214,11 +217,11 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
     Ok(map)
 }
 
-fn file_index_to_string<R>(
+fn file_index_to_path<R>(
     index: u64,
     unit: &gimli::Unit<R>,
     dwarf: &gimli::Dwarf<R>,
-) -> Result<String, anyhow::Error>
+) -> Result<PathBuf, anyhow::Error>
 where
     R: gimli::read::Reader,
 {
@@ -236,28 +239,27 @@ where
         bail!("no `FileEntry` for index {}", index)
     };
 
-    let mut s = String::new();
+    let mut p = PathBuf::new();
     if let Some(dir) = file.directory(header) {
         let dir = dwarf.attr_string(unit, dir)?;
-        let dir = dir.to_string_lossy()?;
+        let dir_s = dir.to_string_lossy()?;
+        let dir = Path::new(&dir_s[..]);
 
-        if !dir.starts_with('/') {
+        if !dir.is_absolute() {
             if let Some(ref comp_dir) = unit.comp_dir {
-                s.push_str(&comp_dir.to_string_lossy()?);
-                s.push('/');
+                p.push(&comp_dir.to_string_lossy()?[..]);
             }
         }
-        s.push_str(&dir);
-        s.push('/');
+        p.push(&dir);
     }
 
-    s.push_str(
+    p.push(
         &dwarf
             .attr_string(unit, file.path_name())?
-            .to_string_lossy()?,
+            .to_string_lossy()?[..],
     );
 
-    Ok(s)
+    Ok(p)
 }
 
 fn exprloc2address<R: gimli::read::Reader<Offset = usize>>(
