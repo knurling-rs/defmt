@@ -6,8 +6,9 @@ name = "elf2table"
 version = "0.1.0"
 
 [dependencies]
-decoder = { path = "../decoder" }
 anyhow = "1.0.32"
+decoder = { path = "../decoder" }
+gimli = "0.22.0"
 
 [dependencies.object]
 version = "0.21.0"

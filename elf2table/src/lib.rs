@@ -1,17 +1,20 @@
 //! Reads ELF metadata and builds an interner table
 
-use std::collections::BTreeMap;
+use std::{
+    borrow::Cow,
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail, ensure};
 pub use decoder::Table;
-use object::{File, Object, ObjectSection};
+use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table
 ///
 /// This function returns `None` if the ELF file contains no `.defmt` section
 pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-    let elf = File::parse(elf)?;
-
+    let elf = object::File::parse(elf)?;
     // find the index of the `.defmt` section
     let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
         section.index()
@@ -91,4 +94,186 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     Table::new(map, debug, error, info, trace, warn, version)
         .map_err(anyhow::Error::msg)
         .map(Some)
+}
+
+#[derive(Debug)]
+pub struct Location {
+    pub file: PathBuf,
+    pub line: u64,
+}
+
+pub type Locations = BTreeMap<u64, Location>;
+
+pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
+    let object = object::File::parse(elf)?;
+    let endian = if object.is_little_endian() {
+        gimli::RunTimeEndian::Little
+    } else {
+        gimli::RunTimeEndian::Big
+    };
+
+    let load_section = |id: gimli::SectionId| {
+        Ok(if let Some(s) = object.section_by_name(id.name()) {
+            s.uncompressed_data().unwrap_or(Cow::Borrowed(&[][..]))
+        } else {
+            Cow::Borrowed(&[][..])
+        })
+    };
+    let load_section_sup = |_| Ok(Cow::Borrowed(&[][..]));
+
+    let dwarf_cow =
+        gimli::Dwarf::<Cow<[u8]>>::load::<_, _, anyhow::Error>(&load_section, &load_section_sup)?;
+
+    let borrow_section: &dyn for<'a> Fn(
+        &'a Cow<[u8]>,
+    ) -> gimli::EndianSlice<'a, gimli::RunTimeEndian> =
+        &|section| gimli::EndianSlice::new(&*section, endian);
+
+    let dwarf = dwarf_cow.borrow(&borrow_section);
+
+    let mut units = dwarf.debug_info.units();
+
+    let mut map = BTreeMap::new();
+    while let Some(header) = units.next()? {
+        let unit = dwarf.unit(header)?;
+        let abbrev = header.abbreviations(&dwarf.debug_abbrev)?;
+
+        let mut cursor = header.entries(&abbrev);
+
+        ensure!(cursor.next_dfs()?.is_some(), "empty DWARF?");
+
+        while let Some((_, entry)) = cursor.next_dfs()? {
+            // NOTE .. here start the custom logic
+            if entry.tag() == gimli::constants::DW_TAG_variable {
+                // Iterate over the attributes in the DIE.
+                let mut attrs = entry.attrs();
+
+                // what we are after
+                let mut decl_file = None;
+                let mut decl_line = None; // line number
+                let mut name = None;
+                let mut location = None;
+
+                while let Some(attr) = attrs.next()? {
+                    match attr.name() {
+                        gimli::constants::DW_AT_name => {
+                            if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
+                                name = Some(off);
+                            }
+                        }
+
+                        gimli::constants::DW_AT_decl_file => {
+                            if let gimli::AttributeValue::FileIndex(idx) = attr.value() {
+                                decl_file = Some(idx);
+                            }
+                        }
+
+                        gimli::constants::DW_AT_decl_line => {
+                            if let gimli::AttributeValue::Udata(line) = attr.value() {
+                                decl_line = Some(line);
+                            }
+                        }
+
+                        gimli::constants::DW_AT_location => {
+                            if let gimli::AttributeValue::Exprloc(loc) = attr.value() {
+                                location = Some(loc);
+                            }
+                        }
+
+                        _ => {}
+                    }
+                }
+
+                if name.is_some()
+                    && decl_file.is_some()
+                    && decl_line.is_some()
+                    && location.is_some()
+                {
+                    if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
+                        (name, decl_file, decl_line, location)
+                    {
+                        let endian_slice = dwarf.string(name_index)?;
+                        let name = core::str::from_utf8(&endian_slice)?;
+
+                        if name == "DEFMT_LOG_STATEMENT" {
+                            let addr = exprloc2address(unit.encoding(), &loc)?;
+                            let file = file_index_to_path(file_index, &unit, &dwarf)?;
+
+                            let loc = Location { file, line };
+
+                            if addr != 0 {
+                                ensure!(
+                                    map.insert(addr, loc).is_none(),
+                                    "BUG in DWARF variable filter: index collision"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(map)
+}
+
+fn file_index_to_path<R>(
+    index: u64,
+    unit: &gimli::Unit<R>,
+    dwarf: &gimli::Dwarf<R>,
+) -> Result<PathBuf, anyhow::Error>
+where
+    R: gimli::read::Reader,
+{
+    ensure!(index != 0, "`FileIndex` was zero");
+
+    let header = if let Some(program) = &unit.line_program {
+        program.header()
+    } else {
+        bail!("no `LineProgram`");
+    };
+
+    let file = if let Some(file) = header.file(index) {
+        file
+    } else {
+        bail!("no `FileEntry` for index {}", index)
+    };
+
+    let mut p = PathBuf::new();
+    if let Some(dir) = file.directory(header) {
+        let dir = dwarf.attr_string(unit, dir)?;
+        let dir_s = dir.to_string_lossy()?;
+        let dir = Path::new(&dir_s[..]);
+
+        if !dir.is_absolute() {
+            if let Some(ref comp_dir) = unit.comp_dir {
+                p.push(&comp_dir.to_string_lossy()?[..]);
+            }
+        }
+        p.push(&dir);
+    }
+
+    p.push(
+        &dwarf
+            .attr_string(unit, file.path_name())?
+            .to_string_lossy()?[..],
+    );
+
+    Ok(p)
+}
+
+fn exprloc2address<R: gimli::read::Reader<Offset = usize>>(
+    encoding: gimli::Encoding,
+    data: &gimli::Expression<R>,
+) -> Result<u64, anyhow::Error> {
+    let mut pc = data.0.clone();
+    while pc.len() != 0 {
+        if let Ok(gimli::Operation::Address { address }) =
+            gimli::Operation::parse(&mut pc, encoding)
+        {
+            return Ok(address);
+        }
+    }
+
+    Err(anyhow!("`Operation::Address` not found"))
 }

@@ -103,12 +103,17 @@ impl Table {
             Err(())
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 /// A log frame
 #[derive(Debug, PartialEq)]
 pub struct Frame<'t> {
     level: Level,
+    index: u64,
     // Format string
     format: &'t str,
     timestamp: u64,
@@ -121,6 +126,10 @@ impl<'t> Frame<'t> {
             frame: self,
             colored,
         }
+    }
+
+    pub fn index(&self) -> u64 {
+        self.index
     }
 }
 
@@ -244,6 +253,7 @@ pub fn decode<'t>(
 
     let frame = Frame {
         level,
+        index,
         format,
         timestamp,
         args,
@@ -720,6 +730,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: "Hello, world!",
                     timestamp: 1,
@@ -739,6 +750,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 1,
                     level: Level::Debug,
                     format: "The answer is {:u8}!",
                     timestamp: 2,
@@ -782,6 +794,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: FMT,
                     timestamp: 2,
@@ -824,6 +837,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: "The answer is {0:u8} {0:u8}!",
                     timestamp: 2,
@@ -844,6 +858,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 1,
                     level: Level::Info,
                     format: "The answer is {1:u16} {0:u8} {1:u16}!",
                     timestamp: 2,
@@ -880,6 +895,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: "x={:?}",
                     timestamp: 2,
