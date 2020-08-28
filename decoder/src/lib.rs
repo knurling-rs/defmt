@@ -730,6 +730,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: "Hello, world!",
                     timestamp: 1,
@@ -749,6 +750,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 1,
                     level: Level::Debug,
                     format: "The answer is {:u8}!",
                     timestamp: 2,
@@ -792,6 +794,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: FMT,
                     timestamp: 2,
@@ -834,6 +837,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: "The answer is {0:u8} {0:u8}!",
                     timestamp: 2,
@@ -854,6 +858,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 1,
                     level: Level::Info,
                     format: "The answer is {1:u16} {0:u8} {1:u16}!",
                     timestamp: 2,
@@ -890,6 +895,7 @@ mod tests {
             super::decode(&bytes, &table),
             Ok((
                 Frame {
+                    index: 0,
                     level: Level::Info,
                     format: "x={:?}",
                     timestamp: 2,
