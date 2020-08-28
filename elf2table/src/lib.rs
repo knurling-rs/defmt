@@ -136,7 +136,6 @@ pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> 
 
         ensure!(cursor.next_dfs()?.is_some(), "empty DWARF?");
 
-        let mut cached_attrs = vec![];
         while let Some((_, entry)) = cursor.next_dfs()? {
             // NOTE .. here start the custom logic
             if entry.tag() == gimli::constants::DW_TAG_variable {
@@ -149,7 +148,6 @@ pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> 
                 let mut name = None;
                 let mut location = None;
 
-                cached_attrs.clear();
                 while let Some(attr) = attrs.next()? {
                     match attr.name() {
                         gimli::constants::DW_AT_name => {
@@ -178,7 +176,6 @@ pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> 
 
                         _ => {}
                     }
-                    cached_attrs.push(attr);
                 }
 
                 if name.is_some()
