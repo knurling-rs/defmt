@@ -190,7 +190,13 @@ fn main() -> ! {
             y: T,
         }
 
-        defmt::info!("{:?}", S { x: Some(&48), y: 49u8 });
+        defmt::info!(
+            "{:?}",
+            S {
+                x: Some(&48),
+                y: 49u8
+            }
+        );
     }
 
     // plain generic enum

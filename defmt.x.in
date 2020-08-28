@@ -1,7 +1,8 @@
 /* exhaustively search for these symbols */
 EXTERN(_defmt_acquire);
 EXTERN(_defmt_release);
-EXTERN(_defmt_timestamp);
+EXTERN(__defmt_default_timestamp);
+PROVIDE(_defmt_timestamp = __defmt_default_timestamp);
 
 SECTIONS
 {
