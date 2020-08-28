@@ -4,14 +4,12 @@ use std::{borrow::Cow, collections::BTreeMap, path::PathBuf};
 
 use anyhow::{anyhow, bail, ensure};
 pub use decoder::Table;
-use object::{File, Object, ObjectSection};
+use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table
 ///
 /// This function returns `None` if the ELF file contains no `.defmt` section
-pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-    let elf = File::parse(elf)?;
-
+pub fn parse(elf: &object::File) -> Result<Option<Table>, anyhow::Error> {
     // find the index of the `.defmt` section
     let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
         section.index()
@@ -101,10 +99,7 @@ pub struct Location {
 
 pub type Locations = BTreeMap<u64, Location>;
 
-// TODO make this and the `parse` functions take a `object::File` argument
-pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
-    let object = object::File::parse(elf)?;
-
+pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> {
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
     } else {
@@ -139,12 +134,10 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
 
         let mut cursor = header.entries(&abbrev);
 
-        // TODO throw error
-        assert!(cursor.next_dfs().unwrap().is_some());
+        ensure!(cursor.next_dfs()?.is_some(), "empty DWARF?");
 
         let mut cached_attrs = vec![];
-        // TODO remove `expect`
-        while let Some((_, entry)) = cursor.next_dfs().expect("Should parse next dfs") {
+        while let Some((_, entry)) = cursor.next_dfs()? {
             // NOTE .. here start the custom logic
             if entry.tag() == gimli::constants::DW_TAG_variable {
                 // Iterate over the attributes in the DIE.
@@ -203,7 +196,6 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                             has_linkage_name = true;
                         }
 
-                        // FIXME needs more filters; we are including things that are not `defmt` symbols
                         _ => {
                             has_unexpected_attribute = true;
                         }
@@ -220,23 +212,25 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                     && has_linkage_name
                     && !has_unexpected_attribute
                 {
-                    let endian_slice = dwarf.string(name.unwrap())?;
-                    let name = core::str::from_utf8(&endian_slice)?;
+                    if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
+                        (name, decl_file, decl_line, location)
+                    {
+                        let endian_slice = dwarf.string(name_index)?;
+                        let name = core::str::from_utf8(&endian_slice)?;
 
-                    // TODO clean up the Option unwrap
-                    if name == "DEFMT_LOG_STATEMENT" {
-                        let addr = exprloc2address(unit.encoding(), &location.unwrap())?;
-                        let file =
-                            PathBuf::from(file_index_to_string(decl_file.unwrap(), &unit, &dwarf)?);
-                        let line = decl_line.unwrap();
+                        if name == "DEFMT_LOG_STATEMENT" {
+                            let addr = exprloc2address(unit.encoding(), &loc)?;
+                            let file =
+                                PathBuf::from(file_index_to_string(file_index, &unit, &dwarf)?);
 
-                        let loc = Location { file, line };
+                            let loc = Location { file, line };
 
-                        if addr != 0 {
-                            ensure!(
-                                map.insert(addr, loc).is_none(),
-                                "BUG in DWARF variable filter: index collision"
-                            );
+                            if addr != 0 {
+                                ensure!(
+                                    map.insert(addr, loc).is_none(),
+                                    "BUG in DWARF variable filter: index collision"
+                                );
+                            }
                         }
                     }
                 }
