@@ -147,12 +147,8 @@ pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> 
                 let mut decl_file = None;
                 let mut decl_line = None; // line number
                 let mut name = None;
-                let mut has_type = false;
-                let mut is_external = false;
                 let mut location = None;
-                let mut has_linkage_name = false;
 
-                let mut has_unexpected_attribute = false;
                 cached_attrs.clear();
                 while let Some(attr) = attrs.next()? {
                     match attr.name() {
@@ -160,17 +156,6 @@ pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> 
                             if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
                                 name = Some(off);
                             }
-                        }
-
-                        gimli::constants::DW_AT_type => {
-                            has_type = true;
-                        }
-
-                        // #[export_name]
-                        gimli::constants::DW_AT_external
-                            if attr.value() == gimli::AttributeValue::Flag(true) =>
-                        {
-                            is_external = true;
                         }
 
                         gimli::constants::DW_AT_decl_file => {
@@ -191,26 +176,15 @@ pub fn get_locations(object: &object::File) -> Result<Locations, anyhow::Error> 
                             }
                         }
 
-                        // #[export_name]
-                        gimli::constants::DW_AT_linkage_name => {
-                            has_linkage_name = true;
-                        }
-
-                        _ => {
-                            has_unexpected_attribute = true;
-                        }
+                        _ => {}
                     }
                     cached_attrs.push(attr);
                 }
 
                 if name.is_some()
-                    && has_type
-                    && is_external
                     && decl_file.is_some()
                     && decl_line.is_some()
                     && location.is_some()
-                    && has_linkage_name
-                    && !has_unexpected_attribute
                 {
                     if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
                         (name, decl_file, decl_line, location)
