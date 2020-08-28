@@ -104,6 +104,10 @@ impl Table {
         }
     }
 
+    pub fn indices<'s>(&'s self) -> impl Iterator<Item = usize> + 's {
+        self.entries.keys().map(|idx| *idx)
+    }
+
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
