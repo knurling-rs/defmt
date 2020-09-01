@@ -305,8 +305,24 @@ fn main() -> ! {
     let s: &[u8] = &[42, 43];
     defmt::info!("{:[?]}", &[None, Some(s)][..]);
 
+    defmt::info!("after nested log: {:?}", nested());
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
+    }
+}
+
+#[derive(Format)]
+struct NestedStruct {
+    a: u8,
+    b: u32,
+}
+
+fn nested() -> NestedStruct {
+    defmt::info!("in nested {:u8}", 123);
+    NestedStruct {
+        a: 0xAA,
+        b: 0x12345678,
     }
 }
 
