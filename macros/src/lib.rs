@@ -449,8 +449,9 @@ fn log(level: MLevel, ts: TokenStream) -> TokenStream {
     let logging_enabled = is_logging_enabled(level);
     quote!({
         if #logging_enabled {
-            match (defmt::export::timestamp(), #(&(#args)),*) {
-                (ts, #(#pats),*) => {
+            match (#(&(#args)),*) {
+                (#(#pats),*) => {
+                    let ts = defmt::export::timestamp();
                     if let Some(mut _fmt_) = defmt::export::acquire() {
                         _fmt_.istr(&defmt::export::istr(#sym));
                         _fmt_.leb64(ts);
