@@ -1048,8 +1048,6 @@ mod tests {
         );
     }
 
-    /*
-    // NOTE: currently failing due to known bug– uncomment and fix this one :)
     #[test]
     fn bools_bool_struct() {
         /*
@@ -1066,7 +1064,10 @@ mod tests {
 
         let mut entries = BTreeMap::new();
         entries.insert(0, "{:bool} {:?}".to_owned());
-        entries.insert(1, "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned());
+        entries.insert(
+            1,
+            "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned(),
+        );
 
         let table = Table {
             entries,
@@ -1078,10 +1079,10 @@ mod tests {
         };
 
         let bytes = [
-            0,          // index
-            2,          // timestamp
-            1,          // index of Flags { a: {:bool}, b: {:bool}, c: {:bool} }
-            0b1101,     // 4 packed bools
+            0,      // index
+            2,      // timestamp
+            1,      // index of Flags { a: {:bool}, b: {:bool}, c: {:bool} }
+            0b1101, // 4 packed bools
         ];
 
         let frame = super::decode(&bytes, &table).unwrap().0;
@@ -1090,7 +1091,6 @@ mod tests {
             "0.000002 INFO true Flags { a: true, b: false, c: true }"
         );
     }
-    */
 
     #[test]
     fn bitfields() {
