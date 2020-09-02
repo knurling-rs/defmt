@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
-use decoder::Table;
+use defmt_decoder::Table;
 use process::Child;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -25,7 +25,8 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     let path = &args[0];
     let bytes = fs::read(path)?;
-    let table = elf2table::parse(&bytes)?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
+    let table =
+        defmt_elf2table::parse(&bytes)?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
 
     let mut child = KillOnDrop(
         Command::new("qemu-system-arm")
@@ -84,7 +85,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 }
 
 fn decode(frames: &mut Vec<u8>, table: &Table) {
-    while let Ok((frame, consumed)) = decoder::decode(&frames, &table) {
+    while let Ok((frame, consumed)) = defmt_decoder::decode(&frames, &table) {
         println!("{}", frame.display(true));
         let n = frames.len();
         frames.rotate_left(consumed);

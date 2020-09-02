@@ -2,12 +2,12 @@
 authors = ["The Knurling-rs developers"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
-name = "elf2table"
+name = "defmt-elf2table"
 version = "0.1.0"
 
 [dependencies]
 anyhow = "1.0.32"
-decoder = { path = "../decoder" }
+defmt-decoder = { path = "../decoder" }
 gimli = "0.22.0"
 
 [dependencies.object]
