@@ -5,7 +5,8 @@ use core::ops::Range;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::{
-    mem,
+    error::Error,
+    io, mem,
     sync::{
         atomic::{self, AtomicBool},
         Arc,
@@ -274,6 +275,43 @@ struct FormatSliceElement<'t> {
     args: Vec<Arg<'t>>,
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum DecodeError {
+    /// More data is needed to decode the next frame.
+    UnexpectedEof,
+
+    Malformed,
+}
+
+impl From<io::Error> for DecodeError {
+    fn from(e: io::Error) -> Self {
+        if e.kind() == io::ErrorKind::UnexpectedEof {
+            DecodeError::UnexpectedEof
+        } else {
+            DecodeError::Malformed
+        }
+    }
+}
+
+impl fmt::Display for DecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DecodeError::UnexpectedEof => f.write_str("unexpected end of stream"),
+            DecodeError::Malformed => f.write_str("malformed data"),
+        }
+    }
+}
+
+impl Error for DecodeError {}
+
+fn read_leb128(bytes: &mut &[u8]) -> Result<u64, DecodeError> {
+    match leb128::read::unsigned(bytes) {
+        Ok(val) => Ok(val),
+        Err(leb128::read::Error::Overflow) => Err(DecodeError::Malformed),
+        Err(leb128::read::Error::IoError(_)) => Err(DecodeError::UnexpectedEof),
+    }
+}
+
 /// decode the data sent by the device using the previosuly stored metadata
 ///
 /// * bytes: contains the data sent by the device that logs.
@@ -282,12 +320,14 @@ struct FormatSliceElement<'t> {
 pub fn decode<'t>(
     mut bytes: &[u8],
     table: &'t Table,
-) -> Result<(Frame<'t>, /*consumed: */ usize), ()> {
+) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
     let len = bytes.len();
-    let index = leb128::read::unsigned(&mut bytes).map_err(drop)?;
-    let timestamp = leb128::read::unsigned(&mut bytes).map_err(drop)?;
+    let index = read_leb128(&mut bytes)?;
+    let timestamp = read_leb128(&mut bytes)?;
 
-    let (level, format) = table.get_with_level(index as usize)?;
+    let (level, format) = table
+        .get_with_level(index as usize)
+        .map_err(|_| DecodeError::Malformed)?;
 
     let mut decoder = Decoder {
         table,
@@ -323,8 +363,11 @@ const MAX_NUM_BOOL_FLAGS: usize = 8;
 
 impl<'t, 'b> Decoder<'t, 'b> {
     /// Reads a byte of packed bools and unpacks them into `args` at the given indices.
-    fn read_and_unpack_bools(&mut self) -> Result<(), ()> {
-        let bool_flags = self.bytes.read_u8().map_err(drop)?;
+    fn read_and_unpack_bools(&mut self) -> Result<(), DecodeError> {
+        let bool_flags = self
+            .bytes
+            .read_u8()
+            .map_err(|_| DecodeError::UnexpectedEof)?;
         let mut flag_index = self.bools_tbd.len();
 
         for bool in self.bools_tbd.iter() {
@@ -345,7 +388,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
     /// Gets a format string from
     /// - the `FormatList`, if it's in `Use` mode, or
     /// - from `bytes` and `table` if the `FormatList` is in `Build` mode or was not provided
-    fn get_format(&mut self) -> Result<&'t str, ()> {
+    fn get_format(&mut self) -> Result<&'t str, DecodeError> {
         if let Some(FormatList::Use { formats, cursor }) = self.format_list.as_mut() {
             if let Some(format) = formats.get(*cursor) {
                 *cursor += 1;
@@ -353,8 +396,11 @@ impl<'t, 'b> Decoder<'t, 'b> {
             }
         }
 
-        let index = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
-        let format = self.table.get_without_level(index as usize)?;
+        let index = read_leb128(&mut self.bytes)?;
+        let format = self
+            .table
+            .get_without_level(index as usize)
+            .map_err(|_| DecodeError::Malformed)?;
 
         if let Some(FormatList::Build { formats }) = self.format_list.as_mut() {
             if !self.below_enum {
@@ -364,20 +410,26 @@ impl<'t, 'b> Decoder<'t, 'b> {
         Ok(format)
     }
 
-    fn get_variant(&mut self, format: &'t str) -> Result<&'t str, ()> {
+    fn get_variant(&mut self, format: &'t str) -> Result<&'t str, DecodeError> {
         assert!(format.contains("|"));
-        let discriminant = self.bytes.read_u8().map_err(drop)?;
+        let discriminant = self
+            .bytes
+            .read_u8()
+            .map_err(|_| DecodeError::UnexpectedEof)?;
 
         // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
         // required: "A|B({:?})" where "{:?}" -> "C|D"
-        format.split('|').nth(usize::from(discriminant)).ok_or(())
+        format
+            .split('|')
+            .nth(usize::from(discriminant))
+            .ok_or(DecodeError::Malformed)
     }
 
     /// Decodes arguments from the stream, according to `format`.
-    fn decode_format(&mut self, format: &str) -> Result<Vec<Arg<'t>>, ()> {
+    fn decode_format(&mut self, format: &str) -> Result<Vec<Arg<'t>>, DecodeError> {
         let mut args = vec![]; // will contain the deserialized arguments on return
         let mut params = defmt_parser::parse(format)
-            .map_err(drop)?
+            .map_err(|_| DecodeError::Malformed)?
             .iter()
             .filter_map(|frag| match frag {
                 Fragment::Parameter(param) => Some(param.clone()),
@@ -416,7 +468,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
         for param in &params {
             match &param.ty {
                 Type::U8 => {
-                    let data = self.bytes.read_u8().map_err(drop)?;
+                    let data = self
+                        .bytes
+                        .read_u8()
+                        .map_err(|_| DecodeError::UnexpectedEof)?;
                     args.push(Arg::Uxx(data as u64));
                 }
 
@@ -431,8 +486,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 }
 
                 Type::FormatSlice => {
-                    let num_elements =
-                        leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+                    let num_elements = read_leb128(&mut self.bytes)? as usize;
 
                     let arg = if num_elements == 0 {
                         Arg::FormatSlice { elements: vec![] }
@@ -539,42 +593,45 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     }
                 }
                 Type::I16 => {
-                    let data = self.bytes.read_i16::<LE>().map_err(drop)?;
+                    let data = self.bytes.read_i16::<LE>()?;
                     args.push(Arg::Ixx(data as i64));
                 }
                 Type::I32 => {
-                    let data = self.bytes.read_i32::<LE>().map_err(drop)?;
+                    let data = self.bytes.read_i32::<LE>()?;
                     args.push(Arg::Ixx(data as i64));
                 }
                 Type::I8 => {
-                    let data = self.bytes.read_i8().map_err(drop)?;
+                    let data = self.bytes.read_i8()?;
                     args.push(Arg::Ixx(data as i64));
                 }
                 Type::Isize => {
                     // Signed isize is encoded in zigzag-encoding.
-                    let unsigned = leb128::read::unsigned(&mut self.bytes).map_err(drop)?;
+                    let unsigned = read_leb128(&mut self.bytes)?;
                     args.push(Arg::Ixx(zigzag_decode(unsigned)))
                 }
                 Type::U16 => {
-                    let data = self.bytes.read_u16::<LE>().map_err(drop)?;
+                    let data = self.bytes.read_u16::<LE>()?;
                     args.push(Arg::Uxx(data as u64));
                 }
                 Type::U24 => {
-                    let data_low = self.bytes.read_u8().map_err(drop)?;
-                    let data_high = self.bytes.read_u16::<LE>().map_err(drop)?;
+                    let data_low = self.bytes.read_u8()?;
+                    let data_high = self.bytes.read_u16::<LE>()?;
                     let data = data_low as u64 | (data_high as u64) << 8;
                     args.push(Arg::Uxx(data as u64));
                 }
                 Type::U32 => {
-                    let data = self.bytes.read_u32::<LE>().map_err(drop)?;
+                    let data = self.bytes.read_u32::<LE>()?;
                     args.push(Arg::Uxx(data as u64));
                 }
                 Type::Usize => {
-                    let unsigned = leb128::read::unsigned(&mut self.bytes).map_err(drop)?;
+                    let unsigned = read_leb128(&mut self.bytes)?;
                     args.push(Arg::Uxx(unsigned))
                 }
                 Type::F32 => {
-                    let data = self.bytes.read_u32::<LE>().map_err(drop)?;
+                    let data = self
+                        .bytes
+                        .read_u32::<LE>()
+                        .map_err(|_| DecodeError::UnexpectedEof)?;
                     args.push(Arg::F32(f32::from_bits(data)));
                 }
                 Type::BitField(range) => {
@@ -582,16 +639,16 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                     match range.end {
                         0..=8 => {
-                            data = self.bytes.read_u8().map_err(drop)? as u64;
+                            data = self.bytes.read_u8()? as u64;
                         }
                         0..=16 => {
-                            data = self.bytes.read_u16::<LE>().map_err(drop)? as u64;
+                            data = self.bytes.read_u16::<LE>()? as u64;
                         }
                         0..=24 => {
-                            data = self.bytes.read_u24::<LE>().map_err(drop)? as u64;
+                            data = self.bytes.read_u24::<LE>()? as u64;
                         }
                         0..=32 => {
-                            data = self.bytes.read_u32::<LE>().map_err(drop)? as u64;
+                            data = self.bytes.read_u32::<LE>()? as u64;
                         }
                         _ => {
                             unreachable!();
@@ -601,12 +658,12 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Uxx(data));
                 }
                 Type::Str => {
-                    let str_len = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+                    let str_len = read_leb128(&mut self.bytes)? as usize;
                     let mut arg_str_bytes = vec![];
 
                     // note: went for the suboptimal but simple solution; optimize if necessary
                     for _ in 0..str_len {
-                        arg_str_bytes.push(self.bytes.read_u8().map_err(drop)?);
+                        arg_str_bytes.push(self.bytes.read_u8()?);
                     }
 
                     // convert to utf8 (no copy)
@@ -615,21 +672,23 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Str(arg_str));
                 }
                 Type::IStr => {
-                    let str_index = leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+                    let str_index = read_leb128(&mut self.bytes)? as usize;
 
-                    let string = self.table.get_without_level(str_index as usize)?;
+                    let string = self
+                        .table
+                        .get_without_level(str_index as usize)
+                        .map_err(|_| DecodeError::Malformed)?;
 
                     args.push(Arg::IStr(string));
                 }
                 Type::Slice => {
                     // only supports byte slices
-                    let num_elements =
-                        leb128::read::unsigned(&mut self.bytes).map_err(drop)? as usize;
+                    let num_elements = read_leb128(&mut self.bytes)? as usize;
                     let mut arg_slice = vec![];
 
                     // note: went for the suboptimal but simple solution; optimize if necessary
                     for _ in 0..num_elements {
-                        arg_slice.push(self.bytes.read_u8().map_err(drop)?);
+                        arg_slice.push(self.bytes.read_u8()?);
                     }
                     args.push(Arg::Slice(arg_slice.to_vec()));
                 }
@@ -637,7 +696,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     let mut arg_slice = vec![];
                     // note: went for the suboptimal but simple solution; optimize if necessary
                     for _ in 0..*len {
-                        arg_slice.push(self.bytes.read_u8().map_err(drop)?);
+                        arg_slice.push(self.bytes.read_u8()?);
                     }
                     args.push(Arg::Slice(arg_slice.to_vec()));
                 }
