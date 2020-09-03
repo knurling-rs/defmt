@@ -3,6 +3,7 @@
 use std::{
     borrow::Cow,
     collections::BTreeMap,
+    fmt,
     path::{Path, PathBuf},
 };
 
@@ -96,10 +97,16 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         .map(Some)
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct Location {
     pub file: PathBuf,
     pub line: u64,
+}
+
+impl fmt::Debug for Location {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.file.display(), self.line)
+    }
 }
 
 pub type Locations = BTreeMap<u64, Location>;
@@ -197,10 +204,9 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                         let loc = Location { file, line };
 
                         if addr != 0 {
-                            ensure!(
-                                map.insert(addr, loc).is_none(),
-                                "BUG in DWARF variable filter: index collision"
-                            );
+                            if let Some(old) = map.insert(addr, loc.clone()) {
+                                bail!("BUG in DWARF variable filter: index collision for addr 0x{:08x} (old = {:?}, new = {:?})", addr, old, loc);
+                            }
                         }
                     }
                 }
