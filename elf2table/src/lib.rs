@@ -184,29 +184,23 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                     }
                 }
 
-                if name.is_some()
-                    && decl_file.is_some()
-                    && decl_line.is_some()
-                    && location.is_some()
+                if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
+                    (name, decl_file, decl_line, location)
                 {
-                    if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
-                        (name, decl_file, decl_line, location)
-                    {
-                        let endian_slice = dwarf.string(name_index)?;
-                        let name = core::str::from_utf8(&endian_slice)?;
+                    let endian_slice = dwarf.string(name_index)?;
+                    let name = core::str::from_utf8(&endian_slice)?;
 
-                        if name == "DEFMT_LOG_STATEMENT" {
-                            let addr = exprloc2address(unit.encoding(), &loc)?;
-                            let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                    if name == "DEFMT_LOG_STATEMENT" {
+                        let addr = exprloc2address(unit.encoding(), &loc)?;
+                        let file = file_index_to_path(file_index, &unit, &dwarf)?;
 
-                            let loc = Location { file, line };
+                        let loc = Location { file, line };
 
-                            if addr != 0 {
-                                ensure!(
-                                    map.insert(addr, loc).is_none(),
-                                    "BUG in DWARF variable filter: index collision"
-                                );
-                            }
+                        if addr != 0 {
+                            ensure!(
+                                map.insert(addr, loc).is_none(),
+                                "BUG in DWARF variable filter: index collision"
+                            );
                         }
                     }
                 }
