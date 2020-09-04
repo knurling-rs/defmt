@@ -5,6 +5,6 @@ license = "MIT OR Apache-2.0"
 name = "panic-probe"
 version = "0.1.0"
 
-[dependencies]
+[target.'cfg(target_os = "none")'.dependencies]
 cortex-m = "0.6.3"
 cortex-m-rt = "0.6.12"
