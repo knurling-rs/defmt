@@ -15,7 +15,7 @@ use std::{
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-use defmt_common::Level;
+pub use defmt_common::Level;
 use defmt_parser::{Fragment, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
@@ -125,6 +125,8 @@ pub struct Frame<'t> {
 }
 
 impl<'t> Frame<'t> {
+    /// Returns a struct that will format this log frame (including message, timestamp, level,
+    /// etc.).
     pub fn display(&'t self, colored: bool) -> DisplayFrame<'t> {
         DisplayFrame {
             frame: self,
@@ -132,17 +134,43 @@ impl<'t> Frame<'t> {
         }
     }
 
+    /// Returns a struct that will format the message contained in this log frame.
+    pub fn display_message(&'t self) -> DisplayMessage<'t> {
+        DisplayMessage { frame: self }
+    }
+
+    pub fn level(&self) -> Level {
+        self.level
+    }
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
+
     pub fn index(&self) -> u64 {
         self.index
     }
 }
 
+pub struct DisplayMessage<'t> {
+    frame: &'t Frame<'t>,
+}
+
+impl fmt::Display for DisplayMessage<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let args = format_args(&self.frame.format, &self.frame.args);
+        f.write_str(&args)
+    }
+}
+
+/// Prints a `Frame` when formatted via `fmt::Display`, including all included metadata (level,
+/// timestamp, ...).
 pub struct DisplayFrame<'t> {
     frame: &'t Frame<'t>,
     colored: bool,
 }
 
-impl core::fmt::Display for DisplayFrame<'_> {
+impl fmt::Display for DisplayFrame<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // 0.000000 Info Hello, world!
         let seconds = self.frame.timestamp / 1000000;
