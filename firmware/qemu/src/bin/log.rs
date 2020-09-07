@@ -66,6 +66,7 @@ fn main() -> ! {
     let interned = defmt::intern!("interned string");
     defmt::info!("&str = {:str}", "string slice");
     defmt::info!("&Str = {:istr}", interned);
+    defmt::info!("&Str = {:?}", interned);
 
     #[derive(Format)]
     struct Arr {
