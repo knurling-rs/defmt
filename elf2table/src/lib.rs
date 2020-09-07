@@ -101,6 +101,7 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
 pub struct Location {
     pub file: PathBuf,
     pub line: u64,
+    pub module: String,
 }
 
 impl fmt::Debug for Location {
@@ -149,9 +150,30 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
 
         ensure!(cursor.next_dfs()?.is_some(), "empty DWARF?");
 
-        while let Some((_, entry)) = cursor.next_dfs()? {
+        let mut segments = vec![];
+        let mut depth = 0;
+        while let Some((delta_depth, entry)) = cursor.next_dfs()? {
+            depth += delta_depth;
+
             // NOTE .. here start the custom logic
-            if entry.tag() == gimli::constants::DW_TAG_variable {
+            if entry.tag() == gimli::constants::DW_TAG_namespace {
+                let mut attrs = entry.attrs();
+
+                while let Some(attr) = attrs.next()? {
+                    match attr.name() {
+                        gimli::constants::DW_AT_name => {
+                            if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
+                                let s = dwarf.string(off)?;
+                                for _ in (depth as usize)..segments.len() + 1 {
+                                    segments.pop();
+                                }
+                                segments.push(core::str::from_utf8(&s)?.to_string());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            } else if entry.tag() == gimli::constants::DW_TAG_variable {
                 // Iterate over the attributes in the DIE.
                 let mut attrs = entry.attrs();
 
@@ -200,8 +222,9 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                     if name == "DEFMT_LOG_STATEMENT" {
                         let addr = exprloc2address(unit.encoding(), &loc)?;
                         let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                        let module = segments.join("::");
 
-                        let loc = Location { file, line };
+                        let loc = Location { file, line, module };
 
                         if addr != 0 {
                             if let Some(old) = map.insert(addr, loc.clone()) {
