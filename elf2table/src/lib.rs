@@ -3,6 +3,7 @@
 use std::{
     borrow::Cow,
     collections::BTreeMap,
+    fmt,
     path::{Path, PathBuf},
 };
 
@@ -96,10 +97,16 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         .map(Some)
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct Location {
     pub file: PathBuf,
     pub line: u64,
+}
+
+impl fmt::Debug for Location {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.file.display(), self.line)
+    }
 }
 
 pub type Locations = BTreeMap<u64, Location>;
@@ -184,28 +191,21 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                     }
                 }
 
-                if name.is_some()
-                    && decl_file.is_some()
-                    && decl_line.is_some()
-                    && location.is_some()
+                if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
+                    (name, decl_file, decl_line, location)
                 {
-                    if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
-                        (name, decl_file, decl_line, location)
-                    {
-                        let endian_slice = dwarf.string(name_index)?;
-                        let name = core::str::from_utf8(&endian_slice)?;
+                    let endian_slice = dwarf.string(name_index)?;
+                    let name = core::str::from_utf8(&endian_slice)?;
 
-                        if name == "DEFMT_LOG_STATEMENT" {
-                            let addr = exprloc2address(unit.encoding(), &loc)?;
-                            let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                    if name == "DEFMT_LOG_STATEMENT" {
+                        let addr = exprloc2address(unit.encoding(), &loc)?;
+                        let file = file_index_to_path(file_index, &unit, &dwarf)?;
 
-                            let loc = Location { file, line };
+                        let loc = Location { file, line };
 
-                            if addr != 0 {
-                                ensure!(
-                                    map.insert(addr, loc).is_none(),
-                                    "BUG in DWARF variable filter: index collision"
-                                );
+                        if addr != 0 {
+                            if let Some(old) = map.insert(addr, loc.clone()) {
+                                bail!("BUG in DWARF variable filter: index collision for addr 0x{:08x} (old = {:?}, new = {:?})", addr, old, loc);
                             }
                         }
                     }
