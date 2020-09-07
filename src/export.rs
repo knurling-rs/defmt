@@ -1,7 +1,7 @@
 use crate::{Formatter, Str};
 
+pub use defmt_common::Level;
 pub use defmt_macros::write;
-pub use common::Level;
 
 #[cfg(target_arch = "x86_64")]
 thread_local! {
@@ -123,7 +123,6 @@ mod sealed {
             self as u16
         }
     }
-
 
     impl Truncate<u16> for u64 {
         fn truncate(self) -> u16 {

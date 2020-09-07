@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure};
-pub use decoder::Table;
+pub use defmt_decoder::Table;
 use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table

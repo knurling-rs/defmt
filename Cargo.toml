@@ -7,7 +7,7 @@ version = "0.1.0"
 
 [dependencies]
 defmt-macros = { path = "macros" }
-common = { path = "common" }
+defmt-common = { path = "common" }
 
 [workspace]
 members = [

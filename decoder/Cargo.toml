@@ -2,13 +2,13 @@
 authors = ["The Knurling-rs developers"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
-name = "decoder"
+name = "defmt-decoder"
 version = "0.1.0"
 
 [dependencies]
 defmt-parser = { path = "../parser" }
+defmt-common = { path = "../common" }
 byteorder = "1"
 colored = "2.0.0"
-common = { path = "../common" }
 leb128 = "0.2.4"
 ryu = "1"
