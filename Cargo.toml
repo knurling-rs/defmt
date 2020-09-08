@@ -5,8 +5,8 @@ license = "MIT OR Apache-2.0"
 name = "defmt-test"
 version = "0.1.0"
 
-
 [dependencies]
 cortex-m = "0.6.3"
+cortex-m-rt = "0.6.13"
 defmt = { path = "../defmt" }
 defmt-test-macros = { path = "macros" }
