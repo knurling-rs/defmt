@@ -157,8 +157,8 @@ pub fn tests(args: TokenStream, input: TokenStream) -> TokenStream {
         .collect::<Vec<_>>();
     quote!(mod #ident {
         // TODO use `cortex-m-rt::entry` here to get the `static mut` transform
-        #[no_mangle]
-        unsafe extern "C" fn main() -> ! {
+        #[export_name = "main"]
+        unsafe extern "C" fn __defmt_test_entry() -> ! {
             #init_expr
             #(
                 defmt::info!(#unit_test_running);
