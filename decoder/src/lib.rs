@@ -111,6 +111,10 @@ impl Table {
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
+
+    pub fn symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
+        self.entries.values().map(|s| &**s)
+    }
 }
 
 /// A log frame
