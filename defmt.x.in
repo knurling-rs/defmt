@@ -8,15 +8,6 @@ SECTIONS
 {
   .defmt (INFO) :
   {
-    /* this section starts at address 1 */
-    /* we use this fact when extract file locations from the DWARF information.
-       symbols that appear in source code but won't make it to the final program
-       (e.g. `if false { error!("foo")}`) will be given an address of 0 in DWARF
-       to differentiate those "ghost" symbols from symbols that will be used, we
-       have the latter start at address 1
-    */
-    . = 1;
-
     /* Format implementations for primitives like u8 */
     *(.defmt.prim.*);
 

@@ -112,7 +112,8 @@ impl fmt::Debug for Location {
 
 pub type Locations = BTreeMap<u64, Location>;
 
-pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
+pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
+    let live_syms = table.symbols().collect::<Vec<_>>();
     let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
@@ -181,6 +182,7 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                 let mut decl_file = None;
                 let mut decl_line = None; // line number
                 let mut name = None;
+                let mut linkage_name = None;
                 let mut location = None;
 
                 while let Some(attr) = attrs.next()? {
@@ -209,27 +211,49 @@ pub fn get_locations(elf: &[u8]) -> Result<Locations, anyhow::Error> {
                             }
                         }
 
+                        gimli::constants::DW_AT_linkage_name => {
+                            if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
+                                linkage_name = Some(off);
+                            }
+                        }
+
                         _ => {}
                     }
                 }
 
-                if let (Some(name_index), Some(file_index), Some(line), Some(loc)) =
-                    (name, decl_file, decl_line, location)
+                if let (
+                    Some(name_index),
+                    Some(linkage_name_index),
+                    Some(file_index),
+                    Some(line),
+                    Some(loc),
+                ) = (name, linkage_name, decl_file, decl_line, location)
                 {
-                    let endian_slice = dwarf.string(name_index)?;
-                    let name = core::str::from_utf8(&endian_slice)?;
+                    let name_slice = dwarf.string(name_index)?;
+                    let name = core::str::from_utf8(&name_slice)?;
+                    let linkage_name_slice = dwarf.string(linkage_name_index)?;
+                    let linkage_name = core::str::from_utf8(&linkage_name_slice)?;
 
                     if name == "DEFMT_LOG_STATEMENT" {
-                        let addr = exprloc2address(unit.encoding(), &loc)?;
-                        let file = file_index_to_path(file_index, &unit, &dwarf)?;
-                        let module = segments.join("::");
+                        // remove the `@` suffix
+                        let linkage_name = linkage_name
+                            .splitn(2, '@')
+                            .next()
+                            .ok_or_else(|| anyhow!("{} is missing `@` suffix", linkage_name))?;
 
-                        let loc = Location { file, line, module };
+                        if live_syms.contains(&linkage_name) {
+                            let addr = exprloc2address(unit.encoding(), &loc)?;
+                            let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                            let module = segments.join("::");
 
-                        if addr != 0 {
+                            let loc = Location { file, line, module };
+
                             if let Some(old) = map.insert(addr, loc.clone()) {
                                 bail!("BUG in DWARF variable filter: index collision for addr 0x{:08x} (old = {:?}, new = {:?})", addr, old, loc);
                             }
+                        } else {
+                            // this symbol was GC-ed by the linker (but remains in the DWARF info)
+                            // so we discard it (its `addr` info is also wrong which causes collisions)
                         }
                     }
                 }
