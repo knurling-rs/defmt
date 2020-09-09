@@ -105,7 +105,18 @@ impl Table {
     }
 
     pub fn indices<'s>(&'s self) -> impl Iterator<Item = usize> + 's {
-        self.entries.keys().map(|idx| *idx)
+        self.entries.keys().filter_map(move |idx| {
+            if !self.error.contains(idx)
+                && !self.warn.contains(idx)
+                && !self.info.contains(idx)
+                && !self.debug.contains(idx)
+                && !self.trace.contains(idx)
+            {
+                None
+            } else {
+                Some(*idx)
+            }
+        })
     }
 
     pub fn is_empty(&self) -> bool {
