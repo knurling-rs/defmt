@@ -113,7 +113,7 @@ impl fmt::Debug for Location {
 pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
-    let syms = table.symbols().collect::<Vec<_>>();
+    let live_syms = table.symbols().collect::<Vec<_>>();
     let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
@@ -241,7 +241,7 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                             .next()
                             .ok_or_else(|| anyhow!("{} is missing `@` suffix", linkage_name))?;
 
-                        if syms.contains(&linkage_name) {
+                        if live_syms.contains(&linkage_name) {
                             let addr = exprloc2address(unit.encoding(), &loc)?;
                             let file = file_index_to_path(file_index, &unit, &dwarf)?;
                             let module = segments.join("::");
