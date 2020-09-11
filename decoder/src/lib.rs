@@ -308,7 +308,7 @@ fn read_leb128(bytes: &mut &[u8]) -> Result<u64, DecodeError> {
     match leb128::read::unsigned(bytes) {
         Ok(val) => Ok(val),
         Err(leb128::read::Error::Overflow) => Err(DecodeError::Malformed),
-        Err(leb128::read::Error::IoError(_)) => Err(DecodeError::UnexpectedEof),
+        Err(leb128::read::Error::IoError(io)) => Err(io.into()),
     }
 }
 
@@ -364,10 +364,7 @@ const MAX_NUM_BOOL_FLAGS: usize = 8;
 impl<'t, 'b> Decoder<'t, 'b> {
     /// Reads a byte of packed bools and unpacks them into `args` at the given indices.
     fn read_and_unpack_bools(&mut self) -> Result<(), DecodeError> {
-        let bool_flags = self
-            .bytes
-            .read_u8()
-            .map_err(|_| DecodeError::UnexpectedEof)?;
+        let bool_flags = self.bytes.read_u8()?;
         let mut flag_index = self.bools_tbd.len();
 
         for bool in self.bools_tbd.iter() {
@@ -412,10 +409,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
     fn get_variant(&mut self, format: &'t str) -> Result<&'t str, DecodeError> {
         assert!(format.contains("|"));
-        let discriminant = self
-            .bytes
-            .read_u8()
-            .map_err(|_| DecodeError::UnexpectedEof)?;
+        let discriminant = self.bytes.read_u8()?;
 
         // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
         // required: "A|B({:?})" where "{:?}" -> "C|D"
@@ -468,10 +462,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
         for param in &params {
             match &param.ty {
                 Type::U8 => {
-                    let data = self
-                        .bytes
-                        .read_u8()
-                        .map_err(|_| DecodeError::UnexpectedEof)?;
+                    let data = self.bytes.read_u8()?;
                     args.push(Arg::Uxx(data as u64));
                 }
 
@@ -628,10 +619,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Uxx(unsigned))
                 }
                 Type::F32 => {
-                    let data = self
-                        .bytes
-                        .read_u32::<LE>()
-                        .map_err(|_| DecodeError::UnexpectedEof)?;
+                    let data = self.bytes.read_u32::<LE>()?;
                     args.push(Arg::F32(f32::from_bits(data)));
                 }
                 Type::BitField(range) => {
