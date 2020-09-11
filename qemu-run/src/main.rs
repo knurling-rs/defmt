@@ -44,7 +44,8 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
             ])
             .arg(path)
             .stdout(Stdio::piped())
-            .spawn()?,
+            .spawn()
+            .expect("Error running qemu-system-arm; perhaps you haven't installed it yet?"),
     );
 
     let mut stdout = child
