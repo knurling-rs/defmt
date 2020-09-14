@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
-use defmt_decoder::Table;
+use defmt_decoder::{DecodeError, Table};
 use process::Child;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -63,14 +63,14 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
         if n != 0 {
             frames.extend_from_slice(&readbuf[..n]);
 
-            decode(&mut frames, &table);
+            decode(&mut frames, &table)?;
         }
 
         if let Some(status) = child.0.try_wait()? {
             exit_code = status.code();
 
             stdout.read_to_end(&mut frames)?;
-            decode(&mut frames, &table);
+            decode(&mut frames, &table)?;
             if !frames.is_empty() {
                 return Err(anyhow!(
                     "couldn't decode all data (remaining: {:x?})",
@@ -85,12 +85,18 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     Ok(exit_code)
 }
 
-fn decode(frames: &mut Vec<u8>, table: &Table) {
-    while let Ok((frame, consumed)) = defmt_decoder::decode(&frames, &table) {
-        println!("{}", frame.display(true));
-        let n = frames.len();
-        frames.rotate_left(consumed);
-        frames.truncate(n - consumed);
+fn decode(frames: &mut Vec<u8>, table: &Table) -> Result<(), DecodeError> {
+    loop {
+        match defmt_decoder::decode(&frames, &table) {
+            Ok((frame, consumed)) => {
+                println!("{}", frame.display(true));
+                let n = frames.len();
+                frames.rotate_left(consumed);
+                frames.truncate(n - consumed);
+            }
+            Err(DecodeError::UnexpectedEof) => return Ok(()),
+            Err(DecodeError::Malformed) => return Err(DecodeError::Malformed),
+        }
     }
 }
 
