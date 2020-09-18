@@ -8,8 +8,8 @@
 
 [`app-template`]: https://github.com/knurling-rs/app-template
 
-```
-# Cargo.toml
+``` toml
+# testsuite/Cargo.toml
 [dependencies]
 defmt-test = { git = "https://github.com/knurling-rs/defmt-test" }
 ```
