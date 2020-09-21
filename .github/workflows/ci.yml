@@ -17,12 +17,11 @@ jobs:
       matrix:
         rust:
           - stable
-          #- nightly
+          - nightly
         os:
           - ubuntu-latest
-          #- macOS-latest
-          #- windows-latest
-          # FIXME: Reenable macOS, Windows, and nightly once binfmt is open-sourced.
+          - macOS-latest
+          - windows-latest
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -36,17 +35,29 @@ jobs:
       uses: peaceiris/actions-mdbook@v1
       with:
         mdbook-version: latest
-    - name: Install C libraries for tooling
+    - name: Install C libraries for tooling on ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
+    - name: install C libraries for tooling on macOS
+      if: matrix.os == 'macOS-latest'
+      run: brew install libusb
     - name: Build
       run: RUSTFLAGS='--deny warnings' cargo build
+      shell: bash
       # NOTE order is important; running `mdbook` at the end = duplicate crate errors
     - name: Run book tests
       working-directory: book
+      if: matrix.os != 'macOS-latest'
       run: mdbook test -L ../target/debug -L ../target/debug/deps
-    - name: Run tests
+    - name: Run tests on ubuntu
+      if: matrix.os != 'macOS-latest'
       run: cargo test --workspace
+    - name: Run tests on macOS
+      # NOTE defmt does not build for macOS because its `cortex-m-rt` dependency doesn't
+      # (see https://github.com/rust-embedded/cortex-m-rt/issues/74), so we cannot use
+      # `cargo test --workspace` and have to build the test suites individually instead
+      if: matrix.os == 'macOS-latest'
+      run: cargo test -p defmt -p defmt-decoder -p defmt-parser -p defmt-macros
 
   no-std:
     runs-on: ubuntu-latest
