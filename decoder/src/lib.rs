@@ -1,7 +1,6 @@
 // NOTE: always runs on the host
 
 use core::fmt::{self, Write as _};
-use core::ops::Range;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::{
@@ -21,28 +20,55 @@ use defmt_parser::{Fragment, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
+#[derive(PartialEq, Eq, Debug)]
+pub enum Tag {
+    /// A format string for use with `{:?}`. Used for both primitive format strings (which are
+    /// special cased to have lower indices), and user format strings created by
+    /// `#[derive(Format)]`.
+    Fmt,
+    /// An interned string, for use with `{:istr}`.
+    Str,
+
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl Tag {
+    fn to_level(&self) -> Option<Level> {
+        match self {
+            Tag::Fmt | Tag::Str => None,
+            Tag::Trace => Some(Level::Trace),
+            Tag::Debug => Some(Level::Debug),
+            Tag::Info => Some(Level::Info),
+            Tag::Warn => Some(Level::Warn),
+            Tag::Error => Some(Level::Error),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct StringEntry {
+    tag: Tag,
+    string: String,
+}
+
+impl StringEntry {
+    pub fn new(tag: Tag, string: String) -> Self {
+        Self { tag, string }
+    }
+}
+
 /// Interner table that holds log levels and maps format strings to indices
 #[derive(Debug)]
 pub struct Table {
-    entries: BTreeMap<usize, String>,
-    debug: Range<usize>,
-    error: Range<usize>,
-    info: Range<usize>,
-    trace: Range<usize>,
-    warn: Range<usize>,
+    entries: BTreeMap<usize, StringEntry>,
 }
 
 impl Table {
-    // TODO constructor
-    pub fn new(
-        entries: BTreeMap<usize, String>,
-        debug: Range<usize>,
-        error: Range<usize>,
-        info: Range<usize>,
-        trace: Range<usize>,
-        warn: Range<usize>,
-        version: &str,
-    ) -> Result<Self, String> {
+    pub fn new(entries: BTreeMap<usize, StringEntry>, version: &str) -> Result<Self, String> {
         if version != DEFMT_VERSION {
             return Err(format!(
                 "defmt version mismatch (firmware is using {}, host is using {}); \
@@ -51,44 +77,12 @@ impl Table {
             ));
         }
 
-        let mut ranges = [&debug, &error, &info, &trace, &warn];
-        ranges.sort_by(|a, b| a.start.cmp(&b.start));
-        for i in 0..ranges.len() - 1 {
-            let next = &ranges[i + 1];
-            let next_is_nonempty = next.start < next.end;
-            if ranges[i].contains(&next.start) && next_is_nonempty {
-                return Err(
-                    "one or more of debug, error, info, trace, warn ranges overlap".to_string(),
-                );
-            }
-        }
-
-        Ok(Self {
-            entries,
-            debug,
-            error,
-            info,
-            trace,
-            warn,
-        })
+        Ok(Self { entries })
     }
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
-        let lvl = if self.debug.contains(&index) {
-            Some(Level::Debug)
-        } else if self.error.contains(&index) {
-            Some(Level::Error)
-        } else if self.info.contains(&index) {
-            Some(Level::Info)
-        } else if self.trace.contains(&index) {
-            Some(Level::Trace)
-        } else if self.warn.contains(&index) {
-            Some(Level::Warn)
-        } else {
-            None
-        };
-
-        Ok((lvl, self.entries.get(&index).ok_or_else(|| ())?))
+        let entry = self.entries.get(&index).ok_or_else(|| ())?;
+        Ok((entry.tag.to_level(), &entry.string))
     }
 
     fn get_with_level(&self, index: usize) -> Result<(Level, &str), ()> {
@@ -106,16 +100,11 @@ impl Table {
     }
 
     pub fn indices<'s>(&'s self) -> impl Iterator<Item = usize> + 's {
-        self.entries.keys().filter_map(move |idx| {
-            if !self.error.contains(idx)
-                && !self.warn.contains(idx)
-                && !self.info.contains(idx)
-                && !self.debug.contains(idx)
-                && !self.trace.contains(idx)
-            {
-                None
-            } else {
+        self.entries.iter().filter_map(move |(idx, entry)| {
+            if entry.tag.to_level().is_some() {
                 Some(*idx)
+            } else {
+                None
             }
         })
     }
@@ -125,7 +114,7 @@ impl Table {
     }
 
     pub fn symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
-        self.entries.values().map(|s| &**s)
+        self.entries.values().map(|s| &*s.string)
     }
 }
 
@@ -774,7 +763,7 @@ mod tests {
 
     use defmt_common::Level;
 
-    use super::{Frame, Table};
+    use super::*;
     use crate::Arg;
 
     // helper function to initiate decoding and assert that the result is as expected.
@@ -784,16 +773,12 @@ mod tests {
     // expectation:  the expected result
     fn decode_and_expect(format: &str, bytes: &[u8], expectation: &str) {
         let mut entries = BTreeMap::new();
-        entries.insert(bytes[0] as usize, format.to_owned());
+        entries.insert(
+            bytes[0] as usize,
+            StringEntry::new(Tag::Info, format.to_string()),
+        );
 
-        let table = Table {
-            entries,
-            debug: 0..0,
-            error: 0..0,
-            info: 0..100, // enough space for many many args
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
 
         let frame = super::decode(&bytes, &table).unwrap().0;
         assert_eq!(frame.display(false).to_string(), expectation.to_owned());
@@ -802,20 +787,16 @@ mod tests {
     #[test]
     fn decode() {
         let mut entries = BTreeMap::new();
-        entries.insert(0, "Hello, world!".to_owned());
-        entries.insert(1, "The answer is {:u8}!".to_owned());
+        entries.insert(0, StringEntry::new(Tag::Info, "Hello, world!".to_owned()));
+        entries.insert(
+            1,
+            StringEntry::new(Tag::Debug, "The answer is {:u8}!".to_owned()),
+        );
         // [IDX, TS, 42]
         //           ^^
         //entries.insert(2, "The answer is {0:u8} {1:u16}!".to_owned());
 
-        let table = Table {
-            entries,
-            debug: 1..2,
-            error: 0..0,
-            info: 0..1,
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
 
         let bytes = [0, 1];
         //     index ^  ^ timestamp
@@ -861,16 +842,9 @@ mod tests {
     fn all_integers() {
         const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:i8} {:i16} {:i32}!";
         let mut entries = BTreeMap::new();
-        entries.insert(0, FMT.to_owned());
+        entries.insert(0, StringEntry::new(Tag::Info, FMT.to_owned()));
 
-        let table = Table {
-            entries,
-            debug: 0..0,
-            error: 0..0,
-            info: 0..1,
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
 
         let bytes = [
             0,  // index
@@ -910,17 +884,19 @@ mod tests {
     #[test]
     fn indices() {
         let mut entries = BTreeMap::new();
-        entries.insert(0, "The answer is {0:u8} {0:u8}!".to_owned());
-        entries.insert(1, "The answer is {1:u16} {0:u8} {1:u16}!".to_owned());
+        entries.insert(
+            0,
+            StringEntry::new(Tag::Info, "The answer is {0:u8} {0:u8}!".to_owned()),
+        );
+        entries.insert(
+            1,
+            StringEntry::new(
+                Tag::Info,
+                "The answer is {1:u16} {0:u8} {1:u16}!".to_owned(),
+            ),
+        );
 
-        let table = Table {
-            entries,
-            debug: 0..0,
-            error: 0..0,
-            info: 0..2,
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
         let bytes = [
             0,  // index
             2,  // timestamp
@@ -966,17 +942,13 @@ mod tests {
     #[test]
     fn format() {
         let mut entries = BTreeMap::new();
-        entries.insert(0, "x={:?}".to_owned());
-        entries.insert(1, "Foo {{ x: {:u8} }}".to_owned());
+        entries.insert(0, StringEntry::new(Tag::Info, "x={:?}".to_owned()));
+        entries.insert(
+            1,
+            StringEntry::new(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+        );
 
-        let table = Table {
-            entries,
-            debug: 0..0,
-            error: 0..0,
-            info: 0..1,
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
 
         let bytes = [
             0,  // index
@@ -1006,17 +978,13 @@ mod tests {
     #[test]
     fn display() {
         let mut entries = BTreeMap::new();
-        entries.insert(0, "x={:?}".to_owned());
-        entries.insert(1, "Foo {{ x: {:u8} }}".to_owned());
+        entries.insert(0, StringEntry::new(Tag::Info, "x={:?}".to_owned()));
+        entries.insert(
+            1,
+            StringEntry::new(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+        );
 
-        let table = Table {
-            entries,
-            debug: 0..0,
-            error: 0..0,
-            info: 0..1,
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
 
         let bytes = [
             0,  // index
@@ -1153,20 +1121,16 @@ mod tests {
         */
 
         let mut entries = BTreeMap::new();
-        entries.insert(0, "{:bool} {:?}".to_owned());
+        entries.insert(0, StringEntry::new(Tag::Info, "{:bool} {:?}".to_owned()));
         entries.insert(
             1,
-            "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned(),
+            StringEntry::new(
+                Tag::Fmt,
+                "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned(),
+            ),
         );
 
-        let table = Table {
-            entries,
-            debug: 0..0,
-            error: 0..0,
-            info: 0..1,
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
 
         let bytes = [
             0,      // index
@@ -1326,18 +1290,11 @@ mod tests {
     #[test]
     fn option() {
         let mut entries = BTreeMap::new();
-        entries.insert(4, "x={:?}".to_owned());
-        entries.insert(3, "None|Some({:?})".to_owned());
-        entries.insert(2, "{:u8}".to_owned());
+        entries.insert(4, StringEntry::new(Tag::Info, "x={:?}".to_owned()));
+        entries.insert(3, StringEntry::new(Tag::Fmt, "None|Some({:?})".to_owned()));
+        entries.insert(2, StringEntry::new(Tag::Fmt, "{:u8}".to_owned()));
 
-        let table = Table {
-            entries,
-            debug: 0..0,
-            error: 0..0,
-            info: 4..5,
-            trace: 0..0,
-            warn: 0..0,
-        };
+        let table = Table { entries };
 
         let bytes = [
             4,  // string index (INFO)
