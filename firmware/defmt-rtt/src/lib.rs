@@ -71,20 +71,35 @@ struct Channel {
     size: usize,
     write: AtomicUsize,
     read: AtomicUsize,
-    flags: usize,
+    flags: AtomicUsize,
 }
+
+const BLOCK_IF_FULL: usize = 2;
+const NOBLOCK_TRIM: usize = 1;
 
 impl Channel {
     fn write_all(&self, mut bytes: &[u8]) {
-        while !bytes.is_empty() {
-            let consumed = self.write(bytes);
-            if consumed != 0 {
-                bytes = &bytes[consumed..];
+        // NOTE `flags` is modified by the host after RAM initialization while the device is halted
+        // it cannot otherwise be modified so we don't need to check its state more often than
+        // just here
+        if self.flags.load(Ordering::Relaxed) == BLOCK_IF_FULL {
+            while !bytes.is_empty() {
+                let consumed = self.blocking_write(bytes);
+                if consumed != 0 {
+                    bytes = &bytes[consumed..];
+                }
+            }
+        } else {
+            while !bytes.is_empty() {
+                let consumed = self.nonblocking_write(bytes);
+                if consumed != 0 {
+                    bytes = &bytes[consumed..];
+                }
             }
         }
     }
 
-    fn write(&self, bytes: &[u8]) -> usize {
+    fn blocking_write(&self, bytes: &[u8]) -> usize {
         if bytes.is_empty() {
             return 0;
         }
@@ -105,6 +120,41 @@ impl Channel {
 
         let cursor = write;
         let len = bytes.len().min(available);
+
+        unsafe {
+            if cursor + len > SIZE {
+                // split memcpy
+                let pivot = SIZE - cursor;
+                ptr::copy_nonoverlapping(
+                    bytes.as_ptr(),
+                    self.buffer.add(cursor.into()),
+                    pivot.into(),
+                );
+                ptr::copy_nonoverlapping(
+                    bytes.as_ptr().add(pivot.into()),
+                    self.buffer,
+                    (len - pivot).into(),
+                );
+            } else {
+                // single memcpy
+                ptr::copy_nonoverlapping(
+                    bytes.as_ptr(),
+                    self.buffer.add(cursor.into()),
+                    len.into(),
+                );
+            }
+        }
+        self.write
+            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
+
+        len
+    }
+
+    fn nonblocking_write(&self, bytes: &[u8]) -> usize {
+        let write = self.write.load(Ordering::Acquire);
+        let cursor = write;
+        // NOTE truncate at SIZE to avoid more than one "wrap-around" in a single `write` call
+        let len = bytes.len().min(SIZE);
 
         unsafe {
             if cursor + len > SIZE {
@@ -156,7 +206,7 @@ unsafe fn handle() -> &'static Channel {
             size: SIZE,
             write: AtomicUsize::new(0),
             read: AtomicUsize::new(0),
-            flags: 0b10, // mode = block-if-full
+            flags: AtomicUsize::new(NOBLOCK_TRIM),
         },
     };
 
