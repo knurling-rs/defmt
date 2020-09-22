@@ -8,5 +8,8 @@ version = "0.1.0"
 [dependencies]
 cortex-m = "0.6.3"
 cortex-m-rt = "0.6.13"
-defmt = { path = "../defmt" }
 defmt-test-macros = { path = "macros" }
+
+[dependencies.defmt]
+git = "https://github.com/knurling-rs/defmt"
+branch = "main"

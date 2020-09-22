@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        rust:
+          - stable
+          #- nightly
+        os:
+          - ubuntu-latest
+          # FIXME: Reenable macOS, Windows, and nightly once demt-test is open-sourced.
+          #- macOS-latest
+          #- windows-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Build
+      run: RUSTFLAGS='--deny warnings' cargo build
+      shell: bash
+    - name: Check fmt
+      if: matrix.os == 'ubuntu-latest' # we only need to check fmt on one OS
+      run: cargo fmt --all -- --check
