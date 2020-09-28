@@ -260,7 +260,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
     let mut where_clause: WhereClause = where_clause.clone();
     let (impl_generics, type_generics, _) = input.generics.split_for_impl();
 
-    // Extend where-clause with `Format` bounds for non-native field types.
+    // Extend where-clause with `Format` bounds for type parameters.
     for param in &input.generics.params {
         if let GenericParam::Type(ty) = param {
             let ident = &ty.ident;
