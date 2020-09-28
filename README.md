@@ -4,17 +4,21 @@
 
 ## Basic usage
 
-1. Start from the [`app-template`] then add this test to the dependencies of the `testsuite` crate
+0. If you don't have a project setup yet, start from the [`app-template`] 
+
 
 [`app-template`]: https://github.com/knurling-rs/app-template
 
+1. In the **testsuite** crate, add `defmt-test` to the dependencies:
+
 ``` toml
 # testsuite/Cargo.toml
-[dependencies]
-defmt-test = { git = "https://github.com/knurling-rs/defmt-test" }
+[dependencies.defmt-test]
+git = "https://github.com/knurling-rs/defmt-test"
+branch = "main"
 ```
 
-2. Within the `testsuite/tests/test.rs` file, create a `tests`  module and mark it with the `#[defmt_test::tests]` attribute. Within that module write `std`-like unit tests: functions marked with the `#[test]` attribute.
+2. Within the `testsuite/tests/test.rs` file, create a `tests` module and mark it with the `#[defmt_test::tests]` attribute. Within that module write `std`-like unit tests: functions marked with the `#[test]` attribute.
 
 ``` rust
 // testsuite/tests/test.rs
