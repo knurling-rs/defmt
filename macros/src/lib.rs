@@ -4,13 +4,15 @@ use proc_macro::{Span, TokenStream};
 use defmt_parser::Fragment;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
+use syn::GenericParam;
+use syn::WhereClause;
 use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
     Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, ItemStruct, LitInt,
-    LitStr, ReturnType, Token, Type,
+    LitStr, ReturnType, Token, Type, WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -175,7 +177,7 @@ impl MLevel {
 // `#[derive(Format)]`
 #[proc_macro_derive(Format)]
 pub fn format(ts: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(ts as DeriveInput);
+    let mut input = parse_macro_input!(ts as DeriveInput);
     let span = input.span();
 
     let ident = input.ident;
@@ -254,30 +256,22 @@ pub fn format(ts: TokenStream) -> TokenStream {
         }
     }
 
-    let params = input.generics.params;
-    let predicates = if params.is_empty() {
-        vec![]
-    } else {
-        // `Format` bounds for non-native field types
-        let mut preds = field_types
-            .into_iter()
-            .map(|ty| quote!(#ty: defmt::Format))
-            .collect::<Vec<_>>();
-        // extend with the where clause from the struct/enum declaration
-        if let Some(where_clause) = input.generics.where_clause {
-            preds.extend(
-                where_clause
-                    .predicates
-                    .into_iter()
-                    .map(|pred| quote!(#pred)),
-            )
+    let where_clause = input.generics.make_where_clause();
+    let mut where_clause: WhereClause = where_clause.clone();
+    let (impl_generics, type_generics, _) = input.generics.split_for_impl();
+
+    // Extend where-clause with `Format` bounds for type parameters.
+    for param in &input.generics.params {
+        if let GenericParam::Type(ty) = param {
+            let ident = &ty.ident;
+            where_clause
+                .predicates
+                .push(syn::parse::<WherePredicate>(quote!(#ident: defmt::Format).into()).unwrap());
         }
-        preds
-    };
+    }
+
     quote!(
-        impl<#params> defmt::Format for #ident<#params>
-        where #(#predicates),*
-        {
+        impl #impl_generics defmt::Format for #ident #type_generics #where_clause {
             fn format(&self, f: &mut defmt::Formatter) {
                 #(#exprs)*
             }

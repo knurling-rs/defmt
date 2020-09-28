@@ -757,3 +757,42 @@ fn format_slice_enum_generic_struct() {
         ],
     );
 }
+
+#[test]
+fn derive_with_bounds() {
+    #[derive(Format)]
+    struct S<T: Copy> {
+        val: T,
+    }
+
+    #[derive(Format)]
+    struct S2<'a: 'b, 'b> {
+        a: &'a u8,
+        b: &'b u8,
+    }
+
+    let index = fetch_string_index();
+    check_format_implementation(
+        &S { val: 0 },
+        &[
+            index,         // "S {{ val: {:?} }}"
+            inc(index, 1), // "{:i32}"
+            0,
+            0,
+            0,
+            0,
+        ],
+    );
+
+    let index = fetch_string_index();
+    check_format_implementation(
+        &S2 { a: &1, b: &2 },
+        &[
+            index,         // "S2 { a: {:?}, b: {:?} }}"
+            inc(index, 1), // "{:u8}"
+            1,
+            inc(index, 2), // "{:u8}"
+            2,
+        ],
+    );
+}
