@@ -1,10 +1,10 @@
 #![no_std]
 #![no_main]
 
-use defmt::Format;
-use defmt_rtt as _; // <- global logger
 use cortex_m::asm;
 use cortex_m_rt::entry;
+use defmt::Format;
+use defmt_rtt as _; // <- global logger
 use embedded_hal::timer::CountDown as _;
 use nrf52840_hal::{
     target::{self, TIMER0},
