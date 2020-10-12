@@ -12,7 +12,7 @@ SECTIONS
     *(.defmt.prim.*);
 
     /* Everything user-defined */
-    *(.defmt.sym.*);
+    *(.defmt.*);
 
     /* $DEFMT_VERSION may contain special chars, so we quote the symbol name */
     /* Note that the quotes actually become part of the symbol name though! */

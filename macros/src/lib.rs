@@ -643,7 +643,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
 
 fn mksym(string: &str, section: &str, is_log_statement: bool) -> TokenStream2 {
     let sym = symbol::Symbol::new(section, string).mangle();
-    let section = format!(".defmt.sym.{}", sym);
+    let section = format!(".defmt.{}", sym);
 
     // NOTE we rely on this variable name when extracting file location information from the DWARF
     // without it we have no other mean to differentiate static variables produced by `info!` vs
