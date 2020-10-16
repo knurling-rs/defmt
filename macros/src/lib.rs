@@ -1,3 +1,4 @@
+//! INTERNAL; DO NOT USE. Please use the `defmt` crate to access the functionality implemented here
 mod symbol;
 
 use core::fmt::Write as _;

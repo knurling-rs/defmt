@@ -49,3 +49,7 @@ debug = false
 debug-assertions = false
 opt-level = 0
 overflow-checks = false
+
+[package.metadata.docs.rs]
+features = ["unstable"]
+rustdoc-args = [ "--cfg docsrs" ]

@@ -4,3 +4,10 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 name = "defmt-parser"
 version = "0.1.0"
+
+[features]
+unstable = []
+
+[package.metadata.docs.rs]
+features = ["unstable"]
+rustdoc-args = [ "--cfg docsrs" ]

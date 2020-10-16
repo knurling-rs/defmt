@@ -1,3 +1,8 @@
+//! An alternative to the [`probe-run`](https://github.com/knurling-rs/probe-run) printer,
+//! used by [`defmt`](https://github.com/knurling-rs/defmt).
+//! Parses data sent by QEMU over semihosting (ARM Cortex-M only).
+//! *Printers* are *host* programs that receive log data, format it and display it.
+
 use std::{
     env, fs,
     io::Read as _,
