@@ -3,7 +3,7 @@ mod symbol;
 use core::fmt::Write as _;
 use proc_macro::TokenStream;
 
-use defmt_parser::Fragment;
+use defmt_parser::{Fragment, Level};
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::GenericParam;
@@ -105,73 +105,52 @@ pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
     .into()
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-enum MLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-}
-
-impl MLevel {
-    fn as_str(self) -> &'static str {
-        match self {
-            MLevel::Trace => "trace",
-            MLevel::Debug => "debug",
-            MLevel::Info => "info",
-            MLevel::Warn => "warn",
-            MLevel::Error => "error",
+// returns a list of features of which one has to be enabled for `level` to be active
+fn necessary_features_for_level(level: Level, debug_assertions: bool) -> &'static [&'static str] {
+    match level {
+        Level::Trace => {
+            if debug_assertions {
+                // dev profile
+                &["defmt-trace", "defmt-default"]
+            } else {
+                &["defmt-trace"]
+            }
         }
-    }
-
-    // returns a list of features of which one has to be enabled for this Level to be active
-    fn necessary_features(self, debug_assertions: bool) -> &'static [&'static str] {
-        match self {
-            MLevel::Trace => {
-                if debug_assertions {
-                    // dev profile
-                    &["defmt-trace", "defmt-default"]
-                } else {
-                    &["defmt-trace"]
-                }
+        Level::Debug => {
+            if debug_assertions {
+                // dev profile
+                &["defmt-debug", "defmt-trace", "defmt-default"]
+            } else {
+                &["defmt-debug", "defmt-trace"]
             }
-            MLevel::Debug => {
-                if debug_assertions {
-                    // dev profile
-                    &["defmt-debug", "defmt-trace", "defmt-default"]
-                } else {
-                    &["defmt-debug", "defmt-trace"]
-                }
-            }
-            MLevel::Info => {
-                // defmt-default is enabled for dev & release profile so debug_assertions
-                // does not matter
-                &["defmt-info", "defmt-debug", "defmt-trace", "defmt-default"]
-            }
-            MLevel::Warn => {
-                // defmt-default is enabled for dev & release profile so debug_assertions
-                // does not matter
-                &[
-                    "defmt-warn",
-                    "defmt-info",
-                    "defmt-debug",
-                    "defmt-trace",
-                    "defmt-default",
-                ]
-            }
-            MLevel::Error => {
-                // defmt-default is enabled for dev & release profile so debug_assertions
-                // does not matter
-                &[
-                    "defmt-error",
-                    "defmt-warn",
-                    "defmt-info",
-                    "defmt-debug",
-                    "defmt-trace",
-                    "defmt-default",
-                ]
-            }
+        }
+        Level::Info => {
+            // defmt-default is enabled for dev & release profile so debug_assertions
+            // does not matter
+            &["defmt-info", "defmt-debug", "defmt-trace", "defmt-default"]
+        }
+        Level::Warn => {
+            // defmt-default is enabled for dev & release profile so debug_assertions
+            // does not matter
+            &[
+                "defmt-warn",
+                "defmt-info",
+                "defmt-debug",
+                "defmt-trace",
+                "defmt-default",
+            ]
+        }
+        Level::Error => {
+            // defmt-default is enabled for dev & release profile so debug_assertions
+            // does not matter
+            &[
+                "defmt-error",
+                "defmt-warn",
+                "defmt-info",
+                "defmt-debug",
+                "defmt-trace",
+                "defmt-default",
+            ]
         }
     }
 }
@@ -407,9 +386,9 @@ fn as_native_type(ty: &Type) -> Option<String> {
     }
 }
 
-fn is_logging_enabled(level: MLevel) -> TokenStream2 {
-    let features_dev = level.necessary_features(true);
-    let features_release = level.necessary_features(false);
+fn is_logging_enabled(level: Level) -> TokenStream2 {
+    let features_dev = necessary_features_for_level(level, true);
+    let features_release = necessary_features_for_level(level, false);
 
     quote!(
         cfg!(debug_assertions) && cfg!(any(#( feature = #features_dev ),*))
@@ -417,9 +396,9 @@ fn is_logging_enabled(level: MLevel) -> TokenStream2 {
     )
 }
 
-// note that we are not using the `Level` type because we want to avoid dependencies on
-// `defmt-common` due to Cargo bugs in crate sharing
-fn log(level: MLevel, ts: TokenStream) -> TokenStream {
+// note that we are not using a `Level` type shared with `decoder` due to Cargo bugs in crate sharing
+// TODO -> move Level to parser?
+fn log(level: Level, ts: TokenStream) -> TokenStream {
     let log = parse_macro_input!(ts as Log);
     let ls = log.litstr.value();
     let fragments = match defmt_parser::parse(&ls) {
@@ -464,27 +443,27 @@ fn log(level: MLevel, ts: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn trace(ts: TokenStream) -> TokenStream {
-    log(MLevel::Trace, ts)
+    log(Level::Trace, ts)
 }
 
 #[proc_macro]
 pub fn debug(ts: TokenStream) -> TokenStream {
-    log(MLevel::Debug, ts)
+    log(Level::Debug, ts)
 }
 
 #[proc_macro]
 pub fn info(ts: TokenStream) -> TokenStream {
-    log(MLevel::Info, ts)
+    log(Level::Info, ts)
 }
 
 #[proc_macro]
 pub fn warn(ts: TokenStream) -> TokenStream {
-    log(MLevel::Warn, ts)
+    log(Level::Warn, ts)
 }
 
 #[proc_macro]
 pub fn error(ts: TokenStream) -> TokenStream {
-    log(MLevel::Error, ts)
+    log(Level::Error, ts)
 }
 
 // TODO share more code with `log`
@@ -744,6 +723,7 @@ impl Codegen {
                 }
                 defmt_parser::Type::BitField(_) => {
                     // TODO reused in decoder::parse_args(), can we share this somehow without Cargo bug troubles?
+                    // TODO -> move this to parser!
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
                     let largest_bit_index = all_bitfields
                         .map(|param| match &param.ty {

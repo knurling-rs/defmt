@@ -15,8 +15,7 @@ use std::{
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-pub use defmt_common::Level;
-use defmt_parser::{Fragment, Type};
+use defmt_parser::{Fragment, Level, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -798,9 +797,7 @@ fn zigzag_decode(unsigned: u64) -> i64 {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
-
-    use defmt_common::Level;
-
+    use super::{Frame, Level, Table};
     use super::*;
     use crate::Arg;
 

@@ -7,7 +7,6 @@ version = "0.1.0"
 
 [dependencies]
 defmt-parser = { path = "../parser" }
-defmt-common = { path = "../common" }
 byteorder = "1"
 colored = "2.0.0"
 leb128 = "0.2.4"
