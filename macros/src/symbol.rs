@@ -1,12 +1,10 @@
 use std::collections::hash_map::DefaultHasher;
 use std::env;
-use std::hash::Hash;
-use std::hash::Hasher;
+use std::fmt::Write;
+use std::hash::{Hash, Hasher};
 
 use proc_macro::Span;
-use serde::Serialize;
 
-#[derive(Serialize)]
 pub struct Symbol<'a> {
     /// Name of the Cargo package in which the symbol is being instantiated. Used for avoiding
     /// symbol name collisions.
@@ -49,6 +47,26 @@ impl<'a> Symbol<'a> {
     }
 
     pub fn mangle(&self) -> String {
-        serde_json::to_string(self).unwrap()
+        format!(
+            r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":{}}}"#,
+            escape(&self.package),
+            escape(&self.tag),
+            escape(self.data),
+            self.disambiguator,
+        )
     }
+}
+
+fn escape(s: &str) -> String {
+    let mut out = String::new();
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '\"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            c if c.is_control() => write!(out, "\\u{:04x}", c as u32).unwrap(),
+            c => out.push(c),
+        }
+    }
+    out
 }

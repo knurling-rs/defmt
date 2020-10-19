@@ -12,8 +12,6 @@ proc-macro = true
 defmt-parser = { path = "../parser" }
 quote = "1.0.7"
 proc-macro2 = "1.0.18"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 
 [dependencies.syn]
 features = ["full"]
