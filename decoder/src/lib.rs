@@ -134,7 +134,7 @@ impl Table {
     }
 
     /// Iterates over the raw symbols of the table entries
-    pub fn symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
+    pub fn raw_symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
         self.entries.values().map(|s| &*s.raw_symbol)
     }
 }
