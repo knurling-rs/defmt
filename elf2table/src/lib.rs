@@ -1,7 +1,5 @@
 //! Reads ELF metadata and builds an interner table
 
-mod symbol;
-
 use std::{
     borrow::Cow,
     collections::BTreeMap,
@@ -11,7 +9,6 @@ use std::{
 
 use anyhow::{anyhow, bail, ensure};
 pub use defmt_decoder::Table;
-use defmt_decoder::{StringEntry, TableEntry};
 use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table
@@ -19,8 +16,25 @@ use object::{Object, ObjectSection};
 /// This function returns `None` if the ELF file contains no `.defmt` section
 pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
-    // first pass to extract the `_defmt_version`
+    // find the index of the `.defmt` section
+    let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
+        section.index()
+    } else {
+        return Ok(None);
+    };
+
+    let mut map = BTreeMap::new();
     let mut version = None;
+    let mut trace_start = None;
+    let mut trace_end = None;
+    let mut debug_start = None;
+    let mut debug_end = None;
+    let mut info_start = None;
+    let mut info_end = None;
+    let mut warn_start = None;
+    let mut warn_end = None;
+    let mut error_start = None;
+    let mut error_end = None;
     for (_, entry) in elf.symbols() {
         let name = match entry.name() {
             Some(name) => name,
@@ -45,42 +59,42 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
             }
             version = Some(new_version);
         }
-    }
-
-    let version = version.ok_or_else(|| anyhow!("defmt version symbol not found"))?;
-
-    defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
-
-    // find the index of the `.defmt` section
-    let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
-        section.index()
-    } else {
-        return Ok(None);
-    };
-
-    // second pass to demangle symbols
-    let mut map = BTreeMap::new();
-    for (_, entry) in elf.symbols() {
-        let name = match entry.name() {
-            Some(name) => name,
-            None => continue,
-        };
 
         if entry.section_index() == Some(defmt_shndx) {
-            let sym = symbol::Symbol::demangle(name)?;
-            if let symbol::SymbolTag::Defmt(tag) = sym.tag() {
-                map.insert(
-                    entry.address() as usize,
-                    TableEntry::new(
-                        StringEntry::new(tag, sym.data().to_string()),
-                        name.to_string(),
-                    ),
-                );
+            match name {
+                "_defmt_trace_start" => trace_start = Some(entry.address() as usize),
+                "_defmt_trace_end" => trace_end = Some(entry.address() as usize),
+                "_defmt_debug_start" => debug_start = Some(entry.address() as usize),
+                "_defmt_debug_end" => debug_end = Some(entry.address() as usize),
+                "_defmt_info_start" => info_start = Some(entry.address() as usize),
+                "_defmt_info_end" => info_end = Some(entry.address() as usize),
+                "_defmt_warn_start" => warn_start = Some(entry.address() as usize),
+                "_defmt_warn_end" => warn_end = Some(entry.address() as usize),
+                "_defmt_error_start" => error_start = Some(entry.address() as usize),
+                "_defmt_error_end" => error_end = Some(entry.address() as usize),
+                _ => {
+                    map.insert(entry.address() as usize, name.to_string());
+                }
             }
         }
     }
 
-    Ok(Some(Table::new(map)))
+    // unify errors
+    let (error, warn, info, debug, trace, version) = (|| -> Option<_> {
+        Some((
+            error_start?..error_end?,
+            warn_start?..warn_end?,
+            info_start?..info_end?,
+            debug_start?..debug_end?,
+            trace_start?..trace_end?,
+            version?,
+        ))
+    })()
+    .ok_or_else(|| anyhow!("`_defmt_*` symbol not found"))?;
+
+    Table::new(map, debug, error, info, trace, warn, version)
+        .map_err(anyhow::Error::msg)
+        .map(Some)
 }
 
 #[derive(Clone)]
@@ -99,7 +113,7 @@ impl fmt::Debug for Location {
 pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
-    let live_syms = table.raw_symbols().collect::<Vec<_>>();
+    let live_syms = table.symbols().collect::<Vec<_>>();
     let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
@@ -221,6 +235,12 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                     let linkage_name = core::str::from_utf8(&linkage_name_slice)?;
 
                     if name == "DEFMT_LOG_STATEMENT" {
+                        // remove the `@` suffix
+                        let linkage_name = linkage_name
+                            .splitn(2, '@')
+                            .next()
+                            .ok_or_else(|| anyhow!("{} is missing `@` suffix", linkage_name))?;
+
                         if live_syms.contains(&linkage_name) {
                             let addr = exprloc2address(unit.encoding(), &loc)?;
                             let file = file_index_to_path(file_index, &unit, &dwarf)?;
