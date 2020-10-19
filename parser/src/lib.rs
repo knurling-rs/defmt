@@ -1,6 +1,5 @@
-use core::ops::Range;
-
 use std::borrow::Cow;
+use std::ops::Range;
 
 /// A `{{:parameter}}` in a format string.
 #[derive(Clone, Debug, PartialEq)]

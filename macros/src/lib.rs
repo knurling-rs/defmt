@@ -1,5 +1,7 @@
+mod symbol;
+
 use core::fmt::Write as _;
-use proc_macro::{Span, TokenStream};
+use proc_macro::TokenStream;
 
 use defmt_parser::Fragment;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
@@ -576,9 +578,9 @@ pub fn internp(ts: TokenStream) -> TokenStream {
         .into();
     }
 
-    // NOTE(no random id) these won't collide because they are limited in use
-    let section = format!(".defmt.prim.{}", ls);
-    let sym = ls;
+    let sym = symbol::Symbol::new("prim", &ls).mangle();
+    let section = format!(".defmt.prim.{}", sym);
+
     quote!(match () {
         #[cfg(target_arch = "x86_64")]
         () => {
@@ -634,9 +636,9 @@ pub fn write(ts: TokenStream) -> TokenStream {
 }
 
 fn mksym(string: &str, section: &str, is_log_statement: bool) -> TokenStream2 {
-    let id = format!("{:?}", Span::call_site());
-    let section = format!(".defmt.{}.{}", section, string);
-    let sym = format!("{}@{}", string, id);
+    let sym = symbol::Symbol::new(section, string).mangle();
+    let section = format!(".defmt.{}", sym);
+
     // NOTE we rely on this variable name when extracting file location information from the DWARF
     // without it we have no other mean to differentiate static variables produced by `info!` vs
     // produced by `intern!` (or `internp`)
