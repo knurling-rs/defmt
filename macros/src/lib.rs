@@ -723,25 +723,8 @@ impl Codegen {
                     exprs.push(quote!(_fmt_.usize(#arg)));
                 }
                 defmt_parser::Type::BitField(_) => {
-                    // TODO reused in decoder::parse_args(), can we share this somehow without Cargo bug troubles?
-                    // TODO -> move this to parser!
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
-                    let largest_bit_index = all_bitfields
-                        .clone()
-                        .map(|param| match &param.ty {
-                            defmt_parser::Type::BitField(range) => range.end,
-                            _ => unreachable!(),
-                        })
-                        .max()
-                        .unwrap();
-
-                    let smallest_bit_index = all_bitfields
-                        .map(|param| match &param.ty {
-                            defmt_parser::Type::BitField(range) => range.start,
-                            _ => unreachable!(),
-                        })
-                        .min()
-                        .unwrap();
+                    let (smallest_bit_index, largest_bit_index) = defmt_parser::get_max_bitfield_range(all_bitfields).unwrap();
 
                     // indices of the lowest and the highest octet which contains bitfield-relevant data
                     let lowest_byte = smallest_bit_index / 8;
