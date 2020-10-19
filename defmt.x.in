@@ -11,36 +11,8 @@ SECTIONS
     /* Format implementations for primitives like u8 */
     *(.defmt.prim.*);
 
-    /* ERROR logging level */
-    _defmt_error_start = .;
-    *(.defmt.error.*);
-    _defmt_error_end = .;
-
-    /* WARN logging level */
-    _defmt_warn_start = .;
-    *(.defmt.warn.*);
-    _defmt_warn_end = .;
-
-    /* INFO logging level */
-    _defmt_info_start = .;
-    *(.defmt.info.*);
-    _defmt_info_end = .;
-
-    /* DEBUG logging level */
-    _defmt_debug_start = .;
-    *(.defmt.debug.*);
-    _defmt_debug_end = .;
-
-    /* TRACE logging level */
-    _defmt_trace_start = .;
-    *(.defmt.trace.*);
-    _defmt_trace_end = .;
-
-    /* Format/write! strings */
-    *(.defmt.fmt.*);
-
-    /* User interned strings (Str) */
-    *(.defmt.str.*);
+    /* Everything user-defined */
+    *(.defmt.*);
 
     /* $DEFMT_VERSION may contain special chars, so we quote the symbol name */
     /* Note that the quotes actually become part of the symbol name though! */
