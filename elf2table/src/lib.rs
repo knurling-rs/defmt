@@ -10,8 +10,8 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure};
-use defmt_decoder::StringEntry;
 pub use defmt_decoder::Table;
+use defmt_decoder::{StringEntry, TableEntry};
 use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table
@@ -58,7 +58,10 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
             if let symbol::SymbolTag::Defmt(tag) = sym.tag() {
                 map.insert(
                     entry.address() as usize,
-                    StringEntry::new(tag, sym.data().to_string()),
+                    TableEntry::new(
+                        StringEntry::new(tag, sym.data().to_string()),
+                        name.to_string(),
+                    ),
                 );
             }
         }
