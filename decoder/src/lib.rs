@@ -103,10 +103,10 @@ Try `cargo install`-ing the latest git version of `probe-run` AND updating your 
 }
 
 impl Table {
-    pub fn new(entries: BTreeMap<usize, TableEntry>, version: &str) -> Result<Self, String> {
-        check_version(version)?;
-
-        Ok(Self { entries })
+    /// NOTE caller must verify that defmt symbols are compatible with this version of the `decoder`
+    /// crate using the `check_version` function
+    pub fn new(entries: BTreeMap<usize, TableEntry>) -> Self {
+        Self { entries }
     }
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {

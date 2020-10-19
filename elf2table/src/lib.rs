@@ -80,9 +80,7 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         }
     }
 
-    Table::new(map, version)
-        .map_err(anyhow::Error::msg)
-        .map(Some)
+    Ok(Some(Table::new(map)))
 }
 
 #[derive(Clone)]
