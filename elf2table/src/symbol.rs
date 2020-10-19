@@ -8,7 +8,7 @@ pub struct Symbol {
     package: String,
 
     /// Unique identifier that disambiguates otherwise equivalent invocations in the same crate.
-    disambiguator: u64,
+    disambiguator: String,
 
     /// Symbol categorization. Known values:
     /// * `defmt_prim` for primitive formatting strings that are placed at the start of the `.defmt`

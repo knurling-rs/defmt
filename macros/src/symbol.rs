@@ -48,7 +48,7 @@ impl<'a> Symbol<'a> {
 
     pub fn mangle(&self) -> String {
         format!(
-            r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":{}}}"#,
+            r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}"}}"#,
             escape(&self.package),
             escape(&self.tag),
             escape(self.data),
