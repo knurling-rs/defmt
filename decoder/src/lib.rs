@@ -50,6 +50,26 @@ impl Tag {
 }
 
 #[derive(Debug)]
+pub struct TableEntry {
+    string: StringEntry,
+    raw_symbol: String,
+}
+
+impl TableEntry {
+    pub fn new(string: StringEntry, raw_symbol: String) -> Self {
+        Self { string, raw_symbol }
+    }
+
+    #[cfg(test)]
+    fn new_without_symbol(tag: Tag, string: String) -> Self {
+        Self {
+            string: StringEntry::new(tag, string),
+            raw_symbol: "<unknown>".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct StringEntry {
     tag: Tag,
     string: String,
@@ -64,11 +84,11 @@ impl StringEntry {
 /// Interner table that holds log levels and maps format strings to indices
 #[derive(Debug)]
 pub struct Table {
-    entries: BTreeMap<usize, StringEntry>,
+    entries: BTreeMap<usize, TableEntry>,
 }
 
 impl Table {
-    pub fn new(entries: BTreeMap<usize, StringEntry>, version: &str) -> Result<Self, String> {
+    pub fn new(entries: BTreeMap<usize, TableEntry>, version: &str) -> Result<Self, String> {
         if version != DEFMT_VERSION {
             return Err(format!(
                 "defmt version mismatch (firmware is using {}, host is using {}); \
@@ -82,7 +102,7 @@ impl Table {
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
         let entry = self.entries.get(&index).ok_or_else(|| ())?;
-        Ok((entry.tag.to_level(), &entry.string))
+        Ok((entry.string.tag.to_level(), &entry.string.string))
     }
 
     fn get_with_level(&self, index: usize) -> Result<(Level, &str), ()> {
@@ -101,7 +121,7 @@ impl Table {
 
     pub fn indices<'s>(&'s self) -> impl Iterator<Item = usize> + 's {
         self.entries.iter().filter_map(move |(idx, entry)| {
-            if entry.tag.to_level().is_some() {
+            if entry.string.tag.to_level().is_some() {
                 Some(*idx)
             } else {
                 None
@@ -113,8 +133,9 @@ impl Table {
         self.entries.is_empty()
     }
 
-    pub fn symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
-        self.entries.values().map(|s| &*s.string)
+    /// Iterates over the raw symbols of the table entries
+    pub fn raw_symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
+        self.entries.values().map(|s| &*s.raw_symbol)
     }
 }
 
@@ -775,7 +796,7 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             bytes[0] as usize,
-            StringEntry::new(Tag::Info, format.to_string()),
+            TableEntry::new_without_symbol(Tag::Info, format.to_string()),
         );
 
         let table = Table { entries };
@@ -787,10 +808,13 @@ mod tests {
     #[test]
     fn decode() {
         let mut entries = BTreeMap::new();
-        entries.insert(0, StringEntry::new(Tag::Info, "Hello, world!".to_owned()));
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "Hello, world!".to_owned()),
+        );
         entries.insert(
             1,
-            StringEntry::new(Tag::Debug, "The answer is {:u8}!".to_owned()),
+            TableEntry::new_without_symbol(Tag::Debug, "The answer is {:u8}!".to_owned()),
         );
         // [IDX, TS, 42]
         //           ^^
@@ -842,7 +866,7 @@ mod tests {
     fn all_integers() {
         const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:i8} {:i16} {:i32}!";
         let mut entries = BTreeMap::new();
-        entries.insert(0, StringEntry::new(Tag::Info, FMT.to_owned()));
+        entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
 
         let table = Table { entries };
 
@@ -886,11 +910,11 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            StringEntry::new(Tag::Info, "The answer is {0:u8} {0:u8}!".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "The answer is {0:u8} {0:u8}!".to_owned()),
         );
         entries.insert(
             1,
-            StringEntry::new(
+            TableEntry::new_without_symbol(
                 Tag::Info,
                 "The answer is {1:u16} {0:u8} {1:u16}!".to_owned(),
             ),
@@ -942,10 +966,13 @@ mod tests {
     #[test]
     fn format() {
         let mut entries = BTreeMap::new();
-        entries.insert(0, StringEntry::new(Tag::Info, "x={:?}".to_owned()));
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+        );
         entries.insert(
             1,
-            StringEntry::new(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
         );
 
         let table = Table { entries };
@@ -978,10 +1005,13 @@ mod tests {
     #[test]
     fn display() {
         let mut entries = BTreeMap::new();
-        entries.insert(0, StringEntry::new(Tag::Info, "x={:?}".to_owned()));
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+        );
         entries.insert(
             1,
-            StringEntry::new(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
         );
 
         let table = Table { entries };
@@ -1121,10 +1151,13 @@ mod tests {
         */
 
         let mut entries = BTreeMap::new();
-        entries.insert(0, StringEntry::new(Tag::Info, "{:bool} {:?}".to_owned()));
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "{:bool} {:?}".to_owned()),
+        );
         entries.insert(
             1,
-            StringEntry::new(
+            TableEntry::new_without_symbol(
                 Tag::Fmt,
                 "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned(),
             ),
@@ -1290,9 +1323,18 @@ mod tests {
     #[test]
     fn option() {
         let mut entries = BTreeMap::new();
-        entries.insert(4, StringEntry::new(Tag::Info, "x={:?}".to_owned()));
-        entries.insert(3, StringEntry::new(Tag::Fmt, "None|Some({:?})".to_owned()));
-        entries.insert(2, StringEntry::new(Tag::Fmt, "{:u8}".to_owned()));
+        entries.insert(
+            4,
+            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+        );
+        entries.insert(
+            3,
+            TableEntry::new_without_symbol(Tag::Fmt, "None|Some({:?})".to_owned()),
+        );
+        entries.insert(
+            2,
+            TableEntry::new_without_symbol(Tag::Fmt, "{:u8}".to_owned()),
+        );
 
         let table = Table { entries };
 

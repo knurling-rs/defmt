@@ -10,8 +10,8 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure};
-use defmt_decoder::StringEntry;
 pub use defmt_decoder::Table;
+use defmt_decoder::{StringEntry, TableEntry};
 use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table
@@ -58,7 +58,10 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
             if let symbol::SymbolTag::Defmt(tag) = sym.tag() {
                 map.insert(
                     entry.address() as usize,
-                    StringEntry::new(tag, sym.data().to_string()),
+                    TableEntry::new(
+                        StringEntry::new(tag, sym.data().to_string()),
+                        name.to_string(),
+                    ),
                 );
             }
         }
@@ -87,7 +90,7 @@ impl fmt::Debug for Location {
 pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
-    let live_syms = table.symbols().collect::<Vec<_>>();
+    let live_syms = table.raw_symbols().collect::<Vec<_>>();
     let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
