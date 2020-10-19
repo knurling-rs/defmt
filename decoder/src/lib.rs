@@ -87,17 +87,26 @@ pub struct Table {
     entries: BTreeMap<usize, TableEntry>,
 }
 
-impl Table {
-    pub fn new(entries: BTreeMap<usize, TableEntry>, version: &str) -> Result<Self, String> {
-        if version != DEFMT_VERSION {
-            return Err(format!(
-                "defmt version mismatch (firmware is using {}, host is using {}); \
-                 are you using the same git version of defmt and related tools?",
-                version, DEFMT_VERSION,
-            ));
-        }
+/// Checks if the version encoded in the symbol table is compatible with this version of the
+/// `decoder` crate
+pub fn check_version(version: &str) -> Result<(), String> {
+    if version != DEFMT_VERSION {
+        return Err(format!(
+            "defmt version mismatch (firmware is using {}, host is using {}); \
+             are you using the same git version of defmt and related tools?
+Try `cargo install`-ing the latest git version of `probe-run` AND updating your project's `Cargo.lock` with `cargo update`",
+            version, DEFMT_VERSION,
+        ));
+    }
 
-        Ok(Self { entries })
+    Ok(())
+}
+
+impl Table {
+    /// NOTE caller must verify that defmt symbols are compatible with this version of the `decoder`
+    /// crate using the `check_version` function
+    pub fn new(entries: BTreeMap<usize, TableEntry>) -> Self {
+        Self { entries }
     }
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {

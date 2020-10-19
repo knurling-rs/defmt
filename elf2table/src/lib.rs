@@ -19,14 +19,7 @@ use object::{Object, ObjectSection};
 /// This function returns `None` if the ELF file contains no `.defmt` section
 pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
-    // find the index of the `.defmt` section
-    let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
-        section.index()
-    } else {
-        return Ok(None);
-    };
-
-    let mut map = BTreeMap::new();
+    // first pass to extract the `_defmt_version`
     let mut version = None;
     for (_, entry) in elf.symbols() {
         let name = match entry.name() {
@@ -52,6 +45,26 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
             }
             version = Some(new_version);
         }
+    }
+
+    let version = version.ok_or_else(|| anyhow!("defmt version symbol not found"))?;
+
+    defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
+
+    // find the index of the `.defmt` section
+    let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
+        section.index()
+    } else {
+        return Ok(None);
+    };
+
+    // second pass to demangle symbols
+    let mut map = BTreeMap::new();
+    for (_, entry) in elf.symbols() {
+        let name = match entry.name() {
+            Some(name) => name,
+            None => continue,
+        };
 
         if entry.section_index() == Some(defmt_shndx) {
             let sym = symbol::Symbol::demangle(name)?;
@@ -67,11 +80,7 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         }
     }
 
-    let version = version.ok_or_else(|| anyhow!("defmt version symbol not found"))?;
-
-    Table::new(map, version)
-        .map_err(anyhow::Error::msg)
-        .map(Some)
+    Ok(Some(Table::new(map)))
 }
 
 #[derive(Clone)]
