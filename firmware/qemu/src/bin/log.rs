@@ -22,6 +22,22 @@ fn main() -> ! {
     defmt::info!("Hello {:u8}", 42u16 as u8);
 
     defmt::info!(
+        "u64: 0 = {:u64}, 1 = {:u64}, MAX = {:u64}, MIN = {:u64}",
+        0,
+        1,
+        u64::max_value(),
+        u64::min_value()
+    );
+
+    defmt::info!(
+        "i64: 0 = {:i64}, -1 = {:i64}, MAX = {:i64}, MIN = {:i64}",
+        0,
+        -1,
+        i64::max_value(),
+        i64::min_value()
+    );
+
+    defmt::info!(
         "isize: 0 = {:isize}, -1 = {:isize}, MAX = {:isize}, MIN = {:isize}",
         0,
         -1,

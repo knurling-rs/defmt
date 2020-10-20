@@ -597,6 +597,36 @@ fn format_primitives() {
             0b1,
         ],
     );
+
+    check_format_implementation(
+        &513u64,
+        &[
+            inc(index, 14), // "{:u64}"
+            1,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ],
+    );
+
+    check_format_implementation(
+        &-2i64,
+        &[
+            inc(index, 15), // "{:i64}"
+            0xFE,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+        ],
+    );
 }
 
 #[test]

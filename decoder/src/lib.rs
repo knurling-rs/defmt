@@ -610,6 +610,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     let data = self.bytes.read_i32::<LE>()?;
                     args.push(Arg::Ixx(data as i64));
                 }
+                Type::I64 => {
+                    let data = self.bytes.read_i64::<LE>()?;
+                    args.push(Arg::Ixx(data as i64));
+                }
                 Type::I8 => {
                     let data = self.bytes.read_i8()?;
                     args.push(Arg::Ixx(data as i64));
@@ -631,6 +635,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 }
                 Type::U32 => {
                     let data = self.bytes.read_u32::<LE>()?;
+                    args.push(Arg::Uxx(data as u64));
+                }
+                Type::U64 => {
+                    let data = self.bytes.read_u64::<LE>()?;
                     args.push(Arg::Uxx(data as u64));
                 }
                 Type::Usize => {
