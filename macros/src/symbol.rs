@@ -64,7 +64,7 @@ fn escape(s: &str) -> String {
             '\\' => out.push_str("\\\\"),
             '\"' => out.push_str("\\\""),
             '\n' => out.push_str("\\n"),
-            c if c.is_control() => write!(out, "\\u{:04x}", c as u32).unwrap(),
+            c if c.is_control() || c == '@' => write!(out, "\\u{:04x}", c as u32).unwrap(),
             c => out.push(c),
         }
     }

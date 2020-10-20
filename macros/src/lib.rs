@@ -548,14 +548,6 @@ impl Parse for Log {
 pub fn intern(ts: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(ts as LitStr);
     let ls = lit.value();
-    if ls.contains('@') {
-        return parse::Error::new(
-            ls.span(),
-            "strings that contain the character `@` cannot be interned",
-        )
-        .to_compile_error()
-        .into();
-    }
 
     let sym = mksym(&ls, "str", false);
     quote!({
@@ -569,14 +561,6 @@ pub fn intern(ts: TokenStream) -> TokenStream {
 pub fn internp(ts: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(ts as LitStr);
     let ls = lit.value();
-    if ls.contains('@') {
-        return parse::Error::new(
-            ls.span(),
-            "strings that contain the character `@` cannot be interned",
-        )
-        .to_compile_error()
-        .into();
-    }
 
     let sym = symbol::Symbol::new("prim", &ls).mangle();
     let section = format!(".defmt.prim.{}", sym);
