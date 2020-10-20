@@ -262,3 +262,50 @@ where
         }
     }
 }
+
+#[cfg(feature = "alloc")]
+mod if_alloc {
+    use crate::{Format, Formatter};
+
+    impl<T> Format for alloc::boxed::Box<T>
+    where
+        T: ?Sized + Format,
+    {
+        fn format(&self, f: &mut Formatter) {
+            self.as_ref().format(f)
+        }
+    }
+
+    impl<T> Format for alloc::rc::Rc<T>
+    where
+        T: ?Sized + Format,
+    {
+        fn format(&self, f: &mut Formatter) {
+            self.as_ref().format(f)
+        }
+    }
+
+    impl<T> Format for alloc::sync::Arc<T>
+    where
+        T: ?Sized + Format,
+    {
+        fn format(&self, f: &mut Formatter) {
+            self.as_ref().format(f)
+        }
+    }
+
+    impl<T> Format for alloc::vec::Vec<T>
+    where
+        T: Format,
+    {
+        fn format(&self, f: &mut Formatter) {
+            self.as_slice().format(f)
+        }
+    }
+
+    impl Format for alloc::string::String {
+        fn format(&self, f: &mut Formatter) {
+            self.as_str().format(f)
+        }
+    }
+}

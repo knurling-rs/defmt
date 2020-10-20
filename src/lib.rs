@@ -12,6 +12,9 @@
 #![cfg_attr(not(target_arch = "x86_64"), no_std)]
 #![warn(missing_docs)]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 
