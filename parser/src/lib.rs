@@ -34,6 +34,7 @@ pub enum Type {
     I8,
     I16,
     I32,
+    I64,
     Isize,
     /// String slice (i.e. passed directly; not as interned string indices).
     Str,
@@ -43,6 +44,7 @@ pub enum Type {
     U16,
     U24,
     U32,
+    U64,
     Usize,
     /// Byte slice `{:[u8]}`.
     Slice,
@@ -111,10 +113,12 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         "u16" => Type::U16,
         "u24" => Type::U24,
         "u32" => Type::U32,
+        "u64" => Type::U64,
         "usize" => Type::Usize,
         "i8" => Type::I8,
         "i16" => Type::I16,
         "i32" => Type::I32,
+        "i64" => Type::I64,
         "isize" => Type::Isize,
         "f32" => Type::F32,
         "bool" => Type::Bool,

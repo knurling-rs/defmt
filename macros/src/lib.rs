@@ -725,6 +725,9 @@ impl Codegen {
                 defmt_parser::Type::I32 => {
                     exprs.push(quote!(_fmt_.i32(#arg)));
                 }
+                defmt_parser::Type::I64 => {
+                    exprs.push(quote!(_fmt_.i64(#arg)));
+                }
                 defmt_parser::Type::I8 => {
                     exprs.push(quote!(_fmt_.i8(#arg)));
                 }
@@ -745,6 +748,9 @@ impl Codegen {
                 }
                 defmt_parser::Type::U32 => {
                     exprs.push(quote!(_fmt_.u32(#arg)));
+                }
+                defmt_parser::Type::U64 => {
+                    exprs.push(quote!(_fmt_.u64(#arg)));
                 }
                 defmt_parser::Type::U8 => {
                     exprs.push(quote!(_fmt_.u8(#arg)));
