@@ -308,6 +308,9 @@ fn main() -> ! {
 
     defmt::info!("after nested log: {:?}", nested());
 
+    // printing @ is now allowed
+    defmt::info!("I can now print the @ symbol!");
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
