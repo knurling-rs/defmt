@@ -310,6 +310,8 @@ fn main() -> ! {
 
     // printing @ is now allowed
     defmt::info!("I can now print the @ symbol!");
+    let interned = defmt::intern!("this is @n interned string");
+    defmt::info!("@nd @lso vi@ interned strings: {:istr}", interned);
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)
