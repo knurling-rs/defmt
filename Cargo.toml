@@ -38,6 +38,9 @@ debug-assertions = false
 opt-level = 0
 overflow-checks = false
 
+[build-dependencies]
+semver = "0.11.0"
+
 [profile.release.build-override]
 codegen-units = 8
 debug = false
