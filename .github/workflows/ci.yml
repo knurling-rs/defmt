@@ -76,24 +76,35 @@ jobs:
       run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
 
   qemu:
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - nightly
+        features:
+          - ','  # no features
+          - alloc
+        exclude:
+          - rust: stable
+            features: alloc
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: stable
+        toolchain: ${{ matrix.rust }}
         override: true
         target: ${{ env.QEMU_TARGET }}
     - name: Install dependencies
       run: |
         sudo apt-get update && sudo apt-get install qemu
-        rustup +stable target add ${{ env.QEMU_TARGET }}
+        rustup target add ${{ env.QEMU_TARGET }}
     - name: Build QEMU examples
       working-directory: firmware/qemu
-      run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.QEMU_TARGET }} --bins
+      run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.QEMU_TARGET }} --bins --features ${{ matrix.features }}
     - name: Run QEMU examples
       working-directory: firmware/qemu
       run: |
-        cargo rb log
-        cargo rrb log
+        cargo rb log --features ${{ matrix.features }}
+        cargo rrb log --features ${{ matrix.features }}

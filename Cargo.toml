@@ -6,6 +6,9 @@ name = "defmt"
 version = "0.1.0"
 links = "defmt" # Prevent multiple versions of defmt being linked
 
+[features]
+alloc = []
+
 [dependencies]
 defmt-macros = { path = "macros" }
 defmt-common = { path = "common" }
