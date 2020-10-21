@@ -110,6 +110,16 @@ impl Format for f32 {
     }
 }
 
+impl Format for str {
+    fn format(&self, fmt: &mut Formatter) {
+        if fmt.needs_tag() {
+            let t = internp!("{:str}");
+            fmt.u8(&t);
+        }
+        fmt.str(self);
+    }
+}
+
 impl Format for Str {
     fn format(&self, fmt: &mut Formatter) {
         if fmt.needs_tag() {
