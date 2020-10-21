@@ -1,6 +1,5 @@
 use crate::{Formatter, Str};
 
-pub use defmt_common::Level;
 pub use defmt_macros::write;
 
 #[cfg(target_arch = "x86_64")]
@@ -29,11 +28,6 @@ pub fn fetch_add_string_index() -> usize {
 #[cfg(target_arch = "x86_64")]
 pub fn fetch_timestamp() -> u8 {
     T.with(|i| i.load(core::sync::atomic::Ordering::Relaxed)) & 0x7f
-}
-
-pub fn threshold() -> Level {
-    // TODO add Cargo features
-    Level::Info
 }
 
 #[cfg(target_arch = "x86_64")]
