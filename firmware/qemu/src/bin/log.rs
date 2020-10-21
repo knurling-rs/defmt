@@ -337,6 +337,15 @@ fn main() -> ! {
     let interned = defmt::intern!("this is @n interned string");
     defmt::info!("@nd @lso vi@ interned strings: {:istr}", interned);
 
+    // Tuples
+    defmt::info!("empty tuple: {:?}", ());
+    defmt::info!("tuple of ints: {:?}", (1,2,3));
+    defmt::info!("nested tuple of ints: {:?}", (1,2,(3,4,5), (6,7,8)));
+    defmt::info!("crazy nested tuples: {:?}", ((((((((),),),),),),), (((((((), (),),),),),),),));
+    defmt::info!("slice of tuples: {:?}", &[(1,2), (3,4), (5,6)][..]);
+    defmt::info!("tuple of slices: {:?}", (&[1,2,3][..], &[4,5,6][..]));
+    defmt::info!("tuple of [u8;4]: {:?}", ([1u8, 2, 3, 4], [5u8, 6, 7, 8]));
+
     #[cfg(feature = "alloc")]
     {
         use alloc::boxed::Box;
