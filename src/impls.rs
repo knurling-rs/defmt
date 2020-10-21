@@ -272,7 +272,7 @@ mod if_alloc {
         T: ?Sized + Format,
     {
         fn format(&self, f: &mut Formatter) {
-            self.as_ref().format(f)
+            T::format(&*self, f)
         }
     }
 
@@ -281,7 +281,7 @@ mod if_alloc {
         T: ?Sized + Format,
     {
         fn format(&self, f: &mut Formatter) {
-            self.as_ref().format(f)
+            T::format(&*self, f)
         }
     }
 
@@ -290,7 +290,7 @@ mod if_alloc {
         T: ?Sized + Format,
     {
         fn format(&self, f: &mut Formatter) {
-            self.as_ref().format(f)
+            T::format(&*self, f)
         }
     }
 
