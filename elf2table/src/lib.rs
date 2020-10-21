@@ -62,8 +62,8 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     let mut map = BTreeMap::new();
     for (_, entry) in elf.symbols() {
         let name = match entry.name() {
-            Some(name) => name,
-            None => continue,
+            Some(name) if !name.is_empty() => name,
+            _ => continue,
         };
 
         if entry.section_index() == Some(defmt_shndx) {
