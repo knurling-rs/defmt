@@ -1,4 +1,9 @@
-//! Reads ELF metadata and builds an interner table
+//! Reads ELF metadata and builds an interner table.
+//! Used by [`defmt`](https://github.com/knurling-rs/defmt).
+
+#![cfg(feature="unstable")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, doc(cfg(unstable)))]
 
 mod symbol;
 

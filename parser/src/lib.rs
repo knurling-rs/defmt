@@ -1,3 +1,9 @@
+//! Parsing library for [`defmt`](https://github.com/knurling-rs/defmt) format strings.
+
+#![cfg(feature="unstable")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, doc(cfg(unstable)))]
+
 use std::borrow::Cow;
 use std::ops::Range;
 

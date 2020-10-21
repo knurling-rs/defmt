@@ -9,7 +9,7 @@ version = "0.1.0"
 proc-macro = true
 
 [dependencies]
-defmt-parser = { path = "../parser" }
+defmt-parser = { path = "../parser", features = ["unstable"] }
 quote = "1.0.7"
 proc-macro2 = "1.0.18"
 

@@ -6,8 +6,16 @@ name = "defmt-decoder"
 version = "0.1.0"
 
 [dependencies]
-defmt-parser = { path = "../parser" }
+defmt-parser = { path = "../parser", features = ["unstable"] }
 byteorder = "1"
 colored = "2.0.0"
 leb128 = "0.2.4"
 ryu = "1"
+
+[features]
+# WARNING: API and wire format subject to change.
+unstable = []
+
+[package.metadata.docs.rs]
+features = ["unstable"]
+rustdoc-args = [ "--cfg docsrs" ]

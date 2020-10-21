@@ -1,4 +1,7 @@
 // NOTE: always runs on the host
+#![cfg(feature="unstable")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, doc(cfg(unstable)))]
 
 use core::fmt::{self, Write as _};
 use std::cmp::Ordering;
