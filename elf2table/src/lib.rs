@@ -66,9 +66,11 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
     for (_, entry) in elf.symbols() {
+        // Skipping symbols with empty string names, as they may be added by
+        // `objcopy`, and breaks JSON demangling
         let name = match entry.name() {
-            Some(name) => name,
-            None => continue,
+            Some(name) if !name.is_empty() => name,
+            _ => continue,
         };
 
         if entry.section_index() == Some(defmt_shndx) {
