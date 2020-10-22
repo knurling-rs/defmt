@@ -681,15 +681,26 @@ fn istr() {
 }
 
 #[test]
-fn arrays() {
+fn format_arrays() {
     let index = fetch_string_index();
-    check_format_implementation(&[], &[index]);
+    let array: [u16; 0] = [];
+    check_format_implementation(&array, &[index]);
 
     let index = fetch_string_index();
-    check_format_implementation(&[0], &[index, 0]);
-
-    let index = fetch_string_index();
-    check_format_implementation(&[0xff, 0xab, 0x1f], &[index, 0xff, 0xab, 0x1f]);
+    let array: [u16; 3] = [1, 256, 257];
+    check_format_implementation(
+        &array,
+        &[
+            index,             // "{:[?;3]}"
+            inc(index, 1),     // "{:u16}"
+            1,                 // [0].low
+            0,                 // [0].high
+            0,                 // [1].low
+            1,                 // [1].high
+            1,                 // [2].low
+            1,                 // [2].high
+        ],
+    );
 }
 
 #[test]

@@ -372,8 +372,19 @@ impl Formatter {
 
     // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
     #[doc(hidden)]
-    pub fn array(&mut self, a: &[u8]) {
+    pub fn u8_array(&mut self, a: &[u8]) {
         self.write(a);
+    }
+
+    // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
+    #[doc(hidden)]
+    pub fn fmt_array(&mut self, a: &[impl Format]) {
+        let mut is_first = true;
+        for value in a {
+            let omit_tag = !is_first;
+            self.fmt(value, omit_tag);
+            is_first = false;
+        }
     }
 
     /// Implementation detail

@@ -752,10 +752,10 @@ impl Codegen {
                 defmt_parser::Type::Bool => {
                     exprs.push(quote!(_fmt_.bool(#arg)));
                 }
-                defmt_parser::Type::Slice => {
+                defmt_parser::Type::U8Slice => {
                     exprs.push(quote!(_fmt_.slice(#arg)));
                 }
-                defmt_parser::Type::Array(len) => {
+                defmt_parser::Type::U8Array(len) => {
                     // We cast to the expected array type (which should be a no-op cast) to provoke
                     // a type mismatch error on mismatched lengths:
                     // ```
@@ -768,8 +768,14 @@ impl Codegen {
                     //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
                     //    |     expected due to this
                     // ```
-                    exprs.push(quote!(_fmt_.array({
+                    exprs.push(quote!(_fmt_.u8_array({
                         let tmp: &[u8; #len] = #arg;
+                        tmp
+                    })));
+                }
+                defmt_parser::Type::FormatArray(len) => {
+                    exprs.push(quote!(_fmt_.fmt_array({
+                        let tmp: &[_; #len] = #arg;
                         tmp
                     })));
                 }
