@@ -723,29 +723,28 @@ impl Codegen {
                     exprs.push(quote!(_fmt_.usize(#arg)));
                 }
                 defmt_parser::Type::BitField(_) => {
-                    // TODO reused in decoder::parse_args(), can we share this somehow without Cargo bug troubles?
-                    // TODO -> move this to parser!
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
-                    let largest_bit_index = all_bitfields
-                        .map(|param| match &param.ty {
-                            defmt_parser::Type::BitField(range) => range.end,
-                            _ => unreachable!(),
-                        })
-                        .max()
-                        .unwrap();
+                    let (smallest_bit_index, largest_bit_index) = defmt_parser::get_max_bitfield_range(all_bitfields).unwrap();
 
-                    match largest_bit_index {
-                        0..=8 => {
-                            exprs.push(quote!(_fmt_.u8(&defmt::export::truncate(*#arg))));
+                    // indices of the lowest and the highest octet which contains bitfield-relevant data
+                    let lowest_byte = smallest_bit_index / 8;
+                    let highest_byte = (largest_bit_index - 1) / 8;
+                    let truncated_sz = highest_byte - lowest_byte + 1; // in bytes
+
+                    match truncated_sz {
+                        1 => {
+                            // shift away unneeded lower octet
+                            // TODO: create helper for shifting because readability
+                            exprs.push(quote!(_fmt_.u8(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
                         }
-                        9..=16 => {
-                            exprs.push(quote!(_fmt_.u16(&defmt::export::truncate(*#arg))));
+                        2 => {
+                            exprs.push(quote!(_fmt_.u16(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
                         }
-                        17..=24 => {
-                            exprs.push(quote!(_fmt_.u24(&defmt::export::truncate(*#arg))));
+                        3 => {
+                            exprs.push(quote!(_fmt_.u24(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
                         }
-                        25..=32 => {
-                            exprs.push(quote!(_fmt_.u32(&defmt::export::truncate(*#arg))));
+                        4 => {
+                            exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
                         }
                         _ => unreachable!(),
                     }

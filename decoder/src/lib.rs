@@ -5,6 +5,7 @@
 
 use core::fmt::{self, Write as _};
 use std::cmp::Ordering;
+use core::ops::Range;
 use std::collections::BTreeMap;
 use std::{
     error::Error,
@@ -18,7 +19,7 @@ use std::{
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-use defmt_parser::{Fragment, Level, Type};
+use defmt_parser::{Fragment, Level, Parameter, Type, get_max_bitfield_range};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -371,6 +372,66 @@ pub fn decode<'t>(
     Ok((frame, consumed))
 }
 
+/// Note that this will not change the Bitfield params in place, i.e. if `params` was sorted before
+/// a call to this function, it won't be afterwards.
+fn merge_bitfields(params: &mut Vec<Parameter>) {
+    if params.len() == 0 {
+        return;
+    }
+
+    let mut merged_bitfields = Vec::new();
+
+    let max_index: usize = *params
+        .iter()
+        .map(|param| &param.index)
+        .max()
+        .unwrap();
+
+    for index in 0..=max_index {
+        let mut bitfields_with_index = params
+            .iter()
+            .filter(|param| match (param.index, &param.ty) {
+                (i, Type::BitField(_)) if i == index => true,
+                _ => false,
+            })
+            .peekable();
+
+        if bitfields_with_index.peek().is_some() {
+            let (smallest, largest) = get_max_bitfield_range(bitfields_with_index).unwrap();
+
+            // create new merged bitfield for this index
+            merged_bitfields.push(Parameter {
+                index: index,
+                ty: Type::BitField(Range {
+                    start: smallest,
+                    end: largest,
+                }),
+            });
+
+            // remove old bitfields with this index
+            // TODO refactor when `drain_filter()` is stable
+            let mut i = 0;
+            while i != params.len() {
+                match &params[i].ty {
+                    Type::BitField(_) => {
+                        if params[i].index == index {
+                            params.remove(i);
+                        } else {
+                            i += 1; // we haven't removed a bitfield -> move i forward
+                        }
+                    }
+                    _ => {
+                        i += 1; // we haven't removed a bitfield -> move i forward
+                    }
+                }
+            }
+        }
+    }
+
+    // add merged bitfields to unsorted params
+    params.append(&mut merged_bitfields);
+}
+
 struct Decoder<'t, 'b> {
     table: &'t Table,
     bytes: &'b [u8],
@@ -401,6 +462,16 @@ impl<'t, 'b> Decoder<'t, 'b> {
         self.bools_tbd.clear();
 
         Ok(())
+    }
+
+    /// Sort and deduplicate `params` so that they can be interpreted correctly during decoding
+    fn prepare_params(&self, params: &mut Vec<Parameter>) {
+        // deduplicate bitfields by merging them by index
+        merge_bitfields(params);
+
+        // sort & dedup to ensure that format string args can be addressed by index too
+        params.sort_by(|a, b| a.index.cmp(&b.index));
+        params.dedup_by(|a, b| a.index == b.index);
     }
 
     /// Gets a format string from
@@ -452,33 +523,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
             })
             .collect::<Vec<_>>();
 
-        // sort & dedup to ensure that format string args can be addressed by index too
-        params.sort_by(|a, b| {
-            if a.index == b.index {
-                match (&a.ty, &b.ty) {
-                    (Type::BitField(a_range), Type::BitField(b_range)) => {
-                        b_range.end.cmp(&a_range.end)
-                    }
-                    _ => Ordering::Equal,
-                }
-            } else {
-                a.index.cmp(&b.index)
-            }
-        });
-
-        params.dedup_by(|a, b| {
-            if a.index == b.index {
-                match (&a.ty, &b.ty) {
-                    (Type::BitField(a_range), Type::BitField(b_range)) => a_range.end < b_range.end,
-                    /* reusing an arg for bitfield- and non bitfield params is not allowed */
-                    (Type::BitField(_), _) => unreachable!(),
-                    (_, Type::BitField(_)) => unreachable!(),
-                    _ => true,
-                }
-            } else {
-                false
-            }
-        });
+        self.prepare_params(&mut params);
 
         for param in &params {
             match &param.ty {
@@ -652,25 +697,31 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::F32(f32::from_bits(data)));
                 }
                 Type::BitField(range) => {
-                    let data: u64;
+                    let mut data: u64;
+                    let lowest_byte = range.start / 8;
+                    // -1 because `range` is range-exclusive
+                    let highest_byte = (range.end - 1) / 8;
+                    let size_after_truncation = highest_byte - lowest_byte + 1; // in octets
 
-                    match range.end {
-                        0..=8 => {
+                    match size_after_truncation {
+                        1 => {
                             data = self.bytes.read_u8()? as u64;
                         }
-                        0..=16 => {
+                        2 => {
                             data = self.bytes.read_u16::<LE>()? as u64;
                         }
-                        0..=24 => {
+                        3 => {
                             data = self.bytes.read_u24::<LE>()? as u64;
                         }
-                        0..=32 => {
+                        4 => {
                             data = self.bytes.read_u32::<LE>()? as u64;
                         }
                         _ => {
                             unreachable!();
                         }
                     }
+
+                    data <<= lowest_byte * 8;
 
                     args.push(Arg::Uxx(data));
                 }
@@ -802,7 +853,7 @@ mod tests {
     use std::collections::BTreeMap;
     use super::{Frame, Level, Table};
     use super::*;
-    use crate::Arg;
+    use crate::{Arg, merge_bitfields};
 
     // helper function to initiate decoding and assert that the result is as expected.
     //
@@ -1267,6 +1318,23 @@ mod tests {
     }
 
     #[test]
+    fn bitfields_mixed() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            0b1111_0000,
+            0b1110_0101, // u16 bitfields
+            42,          // u8
+            0b1111_0001, // u8 bitfields
+        ];
+        decode_and_expect(
+            "#0: {0:7..12}, #1: {1:u8}, #2: {2:0..5}",
+            &bytes,
+            "0.000002 INFO #0: 0b1011, #1: 42, #2: 0b10001",
+        );
+    }
+
+    #[test]
     fn bitfields_across_boundaries() {
         let bytes = [
             0, // index
@@ -1278,6 +1346,53 @@ mod tests {
             "bitfields {0:0..7} {0:9..14}",
             &bytes,
             "0.000002 INFO bitfields 0b1010010 0b10001",
+        );
+    }
+
+    #[test]
+    fn bitfields_across_boundaries_diff_indices() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            0b1101_0010,
+            0b0110_0011, // u16
+            0b1111_1111, // truncated u16
+        ];
+        decode_and_expect(
+            "bitfields {0:0..7} {0:9..14} {1:8..10}",
+            &bytes,
+            "0.000002 INFO bitfields 0b1010010 0b10001 0b11",
+        );
+    }
+
+    #[test]
+    fn bitfields_truncated_front() {
+        let bytes = [
+            0,           // index
+            2,           // timestamp
+            0b0110_0011, // truncated(!) u16
+        ];
+        decode_and_expect(
+            "bitfields {0:9..14}",
+            &bytes,
+            "0.000002 INFO bitfields 0b10001",
+        );
+    }
+
+    #[test]
+    fn bitfields_non_truncated_u32() {
+        let bytes = [
+            0,           // index
+            2,           // timestamp
+            0b0110_0011, // -
+            0b0000_1111, //  |
+            0b0101_1010, //  | u32
+            0b1100_0011, // -
+        ];
+        decode_and_expect(
+            "bitfields {0:0..2} {0:28..31}",
+            &bytes,
+            "0.000002 INFO bitfields 0b11 0b100",
         );
     }
 
@@ -1376,5 +1491,126 @@ mod tests {
 
         let frame = super::decode(&bytes, &table).unwrap().0;
         assert_eq!(frame.display(false).to_string(), "0.000001 INFO x=None");
+    }
+
+    #[test]
+    fn merge_bitfields_simple() {
+        let mut params = vec![
+            Parameter {
+                index: 0,
+                ty: Type::BitField(0..3),
+            },
+            Parameter {
+                index: 0,
+                ty: Type::BitField(4..7),
+            },
+        ];
+
+        merge_bitfields(&mut params);
+        assert_eq!(
+            params,
+            vec![Parameter {
+                index: 0,
+                ty: Type::BitField(0..7)
+            }]
+        );
+    }
+
+    #[test]
+    fn merge_bitfields_overlap() {
+        let mut params = vec![
+            Parameter {
+                index: 0,
+                ty: Type::BitField(1..3),
+            },
+            Parameter {
+                index: 0,
+                ty: Type::BitField(2..5),
+            },
+        ];
+
+        merge_bitfields(&mut params);
+        assert_eq!(
+            params,
+            vec![Parameter {
+                index: 0,
+                ty: Type::BitField(1..5)
+            }]
+        );
+    }
+
+    #[test]
+    fn merge_bitfields_multiple_indices() {
+        let mut params = vec![
+            Parameter {
+                index: 0,
+                ty: Type::BitField(0..3),
+            },
+            Parameter {
+                index: 1,
+                ty: Type::BitField(1..3),
+            },
+            Parameter {
+                index: 1,
+                ty: Type::BitField(4..5),
+            },
+        ];
+
+        merge_bitfields(&mut params);
+        assert_eq!(
+            params,
+            vec![
+                Parameter {
+                    index: 0,
+                    ty: Type::BitField(0..3)
+                },
+                Parameter {
+                    index: 1,
+                    ty: Type::BitField(1..5)
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn merge_bitfields_overlap_non_consecutive_indices() {
+        let mut params = vec![
+            Parameter {
+                index: 0,
+                ty: Type::BitField(0..3),
+            },
+            Parameter {
+                index: 1,
+                ty: Type::U8,
+            },
+            Parameter {
+                index: 2,
+                ty: Type::BitField(1..4),
+            },
+            Parameter {
+                index: 2,
+                ty: Type::BitField(4..5),
+            },
+        ];
+
+        merge_bitfields(&mut params);
+        // note: current implementation appends merged bitfields to the end. this is not a must
+        assert_eq!(
+            params,
+            vec![
+                Parameter {
+                    index: 1,
+                    ty: Type::U8
+                },
+                Parameter {
+                    index: 0,
+                    ty: Type::BitField(0..3)
+                },
+                Parameter {
+                    index: 2,
+                    ty: Type::BitField(1..5)
+                }
+            ]
+        );
     }
 }
