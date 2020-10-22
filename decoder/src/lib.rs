@@ -19,7 +19,8 @@ use std::{
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-use defmt_parser::{Fragment, Level, Parameter, Type, get_max_bitfield_range};
+pub use defmt_parser::Level;
+use defmt_parser::{Fragment, Parameter, Type, get_max_bitfield_range};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
