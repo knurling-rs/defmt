@@ -1,7 +1,7 @@
 //! Reads ELF metadata and builds an interner table.
 //! Used by [`defmt`](https://github.com/knurling-rs/defmt).
 
-#![cfg(feature="unstable")]
+#![cfg(feature = "unstable")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 
@@ -26,6 +26,9 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
     // first pass to extract the `_defmt_version`
     let mut version = None;
+    let is_defmt_version = |name: &str| {
+        name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ")
+    };
     for (_, entry) in elf.symbols() {
         let name = match entry.name() {
             Some(name) => name,
@@ -36,7 +39,7 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         // in `.defmt`.
         // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
         // makes it keep the quotes from the linker script.
-        if name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ") {
+        if is_defmt_version(name) {
             let new_version = name
                 .trim_start_matches("\"_defmt_version_ = ")
                 .trim_start_matches("_defmt_version_ = ")
@@ -72,6 +75,13 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
             Some(name) if !name.is_empty() => name,
             _ => continue,
         };
+
+        if is_defmt_version(name) {
+            // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
+            // LLD and GNU LD behave differently here. LLD doesn't include `_defmt_version_`
+            // (defined in a linker script) in the `.defmt` section but GNU LD does.
+            continue;
+        }
 
         if entry.section_index() == Some(defmt_shndx) {
             let sym = symbol::Symbol::demangle(name)?;
