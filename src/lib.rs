@@ -7,7 +7,7 @@
 //! A highly efficient logging framework that targets resource-constrained devices, like
 //! microcontrollers.
 //!
-//! For more details check the book at https://defmt.ferrous-systems.com
+//! For more details check the book at <https://defmt.ferrous-systems.com>
 
 #![cfg_attr(not(target_arch = "x86_64"), no_std)]
 #![warn(missing_docs)]
