@@ -512,6 +512,89 @@ impl<'t, 'b> Decoder<'t, 'b> {
             .ok_or(DecodeError::Malformed)
     }
 
+    fn decode_format_slice(
+        &mut self,
+        num_elements: usize,
+    ) -> Result<Vec<FormatSliceElement<'t>>, DecodeError> {
+        if num_elements == 0 {
+            return Ok(vec![]);
+        }
+
+        let format = self.get_format()?;
+
+        // let variant_format = if
+        let is_enum = format.contains('|');
+        let below_enum = self.below_enum;
+
+        if is_enum {
+            self.below_enum = true;
+        }
+
+        let mut elements = Vec::with_capacity(num_elements);
+        let mut formats = vec![];
+        let mut cursor = 0;
+        for i in 0..num_elements {
+            let is_first = i == 0;
+
+            let format = if is_enum {
+                self.get_variant(format)?
+            } else {
+                format
+            };
+
+            let args = if let Some(list) = &mut self.format_list {
+                match list {
+                    FormatList::Use { .. } => self.decode_format(format)?,
+
+                    FormatList::Build { formats } => {
+                        if is_first {
+                            cursor = formats.len();
+                            self.decode_format(format)?
+                        } else {
+                            let formats = formats.clone();
+                            let old = mem::replace(
+                                &mut self.format_list,
+                                Some(FormatList::Use { formats, cursor }),
+                            );
+                            let args = self.decode_format(format)?;
+                            self.format_list = old;
+                            args
+                        }
+                    }
+                }
+            } else {
+                if is_first {
+                    let mut old =
+                        mem::replace(&mut self.format_list, Some(FormatList::Build { formats }));
+                    let args = self.decode_format(format)?;
+                    mem::swap(&mut self.format_list, &mut old);
+                    formats = match old {
+                        Some(FormatList::Build { formats, .. }) => formats,
+                        _ => unreachable!(),
+                    };
+                    args
+                } else {
+                    let formats = formats.clone();
+                    let old = mem::replace(
+                        &mut self.format_list,
+                        Some(FormatList::Use { formats, cursor: 0 }),
+                    );
+                    let args = self.decode_format(format)?;
+                    self.format_list = old;
+                    args
+                }
+            };
+
+            elements.push(FormatSliceElement { format, args });
+        }
+
+        if is_enum {
+            self.below_enum = below_enum;
+        }
+
+        Ok(elements)
+    }
+
     /// Decodes arguments from the stream, according to `format`.
     fn decode_format(&mut self, format: &str) -> Result<Vec<Arg<'t>>, DecodeError> {
         let mut args = vec![]; // will contain the deserialized arguments on return
@@ -545,88 +628,8 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                 Type::FormatSlice => {
                     let num_elements = read_leb128(&mut self.bytes)? as usize;
-
-                    let arg = if num_elements == 0 {
-                        Arg::FormatSlice { elements: vec![] }
-                    } else {
-                        let format = self.get_format()?;
-
-                        // let variant_format = if
-                        let is_enum = format.contains('|');
-                        let below_enum = self.below_enum;
-
-                        if is_enum {
-                            self.below_enum = true;
-                        }
-
-                        let mut elements = Vec::with_capacity(num_elements);
-                        let mut formats = vec![];
-                        let mut cursor = 0;
-                        for i in 0..num_elements {
-                            let is_first = i == 0;
-
-                            let format = if is_enum {
-                                self.get_variant(format)?
-                            } else {
-                                format
-                            };
-
-                            let args = if let Some(list) = &mut self.format_list {
-                                match list {
-                                    FormatList::Use { .. } => self.decode_format(format)?,
-
-                                    FormatList::Build { formats } => {
-                                        if is_first {
-                                            cursor = formats.len();
-                                            self.decode_format(format)?
-                                        } else {
-                                            let formats = formats.clone();
-                                            let old = mem::replace(
-                                                &mut self.format_list,
-                                                Some(FormatList::Use { formats, cursor }),
-                                            );
-                                            let args = self.decode_format(format)?;
-                                            self.format_list = old;
-                                            args
-                                        }
-                                    }
-                                }
-                            } else {
-                                if is_first {
-                                    let mut old = mem::replace(
-                                        &mut self.format_list,
-                                        Some(FormatList::Build { formats }),
-                                    );
-                                    let args = self.decode_format(format)?;
-                                    mem::swap(&mut self.format_list, &mut old);
-                                    formats = match old {
-                                        Some(FormatList::Build { formats, .. }) => formats,
-                                        _ => unreachable!(),
-                                    };
-                                    args
-                                } else {
-                                    let formats = formats.clone();
-                                    let old = mem::replace(
-                                        &mut self.format_list,
-                                        Some(FormatList::Use { formats, cursor: 0 }),
-                                    );
-                                    let args = self.decode_format(format)?;
-                                    self.format_list = old;
-                                    args
-                                }
-                            };
-
-                            elements.push(FormatSliceElement { format, args });
-                        }
-
-                        if is_enum {
-                            self.below_enum = below_enum;
-                        }
-
-                        Arg::FormatSlice { elements }
-                    };
-
-                    args.push(arg);
+                    let elements = self.decode_format_slice(num_elements)?;
+                    args.push(Arg::FormatSlice { elements });
                 }
                 Type::Format => {
                     let format = self.get_format()?;
@@ -750,7 +753,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                     args.push(Arg::IStr(string));
                 }
-                Type::Slice => {
+                Type::U8Slice => {
                     // only supports byte slices
                     let num_elements = read_leb128(&mut self.bytes)? as usize;
                     let mut arg_slice = vec![];
@@ -761,13 +764,17 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     }
                     args.push(Arg::Slice(arg_slice.to_vec()));
                 }
-                Type::Array(len) => {
+                Type::U8Array(len) => {
                     let mut arg_slice = vec![];
                     // note: went for the suboptimal but simple solution; optimize if necessary
                     for _ in 0..*len {
                         arg_slice.push(self.bytes.read_u8()?);
                     }
                     args.push(Arg::Slice(arg_slice.to_vec()));
+                }
+                Type::FormatArray(len) => {
+                    let elements = self.decode_format_slice(*len)?;
+                    args.push(Arg::FormatSlice { elements });
                 }
             }
         }

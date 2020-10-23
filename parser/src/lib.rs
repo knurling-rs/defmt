@@ -44,8 +44,9 @@ pub enum Level {
 pub enum Type {
     BitField(Range<u8>),
     Bool,
-    Format,      // "{:?}"
-    FormatSlice, // "{:[?]}"
+    Format,             // "{:?}"
+    FormatSlice,        // "{:[?]}"
+    FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     I8,
     I16,
     I32,
@@ -62,8 +63,8 @@ pub enum Type {
     U64,
     Usize,
     /// Byte slice `{:[u8]}`.
-    Slice,
-    Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
+    U8Slice,
+    U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     F32,
 }
 
@@ -103,6 +104,24 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
     Some((start..end, start_digits + end_digits + 2))
 }
 
+fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
+    // Skip spaces.
+    let len_pos = s
+        .find(|c: char| c != ' ')
+        .ok_or("invalid array specifier (missing length)")?;
+    s = &s[len_pos..];
+    let after_len = s
+        .find(|c: char| !c.is_digit(10))
+        .ok_or("invalid array specifier (missing `]`)")?;
+    let len = s[..after_len].parse::<usize>().map_err(|e| e.to_string())?;
+    s = &s[after_len..];
+    if s != "]" {
+        return Err("invalid array specifier (missing `]`)".into());
+    }
+
+    Ok(len)
+}
+
 fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
     // First, optional argument index.
     // Then, mandatory `:`.
@@ -122,7 +141,8 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
     // Then, type specifier.
     s = &s[colon_pos + 1..];
 
-    static ARRAY_START: &str = "[u8;";
+    static FORMAT_ARRAY_START: &str = "[?;";
+    static U8_ARRAY_START: &str = "[u8;";
     let ty = match s {
         "u8" => Type::U8,
         "u16" => Type::U16,
@@ -139,27 +159,18 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         "bool" => Type::Bool,
         "str" => Type::Str,
         "istr" => Type::IStr,
-        "[u8]" => Type::Slice,
+        "[u8]" => Type::U8Slice,
         "?" => Type::Format,
         "[?]" => Type::FormatSlice,
-        _ if s.starts_with(ARRAY_START) => {
-            s = &s[ARRAY_START.len()..];
-
-            // Skip spaces.
-            let len_pos = s
-                .find(|c: char| c != ' ')
-                .ok_or("invalid array specifier (missing length)")?;
-            s = &s[len_pos..];
-            let after_len = s
-                .find(|c: char| !c.is_digit(10))
-                .ok_or("invalid array specifier (missing `]`)")?;
-            let len = s[..after_len].parse::<usize>().map_err(|e| e.to_string())?;
-            s = &s[after_len..];
-            if s != "]" {
-                return Err("invalid array specifier (missing `]`)".into());
-            }
-
-            Type::Array(len)
+        _ if s.starts_with(U8_ARRAY_START) => {
+            s = &s[U8_ARRAY_START.len()..];
+            let len = parse_array(s)?;
+            Type::U8Array(len)
+        }
+        _ if s.starts_with(FORMAT_ARRAY_START) => {
+            s = &s[FORMAT_ARRAY_START.len()..];
+            let len = parse_array(s)?;
+            Type::FormatArray(len)
         }
         _ => {
             // Check for bitfield syntax.
@@ -460,7 +471,7 @@ mod tests {
             parse("{:[u8]}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
-                ty: Type::Slice,
+                ty: Type::U8Slice,
             })])
         );
 
@@ -609,7 +620,7 @@ mod tests {
             parse("{:[u8; 0]}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
-                ty: Type::Array(0),
+                ty: Type::U8Array(0),
             })])
         );
 
@@ -618,7 +629,7 @@ mod tests {
             parse("{:[u8;42]}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
-                ty: Type::Array(42),
+                ty: Type::U8Array(42),
             })])
         );
 
@@ -627,7 +638,7 @@ mod tests {
             parse("{:[u8;    257]}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
-                ty: Type::Array(257),
+                ty: Type::U8Array(257),
             })])
         );
 
