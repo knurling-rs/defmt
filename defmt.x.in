@@ -6,7 +6,8 @@ PROVIDE(_defmt_timestamp = __defmt_default_timestamp);
 
 SECTIONS
 {
-  .defmt (INFO) :
+  /* `0` specifies the start address of this virtual (`(INFO)`) section */
+  .defmt 0 (INFO) :
   {
     /* Format implementations for primitives like u8 */
     *(.defmt.prim.*);
