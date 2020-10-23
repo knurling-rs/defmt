@@ -77,7 +77,9 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         };
 
         if is_defmt_version(name) {
-            // not a defmt symbol
+            // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
+            // LLD and GNU LD behave differently here. LLD doesn't include `_defmt_version_`
+            // (defined in a linker script) in the `.defmt` section but GNU LD does.
             continue;
         }
 
