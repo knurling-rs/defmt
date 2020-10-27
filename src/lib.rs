@@ -159,6 +159,7 @@ pub struct Formatter {
 /// the maximum number of booleans that can be compressed together
 const MAX_NUM_BOOL_FLAGS: u8 = 8;
 
+#[doc(hidden)]
 impl Formatter {
     /// Only for testing on x86_64
     #[cfg(target_arch = "x86_64")]
@@ -177,13 +178,11 @@ impl Formatter {
         &self.bytes
     }
 
-    #[doc(hidden)]
     #[cfg(target_arch = "x86_64")]
     pub fn write(&mut self, bytes: &[u8]) {
         self.bytes.extend_from_slice(bytes)
     }
 
-    #[doc(hidden)]
     #[cfg(not(target_arch = "x86_64"))]
     pub fn write(&mut self, bytes: &[u8]) {
         unsafe { self.writer.as_mut().write(bytes) }
@@ -191,14 +190,12 @@ impl Formatter {
 
     /// Implementation detail
     #[cfg(target_arch = "x86_64")]
-    #[doc(hidden)]
     pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
         unreachable!()
     }
 
     /// Implementation detail
     #[cfg(not(target_arch = "x86_64"))]
-    #[doc(hidden)]
     pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
         Self {
             writer,
@@ -210,21 +207,18 @@ impl Formatter {
 
     /// Implementation detail
     #[cfg(target_arch = "x86_64")]
-    #[doc(hidden)]
     pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
         unreachable!()
     }
 
     /// Implementation detail
     #[cfg(not(target_arch = "x86_64"))]
-    #[doc(hidden)]
     pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
         self.writer
     }
 
     // TODO turn these public methods in `export` free functions
     /// Implementation detail
-    #[doc(hidden)]
     pub fn fmt(&mut self, f: &impl Format, omit_tag: bool) {
         let old_omit_tag = self.omit_tag;
         if omit_tag {
@@ -240,13 +234,11 @@ impl Formatter {
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn needs_tag(&self) -> bool {
         !self.omit_tag
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn with_tag(&mut self, f: impl FnOnce(&mut Self)) {
         let omit_tag = self.omit_tag;
         self.omit_tag = false;
@@ -257,7 +249,6 @@ impl Formatter {
 
     /// Implementation detail
     /// leb64-encode `x` and write it to self.bytes
-    #[doc(hidden)]
     pub fn leb64(&mut self, x: u64) {
         // FIXME: Avoid 64-bit arithmetic on 32-bit systems. This should only be used for
         // pointer-sized values.
@@ -267,38 +258,32 @@ impl Formatter {
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn i8(&mut self, b: &i8) {
         self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn i16(&mut self, b: &i16) {
         self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn i32(&mut self, b: &i32) {
         self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn i64(&mut self, b: &i64) {
         self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn isize(&mut self, b: &isize) {
         // Zig-zag encode the signed value.
         self.leb64(leb::zigzag_encode(*b as i64));
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn fmt_slice(&mut self, values: &[impl Format]) {
         self.leb64(values.len() as u64);
         let mut is_first = true;
@@ -311,73 +296,61 @@ impl Formatter {
 
     // TODO remove
     /// Implementation detail
-    #[doc(hidden)]
     pub fn prim(&mut self, s: &Str) {
         self.write(&[s.address as u8])
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn u8(&mut self, b: &u8) {
         self.write(&[*b])
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn u16(&mut self, b: &u16) {
         self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn u24(&mut self, b: &u32) {
         self.write(&b.to_le_bytes()[..3])
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn u32(&mut self, b: &u32) {
         self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn u64(&mut self, b: &u64) {
         self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn usize(&mut self, b: &usize) {
         self.leb64(*b as u64);
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn f32(&mut self, b: &f32) {
         self.write(&f32::to_bits(*b).to_le_bytes())
     }
 
-    #[doc(hidden)]
     pub fn str(&mut self, s: &str) {
         self.leb64(s.len() as u64);
         self.write(s.as_bytes());
     }
 
-    #[doc(hidden)]
     pub fn slice(&mut self, s: &[u8]) {
         self.leb64(s.len() as u64);
         self.write(s);
     }
 
     // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
-    #[doc(hidden)]
     pub fn u8_array(&mut self, a: &[u8]) {
         self.write(a);
     }
 
     // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
-    #[doc(hidden)]
     pub fn fmt_array(&mut self, a: &[impl Format]) {
         let mut is_first = true;
         for value in a {
@@ -388,7 +361,6 @@ impl Formatter {
     }
 
     /// Implementation detail
-    #[doc(hidden)]
     pub fn istr(&mut self, s: &Str) {
         // LEB128 encoding
         if s.address < 128 {
