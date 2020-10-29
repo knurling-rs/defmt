@@ -1,0 +1,83 @@
+0.000000 INFO Hello!
+0.000001 INFO World!
+0.000002 INFO The answer is 42
+0.000003 INFO Hello 42 42!
+0.000004 INFO Hello 256 42 false
+0.000005 INFO 🍕 slice [3, 14]
+0.000006 INFO 🍕 array [3, 14, 1]
+0.000007 INFO float like a butterfly 5.67
+0.000008 INFO Hello 42
+0.000009 INFO u64: 0 = 0, 1 = 1, MAX = 18446744073709551615, MIN = 0
+0.000010 INFO i64: 0 = 0, -1 = -1, MAX = 9223372036854775807, MIN = -9223372036854775808
+0.000011 INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
+0.000012 INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
+0.000013 INFO usize: 0 = 0, MAX = 4294967295
+0.000014 INFO bitfields 0b110 0b10
+0.000015 INFO log info
+0.000016 WARN log warn
+0.000017 ERROR log error
+0.000018 INFO S { x: 1, y: 256 }
+0.000019 INFO X { y: Y { z: 42 } }
+0.000020 INFO &str = string slice
+0.000021 INFO &str = string slice
+0.000022 INFO &Str = interned string
+0.000023 INFO &Str = interned string
+0.000024 INFO Arr { arr1: [31], arr0: [], arr32: [85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85] }
+0.000025 INFO [256, 257, 258]
+0.000026 INFO [S { x: 128, y: 256 }, S { x: 129, y: 257 }]
+0.000027 INFO [X { y: Y { z: 128 } }, X { y: Y { z: 129 } }]
+0.000028 INFO [[256, 257, 258], [259, 260]]
+0.000029 INFO e1=A
+0.000030 INFO e2=B
+0.000031 INFO e3=Some(42)
+0.000032 INFO e4=None
+0.000033 INFO e5=Ok(42)
+0.000034 INFO e6=Err(256)
+0.000035 INFO e7=Some(X { y: Y { z: 42 } })
+0.000036 INFO true Flags { a: true, b: false, c: true }
+0.000037 INFO [true, true, false]
+0.000038 INFO S { x: 42, y: 43 }
+0.000039 INFO S { x: 44, y: 45 }
+0.000040 INFO S { x: 46, y: Some(47) }
+0.000041 INFO S { x: Some(48), y: 49 }
+0.000042 INFO A
+0.000043 INFO B(42)
+0.000044 INFO C { y: 43 }
+0.000045 INFO A
+0.000046 INFO B(44)
+0.000047 INFO C { y: 45 }
+0.000048 INFO A
+0.000049 INFO B(Some(46))
+0.000050 INFO C { y: Ok(47) }
+0.000051 INFO A
+0.000052 INFO B(Some(48))
+0.000053 INFO C { y: 49 }
+0.000054 INFO [None, Some(42)]
+0.000055 INFO [Ok(42), Err(43)]
+0.000056 INFO [A, B(42)]
+0.000057 INFO [S { x: 42, y: None }, S { x: 43, y: Some(44) }]
+0.000058 INFO [None, Some(S { x: 42, y: 256 })]
+0.000059 INFO [None, Some([42, 43])]
+0.000060 INFO in nested 123
+0.000061 INFO after nested log: NestedStruct { a: 170, b: 305419896 }
+0.000062 INFO I can now print the @ symbol!
+0.000063 INFO @nd @lso vi@ interned strings: this is @n interned string
+0.000064 INFO empty tuple: ()
+0.000065 INFO tuple of ints: (1, 2, 3)
+0.000066 INFO nested tuple of ints: (1, 2, (3, 4, 5), (6, 7, 8))
+0.000067 INFO super nested tuples: (((((((())))))), (((((((), ())))))))
+0.000068 INFO slice of tuples: [(1, 2), (3, 4), (5, 6)]
+0.000069 INFO tuple of slices: ([1, 2, 3], [4, 5, 6])
+0.000070 INFO tuple of [u8;4]: ([1, 2, 3, 4], [5, 6, 7, 8])
+0.000071 INFO [u8;0]: []
+0.000072 INFO [u8;4]: [1, 2, 3, 4]
+0.000073 INFO [i8;4]: [-1, 2, 3, -4]
+0.000074 INFO [(u32,u32);4]: [(1, 2), (3, 4), (5, 6), (7, 8)]
+0.000075 INFO [u8;0]: []
+0.000076 INFO [u8;4]: [1, 2, 3, 4]
+0.000077 INFO [i8;4]: [-1, 2, 3, -4]
+0.000078 INFO [u32;4]: [1, 2, 3, 4]
+0.000079 INFO [i32;4]: [-1, 2, 3, -4]
+0.000080 INFO [[u32;4];4]: [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]]
+0.000081 INFO [Option<u32>;4]: [Some(1), None, Some(3), None]
+0.000082 INFO [(u32,u32);4]: [(1, 2), (3, 4), (5, 6), (7, 8)]
