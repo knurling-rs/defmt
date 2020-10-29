@@ -88,8 +88,8 @@ pub use defmt_macros::global_logger;
 /// The `#[timestamp]` attribute needs to be applied to a function with the signature `fn() -> u64`.
 /// The returned `u64` is the current timestamp in microseconds.
 ///
-/// Some systems might not have a timer available. In that case, a dummy implementation such as this
-/// may be used:
+/// If no crate defines a `#[timestamp]` function, defmt will default to the following dummy
+/// implementation:
 ///
 /// ```
 /// # use defmt_macros::timestamp;
