@@ -51,5 +51,6 @@ opt-level = 0
 overflow-checks = false
 
 [package.metadata.docs.rs]
-features = ["unstable"]
+all-features = true
 rustdoc-args = [ "--cfg docsrs" ]
+targets = ["thumbv6m-none-eabi", "thumbv7em-none-eabihf"]
