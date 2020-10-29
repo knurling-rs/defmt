@@ -4,7 +4,6 @@
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 
 use core::fmt::{self, Write as _};
-use std::cmp::Ordering;
 use core::ops::Range;
 use std::collections::BTreeMap;
 use std::{
