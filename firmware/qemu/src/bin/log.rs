@@ -342,7 +342,7 @@ fn main() -> ! {
     defmt::info!("tuple of ints: {:?}", (1, 2, 3));
     defmt::info!("nested tuple of ints: {:?}", (1, 2, (3, 4, 5), (6, 7, 8)));
     defmt::info!(
-        "crazy nested tuples: {:?}",
+        "super nested tuples: {:?}",
         ((((((((),),),),),),), (((((((), (),),),),),),),)
     );
     defmt::info!("slice of tuples: {:?}", &[(1, 2), (3, 4), (5, 6)][..]);
