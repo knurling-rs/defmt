@@ -32,10 +32,6 @@ jobs:
         profile: minimal
         toolchain: ${{ matrix.rust }}
         override: true
-    - name: Setup mdBook
-      uses: peaceiris/actions-mdbook@v1
-      with:
-        mdbook-version: latest
     - name: Install C libraries for tooling on ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
@@ -43,15 +39,9 @@ jobs:
       if: matrix.os == 'macOS-latest'
       run: brew install libusb
     - name: Check that all crates build
-      run: RUSTFLAGS='--deny warnings' cargo check
-        -p defmt -p defmt-decoder -p defmt-parser -p defmt-elf2table
+      run: RUSTFLAGS='--deny warnings' cargo check --all
       shell: bash
-      # NOTE order is important; running `mdbook` at the end = duplicate crate errors
-    - name: Run book tests
-      working-directory: book
-      if: matrix.os != 'macOS-latest'
-      run: mdbook test -L ../target/debug -L ../target/debug/deps
-    - name: Run tests on ubuntu
+    - name: Run tests on Ubuntu/Windows
       if: matrix.os != 'macOS-latest'
       run: cargo test --workspace
     - name: Run tests on macOS
@@ -71,7 +61,7 @@ jobs:
         toolchain: stable
         override: true
         target: ${{ env.NO_STD_TARGET }}
-    - name: Install dependencies
+    - name: Install Rust targets
       run: rustup +stable target add ${{ env.NO_STD_TARGET }} ${{ env.NO_STD_CHECK_TARGETS }}
     - name: Build defmt for no_std targets
       run: |
@@ -81,6 +71,34 @@ jobs:
     - name: Build nRF52 examples
       working-directory: firmware/nrf52
       run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
+
+  mdbook:
+    strategy:
+      matrix:
+        rust:
+          - stable
+        os:
+          - ubuntu-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Setup mdBook
+      uses: peaceiris/actions-mdbook@v1
+      with:
+        mdbook-version: latest
+    - name: Build defmt
+      run: cargo build
+      # NOTE order of steps is important
+    - name: Run book tests
+      working-directory: book
+      run: mdbook test -L ../target/debug -L ../target/debug/deps
 
   qemu:
     strategy:

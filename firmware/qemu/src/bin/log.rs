@@ -8,7 +8,7 @@ use cortex_m_semihosting::debug;
 use defmt::Format;
 
 use defmt_semihosting as _; // global logger
-use panic_halt as _; // panicking behavior
+use panic_probe as _; // panicking behavior
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -339,28 +339,39 @@ fn main() -> ! {
 
     // Tuples
     defmt::info!("empty tuple: {:?}", ());
-    defmt::info!("tuple of ints: {:?}", (1,2,3));
-    defmt::info!("nested tuple of ints: {:?}", (1,2,(3,4,5), (6,7,8)));
-    defmt::info!("crazy nested tuples: {:?}", ((((((((),),),),),),), (((((((), (),),),),),),),));
-    defmt::info!("slice of tuples: {:?}", &[(1,2), (3,4), (5,6)][..]);
-    defmt::info!("tuple of slices: {:?}", (&[1,2,3][..], &[4,5,6][..]));
+    defmt::info!("tuple of ints: {:?}", (1, 2, 3));
+    defmt::info!("nested tuple of ints: {:?}", (1, 2, (3, 4, 5), (6, 7, 8)));
+    defmt::info!(
+        "crazy nested tuples: {:?}",
+        ((((((((),),),),),),), (((((((), (),),),),),),),)
+    );
+    defmt::info!("slice of tuples: {:?}", &[(1, 2), (3, 4), (5, 6)][..]);
+    defmt::info!("tuple of slices: {:?}", (&[1, 2, 3][..], &[4, 5, 6][..]));
     defmt::info!("tuple of [u8;4]: {:?}", ([1u8, 2, 3, 4], [5u8, 6, 7, 8]));
 
     // Arrays of T: Format
     defmt::info!("[u8;0]: {:[?;0]}", [0u8; 0]);
     defmt::info!("[u8;4]: {:[?;4]}", [1u8, 2, 3, 4]);
     defmt::info!("[i8;4]: {:[?;4]}", [-1i8, 2, 3, -4]);
-    defmt::info!("[(u32,u32);4]: {:[?;4]}", [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]);
+    defmt::info!(
+        "[(u32,u32);4]: {:[?;4]}",
+        [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]
+    );
 
     defmt::info!("[u8;0]: {:?}", [0u8; 0]);
     defmt::info!("[u8;4]: {:?}", [1u8, 2, 3, 4]);
     defmt::info!("[i8;4]: {:?}", [-1i8, 2, 3, -4]);
     defmt::info!("[u32;4]: {:?}", [1u32, 2, 3, 4]);
     defmt::info!("[i32;4]: {:?}", [-1i32, 2, 3, -4]);
-    defmt::info!("[[u32;4];4]: {:?}", [[1u32, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]]);
+    defmt::info!(
+        "[[u32;4];4]: {:?}",
+        [[1u32, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]]
+    );
     defmt::info!("[Option<u32>;4]: {:?}", [Some(1u32), None, Some(3), None]);
-    defmt::info!("[(u32,u32);4]: {:?}", [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]);
-
+    defmt::info!(
+        "[(u32,u32);4]: {:?}",
+        [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]
+    );
 
     #[cfg(feature = "alloc")]
     {
@@ -377,9 +388,15 @@ fn main() -> ! {
         defmt::info!("Arc<u32>: {:?}", Arc::new(42u32));
         defmt::info!("Vec<u32>: {:?}", vec![1u32, 2, 3, 4]);
         defmt::info!("Vec<i32>: {:?}", vec![-1i32, 2, 3, 4]);
-        defmt::info!("Vec<Box<i32>>: {:?}", vec![Box::new(-1i32), Box::new(2), Box::new(3), Box::new(4)]);
+        defmt::info!(
+            "Vec<Box<i32>>: {:?}",
+            vec![Box::new(-1i32), Box::new(2), Box::new(3), Box::new(4)]
+        );
         defmt::info!("Box<Vec<i32>>: {:?}", Box::new(vec![-1i32, 2, 3, 4]));
-        defmt::info!("String: {:?}", String::from("Hello! I'm a heap-allocated String"));
+        defmt::info!(
+            "String: {:?}",
+            String::from("Hello! I'm a heap-allocated String")
+        );
     }
 
     loop {
