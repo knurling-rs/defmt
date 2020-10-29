@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  NO_STD_CHECK_TARGETS: thumbv6m-none-eabi thumbv8m.base-none-eabi riscv32i-unknown-none-elf
   NO_STD_TARGET: thumbv7em-none-eabi  # firmware uses atomics
   QEMU_TARGET: thumbv7m-none-eabi
 
@@ -38,11 +39,12 @@ jobs:
     - name: Install C libraries for tooling on ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
-    - name: install C libraries for tooling on macOS
+    - name: Install C libraries for tooling on macOS
       if: matrix.os == 'macOS-latest'
       run: brew install libusb
-    - name: Build
-      run: RUSTFLAGS='--deny warnings' cargo build
+    - name: Check that all crates build
+      run: RUSTFLAGS='--deny warnings' cargo check
+        -p defmt -p defmt-decoder -p defmt-parser -p defmt-elf2table
       shell: bash
       # NOTE order is important; running `mdbook` at the end = duplicate crate errors
     - name: Run book tests
@@ -70,7 +72,12 @@ jobs:
         override: true
         target: ${{ env.NO_STD_TARGET }}
     - name: Install dependencies
-      run: rustup +stable target add ${{ env.NO_STD_TARGET }}
+      run: rustup +stable target add ${{ env.NO_STD_TARGET }} ${{ env.NO_STD_CHECK_TARGETS }}
+    - name: Build defmt for no_std targets
+      run: |
+        for target in $NO_STD_CHECK_TARGETS; do
+          cargo check --target $target
+        done
     - name: Build nRF52 examples
       working-directory: firmware/nrf52
       run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
