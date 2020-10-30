@@ -28,3 +28,8 @@ alloc = ["defmt/alloc", "alloc-cortex-m"]
 [[bin]]
 name = "log"
 test = false
+
+[[bin]]
+name = "alloc"
+test = false
+required-features = ["alloc"]
