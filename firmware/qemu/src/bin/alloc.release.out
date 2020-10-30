@@ -8,3 +8,4 @@
 0.000007 INFO Vec<i32>: [-1, 2, 3, 4]
 0.000008 INFO Vec<Box<i32>>: [-1, 2, 3, 4]
 0.000009 INFO Box<Vec<i32>>: [-1, 2, 3, 4]
+0.000010 INFO String: Hello! I'm a heap-allocated String
