@@ -116,9 +116,7 @@ jobs:
         override: true
         target: ${{ env.QEMU_TARGET }}
     - name: Install dependencies
-      run: |
-        sudo apt-get update && sudo apt-get install qemu
-        rustup target add ${{ env.QEMU_TARGET }}
+      run: sudo apt-get update && sudo apt-get install qemu
     - name: Build and Run QEMU tests
       working-directory: firmware/qemu
       run: RUSTFLAGS='--deny warnings' ./test.sh
