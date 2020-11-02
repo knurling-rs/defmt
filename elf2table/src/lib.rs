@@ -55,16 +55,25 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         }
     }
 
-    let version = version.ok_or_else(|| anyhow!("defmt version symbol not found"))?;
+    // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
+    // Otherwise probe-run won't work with apps that don't use defmt.
+
+    let defmt_shndx = elf.section_by_name(".defmt").map(|s| s.index());
+
+    let (defmt_shndx, version) = match (defmt_shndx, version) {
+        (None, None) => return Ok(None), // defmt is not used
+        (Some(defmt_shndx), Some(version)) => (defmt_shndx, version),
+        (None, Some(_)) => {
+            bail!("defmt version found, but no `.defmt` section - check your linker configuration");
+        }
+        (Some(_), None) => {
+            bail!(
+                "`.defmt` section found, but no version symbol - check your linker configuration"
+            );
+        }
+    };
 
     defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
-
-    // find the index of the `.defmt` section
-    let defmt_shndx = if let Some(section) = elf.section_by_name(".defmt") {
-        section.index()
-    } else {
-        return Ok(None);
-    };
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
