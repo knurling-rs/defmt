@@ -366,6 +366,22 @@ fn main() -> ! {
         [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]
     );
 
+    {
+        #[derive(Format)]
+        enum Single {
+            A { fld: u8 },
+        }
+
+        defmt::info!("1-variant enum: {:?}", Single::A { fld: 123 });
+
+        #[derive(Format)]
+        enum Wrap {
+            A(Single),
+        }
+
+        defmt::info!("wrapped: {:?}", Wrap::A(Single::A { fld: 200 }));
+    }
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
