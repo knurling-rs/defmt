@@ -386,6 +386,40 @@ fn main() -> ! {
         defmt::info!("wrapped: {:?}", Wrap::A(Single::A { fld: 200 }));
     }
 
+    {
+        // check that bools are compressed per *log frame*, not per `Format` impl
+
+        #[derive(Format)]
+        struct A(bool);
+
+        #[derive(Format)]
+        struct B(bool);
+
+        defmt::info!(
+            "{:?}, {:?}, {:?}",
+            (A(true), B(true)),
+            (A(false), B(true)),
+            (A(true), B(false))
+        );
+    }
+
+    {
+        // issue #208
+
+        #[derive(Format)]
+        pub struct DhcpReprMin {
+            pub broadcast: bool,
+            pub a: [u8; 2],
+        }
+
+        let dhcp_repr = DhcpReprMin {
+            broadcast: true,
+            a: [1, 2],
+        };
+
+        defmt::info!("true, [1, 2]: {:?}", dhcp_repr);
+    }
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
