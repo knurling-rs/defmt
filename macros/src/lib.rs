@@ -14,8 +14,8 @@ use syn::{
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, ItemStruct, LitInt,
-    LitStr, ReturnType, Token, Type, WherePredicate,
+    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, ItemStruct, LitStr,
+    ReturnType, Token, Type, WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -193,15 +193,9 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     }
                     fs.push_str(&vident.to_string());
 
-                    let mut pats = quote!();
-                    let exprs = fields(
-                        &var.fields,
-                        &mut fs,
-                        &mut field_types,
-                        Kind::Enum {
-                            patterns: &mut pats,
-                        },
-                    );
+                    let mut pats = vec![];
+                    let exprs = fields(&var.fields, &mut fs, &mut field_types, &mut pats);
+                    let pats = quote!( { #(#pats),* } );
 
                     let encode_discriminant = if de.variants.len() == 1 {
                         // For single-variant enums, there is no need to encode the discriminant.
@@ -215,6 +209,11 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     arms.push(quote!(
                         #ident::#vident #pats => {
                             #encode_discriminant
+
+                            // When descending into an enum variant, force all discriminants to be
+                            // encoded. This is required when encoding arrays like `[None, Some(x)]`
+                            // with `{:?}`, since the format string of `x` won't appear for the
+                            // first element.
                             f.with_tag(|f| {
                                 #(#exprs;)*
                             });
@@ -236,9 +235,20 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
         Data::Struct(ds) => {
             fs = ident.to_string();
-            let args = fields(&ds.fields, &mut fs, &mut field_types, Kind::Struct);
-            // FIXME expand this `write!` and conditionally omit the tag (string index)
-            exprs.push(quote!(defmt::export::write!(f, #fs #(,#args)*);))
+            let mut pats = vec![];
+            let args = fields(&ds.fields, &mut fs, &mut field_types, &mut pats);
+
+            let sym = mksym(&fs, "fmt", false);
+            exprs.push(quote!(
+                if f.needs_tag() {
+                    f.istr(&defmt::export::istr(#sym));
+                }
+            ));
+            exprs.push(quote!(match self {
+                Self { #(#pats),* } => {
+                    #(#args;)*
+                }
+            }));
         }
 
         Data::Union(..) => {
@@ -272,17 +282,12 @@ pub fn format(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-enum Kind<'p> {
-    Struct,
-    Enum { patterns: &'p mut TokenStream2 },
-}
-
 fn fields(
     fields: &Fields,
     format: &mut String,
     // collect all *non-native* types that appear as fields
     field_types: &mut Vec<Type>,
-    mut kind: Kind,
+    pats: &mut Vec<TokenStream2>,
 ) -> Vec<TokenStream2> {
     let mut list = vec![];
     match fields {
@@ -301,7 +306,6 @@ fn fields(
                     format.push_str("(");
                 }
                 let mut first = true;
-                let mut pats = vec![];
                 for (i, f) in fs.iter().enumerate() {
                     if first {
                         first = false;
@@ -315,54 +319,34 @@ fn fields(
                     if let Some(ident) = f.ident.as_ref() {
                         core::write!(format, "{}: {{:{}}}", ident, ty).ok();
 
-                        match &kind {
-                            Kind::Struct => {
-                                list.push(quote!(self.#ident));
-                            }
-                            Kind::Enum { .. } => {
-                                if ty == "?" {
-                                    list.push(quote!(f.fmt(#ident, false)));
-                                } else {
-                                    let method = format_ident!("{}", ty);
-                                    list.push(quote!(f.#method(#ident)));
-                                }
-                                pats.push(ident.clone());
-                            }
+                        if ty == "?" {
+                            list.push(quote!(f.fmt(#ident, false)));
+                        } else {
+                            let method = format_ident!("{}", ty);
+                            list.push(quote!(f.#method(#ident)));
                         }
+                        pats.push(quote!( #ident ));
                     } else {
+                        // Unnamed (tuple) field.
+
                         core::write!(format, "{{:{}}}", ty).ok();
 
-                        match &kind {
-                            Kind::Struct => {
-                                let ident = LitInt::new(&i.to_string(), Span2::call_site());
-                                list.push(quote!(self.#ident));
-                            }
-                            Kind::Enum { .. } => {
-                                let ident = format_ident!("arg{}", i);
-                                if ty == "?" {
-                                    list.push(quote!(f.fmt(#ident, false)));
-                                } else {
-                                    let method = format_ident!("{}", ty);
-                                    list.push(quote!(f.#method(#ident)));
-                                }
-
-                                pats.push(ident);
-                            }
+                        let ident = format_ident!("arg{}", i);
+                        if ty == "?" {
+                            list.push(quote!(f.fmt(#ident, false)));
+                        } else {
+                            let method = format_ident!("{}", ty);
+                            list.push(quote!(f.#method(#ident)));
                         }
+
+                        let i = syn::Index::from(i);
+                        pats.push(quote!( #i: #ident ));
                     }
                 }
                 if named {
                     format.push_str(" }}");
                 } else {
                     format.push_str(")");
-                }
-
-                if let Kind::Enum { patterns } = &mut kind {
-                    if named {
-                        **patterns = quote!({ #(#pats),* })
-                    } else {
-                        **patterns = quote!((#(#pats),*))
-                    }
                 }
             }
         }

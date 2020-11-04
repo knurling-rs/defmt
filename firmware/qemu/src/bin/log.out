@@ -87,3 +87,5 @@
 0.000086 INFO [(u32,u32);4]: [(1, 2), (3, 4), (5, 6), (7, 8)]
 0.000087 INFO 1-variant enum: A { fld: 123 }
 0.000088 INFO wrapped: A(A { fld: 200 })
+0.000089 INFO (A(true), B(true)), (A(false), B(true)), (A(true), B(false))
+0.000090 INFO true, [1, 2]: DhcpReprMin { broadcast: true, a: [1, 2] }
