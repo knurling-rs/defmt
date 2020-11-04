@@ -1,5 +1,5 @@
 // NOTE: always runs on the host
-#![cfg(feature="unstable")]
+#![cfg(feature = "unstable")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 
@@ -19,7 +19,7 @@ use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
 pub use defmt_parser::Level;
-use defmt_parser::{Fragment, Parameter, Type, get_max_bitfield_range};
+use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -359,6 +359,10 @@ pub fn decode<'t>(
         below_enum: false,
     };
     let args = decoder.decode_format(format)?;
+    if !decoder.bools_tbd.is_empty() {
+        // Flush end of compression block.
+        decoder.read_and_unpack_bools()?;
+    }
 
     let frame = Frame {
         level,
@@ -381,11 +385,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 
     let mut merged_bitfields = Vec::new();
 
-    let max_index: usize = *params
-        .iter()
-        .map(|param| &param.index)
-        .max()
-        .unwrap();
+    let max_index: usize = *params.iter().map(|param| &param.index).max().unwrap();
 
     for index in 0..=max_index {
         let mut bitfields_with_index = params
@@ -778,11 +778,6 @@ impl<'t, 'b> Decoder<'t, 'b> {
             }
         }
 
-        if self.bools_tbd.len() > 0 {
-            // flush end of compression block
-            self.read_and_unpack_bools()?;
-        }
-
         Ok(args)
     }
 }
@@ -857,10 +852,10 @@ fn zigzag_decode(unsigned: u64) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-    use super::{Frame, Level, Table};
     use super::*;
-    use crate::{Arg, merge_bitfields};
+    use super::{Frame, Level, Table};
+    use crate::{merge_bitfields, Arg};
+    use std::collections::BTreeMap;
 
     // helper function to initiate decoding and assert that the result is as expected.
     //
