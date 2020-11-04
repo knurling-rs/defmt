@@ -928,3 +928,30 @@ fn format_bools() {
         ],
     );
 }
+
+#[test]
+fn issue_208() {
+    #[derive(Format)]
+    struct DhcpReprMin {
+        pub broadcast: bool,
+        pub a: [u8; 2],
+    }
+
+    let dhcp_repr = DhcpReprMin {
+        broadcast: true,
+        a: [10, 10],
+    };
+
+    let index = fetch_string_index();
+    check_format_implementation(
+        &dhcp_repr,
+        &[
+            index,         // "DhcpReprMin {{ broadcast: {:bool}, a: {:?} }}"
+            inc(index, 1), // "{:[?;2]}"
+            inc(index, 2), // "{:u8}"
+            10,            // a[0]
+            10,            // a[1]
+            1,             // compressed bools
+        ],
+    );
+}
