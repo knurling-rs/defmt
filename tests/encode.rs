@@ -525,9 +525,9 @@ fn slice() {
     check_format_implementation(
         val,
         &[
-            index,           // "{:?}"
+            index,           // "{:[?]}"
             val.len() as u8, // length
-            inc(index, 1),   // "{:[?]}"
+            inc(index, 1),   // "{:u8}"
             23,              // val[0]
             42,              // val[1]
         ],
