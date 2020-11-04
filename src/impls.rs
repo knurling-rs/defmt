@@ -46,8 +46,10 @@ impl Format for i64 {
 
 impl Format for isize {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:isize}");
-        fmt.u8(&t);
+        if fmt.needs_tag() {
+            let t = internp!("{:isize}");
+            fmt.u8(&t);
+        }
         fmt.isize(self);
     }
 }
@@ -94,8 +96,10 @@ impl Format for u64 {
 
 impl Format for usize {
     fn format(&self, fmt: &mut Formatter) {
-        let t = internp!("{:usize}");
-        fmt.u8(&t);
+        if fmt.needs_tag() {
+            let t = internp!("{:usize}");
+            fmt.u8(&t);
+        }
         fmt.usize(self);
     }
 }
@@ -188,7 +192,7 @@ macro_rules! arrays {
     )+ };
 }
 
-arrays!{
+arrays! {
     0 "{:[?;0]}",
     1 "{:[?;1]}",
     2 "{:[?;2]}",

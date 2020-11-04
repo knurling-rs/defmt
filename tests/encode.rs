@@ -525,9 +525,25 @@ fn slice() {
     check_format_implementation(
         val,
         &[
-            index,           // "{:?}"
+            index,           // "{:[?]}"
             val.len() as u8, // length
-            inc(index, 1),   // "{:[?]}"
+            inc(index, 1),   // "{:u8}"
+            23,              // val[0]
+            42,              // val[1]
+        ],
+    )
+}
+
+#[test]
+fn slice_of_usize() {
+    let index = fetch_string_index();
+    let val: &[usize] = &[23usize, 42];
+    check_format_implementation(
+        val,
+        &[
+            index,           // "{:[?]}"
+            val.len() as u8, // length
+            inc(index, 1),   // "{:usize}"
             23,              // val[0]
             42,              // val[1]
         ],

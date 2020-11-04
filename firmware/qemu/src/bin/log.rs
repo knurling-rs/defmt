@@ -151,6 +151,10 @@ fn main() -> ! {
     // issue #111
     defmt::info!("{:[?]}", [true, true, false]);
 
+    // issue #209
+    defmt::info!("usize slice: {:?}", &[1usize, 2, 3][..]);
+    defmt::info!("isize slice: {:?}", &[-1isize, -2, -3][..]);
+
     /* issue #124 (start) */
     // plain generic struct
     {
