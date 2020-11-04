@@ -178,6 +178,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
             }
 
             if de.variants.is_empty() {
+                // For zero-variant enums, this is unreachable code.
                 exprs.push(quote!(match *self {}));
             } else {
                 let mut arms = vec![];
@@ -202,9 +203,18 @@ pub fn format(ts: TokenStream) -> TokenStream {
                         },
                     );
 
+                    let encode_discriminant = if de.variants.len() == 1 {
+                        // For single-variant enums, there is no need to encode the discriminant.
+                        quote!()
+                    } else {
+                        quote!(
+                            f.u8(&#i);
+                        )
+                    };
+
                     arms.push(quote!(
                         #ident::#vident #pats => {
-                            f.u8(&#i);
+                            #encode_discriminant
                             f.with_tag(|f| {
                                 #(#exprs;)*
                             });
@@ -724,7 +734,8 @@ impl Codegen {
                 }
                 defmt_parser::Type::BitField(_) => {
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
-                    let (smallest_bit_index, largest_bit_index) = defmt_parser::get_max_bitfield_range(all_bitfields).unwrap();
+                    let (smallest_bit_index, largest_bit_index) =
+                        defmt_parser::get_max_bitfield_range(all_bitfields).unwrap();
 
                     // indices of the lowest and the highest octet which contains bitfield-relevant data
                     let lowest_byte = smallest_bit_index / 8;

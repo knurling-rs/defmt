@@ -418,6 +418,8 @@ fn uninhabited_enum() {
     enum Void {}
 }
 
+/// Tests that univariant enums do not encode the discriminant (since the variant in use is always
+/// the same).
 #[test]
 fn univariant_enum() {
     #[derive(Format)]
@@ -430,7 +432,6 @@ fn univariant_enum() {
         &NoData::Variant,
         &[
             index, //
-            0,     // `NoData::Variant`
         ],
     );
 
@@ -444,7 +445,6 @@ fn univariant_enum() {
         &Data::Variant(0x1f, 0xaaaa),
         &[
             index, //
-            0,     // `Data::Variant`
             0x1f,  // u8
             0xaa, 0xaa, // u16
         ],
@@ -464,6 +464,7 @@ fn nested_enum() {
     #[derive(Format)]
     enum Inner {
         A(CLike, u8),
+        _B,
     }
 
     #[derive(Format)]
@@ -691,14 +692,14 @@ fn format_arrays() {
     check_format_implementation(
         &array,
         &[
-            index,             // "{:[?;3]}"
-            inc(index, 1),     // "{:u16}"
-            1,                 // [0].low
-            0,                 // [0].high
-            0,                 // [1].low
-            1,                 // [1].high
-            1,                 // [2].low
-            1,                 // [2].high
+            index,         // "{:[?;3]}"
+            inc(index, 1), // "{:u16}"
+            1,             // [0].low
+            0,             // [0].high
+            0,             // [1].low
+            1,             // [1].high
+            1,             // [2].low
+            1,             // [2].high
         ],
     );
 }
