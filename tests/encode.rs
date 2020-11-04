@@ -54,6 +54,7 @@ fn inc(index: u8, n: u8) -> u8 {
 fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: &[u8]) {
     let mut f = Formatter::new();
     val.format(&mut f);
+    f.finalize();
     assert_eq!(f.bytes(), expected_encoding);
 }
 
@@ -551,6 +552,21 @@ fn slice_of_usize() {
 }
 
 #[test]
+fn slice_of_bools() {
+    let index = fetch_string_index();
+    let val: &[bool] = &[true, true, false];
+    check_format_implementation(
+        val,
+        &[
+            index,           // "{:[?]}"
+            val.len() as u8, // length
+            inc(index, 1),   // "{:bool}"
+            0b110,           // compressed bools: true, true, false
+        ],
+    )
+}
+
+#[test]
 fn format_primitives() {
     let index = fetch_string_index();
     check_format_implementation(
@@ -889,6 +905,26 @@ fn derive_with_bounds() {
             1,
             inc(index, 2), // "{:u8}"
             2,
+        ],
+    );
+}
+
+#[test]
+fn format_bools() {
+    #[derive(Format)]
+    struct A(bool);
+
+    #[derive(Format)]
+    struct B(bool);
+
+    let index = fetch_string_index();
+    check_format_implementation(
+        &(A(true), B(true)),
+        &[
+            index,         // "({:?}, {:?})"
+            inc(index, 1), // "A({:bool})"
+            inc(index, 2), // "B({:bool})"
+            0b11,          // compressed bools
         ],
     );
 }
