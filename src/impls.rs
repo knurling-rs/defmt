@@ -171,7 +171,7 @@ impl Format for bool {
             let t = internp!("{:bool}");
             fmt.u8(&t);
         }
-        fmt.u8(&(*self as u8));
+        fmt.bool(self);
     }
 }
 
