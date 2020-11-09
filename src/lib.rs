@@ -1,13 +1,14 @@
-//! `defmt`
-//!
-//! > **PRE-ALPHA PREVIEW** `defmt` wire format has not been finalized yet. When using the
-//! > framework make sure you use the *same* "version" (commit hash) for all components (target side
-//! > and host side).
-//!
 //! A highly efficient logging framework that targets resource-constrained devices, like
 //! microcontrollers.
 //!
-//! For more details check the book at <https://defmt.ferrous-systems.com>
+//! Check out the defmt book at <https://defmt.ferrous-systems.com> for more information about how
+//! to use it.
+//!
+//! # Compatibility
+//!
+//! The `defmt` wire format might change between major versions. Attempting to read a defmt stream
+//! with an incompatible version will result in an error. This means that you have to update both
+//! the host and target side if a breaking change in defmt is released.
 
 #![cfg_attr(not(target_arch = "x86_64"), no_std)]
 #![warn(missing_docs)]
@@ -41,14 +42,34 @@ mod tests;
 pub use defmt_macros::intern;
 
 /// Logs data at *debug* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::debug;
 /// Logs data at *error* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::error;
 /// Logs data at *info* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::info;
 /// Logs data at *trace* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::trace;
 /// Logs data at *warn* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::warn;
 
 /// Defines the global defmt logger.
