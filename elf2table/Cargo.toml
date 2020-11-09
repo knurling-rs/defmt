@@ -22,4 +22,4 @@ unstable = []
 
 [package.metadata.docs.rs]
 features = ["unstable"]
-rustdoc-args = [ "--cfg docsrs" ]
+rustdoc-args = [ "--cfg=docsrs" ]

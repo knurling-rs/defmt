@@ -52,5 +52,5 @@ overflow-checks = false
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = [ "--cfg docsrs" ]
+rustdoc-args = [ "--cfg=docsrs" ]
 targets = ["thumbv6m-none-eabi", "thumbv7em-none-eabihf"]
