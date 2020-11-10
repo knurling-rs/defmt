@@ -15,7 +15,7 @@ cortex-m-rt = "0.6.10"
 cortex-m-semihosting = "0.3.3"
 embedded-hal = "0.2.4"
 nrf52840-hal = "0.10.0"
-panic-probe = { git = "https://github.com/knurling-rs/probe-run", branch = "main" }
+panic-probe = { git = "https://github.com/knurling-rs/probe-run", branch = "main", rev = "749e0a3" }
 
 [features]
 defmt-default = []
