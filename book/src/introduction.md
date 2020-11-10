@@ -1,9 +1,5 @@
 # `defmt`
 
-> **ALPHA PREVIEW** `defmt` wire format has not been finalized yet. When
-> using the framework make sure you use the *same* "version" (commit hash) for
-> all components (target side and host side).
-
 `defmt` is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
 ## Features

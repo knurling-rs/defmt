@@ -65,15 +65,19 @@ fn main() {
 
 ### 64-bit extension
 
-Microcontrollers usually have only 32-bit counters.
-Some of them may provide functionality to make one 32-bit counter increase the count of a second 32-bit counter when the first wrap arounds.
+Microcontrollers usually have only 32-bit counters / timers.
+Some of them may provide functionality to make one 32-bit counter increase the count of a second 32-bit counter when the first one wraps around.
 Where that functionality is not available, a 64-bit counter can be emulated using interrupts:
 
 ``` rust
 # use std::sync::atomic::{AtomicU32, Ordering};
+
+// the hardware counter is the "low (32-bit) counter"
+
+// this atomic variable is the "high (32-bit) counter"
 static OVERFLOW_COUNT: AtomicU32 = AtomicU32::new(0);
 
-// NOTE interrupt running at highest priority
+// this is an interrupt handler running at highest priority
 fn on_first_counter_overflow() {
     let ord = Ordering::Relaxed;
     OVERFLOW_COUNT.store(OVERFLOW_COUNT.load(ord) + 1, ord);
@@ -84,9 +88,9 @@ To read the 64-bit value in a lock-free manner the following algorithm can be us
 
 ``` text
 do {
-  high1 <- read_high_count()
-  low <- read_low_count()
-  high2 <- read_high_count()
+  high1: u32 <- read_high_count()
+  low : u32<- read_low_count()
+  high2 : u32<- read_high_count()
 } while (high1 != high2)
 count: u64 <- (high1 << 32) | low
 ```

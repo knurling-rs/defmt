@@ -1,4 +1,4 @@
-# Format Slices
+# Format slices / arrays
 
 The `{:[?]}` parameter can be used to log a slices of values that implement the `Format` trait.
 The expected argument is a slice.
