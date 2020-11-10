@@ -23,3 +23,6 @@ enum Request {
 ```
 
 NOTE: Like built-in derives like `#[derive(Debug)]`, `#[derive(Format)]` will add `Format` bounds to the generic type parameters of the struct.
+
+NOTE: At the moment is not possible to implement the `Format` trait manually. Do *not* use the API
+used by the expansion of the `derive(Format)` macro; it is currently *unstable*.
