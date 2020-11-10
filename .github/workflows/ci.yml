@@ -68,9 +68,6 @@ jobs:
         for target in $NO_STD_CHECK_TARGETS; do
           cargo check --target $target
         done
-    - name: Build nRF52 examples
-      working-directory: firmware/nrf52
-      run: RUSTFLAGS='--deny warnings' cargo build --verbose --target ${{ env.NO_STD_TARGET }} --bins
 
   mdbook:
     strategy:
