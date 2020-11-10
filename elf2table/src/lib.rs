@@ -1,5 +1,7 @@
-//! Reads ELF metadata and builds an interner table.
-//! Used by [`defmt`](https://github.com/knurling-rs/defmt).
+//! Reads ELF metadata and builds a [`defmt`](https://github.com/knurling-rs/defmt) interner table.
+//!
+//! This is an implementation detail of [`probe-run`](https://github.com/knurling-rs/probe-run) and
+//! not meant to be consumed by other tools at the moment so all the API is unstable.
 
 #![cfg(feature = "unstable")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
