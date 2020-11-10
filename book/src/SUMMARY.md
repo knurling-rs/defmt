@@ -9,7 +9,7 @@
     - [Primitives](./primitives.md)
     - [Bitfields](./bitfields.md)
     - [Interned strings](./istr.md)
-    - [Format slices](./format-slices.md)
+    - [Format slices / arrays](./format-slices.md)
   - [#[derive(Format)]](./format.md)
   - [Filtering](./filtering.md)
   - [#[timestamp]](./timestamp.md)
