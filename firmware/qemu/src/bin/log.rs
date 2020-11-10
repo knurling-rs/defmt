@@ -446,6 +446,7 @@ fn timestamp() -> u64 {
 }
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
+#[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {
