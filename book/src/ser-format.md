@@ -6,13 +6,17 @@ First let's see how a primitive implements the `Format` trait:
 
 ``` rust
 # extern crate defmt;
-# trait Format { fn format(&self, f: &mut defmt::Formatter); }
+# macro_rules! internp { ($l:literal) => { 0 } }
+# trait Format { fn format(&self, fmt: &mut defmt::Formatter); }
 impl Format for u8 {
-    fn format(&self, f: &mut defmt::Formatter) {
-        defmt::export::write!(f, "{:u8}", self)
+    fn format(&self, fmt: &mut defmt::Formatter) {
+        if fmt.needs_tag() {
+            let t = internp!("{:u8}");
+            fmt.u8(&t);
+        }
+        fmt.u8(self)
         // on the wire: [1, 42]
         //  string index ^  ^^ `self`
-        //  ^ = intern("{:u8}")
     }
 }
 ```
