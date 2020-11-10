@@ -16,7 +16,6 @@ use cortex_m_semihosting::debug;
 use defmt::Format;
 
 use defmt_semihosting as _; // global logger
-use panic_probe as _; // panicking behavior
 
 #[entry]
 fn main() -> ! {
@@ -82,5 +81,13 @@ mod if_alloc {
         let start = cortex_m_rt::heap_start() as usize;
         let size = 1024; // in bytes
         unsafe { ALLOCATOR.init(start, size) }
+    }
+}
+
+// like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
+#[panic_handler]
+fn panic(_: &core::panic::PanicInfo) -> ! {
+    loop {
+        debug::exit(debug::EXIT_FAILURE)
     }
 }

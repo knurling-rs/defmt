@@ -7,7 +7,6 @@ use cortex_m_semihosting::debug;
 use defmt::Format;
 
 use defmt_semihosting as _; // global logger
-use panic_probe as _; // panicking behavior
 
 #[entry]
 fn main() -> ! {
@@ -444,4 +443,12 @@ fn timestamp() -> u64 {
     // monotonic counter
     static COUNT: AtomicU32 = AtomicU32::new(0);
     COUNT.fetch_add(1, Ordering::Relaxed) as u64
+}
+
+// like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
+#[panic_handler]
+fn panic(_: &core::panic::PanicInfo) -> ! {
+    loop {
+        debug::exit(debug::EXIT_FAILURE)
+    }
 }
