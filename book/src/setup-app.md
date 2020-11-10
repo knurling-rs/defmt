@@ -1,5 +1,10 @@
 # Application setup
 
+**NOTE** the preferred way to create a *new* `defmt` application is to use our [`app-template`].
+These steps are for using `defmt` on an *existing* application.
+
+[`app-template`]: https://github.com/knurling-rs/app-template
+
 ## Cargo features
 
 Add these Cargo features to your app's `Cargo.toml`:
