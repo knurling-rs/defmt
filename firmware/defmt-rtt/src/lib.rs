@@ -1,6 +1,13 @@
-//! `defmt` global logger over RTT
+//! [`defmt`](https://github.com/knurling-rs/defmt) global logger over RTT.
 //!
 //! NOTE when using this crate it's not possible to use (link to) the `rtt-target` crate
+//!
+//! To use this crate, link to it by importing it somewhere in your project.
+//!
+//! ```
+//! // src/main.rs or src/bin/my-app.rs
+//! use defmt_rtt as _;
+//! ```
 
 #![no_std]
 

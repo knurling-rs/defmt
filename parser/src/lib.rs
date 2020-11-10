@@ -1,6 +1,9 @@
 //! Parsing library for [`defmt`](https://github.com/knurling-rs/defmt) format strings.
+//!
+//! This is an implementation detail of [`defmt`] and not meant to be consumed by other tools at the
+//! moment so all the API is unstable.
 
-#![cfg(feature="unstable")]
+#![cfg(feature = "unstable")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 
