@@ -1,4 +1,4 @@
-//! [`defmt`](https://github.com/knurling-rs/defmt) global logger over RTT
+//! [`defmt`](https://github.com/knurling-rs/defmt) global logger over RTT.
 //!
 //! NOTE when using this crate it's not possible to use (link to) the `rtt-target` crate
 //!
