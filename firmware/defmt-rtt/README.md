@@ -1,4 +1,8 @@
-# `defmt`
+# `defmt-rtt`
+
+> Transmit [`defmt`] log messages over the RTT (Real-Time Transfer) protocol
+
+[`defmt`]: https://github.com/knurling-rs/defmt
 
 `defmt` ("de format", short for "deferred formatting") is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
@@ -6,11 +10,11 @@ The fastest way to get started with `defmt` is to use our [app-template] to set 
 
 [app-template]: https://github.com/knurling-rs/app-template
 
-For more details about the framework check the book at https://defmt.ferrous-systems.com .
+For more details about the framework check the book at https://defmt.ferrous-systems.com
 
 ## Support
 
-`defmt` is part of the [Knurling] project, [Ferrous Systems]' effort at
+`defmt-rtt` is part of the [Knurling] project, [Ferrous Systems]' effort at
 improving tooling used to develop for embedded systems.
 
 If you think that our work is useful, consider sponsoring it via [GitHub

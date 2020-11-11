@@ -1,16 +1,21 @@
 [package]
 authors = ["The Knurling-rs developers"]
+categories = ["embedded", "no-std"]
+description = "A highly efficient logging framework that targets resource-constrained devices, like microcontrollers"
 edition = "2018"
+keywords = ["knurling", "logging", "formatting"]
 license = "MIT OR Apache-2.0"
-name = "defmt"
-version = "0.1.0"
 links = "defmt" # Prevent multiple versions of defmt being linked
+name = "defmt"
+readme = "README.md"
+repository = "https://github.com/knurling-rs/defmt"
+version = "0.1.0"
 
 [features]
 alloc = []
 
 [dependencies]
-defmt-macros = { path = "macros" }
+defmt-macros = { path = "macros", version = "0.1.0" }
 
 [workspace]
 members = [
