@@ -1,5 +1,6 @@
 [package]
 authors = ["The Knurling-rs developers"]
+description = "Decodes defmt log frames"
 edition = "2018"
 keywords = ["knurling", "defmt"]
 license = "MIT OR Apache-2.0"
