@@ -6,7 +6,7 @@ The fastest way to get started with `defmt` is to use our [app-template] to set 
 
 [app-template]: https://github.com/knurling-rs/app-template
 
-For more details about the framework check the book at https://defmt.ferrous-systems.com
+For more details about the framework check the book at https://defmt.ferrous-systems.com .
 
 ## Support
 
