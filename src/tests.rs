@@ -31,12 +31,4 @@ fn trailing_comma() {
     defmt::info!("test info {:?}", 0,);
     defmt::warn!("test warn {:?}", 0,);
     defmt::error!("test error {:?}", 0,);
-
-    // Don't run this code, just check that it builds.
-    #[allow(unreachable_code, unused_variables)]
-    if false {
-        let fmt: defmt::Formatter = panic!();
-        defmt::export::write!(fmt, "test write",);
-        defmt::export::write!(fmt, "test write {:?}", 0,);
-    }
 }

@@ -1,7 +1,5 @@
 use crate::{Formatter, Str};
 
-pub use defmt_macros::write;
-
 #[cfg(target_arch = "x86_64")]
 thread_local! {
     static I: core::sync::atomic::AtomicU8 =
