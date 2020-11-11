@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         format!(
             r#"
 /// Supported `defmt` wire format
-const DEFMT_VERSION: &str = "{}";
+pub const DEFMT_VERSION: &str = "{}";
 "#,
             version.trim(),
         ),
