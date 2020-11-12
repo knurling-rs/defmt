@@ -39,3 +39,4 @@
   - [Deserialization](./deserialization.md)
     - [Log frames](./log-frame.md)
     - [Lookup](./lookup.md)
+- [Migrating from git defmt to stable defmt](./migration.md)
