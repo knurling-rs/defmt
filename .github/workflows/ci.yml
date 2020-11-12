@@ -71,10 +71,8 @@ jobs:
     - name: Build panic-probe with different features
       working-directory: firmware/panic-probe
       run: |
-        for target in $NO_STD_CHECK_TARGETS; do
-          cargo check --target $target --features print-defmt
-          cargo check --target $target --features print-rtt
-        done
+        cargo check --target thumbv6m-none-eabi --features print-defmt
+        cargo check --target thumbv6m-none-eabi --features print-rtt
 
   mdbook:
     strategy:
