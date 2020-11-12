@@ -68,6 +68,11 @@ jobs:
         for target in $NO_STD_CHECK_TARGETS; do
           cargo check --target $target
         done
+    - name: Build panic-probe with different features
+      working-directory: firmware/panic-probe
+      run: |
+        cargo check --target thumbv6m-none-eabi --features print-defmt
+        cargo check --target thumbv6m-none-eabi --features print-rtt
 
   mdbook:
     strategy:
