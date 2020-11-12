@@ -19,9 +19,8 @@ version = "0.2.2"
 optional = true
 
 [dependencies.defmt]
-git = "https://github.com/knurling-rs/defmt.git"
 optional = true
-rev = "3db6b41"
+path = "../.."
 version = "0.1.0"
 
 [features]
