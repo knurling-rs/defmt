@@ -68,6 +68,13 @@ jobs:
         for target in $NO_STD_CHECK_TARGETS; do
           cargo check --target $target
         done
+    - name: Build panic-probe with different features
+      working-directory: firmware/panic-probe
+      run: |
+        for target in $NO_STD_CHECK_TARGETS; do
+          cargo check --target $target --features print-defmt
+          cargo check --target $target --features print-rtt
+        done
 
   mdbook:
     strategy:
