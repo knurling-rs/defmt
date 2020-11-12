@@ -98,13 +98,69 @@ pub struct Table {
 /// Checks if the version encoded in the symbol table is compatible with this version of the
 /// `decoder` crate
 pub fn check_version(version: &str) -> Result<(), String> {
+    enum Kind {
+        // "1" or "0.1"
+        Semver,
+        // commit hash "e739d0ac703dfa629a159be329e8c62a1c3ed206"
+        Git,
+    }
+
+    impl Kind {
+        fn of(version: &str) -> Kind {
+            if version.contains('.') {
+                // "0.1"
+                Kind::Semver
+            } else if version.parse::<u64>().is_ok() {
+                // "1"
+                Kind::Semver
+            } else {
+                // "e739d0ac703dfa629a159be329e8c62a1c3ed206" (should be)
+                Kind::Git
+            }
+        }
+    }
+
     if version != DEFMT_VERSION {
-        return Err(format!(
-            "defmt version mismatch (firmware is using {}, host is using {}); \
-             are you using the same git version of defmt and related tools?
-Try `cargo install`-ing the latest git version of `probe-run` AND updating your project's `Cargo.lock` with `cargo update`",
-            version, DEFMT_VERSION,
-        ));
+        let mut msg = format!(
+            "defmt version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: ",
+            version, DEFMT_VERSION
+        );
+
+        match (Kind::of(version), Kind::of(DEFMT_VERSION)) {
+            (Kind::Git, Kind::Git) => {
+                write!(
+                    msg,
+                    "pin _all_ `defmt` related dependencies to revision {0}; modify Cargo.toml files as shown below
+
+[dependencies]
+defmt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
+defmt-rtt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
+# ONLY pin this dependency if you are using the `print-defmt` feature
+panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"print-defmt\"], rev = \"{0}\" }}",
+                    DEFMT_VERSION
+                )
+                .ok();
+            }
+            (Kind::Git, Kind::Semver) => {
+                msg.push_str("migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR
+`cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`");
+            }
+            (Kind::Semver, Kind::Git) => {
+                msg.push_str(
+                    "`cargo install` a non-git version of `probe-run`: `cargo install probe-run`",
+                );
+            }
+            (Kind::Semver, Kind::Semver) => {
+                write!(
+                    msg,
+                    "`cargo install` a different non-git version of `probe-run` that supports defmt {}",
+                    version,
+                )
+                .ok();
+            }
+        }
+
+        return Err(msg);
     }
 
     Ok(())
