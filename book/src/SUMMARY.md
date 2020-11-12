@@ -15,6 +15,7 @@
   - [#[timestamp]](./timestamp.md)
   - [#[global_logger]](./global-logger.md)
   - [Printers](./printers.md)
+  - [Migrating from git defmt to stable defmt](./migration.md)
 - [Design & impl details](./design.md)
   - [Interning](./interning.md)
     - [Dealing with duplicates](./duplicates.md)
@@ -39,4 +40,3 @@
   - [Deserialization](./deserialization.md)
     - [Log frames](./log-frame.md)
     - [Lookup](./lookup.md)
-- [Migrating from git defmt to stable defmt](./migration.md)
