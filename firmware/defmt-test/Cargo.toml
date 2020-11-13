@@ -11,5 +11,5 @@ cortex-m-rt = "0.6.13"
 defmt-test-macros = { path = "macros" }
 
 [dependencies.defmt]
-git = "https://github.com/knurling-rs/defmt"
-branch = "main"
+path = "../.."
+version = "0.1.0"
