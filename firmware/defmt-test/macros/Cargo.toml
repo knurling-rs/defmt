@@ -1,8 +1,12 @@
 [package]
 authors = ["The Knurling-rs developers"]
+description = "defmt-test macros"
 edition = "2018"
+keywords = ["knurling", "defmt", "testing"]
 license = "MIT OR Apache-2.0"
 name = "defmt-test-macros"
+readme = "../README.md"
+repository = "https://github.com/knurling-rs/defmt"
 version = "0.1.0"
 
 [lib]
