@@ -88,6 +88,35 @@ fn info() {
 }
 
 #[test]
+fn info_with_hints() {
+    let index = fetch_string_index();
+    let timestamp = fetch_timestamp();
+    let mut f = Formatter::new();
+
+    winfo!(f, "The answer is {:u8:x}", 42);
+    assert_eq!(
+        f.bytes(),
+        &[
+            index,     // "The answer is {:u8}",
+            timestamp, //
+            42,        // u8 value
+        ]
+    );
+
+    let mut f = Formatter::new();
+    winfo!(f, "The answer is {:?:X}", 42u8);
+    assert_eq!(
+        f.bytes(),
+        &[
+            inc(index, 1),     // "The answer is {:?}"
+            inc(timestamp, 1), //
+            inc(index, 2),     // "{:u8}" / impl Format for u8
+            42,                // u8 value
+        ]
+    );
+}
+
+#[test]
 fn booleans_max_num_bool_flags() {
     let index = fetch_string_index();
     let timestamp = fetch_timestamp();

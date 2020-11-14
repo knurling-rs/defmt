@@ -24,7 +24,7 @@ use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
 pub use defmt_parser::Level;
-use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
+use defmt_parser::{get_max_bitfield_range, DisplayHint, Fragment, Parameter, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -467,6 +467,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
                     start: smallest,
                     end: largest,
                 }),
+                display_hint: None,
             });
 
             // remove old bitfields with this index
@@ -872,15 +873,17 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                     Arg::Bool(x) => write!(buf, "{}", x)?,
                     Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
                     Arg::Uxx(x) => {
-                        match param.ty {
-                            Type::BitField(range) => {
+                        match (param.ty, param.display_hint) {
+                            (Type::BitField(range), _) => {
                                 let left_zeroes = mem::size_of::<u64>() * 8 - range.end as usize;
                                 let right_zeroes = left_zeroes + range.start as usize;
                                 // isolate the desired bitfields
                                 let bitfields = (*x << left_zeroes) >> right_zeroes;
                                 write!(&mut buf, "{:#b}", bitfields)?
                             }
-                            _ => write!(buf, "{}", x)?,
+                            (_, Some(DisplayHint::HexLower)) => write!(buf, "{:x}", x)?,
+                            (_, Some(DisplayHint::HexUpper)) => write!(buf, "{:X}", x)?,
+                            (_, None) => write!(buf, "{}", x)?,
                         }
                     }
                     Arg::Ixx(x) => write!(buf, "{}", x)?,
@@ -1562,10 +1565,12 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                display_hint: None,
             },
             Parameter {
                 index: 0,
                 ty: Type::BitField(4..7),
+                display_hint: None,
             },
         ];
 
@@ -1574,7 +1579,8 @@ mod tests {
             params,
             vec![Parameter {
                 index: 0,
-                ty: Type::BitField(0..7)
+                ty: Type::BitField(0..7),
+                display_hint: None,
             }]
         );
     }
@@ -1585,10 +1591,12 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(1..3),
+                display_hint: None,
             },
             Parameter {
                 index: 0,
                 ty: Type::BitField(2..5),
+                display_hint: None,
             },
         ];
 
@@ -1597,7 +1605,8 @@ mod tests {
             params,
             vec![Parameter {
                 index: 0,
-                ty: Type::BitField(1..5)
+                ty: Type::BitField(1..5),
+                display_hint: None,
             }]
         );
     }
@@ -1608,14 +1617,17 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                display_hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::BitField(1..3),
+                display_hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::BitField(4..5),
+                display_hint: None,
             },
         ];
 
@@ -1625,11 +1637,13 @@ mod tests {
             vec![
                 Parameter {
                     index: 0,
-                    ty: Type::BitField(0..3)
+                    ty: Type::BitField(0..3),
+                    display_hint: None,
                 },
                 Parameter {
                     index: 1,
-                    ty: Type::BitField(1..5)
+                    ty: Type::BitField(1..5),
+                    display_hint: None,
                 }
             ]
         );
@@ -1641,18 +1655,22 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                display_hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::U8,
+                display_hint: None,
             },
             Parameter {
                 index: 2,
                 ty: Type::BitField(1..4),
+                display_hint: None,
             },
             Parameter {
                 index: 2,
                 ty: Type::BitField(4..5),
+                display_hint: None,
             },
         ];
 
@@ -1663,17 +1681,35 @@ mod tests {
             vec![
                 Parameter {
                     index: 1,
-                    ty: Type::U8
+                    ty: Type::U8,
+                    display_hint: None,
                 },
                 Parameter {
                     index: 0,
-                    ty: Type::BitField(0..3)
+                    ty: Type::BitField(0..3),
+                    display_hint: None,
                 },
                 Parameter {
                     index: 2,
-                    ty: Type::BitField(1..5)
+                    ty: Type::BitField(1..5),
+                    display_hint: None,
                 }
             ]
+        );
+    }
+
+    #[test]
+    fn display_hint_u16() {
+        let bytes = [
+            0,    // index
+            2,    // timestamp
+            0xab, // u8
+            0x1c, // u8
+        ];
+        decode_and_expect(
+            "x: {:u8:x}, X: {:u8:X}",
+            &bytes,
+            "0.000002 INFO x: ab, X: 1C",
         );
     }
 }

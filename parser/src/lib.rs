@@ -17,6 +17,8 @@ pub struct Parameter {
     pub index: usize,
     /// The type of the argument to display.
     pub ty: Type,
+    /// The display hint, if any.
+    pub display_hint: Option<DisplayHint>,
 }
 
 /// A part of a format string.
@@ -32,6 +34,7 @@ pub enum Fragment<'f> {
 struct Param {
     index: Option<usize>,
     ty: Type,
+    display_hint: Option<DisplayHint>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -69,6 +72,12 @@ pub enum Type {
     U8Slice,
     U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     F32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DisplayHint {
+    HexLower,
+    HexUpper,
 }
 
 fn is_digit(c: Option<char>) -> bool {
@@ -141,8 +150,32 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         return Err("malformed format string (missing `:`)".into());
     }
 
+    // Then, optional trailing `:`, which if present
+    // symbolizes a display hint.
+    let colon2_pos = s[colon_pos + 1..].find(|c: char| c == ':');
+    let display_hint = if let Some(p) = colon2_pos {
+        let hint_str = &s[colon_pos + 1 + p + 1..];
+        match hint_str {
+            "x" => Some(DisplayHint::HexLower),
+            "X" => Some(DisplayHint::HexUpper),
+            _ => {
+                return Err(format!(
+                    "malformed format string (invalid display hint `{}`)",
+                    hint_str,
+                )
+                .into());
+            }
+        }
+    } else {
+        None
+    };
+
     // Then, type specifier.
     s = &s[colon_pos + 1..];
+    if display_hint.is_some() {
+        // Trim trailing display hint if present.
+        s = &s[..colon_pos + colon2_pos.unwrap()];
+    }
 
     static FORMAT_ARRAY_START: &str = "[?;";
     static U8_ARRAY_START: &str = "[u8;";
@@ -196,7 +229,11 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         }
     };
 
-    Ok(Param { index, ty })
+    Ok(Param {
+        index,
+        ty,
+        display_hint,
+    })
 }
 
 fn push_literal<'f>(
@@ -313,6 +350,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
                 idx
             }),
             ty: param.ty,
+            display_hint: param.display_hint,
         }));
     }
 
@@ -325,7 +363,11 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
     let mut args = Vec::new();
     for frag in &fragments {
         match frag {
-            Fragment::Parameter(Parameter { index, ty }) => {
+            Fragment::Parameter(Parameter {
+                index,
+                ty,
+                display_hint: _,
+            }) => {
                 if args.len() <= *index {
                     args.resize(*index + 1, None);
                 }
@@ -387,6 +429,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::Bool,
+                display_hint: None,
             })])
         );
 
@@ -395,6 +438,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::Format,
+                display_hint: None,
             })])
         );
 
@@ -403,6 +447,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::I16,
+                display_hint: None,
             })])
         );
 
@@ -411,6 +456,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::I32,
+                display_hint: None,
             })])
         );
 
@@ -419,6 +465,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::I8,
+                display_hint: None,
             })])
         );
 
@@ -427,6 +474,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::Str,
+                display_hint: None,
             })])
         );
 
@@ -435,6 +483,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U16,
+                display_hint: None,
             })])
         );
 
@@ -443,6 +492,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U24,
+                display_hint: None,
             })])
         );
 
@@ -451,6 +501,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U32,
+                display_hint: None,
             })])
         );
 
@@ -459,6 +510,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::F32,
+                display_hint: None,
             })])
         );
 
@@ -467,6 +519,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8,
+                display_hint: None,
             })])
         );
 
@@ -475,6 +528,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Slice,
+                display_hint: None,
             })])
         );
 
@@ -483,6 +537,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::Usize,
+                display_hint: None,
             })])
         );
 
@@ -491,6 +546,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::Isize,
+                display_hint: None,
             })])
         );
     }
@@ -504,10 +560,12 @@ mod tests {
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    display_hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U16,
+                    display_hint: None,
                 }),
             ])
         );
@@ -519,10 +577,12 @@ mod tests {
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    display_hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    display_hint: None,
                 }),
             ])
         );
@@ -534,10 +594,12 @@ mod tests {
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    display_hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U16,
+                    display_hint: None,
                 }),
             ])
         );
@@ -549,10 +611,12 @@ mod tests {
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U8,
+                    display_hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U16,
+                    display_hint: None,
                 }),
             ])
         );
@@ -579,6 +643,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::BitField(0..4),
+                display_hint: None,
             })])
         );
 
@@ -588,14 +653,17 @@ mod tests {
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::BitField(30..31),
+                    display_hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::BitField(0..4),
+                    display_hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::BitField(2..6),
+                    display_hint: None,
                 }),
             ])
         );
@@ -624,6 +692,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(0),
+                display_hint: None,
             })])
         );
 
@@ -633,6 +702,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(42),
+                display_hint: None,
             })])
         );
 
@@ -642,6 +712,7 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(257),
+                display_hint: None,
             })])
         );
 
