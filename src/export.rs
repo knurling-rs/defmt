@@ -34,6 +34,7 @@ pub fn acquire() -> Option<Formatter> {
 }
 
 #[cfg(not(target_arch = "x86_64"))]
+#[inline(never)]
 pub fn acquire() -> Option<Formatter> {
     extern "Rust" {
         fn _defmt_acquire() -> Option<Formatter>;
@@ -45,6 +46,7 @@ pub fn acquire() -> Option<Formatter> {
 pub fn release(_: Formatter) {}
 
 #[cfg(not(target_arch = "x86_64"))]
+#[inline(never)]
 pub fn release(fmt: Formatter) {
     extern "Rust" {
         fn _defmt_release(fmt: Formatter);
