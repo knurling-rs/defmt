@@ -37,23 +37,8 @@ lto = "fat"
 opt-level = 3
 overflow-checks = false
 
-# faster builds from scratch
-[profile.dev.build-override]
-codegen-units = 8
-debug = false
-debug-assertions = false
-opt-level = 0
-overflow-checks = false
-
 [build-dependencies]
 semver = "0.11.0"
-
-[profile.release.build-override]
-codegen-units = 8
-debug = false
-debug-assertions = false
-opt-level = 0
-overflow-checks = false
 
 [package.metadata.docs.rs]
 all-features = true
