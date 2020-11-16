@@ -799,7 +799,8 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     }
 
                     // convert to utf8 (no copy)
-                    let arg_str = String::from_utf8(arg_str_bytes).unwrap();
+                    let arg_str =
+                        String::from_utf8(arg_str_bytes).map_err(|_| DecodeError::Malformed)?;
 
                     args.push(Arg::Str(arg_str));
                 }
