@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             if output.status.success() {
                 String::from_utf8(output.stdout).ok()
             } else {
-                assert!(!Path::new(".git").exists(), "you need to install the `git` command line tool to use the git version of `defmt`");
+                assert!(!Path::new(".git").exists(), "you need to install the `git` command line tool to install the git version of `probe-run`");
 
                 None
             }
