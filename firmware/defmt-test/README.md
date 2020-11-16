@@ -4,18 +4,17 @@
 
 ## Basic usage
 
-0. If you don't have a project setup yet, start from the [`app-template`] 
-
+0. If you don't have a project setup yet, start from the [`app-template`], then proceed with step 3. If you have a project based on an old version of `app-template` then proceed with step 1.
 
 [`app-template`]: https://github.com/knurling-rs/app-template
 
 1. In the **testsuite** crate, add `defmt-test` to the dependencies:
 
-``` toml
-# testsuite/Cargo.toml
-[dependencies.defmt-test]
-git = "https://github.com/knurling-rs/defmt-test"
-branch = "main"
+``` diff
+ # testsuite/Cargo.toml
+
+ [dependencies]
++ defmt-test = "0.1.0"
 ```
 
 2. Within the `testsuite/tests/test.rs` file, create a `tests` module and mark it with the `#[defmt_test::tests]` attribute. Within that module write `std`-like unit tests: functions marked with the `#[test]` attribute.
@@ -25,15 +24,15 @@ branch = "main"
 
 #[defmt_test::tests]
 mod tests {
-   #[test]
-   fn assert_true() {
-       assert!(true)
-   }
+    #[test]
+    fn assert_true() {
+        assert!(true)
+    }
 
-   #[test]
-   fn assert_false() {
-       assert!(false)
-   }
+    #[test]
+    fn assert_false() {
+        assert!(false, "TODO: write actual tests")
+    }
 }
 ```
 
@@ -41,22 +40,35 @@ mod tests {
 
 ``` console
 $ cargo test -p testsuite
-0.000000 INFO            | running assert_true ..
-0.000001 INFO            | .. assert_true ok
-0.000002 INFO            | running assert_false ..
-0.000003 ERROR           | panicked at 'assertion failed: false', testsuite/tests/test.rs:15:9
-└─ ~/.cargo/git/checkouts/probe-run-31a04fec2ca67672/d81788c/panic-probe/src/lib.rs:139
+(..)
+0.000000 INFO  running assert_true ..
+└─ test::tests::__defmt_test_entry @ tests/test.rs:7
+0.000001 INFO  .. assert_true ok
+└─ test::tests::__defmt_test_entry @ tests/test.rs:7
+0.000002 INFO  running assert_false ..
+└─ test::tests::__defmt_test_entry @ tests/test.rs:7
+0.000003 ERROR panicked at 'TODO: write actual tests', testsuite/tests/test.rs:16:9
+└─ panic_probe::print_defmt::print @ (..omitted..)
 stack backtrace:
-   0: 0x000016cc - HardFaultTrampoline
+   0: HardFaultTrampoline
       <exception entry>
-   1: 0x00000706 - __udf
-   2: 0x00001450 - cortex_m::asm::udf
-   3: 0x0000147a - rust_begin_unwind
-   4: 0x00000878 - core::panicking::panic_fmt
-   5: 0x0000081a - core::panicking::panic
-   6: 0x00000342 - test::tests::assert_false
-   7: 0x0000029a - main
-   8: 0x000000fa - Reset
+   1: __udf
+   2: cortex_m::asm::udf
+        at (..omitted..)
+   3: rust_begin_unwind
+        at (..omitted..)
+   4: core::panicking::panic_fmt
+        at (..omitted..)
+   5: core::panicking::panic
+        at (..omitted..)
+   6: test::tests::assert_false
+        at tests/test.rs:16
+   7: main
+        at tests/test.rs:7
+   8: ResetTrampoline
+        at (..omitted..)
+   9: Reset
+        at (..omitted..)
 ```
 
 NOTE unit tests will be executed sequentially
@@ -98,10 +110,14 @@ mod tests {
 
 ``` console
 $ cargo test -p testsuite
-0.000000 INFO            | running assert_true ..
-0.000001 INFO            | .. assert_true ok
-0.000002 INFO            | running assert_flag ..
-0.000003 INFO            | .. assert_flag ok
+0.000000 INFO  running assert_true ..
+└─ test::tests::__defmt_test_entry @ tests/test.rs:11
+0.000001 INFO  .. assert_true ok
+└─ test::tests::__defmt_test_entry @ tests/test.rs:11
+0.000002 INFO  running assert_flag ..
+└─ test::tests::__defmt_test_entry @ tests/test.rs:11
+0.000003 INFO  .. assert_flag ok
+└─ test::tests::__defmt_test_entry @ tests/test.rs:11
 ```
 
 ## Support
