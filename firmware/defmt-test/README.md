@@ -4,7 +4,7 @@
 
 ## Basic usage
 
-0. If you don't have a project setup yet, start from the [`app-template`] then proceed with step 3. If you have a project version on an old version of `app-template` then proceed with step 1.
+0. If you don't have a project setup yet, start from the [`app-template`], then proceed with step 3. If you have a project on an old version of `app-template` then proceed with step 1.
 
 [`app-template`]: https://github.com/knurling-rs/app-template
 
