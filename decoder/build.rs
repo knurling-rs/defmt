@@ -9,7 +9,6 @@ use std::{
 use semver::Version;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    panic!("{:?}", env::current_dir());
     let out = &PathBuf::from(env::var("OUT_DIR")?);
     let hash = Command::new("git")
         .args(&["rev-parse", "HEAD"])
