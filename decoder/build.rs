@@ -1,12 +1,30 @@
-use std::{env, error::Error, fs, path::PathBuf, process::Command};
+use std::{
+    env,
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use semver::Version;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    panic!("{:?}", env::current_dir());
     let out = &PathBuf::from(env::var("OUT_DIR")?);
-    let output = Command::new("git").args(&["rev-parse", "HEAD"]).output()?;
-    let version = if output.status.success() {
-        String::from_utf8(output.stdout).unwrap()
+    let hash = Command::new("git")
+        .args(&["rev-parse", "HEAD"])
+        .output()
+        .map(|output| {
+            if output.status.success() {
+                String::from_utf8(output.stdout).ok()
+            } else {
+                assert!(!Path::new(".git").exists(), "you need to install the `git` command line tool to use the git version of `defmt`");
+
+                None
+            }
+        });
+    let version = if let Ok(Some(hash)) = hash {
+        hash
     } else {
         // no git info -> assume crates.io
         let semver = Version::parse(&std::env::var("CARGO_PKG_VERSION")?)?;
