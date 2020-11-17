@@ -61,6 +61,52 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
+pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
+    if !args.is_empty() {
+        return parse::Error::new(
+            Span2::call_site(),
+            "`#[defmt::panic_handler]` attribute takes no arguments",
+        )
+        .to_compile_error()
+        .into();
+    }
+    let f = parse_macro_input!(input as ItemFn);
+
+    let rety_is_ok = match &f.sig.output {
+        ReturnType::Default => false,
+        ReturnType::Type(_, ty) => match &**ty {
+            Type::Never(_) => true,
+            _ => false,
+        },
+    };
+
+    let ident = &f.sig.ident;
+    if f.sig.constness.is_some()
+        || f.sig.asyncness.is_some()
+        || f.sig.unsafety.is_some()
+        || f.sig.abi.is_some()
+        || !f.sig.generics.params.is_empty()
+        || f.sig.generics.where_clause.is_some()
+        || f.sig.variadic.is_some()
+        || !f.sig.inputs.is_empty()
+        || !rety_is_ok
+    {
+        return parse::Error::new(ident.span(), "function must have signature `fn() -> !`")
+            .to_compile_error()
+            .into();
+    }
+
+    let block = &f.block;
+    quote!(
+        #[export_name = "_defmt_panic"]
+        fn #ident() -> ! {
+            #block
+        }
+    )
+    .into()
+}
+
+#[proc_macro_attribute]
 pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
     if !args.is_empty() {
         return parse::Error::new(
@@ -393,8 +439,11 @@ fn is_logging_enabled(level: Level) -> TokenStream2 {
 
 // note that we are not using a `Level` type shared with `decoder` due to Cargo bugs in crate sharing
 // TODO -> move Level to parser?
-fn log(level: Level, ts: TokenStream) -> TokenStream {
-    let log = parse_macro_input!(ts as Log);
+fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
+    log(level, parse_macro_input!(ts as Log)).into()
+}
+
+fn log(level: Level, log: Log) -> TokenStream2 {
     let ls = log.litstr.value();
     let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
@@ -433,32 +482,65 @@ fn log(level: Level, ts: TokenStream) -> TokenStream {
             }
         }
     })
-    .into()
 }
 
 #[proc_macro]
 pub fn trace(ts: TokenStream) -> TokenStream {
-    log(Level::Trace, ts)
+    log_ts(Level::Trace, ts)
 }
 
 #[proc_macro]
 pub fn debug(ts: TokenStream) -> TokenStream {
-    log(Level::Debug, ts)
+    log_ts(Level::Debug, ts)
 }
 
 #[proc_macro]
 pub fn info(ts: TokenStream) -> TokenStream {
-    log(Level::Info, ts)
+    log_ts(Level::Info, ts)
 }
 
 #[proc_macro]
 pub fn warn(ts: TokenStream) -> TokenStream {
-    log(Level::Warn, ts)
+    log_ts(Level::Warn, ts)
 }
 
 #[proc_macro]
 pub fn error(ts: TokenStream) -> TokenStream {
-    log(Level::Error, ts)
+    log_ts(Level::Error, ts)
+}
+
+// not naming this `panic` to avoid shadowing `core::panic` in this scope
+#[proc_macro]
+pub fn panic_(ts: TokenStream) -> TokenStream {
+    let log_stmt = if ts.is_empty() {
+        // panic!() -> error!("panicked at 'explicit panic'")
+        log(
+            Level::Error,
+            Log {
+                litstr: LitStr::new("panicked at 'explicit panic'", Span2::call_site()),
+                rest: None,
+            },
+        )
+    } else {
+        // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
+        let args = parse_macro_input!(ts as Log);
+        log(
+            Level::Error,
+            Log {
+                litstr: LitStr::new(
+                    &format!("panicked at '{}'", args.litstr.value()),
+                    Span2::call_site(),
+                ),
+                rest: args.rest,
+            },
+        )
+    };
+
+    quote!(
+        #log_stmt;
+        defmt::export::panic()
+    )
+    .into()
 }
 
 // TODO share more code with `log`

@@ -146,3 +146,10 @@ mod sealed {
 pub fn truncate<T>(x: impl sealed::Truncate<T>) -> T {
     x.truncate()
 }
+
+pub fn panic() -> ! {
+    extern "Rust" {
+        fn _defmt_panic() -> !;
+    }
+    unsafe { _defmt_panic() }
+}

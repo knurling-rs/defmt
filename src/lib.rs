@@ -16,8 +16,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use core::mem::MaybeUninit;
-use core::ptr::NonNull;
+use core::{mem::MaybeUninit, ptr::NonNull};
 
 #[doc(hidden)]
 pub mod export;
@@ -25,6 +24,10 @@ mod impls;
 mod leb;
 #[cfg(test)]
 mod tests;
+
+pub use defmt_macros::panic_ as panic;
+
+pub use defmt_macros::panic_handler;
 
 /// Creates an interned string ([`Str`]) from a string literal.
 ///
@@ -460,4 +463,9 @@ pub trait Format {
 #[export_name = "__defmt_default_timestamp"]
 fn default_timestamp() -> u64 {
     0
+}
+
+#[export_name = "__defmt_default_panic"]
+fn default_panic() -> ! {
+    core::panic!()
 }

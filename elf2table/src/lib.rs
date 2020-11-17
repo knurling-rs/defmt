@@ -75,7 +75,8 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         }
     };
 
-    defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
+    // TODO(japaric) REMOVE!
+    // defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
