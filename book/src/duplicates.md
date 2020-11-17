@@ -42,13 +42,14 @@ static SYM: u8 = 0;
 
 which results in a collision.
 
-To avoid this issue we suffix each interned string a suffix of the form: `@1379186119` where the number is randomly generated.
+To avoid this issue we store each interned string as a JSON object with 3 fields: the message itself, the name of the crate that invoked the macro, and a 64-bit integer "discriminator".
+The discriminator is a hash of the source code location of the log statement so it should be unique per crate.
 Now these two macro invocations will produce something like this:
 
 ``` rust
 // first info! invocation
 {
-    #[export_name = ".. DONE@1379186119"]
+    #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"discriminator\": \"1379186119\" }"]
     #[link_section = ".."]
     static SYM: u8 = 0;
 }
@@ -57,40 +58,16 @@ Now these two macro invocations will produce something like this:
 
 // second info! invocation
 {
-    #[export_name = ".. DONE@346188945"]
+    #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"discriminator\": \"346188945\" }"]
     #[link_section = ".."]
     static SYM: u8 = 0;
 }
 ```
 
-These symbols do not collide and the program will link correctly.
+These symbols do not collide because their discriminator fields are different so the program will link correctly.
 
-Why use the `@` character?
-The `@` character is special in ELF files; it is used for *versioning* symbols.
-In practice what this means is that what comes after the `@` character is *not* part of the symbol name.
-So if you run `nm` on the last Rust program you'll see:
-
-``` console
-$ arm-none-eabi-nm -CSn elf-file
-00000000 00000001 N .. DONE
-(..)
-00000002 00000001 N .. DONE
-(..)
-```
-
-That is the random number (the version) won't show up there.
-
-> NOTE(japaric) Also I didn't see a straightforward way to extract symbol versions from ELF metadata.
-
-Because duplicates are kept in the final binary this linker-based interner is not really an interner.
+Because duplicate strings are kept in the final binary this linker-based interner is not really an interner.
 A proper interner returns the same index when the same string is interned several times.
 
-> NOTE(japaric) AFAIK it is not possible to deduplicate the symbols with this proc-macro + linker implementation
-
-Because `@` is special it is not allowed in format strings.
-So this code is considered an error:
-
-``` console
-defmt::info!("DONE @ foo");
-//                  ^ error: `@` not allowed in format strings
-```
+*However*, two log statements that log the same string will often have *different* source code locations.
+Assigning a different interner index to each log statement means we can distinguish between the two thus we can report their correct source code location.
