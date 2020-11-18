@@ -216,12 +216,6 @@ impl Formatter {
     }
 
     /// Implementation detail
-    #[cfg(target_arch = "x86_64")]
-    pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
-        unreachable!()
-    }
-
-    /// Implementation detail
     #[cfg(not(target_arch = "x86_64"))]
     pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
         Self {
@@ -230,12 +224,6 @@ impl Formatter {
             bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
         }
-    }
-
-    /// Implementation detail
-    #[cfg(target_arch = "x86_64")]
-    pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
-        unreachable!()
     }
 
     /// Implementation detail
@@ -423,6 +411,29 @@ impl Formatter {
         self.u8(&flags);
         self.bools_left = MAX_NUM_BOOL_FLAGS;
         self.bool_flags = 0;
+    }
+}
+
+// these need to be in a separate module or `unreachable!` will end up calling `defmt::panic` and
+// this will not compile
+// (using `core::unreachable!` instead of `unreachable!` doesn't help)
+#[cfg(target_arch = "x86_64")]
+mod x86_64 {
+    use core::ptr::NonNull;
+
+    use super::Write;
+
+    #[doc(hidden)]
+    impl super::Formatter {
+        /// Implementation detail
+        pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
+            unreachable!()
+        }
+
+        /// Implementation detail
+        pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
+            unreachable!()
+        }
     }
 }
 
