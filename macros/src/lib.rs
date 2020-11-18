@@ -543,6 +543,40 @@ pub fn panic_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+// not naming this `todo` to avoid shadowing `core::todo` in this scope
+#[proc_macro]
+pub fn todo_(ts: TokenStream) -> TokenStream {
+    let log_stmt = if ts.is_empty() {
+        // todo!() -> error!("panicked at 'not yet implemented'")
+        log(
+            Level::Error,
+            Log {
+                litstr: LitStr::new("panicked at 'not yet implemented'", Span2::call_site()),
+                rest: None,
+            },
+        )
+    } else {
+        // todo!("a", b, c) -> error!("panicked at 'not yet implemented: a'", b, c)
+        let args = parse_macro_input!(ts as Log);
+        log(
+            Level::Error,
+            Log {
+                litstr: LitStr::new(
+                    &format!("panicked at 'not yet implemented: {}'", args.litstr.value()),
+                    Span2::call_site(),
+                ),
+                rest: args.rest,
+            },
+        )
+    };
+
+    quote!(
+        #log_stmt;
+        defmt::export::panic()
+    )
+    .into()
+}
+
 // TODO share more code with `log`
 #[proc_macro]
 pub fn winfo(ts: TokenStream) -> TokenStream {

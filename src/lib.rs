@@ -25,6 +25,9 @@ mod leb;
 #[cfg(test)]
 mod tests;
 
+pub use defmt_macros::todo_ as todo;
+pub use defmt_macros::todo_ as unimplemented;
+
 pub use defmt_macros::panic_ as panic;
 
 pub use defmt_macros::panic_handler;
