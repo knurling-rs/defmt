@@ -25,6 +25,8 @@ mod leb;
 #[cfg(test)]
 mod tests;
 
+pub use defmt_macros::assert_ as assert;
+
 pub use defmt_macros::unreachable_ as unreachable;
 
 pub use defmt_macros::todo_ as todo;

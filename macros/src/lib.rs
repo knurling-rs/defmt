@@ -440,10 +440,10 @@ fn is_logging_enabled(level: Level) -> TokenStream2 {
 // note that we are not using a `Level` type shared with `decoder` due to Cargo bugs in crate sharing
 // TODO -> move Level to parser?
 fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
-    log(level, parse_macro_input!(ts as Log)).into()
+    log(level, parse_macro_input!(ts as FormatArgs)).into()
 }
 
-fn log(level: Level, log: Log) -> TokenStream2 {
+fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let ls = log.litstr.value();
     let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
@@ -518,17 +518,17 @@ fn panic(
         // panic!() -> error!("panicked at 'explicit panic'")
         log(
             Level::Error,
-            Log {
+            FormatArgs {
                 litstr: LitStr::new(zero_args_string, Span2::call_site()),
                 rest: None,
             },
         )
     } else {
         // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
-        let args = parse_macro_input!(ts as Log);
+        let args = parse_macro_input!(ts as FormatArgs);
         log(
             Level::Error,
-            Log {
+            FormatArgs {
                 litstr: LitStr::new(&string_transform(&args.litstr.value()), Span2::call_site()),
                 rest: args.rest,
             },
@@ -573,6 +573,36 @@ pub fn unreachable_(ts: TokenStream) -> TokenStream {
     )
 }
 
+// not naming this `assert` to avoid shadowing `core::assert` in this scope
+#[proc_macro]
+pub fn assert_(ts: TokenStream) -> TokenStream {
+    let assert = parse_macro_input!(ts as Assert);
+
+    let condition = assert.condition;
+    let log_stmt = if let Some(args) = assert.args {
+        log(Level::Error, args)
+    } else {
+        log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!("assertion failed: {}", quote!(#condition)),
+                    Span2::call_site(),
+                ),
+                rest: None,
+            },
+        )
+    };
+
+    quote!(
+        if !(#condition) {
+            #log_stmt;
+            defmt::export::panic()
+        }
+    )
+    .into()
+}
+
 // TODO share more code with `log`
 #[proc_macro]
 pub fn winfo(ts: TokenStream) -> TokenStream {
@@ -612,12 +642,46 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-struct Log {
+struct Assert {
+    condition: Expr,
+    args: Option<FormatArgs>,
+}
+
+impl Parse for Assert {
+    fn parse(input: ParseStream) -> parse::Result<Self> {
+        let condition = input.parse()?;
+        if input.is_empty() {
+            // assert!(a)
+            return Ok(Assert {
+                condition,
+                args: None,
+            });
+        }
+
+        let _comma: Token![,] = input.parse()?;
+
+        if input.is_empty() {
+            // assert!(a,)
+            Ok(Assert {
+                condition,
+                args: None,
+            })
+        } else {
+            // assert!(a, "b", c)
+            Ok(Assert {
+                condition,
+                args: Some(input.parse()?),
+            })
+        }
+    }
+}
+
+struct FormatArgs {
     litstr: LitStr,
     rest: Option<(Token![,], Punctuated<Expr, Token![,]>)>,
 }
 
-impl Parse for Log {
+impl Parse for FormatArgs {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         Ok(Self {
             litstr: input.parse()?,
