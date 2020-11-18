@@ -7,15 +7,14 @@ use proc_macro::TokenStream;
 use defmt_parser::{Fragment, Level};
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
-use syn::GenericParam;
-use syn::WhereClause;
 use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, ItemStruct, LitStr,
-    ReturnType, Token, Type, WherePredicate,
+    Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam, ItemFn,
+    ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type, WhereClause,
+    WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -612,6 +611,73 @@ pub fn assert_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+// not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
+#[proc_macro]
+pub fn assert_eq_(ts: TokenStream) -> TokenStream {
+    let assert = parse_macro_input!(ts as AssertEq);
+
+    let left = assert.left;
+    let right = assert.right;
+
+    let mut log_args = Punctuated::new();
+
+    let extra_string = if let Some(args) = assert.args {
+        if let Some(rest) = args.rest {
+            log_args.extend(rest.1);
+        }
+        format!(": {}", args.litstr.value())
+    } else {
+        String::new()
+    };
+
+    for val in &["left_val", "right_val"] {
+        let mut segments = Punctuated::new();
+        segments.push(PathSegment {
+            ident: Ident2::new(*val, Span2::call_site()),
+            arguments: PathArguments::None,
+        });
+
+        log_args.push(Expr::Path(ExprPath {
+            attrs: vec![],
+            qself: None,
+            path: Path {
+                leading_colon: None,
+                segments,
+            },
+        }));
+    }
+
+    let log_stmt = log(
+        Level::Error,
+        FormatArgs {
+            litstr: LitStr::new(
+                &format!(
+                    "panicked at 'assertion failed: `(left == right)`'{}
+ left: `{{:?}}`
+right: `{{:?}}`",
+                    extra_string
+                ),
+                Span2::call_site(),
+            ),
+            rest: Some((syn::token::Comma::default(), log_args)),
+        },
+    );
+
+    quote!(
+        // evaluate arguments first
+        match (&(#left), &(#right)) {
+            (left_val, right_val) => {
+                // following `core::assert_eq!`
+                if !(*left_val == *right_val) {
+                    #log_stmt;
+                    defmt::export::panic()
+                }
+            }
+        }
+    )
+    .into()
+}
+
 // TODO share more code with `log`
 #[proc_macro]
 pub fn winfo(ts: TokenStream) -> TokenStream {
@@ -679,6 +745,47 @@ impl Parse for Assert {
             // assert!(a, "b", c)
             Ok(Assert {
                 condition,
+                args: Some(input.parse()?),
+            })
+        }
+    }
+}
+
+struct AssertEq {
+    left: Expr,
+    right: Expr,
+    args: Option<FormatArgs>,
+}
+
+impl Parse for AssertEq {
+    fn parse(input: ParseStream) -> parse::Result<Self> {
+        let left = input.parse()?;
+        let _comma: Token![,] = input.parse()?;
+        let right = input.parse()?;
+
+        if input.is_empty() {
+            // assert_eq!(a, b)
+            return Ok(AssertEq {
+                left,
+                right,
+                args: None,
+            });
+        }
+
+        let _comma: Token![,] = input.parse()?;
+
+        if input.is_empty() {
+            // assert_eq!(a, b,)
+            Ok(AssertEq {
+                left,
+                right,
+                args: None,
+            })
+        } else {
+            // assert_eq!(a, b, "c", d)
+            Ok(AssertEq {
+                left,
+                right,
                 args: Some(input.parse()?),
             })
         }
