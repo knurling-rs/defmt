@@ -2,7 +2,6 @@
 #![no_main]
 
 use cortex_m_rt::entry;
-use cortex_m_semihosting::debug;
 
 use defmt_semihosting as _; // global logger
 
@@ -19,6 +18,6 @@ fn main() -> ! {
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {
-        debug::exit(debug::EXIT_SUCCESS)
+        cortex_m_semihosting::debug::exit(debug::EXIT_SUCCESS)
     }
 }
