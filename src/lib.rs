@@ -29,6 +29,10 @@ pub use defmt_macros::assert_ as assert;
 pub use defmt_macros::assert_eq_ as assert_eq;
 pub use defmt_macros::assert_ne_ as assert_ne;
 
+pub use defmt_macros::debug_assert_ as debug_assert;
+pub use defmt_macros::debug_assert_eq_ as debug_assert_eq;
+pub use defmt_macros::debug_assert_ne_ as debug_assert_ne;
+
 pub use defmt_macros::unreachable_ as unreachable;
 
 pub use defmt_macros::todo_ as todo;

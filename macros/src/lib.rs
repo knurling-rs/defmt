@@ -710,6 +710,37 @@ right: `{{:?}}`",
     .into()
 }
 
+// NOTE these `debug_*` macros can be written using `macro_rules!` (that'd be simpler) but that
+// results in an incorrect source code location being reported: the location of the `macro_rules!`
+// statement is reported. Using a proc-macro results in the call site being reported, which is what
+// we want
+#[proc_macro]
+pub fn debug_assert_(ts: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_(ts));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
+#[proc_macro]
+pub fn debug_assert_eq_(ts: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_eq_(ts));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
+#[proc_macro]
+pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_ne_(ts));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
 // TODO share more code with `log`
 #[proc_macro]
 pub fn winfo(ts: TokenStream) -> TokenStream {
