@@ -679,7 +679,7 @@ fn assert_binop(ts: TokenStream, binop: BinOp) -> TokenStream {
         FormatArgs {
             litstr: LitStr::new(
                 &format!(
-                    "panicked at 'assertion failed: `(left {} right)`'{}
+                    "panicked at 'assertion failed: `(left {} right)`{}'
  left: `{{:?}}`
 right: `{{:?}}`",
                     binop, extra_string
