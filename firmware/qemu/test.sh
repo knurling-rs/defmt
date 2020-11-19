@@ -13,6 +13,8 @@ function test() {
 test "log"
 test "panic"
 test "assert"
+test "assert-eq"
+test "assert-ne"
 if rustc -V | grep nightly; then
     test "alloc" "alloc"
 fi

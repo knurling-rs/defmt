@@ -1,3 +1,2 @@
 0.000000 ERROR panicked at 'assertion failed: `(left != right)`: release'
- left: `42`
-right: `42`
+left/right: `42`

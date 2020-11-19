@@ -1,7 +1,6 @@
 //! INTERNAL; DO NOT USE. Please use the `defmt` crate to access the functionality implemented here
 mod symbol;
 
-use core::fmt;
 use core::fmt::Write as _;
 use proc_macro::TokenStream;
 
@@ -618,15 +617,6 @@ enum BinOp {
     Ne,
 }
 
-impl fmt::Display for BinOp {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(match self {
-            BinOp::Eq => "==",
-            BinOp::Ne => "!=",
-        })
-    }
-}
-
 // not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
 #[proc_macro]
 pub fn assert_eq_(ts: TokenStream) -> TokenStream {
@@ -657,7 +647,12 @@ fn assert_binop(ts: TokenStream, binop: BinOp) -> TokenStream {
         String::new()
     };
 
-    for val in &["left_val", "right_val"] {
+    let vals = match binop {
+        BinOp::Eq => &["left_val", "right_val"][..],
+        BinOp::Ne => &["left_val"][..],
+    };
+
+    for val in vals {
         let mut segments = Punctuated::new();
         segments.push(PathSegment {
             ident: Ident2::new(*val, Span2::call_site()),
@@ -674,21 +669,37 @@ fn assert_binop(ts: TokenStream, binop: BinOp) -> TokenStream {
         }));
     }
 
-    let log_stmt = log(
-        Level::Error,
-        FormatArgs {
-            litstr: LitStr::new(
-                &format!(
-                    "panicked at 'assertion failed: `(left {} right)`{}'
+    let log_stmt = match binop {
+        BinOp::Eq => log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!(
+                        "panicked at 'assertion failed: `(left == right)`{}'
  left: `{{:?}}`
 right: `{{:?}}`",
-                    binop, extra_string
+                        extra_string
+                    ),
+                    Span2::call_site(),
                 ),
-                Span2::call_site(),
-            ),
-            rest: Some((syn::token::Comma::default(), log_args)),
-        },
-    );
+                rest: Some((syn::token::Comma::default(), log_args)),
+            },
+        ),
+        BinOp::Ne => log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!(
+                        "panicked at 'assertion failed: `(left != right)`{}'
+left/right: `{{:?}}`",
+                        extra_string
+                    ),
+                    Span2::call_site(),
+                ),
+                rest: Some((syn::token::Comma::default(), log_args)),
+            },
+        ),
+    };
 
     let mut cond = quote!(*left_val == *right_val);
     if binop == BinOp::Eq {
