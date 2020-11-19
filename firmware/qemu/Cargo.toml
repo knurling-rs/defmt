@@ -25,6 +25,22 @@ default = ["defmt-default"]
 alloc = ["defmt/alloc", "alloc-cortex-m"]
 
 [[bin]]
+name = "assert"
+test = false
+
+[[bin]]
+name = "assert-eq"
+test = false
+
+[[bin]]
+name = "assert-ne"
+test = false
+
+[[bin]]
+name = "panic"
+test = false
+
+[[bin]]
 name = "log"
 test = false
 
