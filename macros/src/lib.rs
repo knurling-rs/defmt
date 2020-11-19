@@ -1,6 +1,7 @@
 //! INTERNAL; DO NOT USE. Please use the `defmt` crate to access the functionality implemented here
 mod symbol;
 
+use core::fmt;
 use core::fmt::Write as _;
 use proc_macro::TokenStream;
 
@@ -611,9 +612,35 @@ pub fn assert_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+#[derive(PartialEq)]
+enum BinOp {
+    Eq,
+    Ne,
+}
+
+impl fmt::Display for BinOp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            BinOp::Eq => "==",
+            BinOp::Ne => "!=",
+        })
+    }
+}
+
 // not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
 #[proc_macro]
 pub fn assert_eq_(ts: TokenStream) -> TokenStream {
+    assert_binop(ts, BinOp::Eq)
+}
+
+// not naming this `assert_ne` to avoid shadowing `core::assert_ne` in this scope
+#[proc_macro]
+pub fn assert_ne_(ts: TokenStream) -> TokenStream {
+    assert_binop(ts, BinOp::Ne)
+}
+
+// not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
+fn assert_binop(ts: TokenStream, binop: BinOp) -> TokenStream {
     let assert = parse_macro_input!(ts as AssertEq);
 
     let left = assert.left;
@@ -652,10 +679,10 @@ pub fn assert_eq_(ts: TokenStream) -> TokenStream {
         FormatArgs {
             litstr: LitStr::new(
                 &format!(
-                    "panicked at 'assertion failed: `(left == right)`'{}
+                    "panicked at 'assertion failed: `(left {} right)`'{}
  left: `{{:?}}`
 right: `{{:?}}`",
-                    extra_string
+                    binop, extra_string
                 ),
                 Span2::call_site(),
             ),
@@ -663,12 +690,17 @@ right: `{{:?}}`",
         },
     );
 
+    let mut cond = quote!(*left_val == *right_val);
+    if binop == BinOp::Eq {
+        cond = quote!(!(#cond));
+    }
+
     quote!(
         // evaluate arguments first
         match (&(#left), &(#right)) {
             (left_val, right_val) => {
                 // following `core::assert_eq!`
-                if !(*left_val == *right_val) {
+                if #cond {
                     #log_stmt;
                     defmt::export::panic()
                 }

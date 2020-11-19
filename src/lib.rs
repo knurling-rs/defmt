@@ -27,6 +27,7 @@ mod tests;
 
 pub use defmt_macros::assert_ as assert;
 pub use defmt_macros::assert_eq_ as assert_eq;
+pub use defmt_macros::assert_ne_ as assert_ne;
 
 pub use defmt_macros::unreachable_ as unreachable;
 
