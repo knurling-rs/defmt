@@ -88,4 +88,8 @@
 0.000087 INFO (A(true), B(true)), (A(false), B(true)), (A(true), B(false))
 0.000088 INFO true, [1, 2]: DhcpReprMin { broadcast: true, a: [1, 2] }
 0.000089 INFO nested `Format` impls using `write!`: outer value (inner value (42))
-0.000090 INFO QEMU test finished!
+0.000090 INFO S { x: -1, y: 2 }
+0.000091 INFO Some(S { x: -1, y: 2 })
+0.000092 INFO [S { x: -1, y: 2 }, S { x: -1, y: 2 }]
+0.000093 INFO [Some(S { x: -1, y: 2 }), None]
+0.000094 INFO QEMU test finished!

@@ -4,7 +4,7 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
-use defmt::{Format, Formatter};
+use defmt::{consts, Debug2Format, Format, Formatter};
 
 use defmt_semihosting as _; // global logger
 
@@ -443,7 +443,23 @@ fn main() -> ! {
         );
     }
 
+    // Debug adapter
+    {
+        #[derive(Clone, Copy, Debug)]
+        struct S {
+            x: i8,
+            y: i16,
+        }
+
+        let s = S { x: -1, y: 2 };
+        defmt::info!("{:?}", Debug2Format::<consts::U128>(&s));
+        defmt::info!("{:?}", Debug2Format::<consts::U128>(&Some(s)));
+        defmt::info!("{:?}", Debug2Format::<consts::U128>(&[s, s]));
+        defmt::info!("{:?}", Debug2Format::<consts::U128>(&[Some(s), None]));
+    }
+
     defmt::info!("QEMU test finished!");
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
