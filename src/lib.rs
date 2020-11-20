@@ -16,7 +16,10 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use core::{mem::MaybeUninit, ptr::NonNull};
+use core::{fmt, marker::PhantomData, mem::MaybeUninit, ptr::NonNull};
+
+pub use heapless::consts;
+use heapless::{ArrayLength, String};
 
 #[doc(hidden)]
 pub mod export;
@@ -601,4 +604,70 @@ fn default_timestamp() -> u64 {
 #[export_name = "__defmt_default_panic"]
 fn default_panic() -> ! {
     core::panic!()
+}
+
+/// An "adapter" type to feed `Debug` values into defmt macros, which expect `defmt::Format` values
+///
+/// This adapter disables compression! You should prefer `defmt::Format` over `Debug` whenever
+/// possible
+///
+/// This adapter works by formatting the `Debug` value into a stack-allocated buffer. You need to
+/// specify how large that buffer is. If you pick a size that's too small an *incomplete* string
+/// will be transmitted.
+///
+/// The size of the stack-allocated array is specified using one of the type-level integers in the
+/// `consts` module. Example:
+///
+/// ```
+/// #[derive(Debug)]
+/// struct S { x: i8, y: i16 }
+///
+/// defmt::info!("{:?}", Debug2Format::<consts::U32>(&S { x: 1, y: 2 }));
+/// //                                  ^^^^^^^^^^^ size = 32 bytes
+/// // -> 0.000000 INFO  S { x: 1, y: 2 }
+/// ```
+pub struct Debug2Format<'a, N>
+where
+    N: ArrayLength<u8>,
+{
+    // we don't store a heapless String inline because rustc is not great at optimizing moves of
+    // large arrays and that can result in double stack usage
+    _capacity: PhantomData<N>,
+
+    // we use a trait object here to avoid adding a second type paratemer to `Debug2Format`. if
+    // `Debug2Format` has 2 type parameter then users need to add an underscore type parameter to
+    // the turbofish: `Debug2Format::<U64, _>(value)`
+    value: &'a dyn fmt::Debug,
+}
+
+impl<N> Format for Debug2Format<'_, N>
+where
+    N: ArrayLength<u8>,
+{
+    fn format(&self, fmt: &mut Formatter) {
+        use core::fmt::Write as _;
+
+        // `Debug` format into a stack buffer; if the formatted string doesn't fit discard the
+        // excess
+        let mut buf = String::<N>::new();
+        core::write!(buf, "{:?}", self.value).ok();
+
+        // tell defmt we are formatting a `str` value
+        if fmt.needs_tag() {
+            let t = impls::str_tag();
+            fmt.u8(&t);
+        }
+        fmt.str(&buf);
+    }
+}
+
+/// `Debug2Format` constructor
+pub fn Debug2Format<'a, N>(value: &'a dyn fmt::Debug) -> Debug2Format<'a, N>
+where
+    N: ArrayLength<u8>,
+{
+    Debug2Format {
+        _capacity: PhantomData,
+        value,
+    }
 }

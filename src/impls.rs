@@ -117,11 +117,15 @@ impl Format for f32 {
 impl Format for str {
     fn format(&self, fmt: &mut Formatter) {
         if fmt.needs_tag() {
-            let t = internp!("{:str}");
+            let t = str_tag();
             fmt.u8(&t);
         }
         fmt.str(self);
     }
+}
+
+pub(crate) fn str_tag() -> u8 {
+    internp!("{:str}")
 }
 
 impl Format for Str {
