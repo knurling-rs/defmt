@@ -619,6 +619,8 @@ fn default_panic() -> ! {
 /// `consts` module. Example:
 ///
 /// ```
+/// use defmt::{consts, Debug2Format};
+///
 /// #[derive(Debug)]
 /// struct S { x: i8, y: i16 }
 ///
