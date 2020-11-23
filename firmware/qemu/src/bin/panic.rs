@@ -6,8 +6,14 @@ use cortex_m_rt::entry;
 use defmt_semihosting as _; // global logger
 
 #[entry]
-fn main() -> ! {
-    defmt::panic!("The answer is {:?}", 42);
+fn main() ->  ! {
+    let answer = 42;
+    let foo: u32 = match answer {
+        1 => 123,
+        2 => 456,
+        _ => defmt::panic!("The answer is {:?}", answer),
+    };
+    defmt::panic!("should never get here {:?}", foo);
 }
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
