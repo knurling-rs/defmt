@@ -14,7 +14,7 @@ This is the case if you use [`panic-probe`] with the `print-defmt` feature enabl
 
 To avoid this issue you can use the `#[defmt::panic_handler]` to *override* the panicking behavior of `defmt::panic`-like and `defmt::assert`-like macros.
 This attribute must be placed on a function with signature `fn() -> !`.
-In this function you'll want to replicate the panicking behavior of `#[core::panic_handler]` but leave out the part that prints the panic message.
+In this function you'll want to replicate the panicking behavior of the Rust `#[panic_handler]` but leave out the part that prints the panic message.
 For example:
 
 <!-- NOTE(ignore) we can't compile this test because the `panic_handler` defined here collides with the one in `std` -->
