@@ -54,12 +54,12 @@ pub fn release(fmt: Formatter) {
     unsafe { _defmt_release(fmt) }
 }
 
+/// For testing purposes
 #[cfg(target_arch = "x86_64")]
 pub fn timestamp() -> u64 {
     (T.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as u64
 }
 
-/// For testing purposes
 #[cfg(not(target_arch = "x86_64"))]
 pub fn timestamp() -> u64 {
     extern "Rust" {
@@ -147,4 +147,18 @@ mod sealed {
 
 pub fn truncate<T>(x: impl sealed::Truncate<T>) -> T {
     x.truncate()
+}
+
+/// For testing purposes
+#[cfg(target_arch = "x86_64")]
+pub fn panic() -> ! {
+    panic!()
+}
+
+#[cfg(not(target_arch = "x86_64"))]
+pub fn panic() -> ! {
+    extern "Rust" {
+        fn _defmt_panic() -> !;
+    }
+    unsafe { _defmt_panic() }
 }

@@ -16,8 +16,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use core::mem::MaybeUninit;
-use core::ptr::NonNull;
+use core::{mem::MaybeUninit, ptr::NonNull};
 
 #[doc(hidden)]
 pub mod export;
@@ -25,6 +24,105 @@ mod impls;
 mod leb;
 #[cfg(test)]
 mod tests;
+
+/// Just like the [`core::assert!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::assert!`]: https://doc.rust-lang.org/core/macro.assert.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::assert_ as assert;
+
+/// Just like the [`core::assert_eq!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::assert_eq!`]: https://doc.rust-lang.org/core/macro.assert_eq.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::assert_eq_ as assert_eq;
+
+/// Just like the [`core::assert_ne!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::assert_ne!`]: https://doc.rust-lang.org/core/macro.assert_ne.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::assert_ne_ as assert_ne;
+
+/// Just like the [`core::debug_assert!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::debug_assert!`]: https://doc.rust-lang.org/core/macro.debug_assert.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::debug_assert_ as debug_assert;
+
+/// Just like the [`core::debug_assert_eq!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::debug_assert_eq!`]: https://doc.rust-lang.org/core/macro.debug_assert_eq.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::debug_assert_eq_ as debug_assert_eq;
+
+/// Just like the [`core::debug_assert_ne!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::debug_assert_ne!`]: https://doc.rust-lang.org/core/macro.debug_assert_ne.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::debug_assert_ne_ as debug_assert_ne;
+
+/// Just like the [`core::unreachable!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::unreachable!`]: https://doc.rust-lang.org/core/macro.unreachable.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::unreachable_ as unreachable;
+
+/// Just like the [`core::todo!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::todo!`]: https://doc.rust-lang.org/core/macro.todo.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::todo_ as todo;
+
+/// Just like the [`core::unimplemented!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::unimplemented!`]: https://doc.rust-lang.org/core/macro.unimplemented.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::todo_ as unimplemented;
+
+/// Just like the [`core::panic!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::panic!`]: https://doc.rust-lang.org/core/macro.panic.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::panic_ as panic;
+
+/// Overrides the panicking behavior of `defmt::panic!`
+///
+/// By default, `defmt::panic!` calls `core::panic!` after logging the panic message using `defmt`.
+/// This can result in the panic message being printed twice in some cases. To avoid that issue use
+/// this macro. See [the manual] for details.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/panic.html
+pub use defmt_macros::panic_handler;
 
 /// Creates an interned string ([`Str`]) from a string literal.
 ///
@@ -210,12 +308,6 @@ impl Formatter {
     }
 
     /// Implementation detail
-    #[cfg(target_arch = "x86_64")]
-    pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
-        unreachable!()
-    }
-
-    /// Implementation detail
     #[cfg(not(target_arch = "x86_64"))]
     pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
         Self {
@@ -224,12 +316,6 @@ impl Formatter {
             bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
         }
-    }
-
-    /// Implementation detail
-    #[cfg(target_arch = "x86_64")]
-    pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
-        unreachable!()
     }
 
     /// Implementation detail
@@ -426,6 +512,29 @@ impl Formatter {
     }
 }
 
+// these need to be in a separate module or `unreachable!` will end up calling `defmt::panic` and
+// this will not compile
+// (using `core::unreachable!` instead of `unreachable!` doesn't help)
+#[cfg(target_arch = "x86_64")]
+mod x86_64 {
+    use core::ptr::NonNull;
+
+    use super::Write;
+
+    #[doc(hidden)]
+    impl super::Formatter {
+        /// Implementation detail
+        pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
+            unreachable!()
+        }
+
+        /// Implementation detail
+        pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
+            unreachable!()
+        }
+    }
+}
+
 /// Trait for defmt logging targets.
 pub trait Write {
     /// Writes `bytes` to the destination.
@@ -466,4 +575,9 @@ pub trait Format {
 #[export_name = "__defmt_default_timestamp"]
 fn default_timestamp() -> u64 {
     0
+}
+
+#[export_name = "__defmt_default_panic"]
+fn default_panic() -> ! {
+    core::panic!()
 }

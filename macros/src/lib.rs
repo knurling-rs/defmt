@@ -7,15 +7,14 @@ use proc_macro::TokenStream;
 use defmt_parser::{Fragment, Level};
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
-use syn::GenericParam;
-use syn::WhereClause;
 use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Data, DeriveInput, Expr, Fields, FieldsNamed, FieldsUnnamed, ItemFn, ItemStruct, LitStr,
-    ReturnType, Token, Type, WherePredicate,
+    Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam, ItemFn,
+    ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type, WhereClause,
+    WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -55,6 +54,52 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
         #[no_mangle]
         unsafe fn _defmt_release(f: defmt::Formatter)  {
             <#ident as defmt::Logger>::release(f.into_raw())
+        }
+    )
+    .into()
+}
+
+#[proc_macro_attribute]
+pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
+    if !args.is_empty() {
+        return parse::Error::new(
+            Span2::call_site(),
+            "`#[defmt::panic_handler]` attribute takes no arguments",
+        )
+        .to_compile_error()
+        .into();
+    }
+    let f = parse_macro_input!(input as ItemFn);
+
+    let rety_is_ok = match &f.sig.output {
+        ReturnType::Default => false,
+        ReturnType::Type(_, ty) => match &**ty {
+            Type::Never(_) => true,
+            _ => false,
+        },
+    };
+
+    let ident = &f.sig.ident;
+    if f.sig.constness.is_some()
+        || f.sig.asyncness.is_some()
+        || f.sig.unsafety.is_some()
+        || f.sig.abi.is_some()
+        || !f.sig.generics.params.is_empty()
+        || f.sig.generics.where_clause.is_some()
+        || f.sig.variadic.is_some()
+        || !f.sig.inputs.is_empty()
+        || !rety_is_ok
+    {
+        return parse::Error::new(ident.span(), "function must have signature `fn() -> !`")
+            .to_compile_error()
+            .into();
+    }
+
+    let block = &f.block;
+    quote!(
+        #[export_name = "_defmt_panic"]
+        fn #ident() -> ! {
+            #block
         }
     )
     .into()
@@ -393,8 +438,11 @@ fn is_logging_enabled(level: Level) -> TokenStream2 {
 
 // note that we are not using a `Level` type shared with `decoder` due to Cargo bugs in crate sharing
 // TODO -> move Level to parser?
-fn log(level: Level, ts: TokenStream) -> TokenStream {
-    let log = parse_macro_input!(ts as Log);
+fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
+    log(level, parse_macro_input!(ts as FormatArgs)).into()
+}
+
+fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let ls = log.litstr.value();
     let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
@@ -431,32 +479,275 @@ fn log(level: Level, ts: TokenStream) -> TokenStream {
             }
         }
     })
-    .into()
 }
 
 #[proc_macro]
 pub fn trace(ts: TokenStream) -> TokenStream {
-    log(Level::Trace, ts)
+    log_ts(Level::Trace, ts)
 }
 
 #[proc_macro]
 pub fn debug(ts: TokenStream) -> TokenStream {
-    log(Level::Debug, ts)
+    log_ts(Level::Debug, ts)
 }
 
 #[proc_macro]
 pub fn info(ts: TokenStream) -> TokenStream {
-    log(Level::Info, ts)
+    log_ts(Level::Info, ts)
 }
 
 #[proc_macro]
 pub fn warn(ts: TokenStream) -> TokenStream {
-    log(Level::Warn, ts)
+    log_ts(Level::Warn, ts)
 }
 
 #[proc_macro]
 pub fn error(ts: TokenStream) -> TokenStream {
-    log(Level::Error, ts)
+    log_ts(Level::Error, ts)
+}
+
+fn panic(
+    ts: TokenStream,
+    zero_args_string: &str,
+    string_transform: impl FnOnce(&str) -> String,
+) -> TokenStream {
+    let log_stmt = if ts.is_empty() {
+        // panic!() -> error!("panicked at 'explicit panic'")
+        log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(zero_args_string, Span2::call_site()),
+                rest: None,
+            },
+        )
+    } else {
+        // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
+        let args = parse_macro_input!(ts as FormatArgs);
+        log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(&string_transform(&args.litstr.value()), Span2::call_site()),
+                rest: args.rest,
+            },
+        )
+    };
+
+    quote!(
+        #log_stmt;
+        defmt::export::panic()
+    )
+    .into()
+}
+
+// not naming this `panic` to avoid shadowing `core::panic` in this scope
+#[proc_macro]
+pub fn panic_(ts: TokenStream) -> TokenStream {
+    panic(ts, "panicked at 'explicit panic'", |format_string| {
+        format!("panicked at '{}'", format_string)
+    })
+}
+
+// not naming this `todo` to avoid shadowing `core::todo` in this scope
+#[proc_macro]
+pub fn todo_(ts: TokenStream) -> TokenStream {
+    panic(ts, "panicked at 'not yet implemented'", |format_string| {
+        format!("panicked at 'not yet implemented: {}'", format_string)
+    })
+}
+
+// not naming this `unreachable` to avoid shadowing `core::unreachable` in this scope
+#[proc_macro]
+pub fn unreachable_(ts: TokenStream) -> TokenStream {
+    panic(
+        ts,
+        "panicked at 'internal error: entered unreachable code'",
+        |format_string| {
+            format!(
+                "panicked at 'internal error: entered unreachable code: {}'",
+                format_string
+            )
+        },
+    )
+}
+
+// not naming this `assert` to avoid shadowing `core::assert` in this scope
+#[proc_macro]
+pub fn assert_(ts: TokenStream) -> TokenStream {
+    let assert = parse_macro_input!(ts as Assert);
+
+    let condition = assert.condition;
+    let log_stmt = if let Some(args) = assert.args {
+        log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!("panicked at '{}'", args.litstr.value()),
+                    Span2::call_site(),
+                ),
+                rest: args.rest,
+            },
+        )
+    } else {
+        log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!("panicked at 'assertion failed: {}'", quote!(#condition)),
+                    Span2::call_site(),
+                ),
+                rest: None,
+            },
+        )
+    };
+
+    quote!(
+        if !(#condition) {
+            #log_stmt;
+            defmt::export::panic()
+        }
+    )
+    .into()
+}
+
+#[derive(PartialEq)]
+enum BinOp {
+    Eq,
+    Ne,
+}
+
+// not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
+#[proc_macro]
+pub fn assert_eq_(ts: TokenStream) -> TokenStream {
+    assert_binop(ts, BinOp::Eq)
+}
+
+// not naming this `assert_ne` to avoid shadowing `core::assert_ne` in this scope
+#[proc_macro]
+pub fn assert_ne_(ts: TokenStream) -> TokenStream {
+    assert_binop(ts, BinOp::Ne)
+}
+
+// not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
+fn assert_binop(ts: TokenStream, binop: BinOp) -> TokenStream {
+    let assert = parse_macro_input!(ts as AssertEq);
+
+    let left = assert.left;
+    let right = assert.right;
+
+    let mut log_args = Punctuated::new();
+
+    let extra_string = if let Some(args) = assert.args {
+        if let Some(rest) = args.rest {
+            log_args.extend(rest.1);
+        }
+        format!(": {}", args.litstr.value())
+    } else {
+        String::new()
+    };
+
+    let vals = match binop {
+        BinOp::Eq => &["left_val", "right_val"][..],
+        BinOp::Ne => &["left_val"][..],
+    };
+
+    for val in vals {
+        let mut segments = Punctuated::new();
+        segments.push(PathSegment {
+            ident: Ident2::new(*val, Span2::call_site()),
+            arguments: PathArguments::None,
+        });
+
+        log_args.push(Expr::Path(ExprPath {
+            attrs: vec![],
+            qself: None,
+            path: Path {
+                leading_colon: None,
+                segments,
+            },
+        }));
+    }
+
+    let log_stmt = match binop {
+        BinOp::Eq => log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!(
+                        "panicked at 'assertion failed: `(left == right)`{}'
+ left: `{{:?}}`
+right: `{{:?}}`",
+                        extra_string
+                    ),
+                    Span2::call_site(),
+                ),
+                rest: Some((syn::token::Comma::default(), log_args)),
+            },
+        ),
+        BinOp::Ne => log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!(
+                        "panicked at 'assertion failed: `(left != right)`{}'
+left/right: `{{:?}}`",
+                        extra_string
+                    ),
+                    Span2::call_site(),
+                ),
+                rest: Some((syn::token::Comma::default(), log_args)),
+            },
+        ),
+    };
+
+    let mut cond = quote!(*left_val == *right_val);
+    if binop == BinOp::Eq {
+        cond = quote!(!(#cond));
+    }
+
+    quote!(
+        // evaluate arguments first
+        match (&(#left), &(#right)) {
+            (left_val, right_val) => {
+                // following `core::assert_eq!`
+                if #cond {
+                    #log_stmt;
+                    defmt::export::panic()
+                }
+            }
+        }
+    )
+    .into()
+}
+
+// NOTE these `debug_*` macros can be written using `macro_rules!` (that'd be simpler) but that
+// results in an incorrect source code location being reported: the location of the `macro_rules!`
+// statement is reported. Using a proc-macro results in the call site being reported, which is what
+// we want
+#[proc_macro]
+pub fn debug_assert_(ts: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_(ts));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
+#[proc_macro]
+pub fn debug_assert_eq_(ts: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_eq_(ts));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
+#[proc_macro]
+pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_ne_(ts));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
 }
 
 // TODO share more code with `log`
@@ -497,12 +788,87 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-struct Log {
+struct Assert {
+    condition: Expr,
+    args: Option<FormatArgs>,
+}
+
+impl Parse for Assert {
+    fn parse(input: ParseStream) -> parse::Result<Self> {
+        let condition = input.parse()?;
+        if input.is_empty() {
+            // assert!(a)
+            return Ok(Assert {
+                condition,
+                args: None,
+            });
+        }
+
+        let _comma: Token![,] = input.parse()?;
+
+        if input.is_empty() {
+            // assert!(a,)
+            Ok(Assert {
+                condition,
+                args: None,
+            })
+        } else {
+            // assert!(a, "b", c)
+            Ok(Assert {
+                condition,
+                args: Some(input.parse()?),
+            })
+        }
+    }
+}
+
+struct AssertEq {
+    left: Expr,
+    right: Expr,
+    args: Option<FormatArgs>,
+}
+
+impl Parse for AssertEq {
+    fn parse(input: ParseStream) -> parse::Result<Self> {
+        let left = input.parse()?;
+        let _comma: Token![,] = input.parse()?;
+        let right = input.parse()?;
+
+        if input.is_empty() {
+            // assert_eq!(a, b)
+            return Ok(AssertEq {
+                left,
+                right,
+                args: None,
+            });
+        }
+
+        let _comma: Token![,] = input.parse()?;
+
+        if input.is_empty() {
+            // assert_eq!(a, b,)
+            Ok(AssertEq {
+                left,
+                right,
+                args: None,
+            })
+        } else {
+            // assert_eq!(a, b, "c", d)
+            Ok(AssertEq {
+                left,
+                right,
+                args: Some(input.parse()?),
+            })
+        }
+    }
+}
+
+struct FormatArgs {
     litstr: LitStr,
     rest: Option<(Token![,], Punctuated<Expr, Token![,]>)>,
 }
 
-impl Parse for Log {
+impl Parse for FormatArgs {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         Ok(Self {
             litstr: input.parse()?,

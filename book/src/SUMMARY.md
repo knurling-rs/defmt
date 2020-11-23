@@ -14,6 +14,7 @@
   - [Filtering](./filtering.md)
   - [#[timestamp]](./timestamp.md)
   - [#[global_logger]](./global-logger.md)
+  - [panic! and assert!](./panic.md)
   - [Printers](./printers.md)
   - [Migrating from git defmt to stable defmt](./migration.md)
 - [Design & impl details](./design.md)
