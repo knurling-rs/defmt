@@ -418,6 +418,12 @@ impl Formatter {
         self.bools_left = MAX_NUM_BOOL_FLAGS;
         self.bool_flags = 0;
     }
+
+    #[inline(never)]
+    pub fn header(&mut self, s: &Str) {
+        self.istr(s);
+        self.leb64(export::timestamp())
+    }
 }
 
 /// Trait for defmt logging targets.

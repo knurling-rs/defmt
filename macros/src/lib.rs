@@ -421,10 +421,8 @@ fn log(level: Level, ts: TokenStream) -> TokenStream {
         if #logging_enabled {
             match (#(&(#args)),*) {
                 (#(#pats),*) => {
-                    let ts = defmt::export::timestamp();
                     if let Some(mut _fmt_) = defmt::export::acquire() {
-                        _fmt_.istr(&defmt::export::istr(#sym));
-                        _fmt_.leb64(ts);
+                        _fmt_.header(&defmt::export::istr(#sym));
                         #(#exprs;)*
                         _fmt_.finalize();
                         defmt::export::release(_fmt_)
@@ -488,10 +486,9 @@ pub fn winfo(ts: TokenStream) -> TokenStream {
     let f = &write.fmt;
     let sym = mksym(&ls, "info", false /* don't care */);
     quote!({
-        match (&mut #f, defmt::export::timestamp(), #(&(#args)),*) {
-            (_fmt_, ts, #(#pats),*) => {
-                _fmt_.istr(&defmt::export::istr(#sym));
-                _fmt_.leb64(ts);
+        match (&mut #f, #(&(#args)),*) {
+            (_fmt_, #(#pats),*) => {
+                _fmt_.header(&defmt::export::istr(#sym));
                 #(#exprs;)*
                 _fmt_.finalize();
             }
