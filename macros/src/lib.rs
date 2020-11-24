@@ -533,8 +533,10 @@ fn panic(
     };
 
     quote!(
-        #log_stmt;
-        defmt::export::panic()
+        {
+            #log_stmt;
+            defmt::export::panic()
+        }
     )
     .into()
 }
