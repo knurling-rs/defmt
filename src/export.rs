@@ -71,6 +71,10 @@ pub fn istr(address: usize) -> Str {
 }
 
 mod sealed {
+    use crate as defmt;
+    use crate::{Format, Formatter};
+    use defmt_macros::internp;
+
     pub trait Truncate<U> {
         fn truncate(self) -> U;
     }
@@ -137,10 +141,52 @@ mod sealed {
             self
         }
     }
+
+    #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+    pub struct NoneError;
+
+    impl Format for NoneError {
+        fn format(&self, fmt: &mut Formatter) {
+            if fmt.needs_tag() {
+                let t = internp!("Unwrap of a None option value");
+                fmt.u8(&t);
+            }
+        }
+    }
+
+    pub trait IntoResult {
+        type Ok;
+        type Error;
+        fn into_result(self) -> Result<Self::Ok, Self::Error>;
+    }
+
+    impl<T> IntoResult for Option<T> {
+        type Ok = T;
+        type Error = NoneError;
+
+        #[inline]
+        fn into_result(self) -> Result<T, NoneError> {
+            self.ok_or(NoneError)
+        }
+    }
+
+    impl<T, E> IntoResult for Result<T, E> {
+        type Ok = T;
+        type Error = E;
+
+        #[inline]
+        fn into_result(self) -> Self {
+            self
+        }
+    }
 }
 
 pub fn truncate<T>(x: impl sealed::Truncate<T>) -> T {
     x.truncate()
+}
+
+pub fn into_result<T: sealed::IntoResult>(x: T) -> Result<T::Ok, T::Error> {
+    x.into_result()
 }
 
 /// For testing purposes

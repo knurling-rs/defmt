@@ -653,20 +653,7 @@ fn assert_binop(ts: TokenStream, binop: BinOp) -> TokenStream {
     };
 
     for val in vals {
-        let mut segments = Punctuated::new();
-        segments.push(PathSegment {
-            ident: Ident2::new(*val, Span2::call_site()),
-            arguments: PathArguments::None,
-        });
-
-        log_args.push(Expr::Path(ExprPath {
-            attrs: vec![],
-            qself: None,
-            path: Path {
-                leading_colon: None,
-                segments,
-            },
-        }));
+        log_args.push(ident_expr(*val));
     }
 
     let log_stmt = match binop {
@@ -750,6 +737,71 @@ pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
         #assert
     })
     .into()
+}
+
+#[proc_macro]
+pub fn unwrap(ts: TokenStream) -> TokenStream {
+    let assert = parse_macro_input!(ts as Assert);
+
+    let condition = assert.condition;
+    let log_stmt = if let Some(args) = assert.args {
+        log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!("panicked at '{}'", args.litstr.value()),
+                    Span2::call_site(),
+                ),
+                rest: args.rest,
+            },
+        )
+    } else {
+        let mut log_args = Punctuated::new();
+        log_args.push(ident_expr("_unwrap_err"));
+
+        log(
+            Level::Error,
+            FormatArgs {
+                litstr: LitStr::new(
+                    &format!(
+                        "panicked at 'unwrap failed: {}'
+error: `{{:?}}`",
+                        escape_expr(&condition)
+                    ),
+                    Span2::call_site(),
+                ),
+                rest: Some((syn::token::Comma::default(), log_args)),
+            },
+        )
+    };
+
+    quote!(
+        match defmt::export::into_result(#condition) {
+            ::core::result::Result::Ok(res) => res,
+            ::core::result::Result::Err(_unwrap_err) => {
+                #log_stmt;
+                defmt::export::panic()
+            }
+        }
+    )
+    .into()
+}
+
+fn ident_expr(name: &str) -> Expr {
+    let mut segments = Punctuated::new();
+    segments.push(PathSegment {
+        ident: Ident2::new(name, Span2::call_site()),
+        arguments: PathArguments::None,
+    });
+
+    Expr::Path(ExprPath {
+        attrs: vec![],
+        qself: None,
+        path: Path {
+            leading_colon: None,
+            segments,
+        },
+    })
 }
 
 fn escape_expr(expr: &Expr) -> String {

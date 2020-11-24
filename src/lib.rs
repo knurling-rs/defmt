@@ -115,6 +115,13 @@ pub use defmt_macros::todo_ as unimplemented;
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::panic_ as panic;
 
+/// todo
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::unwrap;
+
 /// Overrides the panicking behavior of `defmt::panic!`
 ///
 /// By default, `defmt::panic!` calls `core::panic!` after logging the panic message using `defmt`.
