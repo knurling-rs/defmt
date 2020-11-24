@@ -334,6 +334,7 @@ enum Arg<'t> {
     Uxx(u64),
     /// I8, I16, I24 and I32
     Ixx(i64),
+    I128(i128),
     /// Str
     Str(String),
     /// Interned string
@@ -725,6 +726,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     let data = self.bytes.read_i64::<LE>()?;
                     args.push(Arg::Ixx(data as i64));
                 }
+                Type::I128 => {
+                    let data = self.bytes.read_i128::<LE>()?;
+                    args.push(Arg::I128(data));
+                }
                 Type::I8 => {
                     let data = self.bytes.read_i8()?;
                     args.push(Arg::Ixx(data as i64));
@@ -885,6 +890,7 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                         }
                     }
                     Arg::Ixx(x) => write!(buf, "{}", x)?,
+                    Arg::I128(x) => write!(buf, "{}", x)?,
                     Arg::Str(x) => write!(buf, "{}", x)?,
                     Arg::IStr(x) => write!(buf, "{}", x)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
@@ -996,7 +1002,7 @@ mod tests {
 
     #[test]
     fn all_integers() {
-        const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:i8} {:i16} {:i32}!";
+        const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:i8} {:i16} {:i32} {:i64} {:i128}!";
         let mut entries = BTreeMap::new();
         entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
 
@@ -1012,6 +1018,8 @@ mod tests {
             0xff, // i8
             0xff, 0xff, // i16
             0xff, 0xff, 0xff, 0xff, // i32
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i64
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i128
         ];
 
         assert_eq!(
@@ -1030,6 +1038,8 @@ mod tests {
                         Arg::Ixx(-1),                      // i8
                         Arg::Ixx(-1),                      // i16
                         Arg::Ixx(-1),                      // i32
+                        Arg::Ixx(-1),                      // i64
+                        Arg::I128(-1),                     // i128
                     ],
                 },
                 bytes.len(),
