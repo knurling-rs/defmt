@@ -415,6 +415,14 @@ mod tests {
         );
 
         assert_eq!(
+            parse("{:i64}"),
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::I64,
+            })])
+        );
+
+        assert_eq!(
             parse("{:i8}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
@@ -451,6 +459,14 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U32,
+            })])
+        );
+
+        assert_eq!(
+            parse("{:u64}"),
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::U64,
             })])
         );
 
