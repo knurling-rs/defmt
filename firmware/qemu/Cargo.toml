@@ -45,6 +45,10 @@ name = "log"
 test = false
 
 [[bin]]
+name = "double-write"
+test = false
+
+[[bin]]
 name = "alloc"
 test = false
 required-features = ["alloc"]

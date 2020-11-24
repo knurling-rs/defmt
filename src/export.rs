@@ -22,12 +22,6 @@ pub fn fetch_add_string_index() -> usize {
     (I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as usize
 }
 
-/// For testing purposes
-#[cfg(target_arch = "x86_64")]
-pub fn fetch_timestamp() -> u8 {
-    T.with(|i| i.load(core::sync::atomic::Ordering::Relaxed)) & 0x7f
-}
-
 #[cfg(target_arch = "x86_64")]
 pub fn acquire() -> Option<Formatter> {
     None

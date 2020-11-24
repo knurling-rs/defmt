@@ -4,7 +4,7 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
-use defmt::Format;
+use defmt::{Format, Formatter};
 
 use defmt_semihosting as _; // global logger
 
@@ -419,6 +419,31 @@ fn main() -> ! {
         defmt::info!("true, [1, 2]: {:?}", dhcp_repr);
     }
 
+    {
+        struct Inner(u8);
+
+        impl Format for Inner {
+            fn format(&self, f: &mut Formatter) {
+                defmt::write!(f, "inner value ({:u8})", self.0);
+            }
+        }
+
+        // `write!` tests
+        struct MyStruct(Inner);
+
+        impl Format for MyStruct {
+            fn format(&self, f: &mut Formatter) {
+                defmt::write!(f, "outer value ({:?})", self.0);
+            }
+        }
+
+        defmt::info!(
+            "nested `Format` impls using `write!`: {:?}",
+            MyStruct(Inner(42)),
+        );
+    }
+
+    defmt::info!("QEMU test finished!");
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

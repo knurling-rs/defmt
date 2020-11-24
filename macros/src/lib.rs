@@ -752,44 +752,6 @@ pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-// TODO share more code with `log`
-#[proc_macro]
-pub fn winfo(ts: TokenStream) -> TokenStream {
-    let write = parse_macro_input!(ts as Write);
-    let ls = write.litstr.value();
-    let fragments = match defmt_parser::parse(&ls) {
-        Ok(args) => args,
-        Err(e) => {
-            return parse::Error::new(write.litstr.span(), e)
-                .to_compile_error()
-                .into()
-        }
-    };
-
-    let args = write
-        .rest
-        .map(|(_, exprs)| exprs.into_iter().collect())
-        .unwrap_or(vec![]);
-
-    let (pats, exprs) = match Codegen::new(&fragments, args.len(), write.litstr.span()) {
-        Ok(cg) => (cg.pats, cg.exprs),
-        Err(e) => return e.to_compile_error().into(),
-    };
-
-    let f = &write.fmt;
-    let sym = mksym(&ls, "info", false /* don't care */);
-    quote!({
-        match (&mut #f, #(&(#args)),*) {
-            (_fmt_, #(#pats),*) => {
-                _fmt_.header(&defmt::export::istr(#sym));
-                #(#exprs;)*
-                _fmt_.finalize();
-            }
-        }
-    })
-    .into()
-}
-
 struct Assert {
     condition: Expr,
     args: Option<FormatArgs>,
@@ -944,9 +906,11 @@ pub fn write(ts: TokenStream) -> TokenStream {
     };
 
     let fmt = &write.fmt;
+    // FIXME: Introduce a new `"write"` tag and decode it in a loop (breaking change).
     let sym = mksym(&ls, "fmt", false);
-    quote!(match (#fmt, #(&(#args)),*) {
-        (ref mut _fmt_, #(#pats),*) => {
+    quote!(match (&mut *#fmt, #(&(#args)),*) {
+        (_fmt_, #(#pats),*) => {
+            _fmt_.write_macro_start();
             // HACK conditional should not be here; see FIXME in `format`
             if _fmt_.needs_tag() {
                 _fmt_.istr(&defmt::export::istr(#sym));
@@ -958,8 +922,8 @@ pub fn write(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-fn mksym(string: &str, section: &str, is_log_statement: bool) -> TokenStream2 {
-    let sym = symbol::Symbol::new(section, string).mangle();
+fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
+    let sym = symbol::Symbol::new(tag, string).mangle();
     let section = format!(".defmt.{}", sym);
 
     // NOTE we rely on this variable name when extracting file location information from the DWARF

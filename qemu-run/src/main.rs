@@ -100,7 +100,10 @@ fn decode(frames: &mut Vec<u8>, table: &Table) -> Result<(), DecodeError> {
                 frames.truncate(n - consumed);
             }
             Err(DecodeError::UnexpectedEof) => return Ok(()),
-            Err(DecodeError::Malformed) => return Err(DecodeError::Malformed),
+            Err(DecodeError::Malformed) => {
+                eprintln!("failed to decode defmt data: {:x?}", frames);
+                return Err(DecodeError::Malformed);
+            }
         }
     }
 }

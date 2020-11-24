@@ -170,6 +170,11 @@ pub use defmt_macros::trace;
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::warn;
 
+/// Writes formatted data to a [`Formatter`].
+///
+/// [`Formatter`]: struct.Formatter.html
+pub use defmt_macros::write;
+
 /// Defines the global defmt logger.
 ///
 /// `#[global_logger]` needs to be put on a unit struct type declaration. This struct has to
@@ -219,8 +224,6 @@ pub use defmt_macros::global_logger;
 /// ```
 pub use defmt_macros::timestamp;
 
-#[doc(hidden)]
-pub use defmt_macros::winfo;
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use defmt_macros::Format;
 
@@ -273,6 +276,11 @@ pub struct Formatter {
     // this is disabled while formatting a `{:[?]}` value (second element on-wards)
     // this is force-enable while formatting enums
     omit_tag: bool,
+    /// Whether the `write!` macro was called in the current `Format` impl. Used to prevent calling
+    /// it twice.
+    /// FIXME: Use a dedicated tag for `write!` invocations, allow calling it multiple times, and
+    /// remove this.
+    called_write_macro: bool,
 }
 
 /// the maximum number of booleans that can be compressed together
@@ -288,6 +296,7 @@ impl Formatter {
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
+            called_write_macro: false,
         }
     }
 
@@ -315,6 +324,7 @@ impl Formatter {
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
+            called_write_macro: false,
         }
     }
 
@@ -328,16 +338,27 @@ impl Formatter {
     /// Implementation detail
     pub fn fmt(&mut self, f: &impl Format, omit_tag: bool) {
         let old_omit_tag = self.omit_tag;
+        let old_called_write_macro = self.called_write_macro;
         if omit_tag {
             self.omit_tag = true;
         }
+        self.called_write_macro = false;
 
         f.format(self);
 
+        self.called_write_macro = old_called_write_macro;
         if omit_tag {
             // restore
             self.omit_tag = old_omit_tag;
         }
+    }
+
+    pub fn write_macro_start(&mut self) {
+        if self.called_write_macro {
+            core::panic!("`defmt::write!` may only be called once in a `Format` impl");
+        }
+
+        self.called_write_macro = true;
     }
 
     /// Implementation detail

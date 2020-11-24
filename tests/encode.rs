@@ -32,18 +32,13 @@
 // The mocked string index is thread local so you can run unit tests in parallel.
 // `fetch_string_index` returns the thread-local interner index.
 //
-// The same mocking technique is applied to timestamps. There's a `fetch_timestamp`.
-//
 // Additional notes:
 //
 // - the mocked index is 7 bits so its LEB128 encoding is the input byte
-// - the family of `info!` macros do nothing on x86; instead use `winfo!` which take a formatter
-// argument like `write!`
+// - the family of `info!` macros do nothing on x86; instead use `write!` which takes a formatter
+//   argument
 
-use defmt::{
-    export::{fetch_string_index, fetch_timestamp},
-    winfo, Format, Formatter,
-};
+use defmt::{export::fetch_string_index, write, Format, Formatter};
 
 // Increase the 7-bit mocked interned index
 fn inc(index: u8, n: u8) -> u8 {
@@ -59,30 +54,27 @@ fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: 
 }
 
 #[test]
-fn info() {
+fn write() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(f, "The answer is {:u8}", 42);
+    write!(f, "The answer is {:u8}", 42);
     assert_eq!(
         f.bytes(),
         &[
-            index,     // "The answer is {:u8}",
-            timestamp, //
-            42,        // u8 value
+            index, // "The answer is {:u8}",
+            42,    // u8 value
         ]
     );
 
-    let mut f = Formatter::new();
-    winfo!(f, "The answer is {:?}", 42u8);
+    let ref mut f = Formatter::new();
+    write!(f, "The answer is {:?}", 42u8);
     assert_eq!(
         f.bytes(),
         &[
-            inc(index, 1),     // "The answer is {:?}"
-            inc(timestamp, 1), //
-            inc(index, 2),     // "{:u8}" / impl Format for u8
-            42,                // u8 value
+            inc(index, 1), // "The answer is {:?}"
+            inc(index, 2), // "{:u8}" / impl Format for u8
+            42,            // u8 value
         ]
     );
 }
@@ -90,26 +82,17 @@ fn info() {
 #[test]
 fn booleans_max_num_bool_flags() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(
+    write!(
         f,
         "encode 8 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
-        false,
-        true,
-        true,
-        false,
-        true,
-        false,
-        true,
-        true
+        false, true, true, false, true, false, true, true
     );
     assert_eq!(
         f.bytes(),
         &[
             index,       // "encode 8 bools {:bool} {:bool} [...]",
-            timestamp,   //
             0b0110_1011, // compressed bools (dec value = 107)
         ]
     );
@@ -118,22 +101,18 @@ fn booleans_max_num_bool_flags() {
 #[test]
 fn booleans_less_than_max_num_bool_flags() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(
+    write!(
         f,
         "encode 3 bools {:bool} {:bool} {:bool}",
-        false,
-        true,
-        true
+        false, true, true
     );
     assert_eq!(
         f.bytes(),
         &[
-            index,     // "encode 3 bools {:bool} {:bool} {:bool}",
-            timestamp, //
-            0b011,     // compressed bools
+            index, // "encode 3 bools {:bool} {:bool} {:bool}",
+            0b011, // compressed bools
         ]
     );
 }
@@ -141,16 +120,14 @@ fn booleans_less_than_max_num_bool_flags() {
 #[test]
 fn booleans_more_than_max_num_bool_flags() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(f, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+    write!(f, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
            false, true, true, false, true, false, true, true, false, true);
     assert_eq!(
         f.bytes(),
         &[
             index,       // "encode 8 bools {:bool} {:bool} {:bool} [...]",
-            timestamp,   //
             0b0110_1011, // first 8 compressed bools
             0b01,        // final compressed bools
         ]
@@ -160,23 +137,19 @@ fn booleans_more_than_max_num_bool_flags() {
 #[test]
 fn booleans_mixed() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(
+    write!(
         f,
         "encode mixed bools {:bool} {:bool} {:u8} {:bool}",
-        true,
-        false,
-        42,
-        true
+        true, false, 42, true
     );
     assert_eq!(
         f.bytes(),
         &[
-            index,     // "encode mixed bools {:bool} {:bool} {:u8} {:bool}",
-            timestamp, //
-            42u8, 0b101, // all compressed bools
+            index, // "encode mixed bools {:bool} {:bool} {:u8} {:bool}",
+            42u8,  // intermediate `42`
+            0b101, // all compressed bools
         ]
     );
 }
@@ -184,15 +157,13 @@ fn booleans_mixed() {
 #[test]
 fn booleans_mixed_no_trailing_bool() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(f, "encode mixed bools {:bool} {:u8}", false, 42);
+    write!(f, "encode mixed bools {:bool} {:u8}", false, 42);
     assert_eq!(
         f.bytes(),
         &[
-            index,     // "encode mixed bools {:bool} {:u8}",
-            timestamp, //
+            index, // "encode mixed bools {:bool} {:u8}",
             42u8, 0b0, // bool is put at the end of the args
         ]
     );
@@ -201,20 +172,17 @@ fn booleans_mixed_no_trailing_bool() {
 #[test]
 fn bitfields_mixed() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(
+    write!(
         f,
         "bitfields {0:7..12}, {1:0..5}",
-        0b1110_0101_1111_0000u16,
-        0b1111_0000u8
+        0b1110_0101_1111_0000u16, 0b1111_0000u8
     );
     assert_eq!(
         f.bytes(),
         &[
             index, // bitfields {0:7..12}, {1:0..5}",
-            timestamp,
             0b1111_0000,
             0b1110_0101,   // u16
             0b1111_0000u8, // u8
@@ -225,15 +193,13 @@ fn bitfields_mixed() {
 #[test]
 fn bitfields_across_octets() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(f, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
+    write!(f, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
     assert_eq!(
         f.bytes(),
         &[
             index, // bitfields {0:0..7} {0:9..14}",
-            timestamp,
             0b1101_0010,
             0b0110_0011, // u16
         ]
@@ -243,10 +209,9 @@ fn bitfields_across_octets() {
 #[test]
 fn bitfields_truncate_lower() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(
+    write!(
         f,
         "bitfields {0:9..14}",
         0b0000_0000_0000_1111_0110_0011_1101_0010u32
@@ -254,8 +219,7 @@ fn bitfields_truncate_lower() {
     assert_eq!(
         f.bytes(),
         &[
-            index, // bitfields {0:9..14}",
-            timestamp,
+            index,       // bitfields {0:9..14}",
             0b0110_0011, // the first octet should have been truncated away
         ]
     );
@@ -264,15 +228,13 @@ fn bitfields_truncate_lower() {
 #[test]
 fn bitfields_assert_range_exclusive() {
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(f, "bitfields {0:6..8}", 0b1010_0101u8,);
+    write!(f, "bitfields {0:6..8}", 0b1010_0101u8,);
     assert_eq!(
         f.bytes(),
         &[
             index, // "bitfields {0:6..8}"
-            timestamp,
             0b1010_0101
         ]
     );
@@ -305,10 +267,9 @@ fn boolean_struct_mixed() {
     }
 
     let index = fetch_string_index();
-    let timestamp = fetch_timestamp();
-    let mut f = Formatter::new();
+    let ref mut f = Formatter::new();
 
-    winfo!(
+    write!(
         f,
         "mixed formats {:bool} {:?}",
         true,
@@ -317,8 +278,7 @@ fn boolean_struct_mixed() {
     assert_eq!(
         f.bytes(),
         &[
-            index, // "mixed formats {:bool} {:?}",
-            timestamp,
+            index,         // "mixed formats {:bool} {:?}",
             inc(index, 1), // "X {{ x: {:bool}, y: {:bool} }}"
             0b101,         // compressed struct bools
         ]
@@ -331,6 +291,32 @@ fn single_struct() {
     struct X {
         y: u8,
         z: u16,
+    }
+
+    let index = fetch_string_index();
+    check_format_implementation(
+        &X { y: 1, z: 2 },
+        &[
+            index, // "X {{ x: {:u8}, y: {:u16} }}"
+            1,     // x
+            2,     // y.low
+            0,     // y.high
+        ],
+    )
+}
+
+#[test]
+fn single_struct_manual() {
+    // Above `#[derive]`d impl should be equivalent to this:
+    struct X {
+        y: u8,
+        z: u16,
+    }
+
+    impl Format for X {
+        fn format(&self, f: &mut Formatter) {
+            defmt::write!(f, "X {{ x: {:u8}, y: {:u16} }}", self.y, self.z)
+        }
     }
 
     let index = fetch_string_index();
