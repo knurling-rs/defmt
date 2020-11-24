@@ -1069,6 +1069,9 @@ impl Codegen {
                 defmt_parser::Type::I64 => {
                     exprs.push(quote!(_fmt_.i64(#arg)));
                 }
+                defmt_parser::Type::I128 => {
+                    exprs.push(quote!(_fmt_.i128(#arg)));
+                }
                 defmt_parser::Type::I8 => {
                     exprs.push(quote!(_fmt_.i8(#arg)));
                 }
