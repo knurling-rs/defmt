@@ -444,6 +444,11 @@ impl Formatter {
     }
 
     /// Implementation detail
+    pub fn i128(&mut self, b: &i128) {
+        self.write(&b.to_le_bytes())
+    }
+
+    /// Implementation detail
     pub fn isize(&mut self, b: &isize) {
         // Zig-zag encode the signed value.
         self.leb64(leb::zigzag_encode(*b as i64));
