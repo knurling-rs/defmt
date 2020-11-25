@@ -62,7 +62,7 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
 
     let defmt_shndx = elf.section_by_name(".defmt").map(|s| s.index());
 
-    let (defmt_shndx, version) = match (defmt_shndx, version) {
+    let (defmt_shndx, _version) = match (defmt_shndx, version) {
         (None, None) => return Ok(None), // defmt is not used
         (Some(defmt_shndx), Some(version)) => (defmt_shndx, version),
         (None, Some(_)) => {
@@ -75,7 +75,7 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         }
     };
 
-    defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
+    // defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
