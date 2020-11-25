@@ -1,4 +1,4 @@
-# implementing `Format`
+# Implementing `Format`
 
 ## `#[derive(Format)]`
 
@@ -51,7 +51,7 @@ impl defmt::Format for S {
 
 NOTE: in defmt v0.1.x the `write!` macro must be invoked at most once within the implementation of the `fmt` method. Invoking the method more than once will produce a panic
 
-## newtypes
+## Newtypes
 
 If you need to implement `Format` for some "newtype" struct you can delegate the formatting to the inner type.
 Example below:
@@ -67,4 +67,4 @@ impl defmt::Format for MyU8 {
 }
 ```
 
-**WARNING** never call `format` more than once! that corrupts the data stream
+**WARNING** never call `format` more than once, since this will corrupt the data stream!
