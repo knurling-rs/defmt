@@ -7,6 +7,8 @@ use defmt_semihosting as _; // global logger
 
 #[entry]
 fn main() -> ! {
+    defmt::assert_eq!({1 + 1}, { 2 });
+
     let x = 42;
     defmt::debug_assert_eq!(x - 1, x + 1, "dev");
     defmt::assert_eq!(x - 1, x + 1, "release");

@@ -594,7 +594,7 @@ pub fn assert_(ts: TokenStream) -> TokenStream {
             Level::Error,
             FormatArgs {
                 litstr: LitStr::new(
-                    &format!("panicked at 'assertion failed: {}'", quote!(#condition)),
+                    &format!("panicked at 'assertion failed: {}'", escape_expr(&condition)),
                     Span2::call_site(),
                 ),
                 rest: None,
@@ -750,6 +750,11 @@ pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
         #assert
     })
     .into()
+}
+
+fn escape_expr(expr: &Expr) -> String {
+    let q = quote!(#expr);
+    q.to_string().replace("{", "{{").replace("}", "}}")
 }
 
 struct Assert {

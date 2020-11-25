@@ -7,6 +7,8 @@ use defmt_semihosting as _; // global logger
 
 #[entry]
 fn main() -> ! {
+    defmt::assert_ne!({1 + 1}, { 3 });
+
     let x = 42;
     defmt::debug_assert_ne!(x, x, "dev");
     defmt::assert_ne!(x, x, "release");
