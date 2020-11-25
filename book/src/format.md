@@ -37,14 +37,19 @@ Example below:
 
 ``` rust
 # extern crate defmt;
-struct S {
-    x: u8,
-    y: u16,
+// value read from a MMIO register named "CRCCNF"
+struct CRCCNF {
+   bits: u32,
 }
 
-impl defmt::Format for S {
+impl defmt::Format for CRCCNF {
     fn format(&self, f: &mut defmt::Formatter) {
-        defmt::write!(f, "S {{ x: {:u8}, y: {:u16} }}", self.x, self.y)
+        // format the bitfields of the register as struct fields
+        defmt::write!(
+           f,
+           "CRCCNF {{ LEN: {0:0..2}, SKIPADDR: {0:8..10} }}",
+           self.bits,
+        )
     }
 }
 ```
