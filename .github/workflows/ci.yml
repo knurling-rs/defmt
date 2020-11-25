@@ -49,7 +49,7 @@ jobs:
       # (see https://github.com/rust-embedded/cortex-m-rt/issues/74), so we cannot use
       # `cargo test --workspace` and have to build the test suites individually instead
       if: matrix.os == 'macOS-latest'
-      run: cargo test -p defmt -p defmt-decoder -p defmt-parser -p defmt-macros
+      run: cargo test -p defmt -p defmt-decoder -p defmt-parser -p defmt-macros --all-features
 
   no-std:
     runs-on: ubuntu-latest
