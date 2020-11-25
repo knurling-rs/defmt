@@ -93,4 +93,5 @@
 0.000092 INFO [S { x: -1, y: 2 }, S { x: -1, y: 2 }]
 0.000093 INFO [Some(S { x: -1, y: 2 }), None]
 0.000094 INFO 127.0.0.1:8888
-0.000095 INFO QEMU test finished!
+0.000095 INFO Hello 💜
+0.000096 INFO QEMU test finished!
