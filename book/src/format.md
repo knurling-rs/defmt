@@ -30,6 +30,8 @@ NOTE: Do *not* use the API used by the expansion of the `derive(Format)` macro; 
 
 ## `write!`
 
+> NOTE `write!` is available in `defmt` v0.1.**2**+
+
 It is also possible to implement the `Format` trait manually.
 This trait has a single required method: `format`.
 In this method you need to format the value (`self`) into the given `Formatter` argument using the `defmt::write!` macro.

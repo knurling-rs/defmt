@@ -1,5 +1,7 @@
 # `panic!` and `assert!`
 
+> NOTE all these macros are available in `defmt` v0.1.**2**+
+
 The `defmt` crate provides its own version of `panic!`-like and `assert!`-like macros.
 The `defmt` version of these macros will log the panic message using `defmt` and then call `core::panic!` (by default).
 Because the panic message is formatted using `defmt!` the format string must use the same syntax as the logging macros (e.g. `info!`).
