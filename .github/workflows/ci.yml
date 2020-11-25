@@ -122,3 +122,8 @@ jobs:
     - name: Build and Run QEMU tests
       working-directory: firmware/qemu
       run: ./test.sh
+    - name: Backward compatibility check against decoder v0.1.0
+      working-directory: firmware/qemu
+      run: |
+        cargo install --debug --git https://github.com/knurling-rs/defmt --branch do-not-delete-v0.1.0-with-no-version-check
+        CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER=qemu-run ./test.sh
