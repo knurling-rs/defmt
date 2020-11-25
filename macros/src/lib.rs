@@ -1163,6 +1163,9 @@ impl Codegen {
                 defmt_parser::Type::F32 => {
                     exprs.push(quote!(_fmt_.f32(#arg)));
                 }
+                defmt_parser::Type::Char => {
+                    exprs.push(quote!(_fmt_.u32(&(*#arg as u32))));
+                }
             }
             pats.push(arg);
         }

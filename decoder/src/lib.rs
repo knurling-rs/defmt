@@ -348,6 +348,8 @@ enum Arg<'t> {
     },
     /// Slice or Array of bytes.
     Slice(Vec<u8>),
+    /// Char
+    Char(char),
 }
 
 #[derive(Debug, PartialEq)]
@@ -837,6 +839,11 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     let elements = self.decode_format_slice(*len)?;
                     args.push(Arg::FormatSlice { elements });
                 }
+                Type::Char => {
+                    let data = self.bytes.read_u32::<LE>()?;
+                    let c = std::char::from_u32(data).ok_or(DecodeError::Malformed)?;
+                    args.push(Arg::Char(c));
+                }
             }
         }
 
@@ -901,6 +908,7 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                         buf.write_str("]")?;
                     }
                     Arg::Slice(x) => write!(buf, "{:?}", x)?,
+                    Arg::Char(c) => write!(buf, "{}", c)?,
                 }
             }
         }
@@ -1513,6 +1521,22 @@ mod tests {
             "Hello {:str} {:u8}",
             &bytes,
             "0.000002 INFO Hello World 125",
+        );
+    }
+
+    #[test]
+    fn char_data() {
+        let bytes = [
+            0, // index
+            2, // timestamp
+            0x61, 0x00, 0x00, 0x00, // char 'a'
+            0x9C, 0xF4, 0x01, 0x00, // Purple heart emoji
+        ];
+
+        decode_and_expect(
+            "Supports ASCII {:char} and Unicode {:char}",
+            &bytes,
+            "0.000002 INFO Supports ASCII a and Unicode 💜",
         );
     }
 
