@@ -65,6 +65,7 @@ pub enum Type {
     U24,
     U32,
     U64,
+    U128,
     Usize,
     /// Byte slice `{:[u8]}`.
     U8Slice,
@@ -153,6 +154,7 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         "u24" => Type::U24,
         "u32" => Type::U32,
         "u64" => Type::U64,
+        "u128"=> Type::U128,
         "usize" => Type::Usize,
         "i8" => Type::I8,
         "i16" => Type::I16,
@@ -477,6 +479,14 @@ mod tests {
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U64,
+            })])
+        );
+
+        assert_eq!(
+            parse("{:u128}"),
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::U128,
             })])
         );
 
