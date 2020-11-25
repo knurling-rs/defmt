@@ -62,9 +62,9 @@ struct MyU8 { inner: u8 }
 
 impl defmt::Format for MyU8 {
     fn format(&self, f: &mut defmt::Formatter) {
-       self.inner.format(f)
+        self.inner.format(f)
     }
 }
 ```
 
-**WARNING** do not call `format` more than once! that corrupts the data stream
+**WARNING** never call `format` more than once! that corrupts the data stream
