@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -o errexit
+set -o pipefail
 
 function test() {
     local bin=$1
