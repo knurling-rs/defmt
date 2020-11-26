@@ -49,6 +49,10 @@ name = "double-write"
 test = false
 
 [[bin]]
+name = "unwrap"
+test = false
+
+[[bin]]
 name = "alloc"
 test = false
 required-features = ["alloc"]

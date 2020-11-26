@@ -17,6 +17,7 @@ test "assert"
 test "assert-eq"
 test "assert-ne"
 test "double-write"
+test "unwrap"
 if rustc -V | grep nightly; then
     test "alloc" "alloc"
 fi
