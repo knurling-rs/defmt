@@ -4,7 +4,7 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
-use defmt::{consts, Debug2Format, Format, Formatter};
+use defmt::{consts, Debug2Format, Display2Format, Format, Formatter};
 
 use defmt_semihosting as _; // global logger
 
@@ -456,6 +456,30 @@ fn main() -> ! {
         defmt::info!("{:?}", Debug2Format::<consts::U128>(&Some(s)));
         defmt::info!("{:?}", Debug2Format::<consts::U128>(&[s, s]));
         defmt::info!("{:?}", Debug2Format::<consts::U128>(&[Some(s), None]));
+    }
+
+    {
+        struct SocketAddr {
+            ip: [u8; 4],
+            port: u16,
+        }
+
+        impl core::fmt::Display for SocketAddr {
+            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(
+                    f,
+                    "{}.{}.{}.{}:{}",
+                    self.ip[0], self.ip[1], self.ip[2], self.ip[3], self.port
+                )
+            }
+        }
+
+        let addr = SocketAddr {
+            ip: [127, 0, 0, 1],
+            port: 8888,
+        };
+
+        defmt::info!("{:?}", Display2Format::<consts::U32>(&addr));
     }
 
     defmt::info!("QEMU test finished!");
