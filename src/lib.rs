@@ -497,6 +497,11 @@ impl Formatter {
     }
 
     /// Implementation detail
+    pub fn u128(&mut self, b: &u128) {
+        self.write(&b.to_le_bytes())
+    }
+
+    /// Implementation detail
     pub fn usize(&mut self, b: &usize) {
         self.leb64(*b as u64);
     }

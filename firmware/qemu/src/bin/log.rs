@@ -492,6 +492,14 @@ fn main() -> ! {
         i128::min_value()
     );
 
+    defmt::info!(
+        "u128: 0 = {:u128}, -1 = {:u128}, MAX = {:u128}, MIN = {:u128}",
+        0,
+        1,
+        u128::max_value(),
+        u128::min_value()
+    );
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
