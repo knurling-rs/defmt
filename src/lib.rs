@@ -118,13 +118,15 @@ pub use defmt_macros::todo_ as unimplemented;
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::panic_ as panic;
 
+/// Unwraps an `Option` or `Result`, panicking if it is `None` or `Err`.
+///
 /// This macro is roughly equivalent to `{Option,Result}::{expect,unwrap}` but invocation looks
 /// a bit different because this is a macro and not a method. The other difference is that
 /// `unwrap!`-ing a `Result<T, E>` value requires that the error type `E` implements the `Format`
 /// trait
 ///
 /// The following snippet shows the differences between core's unwrap method and defmt's unwrap
-/// macro
+/// macro:
 ///
 /// ```
 /// use defmt::unwrap;
