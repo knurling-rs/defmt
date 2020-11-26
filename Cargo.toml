@@ -9,13 +9,13 @@ links = "defmt" # Prevent multiple versions of defmt being linked
 name = "defmt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.1.1"
+version = "0.1.2"
 
 [features]
 alloc = []
 
 [dependencies]
-defmt-macros = { path = "macros", version = "0.1.0" }
+defmt-macros = { path = "macros", version = "0.1.1" }
 heapless = "0.5.6"
 
 [workspace]
