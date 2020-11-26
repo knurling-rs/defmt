@@ -71,6 +71,7 @@ pub fn istr(address: usize) -> Str {
 }
 
 mod sealed {
+    #[allow(unused_imports)]
     use crate as defmt;
     use crate::{Format, Formatter};
     use defmt_macros::internp;
