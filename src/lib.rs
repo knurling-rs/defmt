@@ -681,3 +681,75 @@ where
         value,
     }
 }
+
+/// An "adapter" type to feed `Display` values into defmt macros, which expect `defmt::Format` values
+///
+/// This adapter disables compression! You should prefer `defmt::Format` over `Display` whenever
+/// possible
+///
+/// This adapter works by formatting the `Display` value into a stack-allocated buffer. You need to
+/// specify how large that buffer is. If you pick a size that's too small an *incomplete* string
+/// will be transmitted.
+///
+/// The size of the stack-allocated array is specified using one of the type-level integers in the
+/// `consts` module. Example:
+///
+/// ```
+/// use core::fmt;
+/// use defmt::{consts, Display2Format};
+///
+/// struct SocketAddr {
+///    ip: [u8; 4],
+///    port: u16,
+/// }
+///
+/// impl fmt::Display for SocketAddr {
+///     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+///         write!(f, "{}.{}.{}.{}:{}", self.ip[0], self.ip[1], self.ip[2], self.ip[3], self.port)
+///     }
+/// }
+///
+/// let addr = SocketAddr { ip: [127, 0, 0, 1], port: 8888 };
+/// defmt::info!("{:?}", Display2Format::<consts::U32>(&addr));
+/// //                                    ^^^^^^^^^^^ size = 32 bytes
+/// // -> 0.000000 INFO  127.0.0.1:8888
+/// ```
+pub struct Display2Format<'a, N>
+where
+    N: ArrayLength<u8>,
+{
+    _capacity: PhantomData<N>,
+
+    value: &'a dyn fmt::Display,
+}
+
+impl<N> Format for Display2Format<'_, N>
+where
+    N: ArrayLength<u8>,
+{
+    fn format(&self, fmt: &mut Formatter) {
+        use core::fmt::Write as _;
+
+        let mut buf = String::<N>::new();
+        core::write!(buf, "{}", self.value).ok();
+
+        // tell defmt we are formatting a `str` value
+        if fmt.needs_tag() {
+            let t = impls::str_tag();
+            fmt.u8(&t);
+        }
+        fmt.str(&buf);
+    }
+}
+
+/// `Display2Format` constructor
+#[allow(non_snake_case)]
+pub fn Display2Format<'a, N>(value: &'a dyn fmt::Display) -> Display2Format<'a, N>
+where
+    N: ArrayLength<u8>,
+{
+    Display2Format {
+        _capacity: PhantomData,
+        value,
+    }
+}
