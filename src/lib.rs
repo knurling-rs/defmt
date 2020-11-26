@@ -682,10 +682,10 @@ where
     }
 }
 
-/// An "adapter" type to feed `Display` values into defmt macros, which expect `defmt::Format` values
+/// An "adapter" type to feed `Display` values into defmt macros, which expect `defmt::Format` values.
 ///
 /// This adapter disables compression! You should prefer `defmt::Format` over `Display` whenever
-/// possible
+/// possible.
 ///
 /// This adapter works by formatting the `Display` value into a stack-allocated buffer. You need to
 /// specify how large that buffer is. If you pick a size that's too small an *incomplete* string
@@ -742,7 +742,7 @@ where
     }
 }
 
-/// `Display2Format` constructor
+/// `Display2Format` constructor.
 #[allow(non_snake_case)]
 pub fn Display2Format<'a, N>(value: &'a dyn fmt::Display) -> Display2Format<'a, N>
 where
