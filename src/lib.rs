@@ -118,7 +118,33 @@ pub use defmt_macros::todo_ as unimplemented;
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::panic_ as panic;
 
-/// todo
+/// This macro is roughly equivalent to `{Option,Result}::{expect,unwrap}` but invocation looks
+/// a bit different because this is a macro and not a method. The other difference is that
+/// `unwrap!`-ing a `Result<T, E>` value requires that the error type `E` implements the `Format`
+/// trait
+///
+/// The following snippet shows the differences between core's unwrap method and defmt's unwrap
+/// macro
+///
+/// ```
+/// use defmt::unwrap;
+///
+/// # let option = Some(());
+/// let x = option.unwrap();
+/// let x = unwrap!(option);
+///
+/// # let result = Ok::<(), ()>(());
+/// let x = result.unwrap();
+/// let x = unwrap!(result);
+///
+/// # let value = result;
+/// let x = value.expect("text");
+/// let x = unwrap!(value, "text");
+///
+/// # let arg = ();
+/// let x = value.expect(&format!("text {:?}", arg));
+/// let x = unwrap!(value, "text {:?}", arg); // arg must be implement `Format`
+/// ```
 ///
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
