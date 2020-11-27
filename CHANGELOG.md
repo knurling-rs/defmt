@@ -57,6 +57,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/v0.1.2...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...main
 [v0.1.1]: https://github.com/knurling-rs/defmt/compare/v0.1.0...v0.1.1
-[v0.1.2]: https://github.com/knurling-rs/defmt/compare/v0.1.1...v0.1.2
+[v0.1.2]: https://github.com/knurling-rs/defmt/compare/v0.1.1...defmt-v0.1.2
