@@ -500,6 +500,9 @@ fn main() -> ! {
         u128::min_value()
     );
 
+    defmt::info!("{:?}", 340282366920938u128);
+    defmt::info!("{:?}", -170141183460469i128);
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
