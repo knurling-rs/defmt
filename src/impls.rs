@@ -44,6 +44,16 @@ impl Format for i64 {
     }
 }
 
+impl Format for i128 {
+    fn format(&self, fmt: &mut Formatter) {
+        if fmt.needs_tag() {
+            let t = internp!("{:i128}");
+            fmt.u8(&t);
+        }
+        fmt.i128(self);
+    }
+}
+
 impl Format for isize {
     fn format(&self, fmt: &mut Formatter) {
         if fmt.needs_tag() {
@@ -91,6 +101,16 @@ impl Format for u64 {
             fmt.u8(&t);
         }
         fmt.u64(self);
+    }
+}
+
+impl Format for u128 {
+    fn format(&self, fmt: &mut Formatter) {
+        if fmt.needs_tag() {
+            let t = internp!("{:u128}");
+            fmt.u8(&t);
+        }
+        fmt.u128(self);
     }
 }
 
