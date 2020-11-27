@@ -482,7 +482,7 @@ fn main() -> ! {
         defmt::info!("{:?}", Display2Format::<consts::U32>(&addr));
     }
 
-    defmt::info!("Hello {:char}", '💜');
+    defmt::info!("Hello {:char} & {:?}", '💜', '🍕');
 
     defmt::info!("QEMU test finished!");
 
