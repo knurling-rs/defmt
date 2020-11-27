@@ -684,6 +684,17 @@ fn format_primitives() {
             0xFF,
         ],
     );
+
+    check_format_implementation(
+        &'a',
+        &[
+            inc(index, 16), // "{:char}"
+            0x61,
+            0x00,
+            0x00,
+            0x00,
+        ],
+    );
 }
 
 #[test]

@@ -138,6 +138,16 @@ impl Format for Str {
     }
 }
 
+impl Format for char {
+    fn format(&self, fmt: &mut Formatter) {
+        if fmt.needs_tag() {
+            let t = internp!("{:char}");
+            fmt.u8(&t);
+        }
+        fmt.u32(&(*self as u32));
+    }
+}
+
 impl<T> Format for [T]
 where
     T: Format,
