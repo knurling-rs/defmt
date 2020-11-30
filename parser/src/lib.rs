@@ -280,7 +280,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
         }
 
         // Peek at the next char.
-        if chars.as_str().chars().next() == Some('{') {
+        if chars.as_str().starts_with('{') {
             // Escaped `{{`, also part of a literal fragment.
             chars.next(); // Move after both `{`s.
             continue;
