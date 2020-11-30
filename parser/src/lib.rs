@@ -72,10 +72,7 @@ pub enum Type {
 }
 
 fn is_digit(c: Option<char>) -> bool {
-    match c.unwrap_or('\0') {
-        '0'..='9' => true,
-        _ => false,
-    }
+    matches!(c.unwrap_or('\0'), '0'..='9')
 }
 
 fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
