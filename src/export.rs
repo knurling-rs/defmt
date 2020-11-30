@@ -1,6 +1,6 @@
 use crate::{Formatter, Str};
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 thread_local! {
     static I: core::sync::atomic::AtomicU8 =
         core::sync::atomic::AtomicU8::new(0);
@@ -11,23 +11,23 @@ thread_local! {
 // NOTE we limit these values to 7-bit to avoid LEB128 encoding while writing the expected answers
 // in unit tests
 /// For testing purposes
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 pub fn fetch_string_index() -> u8 {
     I.with(|i| i.load(core::sync::atomic::Ordering::Relaxed)) & 0x7f
 }
 
 /// For testing purposes
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 pub fn fetch_add_string_index() -> usize {
     (I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as usize
 }
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 pub fn acquire() -> Option<Formatter> {
     None
 }
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(not(feature = "unstable-test"))]
 #[inline(never)]
 pub fn acquire() -> Option<Formatter> {
     extern "Rust" {
@@ -36,10 +36,10 @@ pub fn acquire() -> Option<Formatter> {
     unsafe { _defmt_acquire() }
 }
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 pub fn release(_: Formatter) {}
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(not(feature = "unstable-test"))]
 #[inline(never)]
 pub fn release(fmt: Formatter) {
     extern "Rust" {
@@ -49,12 +49,12 @@ pub fn release(fmt: Formatter) {
 }
 
 /// For testing purposes
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 pub fn timestamp() -> u64 {
     (T.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as u64
 }
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(not(feature = "unstable-test"))]
 pub fn timestamp() -> u64 {
     extern "Rust" {
         fn _defmt_timestamp() -> u64;
@@ -191,12 +191,12 @@ pub fn into_result<T: sealed::IntoResult>(x: T) -> Result<T::Ok, T::Error> {
 }
 
 /// For testing purposes
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 pub fn panic() -> ! {
     panic!()
 }
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(not(feature = "unstable-test"))]
 pub fn panic() -> ! {
     extern "Rust" {
         fn _defmt_panic() -> !;

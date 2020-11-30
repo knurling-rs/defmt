@@ -924,11 +924,11 @@ pub fn internp(ts: TokenStream) -> TokenStream {
     let section = format!(".defmt.prim.{}", sym);
 
     quote!(match () {
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(feature = "unstable-test")]
         () => {
             defmt::export::fetch_add_string_index() as u8
         }
-        #[cfg(not(target_arch = "x86_64"))]
+        #[cfg(not(feature = "unstable-test"))]
         () => {
             #[link_section = #section]
             #[export_name = #sym]
@@ -992,11 +992,11 @@ fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
         format_ident!("S")
     };
     quote!(match () {
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(feature = "unstable-test")]
         () => {
             defmt::export::fetch_add_string_index()
         }
-        #[cfg(not(target_arch = "x86_64"))]
+        #[cfg(not(feature = "unstable-test"))]
         () => {
             #[link_section = #section]
             #[export_name = #sym]
