@@ -326,7 +326,7 @@ const MAX_NUM_BOOL_FLAGS: u8 = 8;
 
 #[doc(hidden)]
 impl Formatter {
-    /// Only for testing on x86_64
+    /// Only for testing
     #[cfg(feature = "unstable-test")]
     pub fn new() -> Self {
         Self {
@@ -338,7 +338,7 @@ impl Formatter {
         }
     }
 
-    /// Only for testing on x86_64
+    /// Only for testing
     #[cfg(feature = "unstable-test")]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes

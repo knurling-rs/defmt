@@ -14,8 +14,6 @@
 - Output object format must be ELF
 - Custom linking (linker script) is required
 - Single, global logger instance (but using multiple channels is possible)
-- No x86 support. The x86 architecture is exclusively used for testing at the
-  moment.
 
 ## Intended use
 

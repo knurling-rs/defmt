@@ -2,7 +2,7 @@
 // depend on `defmt` and `defmt` depends on `defmt-macros` -- the circular dependency may get in
 // the way of `cargo test`
 
-// NOTE string interning is mocked on x86 to aid testing so it does not do real interning. Instead
+// NOTE string interning is mocked when testing so that it does not do real interning. Instead
 // the "interner" always returns a **7-bit** `u8` value that's bumped on every interning operation.
 //
 // In practice, this means that the following operation:
@@ -35,8 +35,6 @@
 // Additional notes:
 //
 // - the mocked index is 7 bits so its LEB128 encoding is the input byte
-// - the family of `info!` macros do nothing on x86; instead use `write!` which takes a formatter
-//   argument
 
 use defmt::{export::fetch_string_index, write, Format, Formatter};
 
