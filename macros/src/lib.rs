@@ -42,8 +42,10 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
         .into();
     }
 
+    let attrs = &s.attrs;
     let vis = &s.vis;
     quote!(
+        #(#attrs)*
         #vis struct #ident;
 
         #[no_mangle]
@@ -95,8 +97,10 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
             .into();
     }
 
+    let attrs = &f.attrs;
     let block = &f.block;
     quote!(
+        #(#attrs)*
         #[export_name = "_defmt_panic"]
         fn #ident() -> ! {
             #block
@@ -141,9 +145,11 @@ pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
             .into();
     }
 
+    let attrs = &f.attrs;
     let block = &f.block;
     quote!(
         #[export_name = "_defmt_timestamp"]
+        #(#attrs)*
         fn #ident() -> u64 {
             #block
         }
