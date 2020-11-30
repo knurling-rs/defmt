@@ -575,7 +575,7 @@ impl Formatter {
 // this will not compile
 // (using `core::unreachable!` instead of `unreachable!` doesn't help)
 #[cfg(feature = "unstable-test")]
-mod x86_64 {
+mod test_only {
     use core::ptr::NonNull;
 
     use super::Write;

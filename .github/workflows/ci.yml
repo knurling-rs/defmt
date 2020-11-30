@@ -41,6 +41,9 @@ jobs:
     - name: Check that all crates build
       run: RUSTFLAGS='--deny warnings' cargo check --all
       shell: bash
+    - name: Check that crates build with unstable-test feature
+      run: RUSTFLAGS='--deny warnings' cargo check --all --features unstable-test
+      shell: bash
     - name: Run tests on Ubuntu/Windows
       if: matrix.os != 'macOS-latest'
       run: cargo test --workspace --features unstable-test
