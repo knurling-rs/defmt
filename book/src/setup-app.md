@@ -47,8 +47,11 @@ The application must link to exactly one `global_logger`.
 The `global_logger` can appear anywhere in the dependency graph and usually it will be its own crate.
 The following `global_logger`s are provided as part of the project:
 
-- `defmt-semihosting`, logs over semihosting. Meant only for testing `defmt` on a virtual Cortex-M device (QEMU).
-- `defmt-rtt`, logs over RTT. Note that this crate can *not* be used together with `rtt-target`.
+- [`defmt-rtt`], logs over RTT. Note that this crate can *not* be used together with `rtt-target`.
+- [`defmt-semihosting`], logs over semihosting. Meant only for testing `defmt` on a virtual Cortex-M device (QEMU).
+
+[`defmt-semihosting`]: https://github.com/knurling-rs/defmt/tree/9f97c1fd562738159a142bd67c410c48ef8d4110/firmware/defmt-semihosting
+[`defmt-rtt`]: https://docs.rs/defmt-rtt/
 
 Information about how to write a `global_logger` can be found in the [`#[global_logger]` section](./global-logger.md).
 
