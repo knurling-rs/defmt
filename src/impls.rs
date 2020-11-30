@@ -375,6 +375,7 @@ mod if_alloc {
         }
     }
 
+    #[cfg(not(thumbv6m))]
     impl<T> Format for alloc::sync::Arc<T>
     where
         T: ?Sized + Format,

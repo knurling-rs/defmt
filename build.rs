@@ -37,5 +37,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     linker_script = linker_script.replace("$DEFMT_VERSION", version.trim());
     fs::write(out.join("defmt.x"), linker_script)?;
     println!("cargo:rustc-link-search={}", out.display());
+    let target = env::var("TARGET")?;
+    if target == "thumbv6m-none-eabi" {
+        println!("cargo:rustc-cfg=thumbv6m");
+    }
     Ok(())
 }
