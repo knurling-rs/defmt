@@ -375,6 +375,7 @@ mod if_alloc {
         }
     }
 
+    #[cfg(not(no_cas))]
     impl<T> Format for alloc::sync::Arc<T>
     where
         T: ?Sized + Format,

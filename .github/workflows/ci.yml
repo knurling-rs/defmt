@@ -67,6 +67,7 @@ jobs:
       run: |
         for target in $NO_STD_CHECK_TARGETS; do
           cargo check --target $target
+          cargo check --target $target --features alloc
         done
     - name: Build panic-probe with different features
       working-directory: firmware/panic-probe
