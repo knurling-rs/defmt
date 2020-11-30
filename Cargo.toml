@@ -9,7 +9,7 @@ links = "defmt" # Prevent multiple versions of defmt being linked
 name = "defmt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.1.2"
+version = "0.1.3"
 
 [features]
 alloc = []

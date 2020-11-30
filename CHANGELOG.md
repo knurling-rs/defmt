@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- fixed cross compilation to ARMv6-M when the "alloc" feature is enabled
+- [#290] fixed cross compilation to ARMv6-M and other targets that have no CAS (Compare-and-Swap)
+  primitives when the "alloc" feature is enabled
+
+[#290]: https://github.com/knurling-rs/defmt/pull/290
 
 ## [v0.1.2] - 2020-11-26
 
