@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.1.3] - 2020-11-30
+
+### Fixed
+
+- fixed cross compilation to ARMv6-M when the "alloc" feature is enabled
+
 ## [v0.1.2] - 2020-11-26
 
 ### Added
@@ -57,6 +63,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...main
-[v0.1.1]: https://github.com/knurling-rs/defmt/compare/v0.1.0...v0.1.1
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...main
+[v0.1.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...defmt-v0.1.3
 [v0.1.2]: https://github.com/knurling-rs/defmt/compare/v0.1.1...defmt-v0.1.2
+[v0.1.1]: https://github.com/knurling-rs/defmt/compare/v0.1.0...v0.1.1
