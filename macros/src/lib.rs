@@ -12,10 +12,33 @@ use syn::{
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam, ItemFn,
-    ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type, WhereClause,
-    WherePredicate,
+    Attribute, Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
+    ItemFn, ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type,
+    WhereClause, WherePredicate,
 };
+
+fn reject_attributes(
+    which_attr: &str,
+    attrs: &[Attribute],
+    block_list: &[&str],
+) -> parse::Result<()> {
+    for attr in attrs {
+        if let Some(ident) = attr.path.get_ident() {
+            let ident = ident.to_string();
+            if block_list.contains(&&*ident) {
+                return Err(parse::Error::new(
+                    attr.span(),
+                    format!(
+                        "`#[{}]` attribute cannot be used together with `#[{}]`",
+                        which_attr, ident
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
 
 #[proc_macro_attribute]
 pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -98,6 +121,9 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let attrs = &f.attrs;
+    if let Err(e) = reject_attributes("panic_handler", attrs, &["export_name"]) {
+        return e.to_compile_error().into();
+    }
     let block = &f.block;
     quote!(
         #(#attrs)*
@@ -146,6 +172,9 @@ pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let attrs = &f.attrs;
+    if let Err(e) = reject_attributes("timestamp", attrs, &["export_name"]) {
+        return e.to_compile_error().into();
+    }
     let block = &f.block;
     quote!(
         #[export_name = "_defmt_timestamp"]
