@@ -10,7 +10,7 @@
 //! with an incompatible version will result in an error. This means that you have to update both
 //! the host and target side if a breaking change in defmt is released.
 
-#![cfg_attr(not(target_arch = "x86_64"), no_std)]
+#![cfg_attr(not(feature = "unstable-test"), no_std)]
 #![warn(missing_docs)]
 
 #[cfg(feature = "alloc")]
@@ -304,9 +304,9 @@ pub struct Str {
 
 /// Handle to a defmt logger.
 pub struct Formatter {
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(not(feature = "unstable-test"))]
     writer: NonNull<dyn Write>,
-    #[cfg(target_arch = "x86_64")]
+    #[cfg(feature = "unstable-test")]
     bytes: Vec<u8>,
     bool_flags: u8, // the current group of consecutive bools
     bools_left: u8, // the number of bits that we can still set in bool_flag
@@ -326,8 +326,8 @@ const MAX_NUM_BOOL_FLAGS: u8 = 8;
 
 #[doc(hidden)]
 impl Formatter {
-    /// Only for testing on x86_64
-    #[cfg(target_arch = "x86_64")]
+    /// Only for testing
+    #[cfg(feature = "unstable-test")]
     pub fn new() -> Self {
         Self {
             bytes: vec![],
@@ -338,24 +338,24 @@ impl Formatter {
         }
     }
 
-    /// Only for testing on x86_64
-    #[cfg(target_arch = "x86_64")]
+    /// Only for testing
+    #[cfg(feature = "unstable-test")]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    #[cfg(target_arch = "x86_64")]
+    #[cfg(feature = "unstable-test")]
     pub fn write(&mut self, bytes: &[u8]) {
         self.bytes.extend_from_slice(bytes)
     }
 
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(not(feature = "unstable-test"))]
     pub fn write(&mut self, bytes: &[u8]) {
         unsafe { self.writer.as_mut().write(bytes) }
     }
 
     /// Implementation detail
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(not(feature = "unstable-test"))]
     pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
         Self {
             writer,
@@ -367,7 +367,7 @@ impl Formatter {
     }
 
     /// Implementation detail
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(not(feature = "unstable-test"))]
     pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
         self.writer
     }
@@ -574,8 +574,8 @@ impl Formatter {
 // these need to be in a separate module or `unreachable!` will end up calling `defmt::panic` and
 // this will not compile
 // (using `core::unreachable!` instead of `unreachable!` doesn't help)
-#[cfg(target_arch = "x86_64")]
-mod x86_64 {
+#[cfg(feature = "unstable-test")]
+mod test_only {
     use core::ptr::NonNull;
 
     use super::Write;

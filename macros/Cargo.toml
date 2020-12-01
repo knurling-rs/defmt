@@ -12,6 +12,10 @@ version = "0.1.1"
 [lib]
 proc-macro = true
 
+[features]
+# WARNING: for internal use only, not covered by semver guarantees
+unstable-test = []
+
 [dependencies]
 defmt-parser = { path = "../parser", features = ["unstable"], version = "0.1.0" }
 quote = "1.0.7"

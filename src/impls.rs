@@ -1,4 +1,4 @@
-#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "unstable-test")]
 use crate as defmt;
 use defmt_macros::internp;
 

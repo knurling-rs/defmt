@@ -14,6 +14,9 @@ version = "0.1.3"
 [features]
 alloc = []
 
+# WARNING: for internal use only, not covered by semver guarantees
+unstable-test = ["defmt-macros/unstable-test"]
+
 [dependencies]
 defmt-macros = { path = "macros", version = "0.1.1" }
 heapless = "0.5.6"

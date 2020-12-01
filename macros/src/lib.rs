@@ -594,7 +594,10 @@ pub fn assert_(ts: TokenStream) -> TokenStream {
             Level::Error,
             FormatArgs {
                 litstr: LitStr::new(
-                    &format!("panicked at 'assertion failed: {}'", escape_expr(&condition)),
+                    &format!(
+                        "panicked at 'assertion failed: {}'",
+                        escape_expr(&condition)
+                    ),
                     Span2::call_site(),
                 ),
                 rest: None,
@@ -923,19 +926,16 @@ pub fn internp(ts: TokenStream) -> TokenStream {
     let sym = symbol::Symbol::new("prim", &ls).mangle();
     let section = format!(".defmt.prim.{}", sym);
 
-    quote!(match () {
-        #[cfg(target_arch = "x86_64")]
-        () => {
-            defmt::export::fetch_add_string_index() as u8
-        }
-        #[cfg(not(target_arch = "x86_64"))]
-        () => {
+    if cfg!(feature = "unstable-test") {
+        quote!({ defmt::export::fetch_add_string_index() as u8 })
+    } else {
+        quote!({
             #[link_section = #section]
             #[export_name = #sym]
             static S: u8 = 0;
             &S as *const u8 as u8
-        }
-    })
+        })
+    }
     .into()
 }
 
@@ -991,19 +991,16 @@ fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
     } else {
         format_ident!("S")
     };
-    quote!(match () {
-        #[cfg(target_arch = "x86_64")]
-        () => {
-            defmt::export::fetch_add_string_index()
-        }
-        #[cfg(not(target_arch = "x86_64"))]
-        () => {
+    if cfg!(feature = "unstable-test") {
+        quote!({ defmt::export::fetch_add_string_index() })
+    } else {
+        quote!({
             #[link_section = #section]
             #[export_name = #sym]
             static #varname: u8 = 0;
             &#varname as *const u8 as usize
-        }
-    })
+        })
+    }
 }
 
 struct Write {

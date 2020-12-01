@@ -41,9 +41,12 @@ jobs:
     - name: Check that all crates build
       run: RUSTFLAGS='--deny warnings' cargo check --all
       shell: bash
+    - name: Check that crates build with unstable-test feature
+      run: RUSTFLAGS='--deny warnings' cargo check --all --features unstable-test
+      shell: bash
     - name: Run tests on Ubuntu/Windows
       if: matrix.os != 'macOS-latest'
-      run: cargo test --workspace
+      run: cargo test --workspace --features unstable-test
     - name: Run tests on macOS
       # NOTE defmt does not build for macOS because its `cortex-m-rt` dependency doesn't
       # (see https://github.com/rust-embedded/cortex-m-rt/issues/74), so we cannot use
@@ -97,7 +100,7 @@ jobs:
       with:
         mdbook-version: latest
     - name: Build defmt
-      run: cargo build
+      run: cargo build --features unstable-test
       # NOTE order of steps is important
     - name: Run book tests
       working-directory: book
