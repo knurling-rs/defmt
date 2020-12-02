@@ -482,8 +482,6 @@ fn main() -> ! {
         defmt::info!("{:?}", Display2Format::<consts::U32>(&addr));
     }
 
-    defmt::info!("QEMU test finished!");
-
     defmt::info!(
         "i128: 0 = {:i128}, -1 = {:i128}, MAX = {:i128}, MIN = {:i128}",
         0,
@@ -502,6 +500,8 @@ fn main() -> ! {
 
     defmt::info!("{:?}", 340282366920938u128);
     defmt::info!("{:?}", -170141183460469i128);
+
+    defmt::info!("QEMU test finished!");
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)
