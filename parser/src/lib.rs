@@ -72,10 +72,7 @@ pub enum Type {
 }
 
 fn is_digit(c: Option<char>) -> bool {
-    match c.unwrap_or('\0') {
-        '0'..='9' => true,
-        _ => false,
-    }
+    matches!(c.unwrap_or('\0'), '0'..='9')
 }
 
 fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
@@ -283,7 +280,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
         }
 
         // Peek at the next char.
-        if chars.as_str().chars().next() == Some('{') {
+        if chars.as_str().starts_with('{') {
             // Escaped `{{`, also part of a literal fragment.
             chars.next(); // Move after both `{`s.
             continue;

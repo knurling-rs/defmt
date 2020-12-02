@@ -34,6 +34,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
 
     let mut init = None;
     let mut tests = vec![];
+    let mut imports = vec![];
     for item in items {
         let item_span = item.span();
         match item {
@@ -130,10 +131,14 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 }
             }
 
+            Item::Use(u) => {
+                imports.push(u);
+            }
+
             _ => {
                 return Err(parse::Error::new(
                     item.span(),
-                    "only function items are allowed",
+                    "only `#[test]` functions and imports (`use`) are allowed in this scope",
                 ));
             }
         }
@@ -194,6 +199,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
         .map(|test| format!(".. {} ok", test.ident))
         .collect::<Vec<_>>();
     Ok(quote!(mod #ident {
+        #(#imports)*
         // TODO use `cortex-m-rt::entry` here to get the `static mut` transform
         #[export_name = "main"]
         unsafe extern "C" fn __defmt_test_entry() -> ! {
