@@ -332,8 +332,10 @@ enum Arg<'t> {
     F32(f32),
     /// U8, U16, U24 and U32
     Uxx(u64),
+    U128(u128),
     /// I8, I16, I24 and I32
     Ixx(i64),
+    I128(i128),
     /// Str
     Str(String),
     /// Interned string
@@ -725,6 +727,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     let data = self.bytes.read_i64::<LE>()?;
                     args.push(Arg::Ixx(data as i64));
                 }
+                Type::I128 => {
+                    let data = self.bytes.read_i128::<LE>()?;
+                    args.push(Arg::I128(data));
+                }
                 Type::I8 => {
                     let data = self.bytes.read_i8()?;
                     args.push(Arg::Ixx(data as i64));
@@ -751,6 +757,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::U64 => {
                     let data = self.bytes.read_u64::<LE>()?;
                     args.push(Arg::Uxx(data as u64));
+                }
+                Type::U128 => {
+                    let data = self.bytes.read_u128::<LE>()?;
+                    args.push(Arg::U128(data));
                 }
                 Type::Usize => {
                     let unsigned = read_leb128(&mut self.bytes)?;
@@ -884,7 +894,9 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                             _ => write!(buf, "{}", x)?,
                         }
                     }
+                    Arg::U128(x) => write!(buf, "{}", x)?,
                     Arg::Ixx(x) => write!(buf, "{}", x)?,
+                    Arg::I128(x) => write!(buf, "{}", x)?,
                     Arg::Str(x) => write!(buf, "{}", x)?,
                     Arg::IStr(x) => write!(buf, "{}", x)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
@@ -996,7 +1008,7 @@ mod tests {
 
     #[test]
     fn all_integers() {
-        const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:i8} {:i16} {:i32}!";
+        const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:u64} {:u128} {:i8} {:i16} {:i32} {:i64} {:i128}!";
         let mut entries = BTreeMap::new();
         entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
 
@@ -1009,9 +1021,13 @@ mod tests {
             0xff, 0xff, // u16
             0, 0, 1, // u24
             0xff, 0xff, 0xff, 0xff, // u32
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // u64
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // u128
             0xff, // i8
             0xff, 0xff, // i16
             0xff, 0xff, 0xff, 0xff, // i32
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i64
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i128
         ];
 
         assert_eq!(
@@ -1027,9 +1043,13 @@ mod tests {
                         Arg::Uxx(u16::max_value().into()), // u16
                         Arg::Uxx(0x10000),                 // u24
                         Arg::Uxx(u32::max_value().into()), // u32
+                        Arg::Uxx(u64::max_value().into()), // u64
+                        Arg::U128(u128::max_value().into()),
                         Arg::Ixx(-1),                      // i8
                         Arg::Ixx(-1),                      // i16
                         Arg::Ixx(-1),                      // i32
+                        Arg::Ixx(-1),                      // i64
+                        Arg::I128(-1),                     // i128
                     ],
                 },
                 bytes.len(),

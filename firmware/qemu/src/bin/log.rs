@@ -482,6 +482,25 @@ fn main() -> ! {
         defmt::info!("{:?}", Display2Format::<consts::U32>(&addr));
     }
 
+    defmt::info!(
+        "i128: 0 = {:i128}, -1 = {:i128}, MAX = {:i128}, MIN = {:i128}",
+        0,
+        -1,
+        i128::max_value(),
+        i128::min_value()
+    );
+
+    defmt::info!(
+        "u128: 0 = {:u128}, -1 = {:u128}, MAX = {:u128}, MIN = {:u128}",
+        0,
+        1,
+        u128::max_value(),
+        u128::min_value()
+    );
+
+    defmt::info!("{:?}", 340282366920938u128);
+    defmt::info!("{:?}", -170141183460469i128);
+
     defmt::info!("QEMU test finished!");
 
     loop {
