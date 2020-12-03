@@ -30,7 +30,8 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
 
 /// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
 ///
-/// Use with caution, this is meant for defmt/probe-run development only.
+/// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage
+/// data.
 pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
     parse_impl(elf, false)
 }
