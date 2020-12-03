@@ -192,11 +192,8 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
     let unit_test_blocks = tests.iter().map(|test| &test.block);
     let unit_test_running = tests
         .iter()
-        .map(|test| format!("running {} ..", test.ident))
-        .collect::<Vec<_>>();
-    let unit_test_done = tests
-        .iter()
-        .map(|test| format!(".. {} ok", test.ident))
+        .enumerate()
+        .map(|(i, test)| format!("({}/{}) running `{}`...", i + 1, tests.len(), test.ident))
         .collect::<Vec<_>>();
     Ok(quote!(mod #ident {
         #(#imports)*
@@ -207,9 +204,9 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             #(
                 defmt::info!(#unit_test_running);
                 #unit_test_calls
-                defmt::info!(#unit_test_done);
             )*
 
+            defmt::info!("all tests passed!");
             #krate::export::exit()
         }
 
