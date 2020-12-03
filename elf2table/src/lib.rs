@@ -21,10 +21,21 @@ pub use defmt_decoder::Table;
 use defmt_decoder::{StringEntry, TableEntry};
 use object::{Object, ObjectSection};
 
-/// Parses an ELF file and returns the decoded `defmt` table
+/// Parses an ELF file and returns the decoded `defmt` table.
 ///
-/// This function returns `None` if the ELF file contains no `.defmt` section
+/// This function returns `None` if the ELF file contains no `.defmt` section.
 pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+    parse_impl(elf, true)
+}
+
+/// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
+///
+/// Use with caution, this is meant for defmt/probe-run development only.
+pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+    parse_impl(elf, false)
+}
+
+fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
     // first pass to extract the `_defmt_version`
     let mut version = None;
@@ -75,7 +86,9 @@ pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         }
     };
 
-    defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
+    if check_version {
+        defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
+    }
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
