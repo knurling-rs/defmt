@@ -1,4 +1,4 @@
-use crate::{Formatter, Str};
+use crate::{Formatter, InternalFormatter, Str};
 
 #[cfg(feature = "unstable-test")]
 thread_local! {
@@ -23,27 +23,27 @@ pub fn fetch_add_string_index() -> usize {
 }
 
 #[cfg(feature = "unstable-test")]
-pub fn acquire() -> Option<Formatter> {
+pub fn acquire() -> Option<InternalFormatter> {
     None
 }
 
 #[cfg(not(feature = "unstable-test"))]
 #[inline(never)]
-pub fn acquire() -> Option<Formatter> {
+pub fn acquire() -> Option<InternalFormatter> {
     extern "Rust" {
-        fn _defmt_acquire() -> Option<Formatter>;
+        fn _defmt_acquire() -> Option<InternalFormatter>;
     }
     unsafe { _defmt_acquire() }
 }
 
 #[cfg(feature = "unstable-test")]
-pub fn release(_: Formatter) {}
+pub fn release(_: InternalFormatter) {}
 
 #[cfg(not(feature = "unstable-test"))]
 #[inline(never)]
-pub fn release(fmt: Formatter) {
+pub fn release(fmt: InternalFormatter) {
     extern "Rust" {
-        fn _defmt_release(fmt: Formatter);
+        fn _defmt_release(fmt: InternalFormatter);
     }
     unsafe { _defmt_release(fmt) }
 }
@@ -147,10 +147,10 @@ mod sealed {
     pub struct NoneError;
 
     impl Format for NoneError {
-        fn format(&self, fmt: &mut Formatter) {
-            if fmt.needs_tag() {
+        fn format(&self, fmt: Formatter) {
+            if fmt.inner.needs_tag() {
                 let t = internp!("Unwrap of a None option value");
-                fmt.u8(&t);
+                fmt.inner.u8(&t);
             }
         }
     }

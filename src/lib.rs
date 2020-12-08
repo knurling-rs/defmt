@@ -303,7 +303,7 @@ pub struct Str {
 }
 
 /// Handle to a defmt logger.
-pub struct Formatter {
+pub struct InternalFormatter {
     #[cfg(not(feature = "unstable-test"))]
     writer: NonNull<dyn Write>,
     #[cfg(feature = "unstable-test")]
@@ -324,8 +324,13 @@ pub struct Formatter {
 /// the maximum number of booleans that can be compressed together
 const MAX_NUM_BOOL_FLAGS: u8 = 8;
 
+pub struct Formatter<'a> {
+    /// Keep the formatter alive
+    pub inner: &'a mut InternalFormatter,
+}
+
 #[doc(hidden)]
-impl Formatter {
+impl InternalFormatter {
     /// Only for testing
     #[cfg(feature = "unstable-test")]
     pub fn new() -> Self {
@@ -382,7 +387,8 @@ impl Formatter {
         }
         self.called_write_macro = false;
 
-        f.format(self);
+        let formatter = Formatter { inner: self };
+        f.format(formatter);
 
         self.called_write_macro = old_called_write_macro;
         if omit_tag {
@@ -405,10 +411,12 @@ impl Formatter {
     }
 
     /// Implementation detail
-    pub fn with_tag(&mut self, f: impl FnOnce(&mut Self)) {
+    pub fn with_tag(&mut self, f: impl FnOnce(Formatter)) {
         let omit_tag = self.omit_tag;
         self.omit_tag = false;
-        f(self);
+
+        let formatter = Formatter { inner: self };
+        f(formatter);
         // restore
         self.omit_tag = omit_tag;
     }
@@ -638,7 +646,7 @@ pub trait Write {
 /// ```
 pub trait Format {
     /// Writes the defmt representation of `self` to `fmt`.
-    fn format(&self, fmt: &mut Formatter);
+    fn format(&self, fmt: Formatter);
 }
 
 #[export_name = "__defmt_default_timestamp"]
@@ -691,7 +699,7 @@ impl<N> Format for Debug2Format<'_, N>
 where
     N: ArrayLength<u8>,
 {
-    fn format(&self, fmt: &mut Formatter) {
+    fn format(&self, fmt: Formatter) {
         use core::fmt::Write as _;
 
         // `Debug` format into a stack buffer; if the formatted string doesn't fit discard the
@@ -700,11 +708,11 @@ where
         core::write!(buf, "{:?}", self.value).ok();
 
         // tell defmt we are formatting a `str` value
-        if fmt.needs_tag() {
+        if fmt.inner.needs_tag() {
             let t = impls::str_tag();
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.str(&buf);
+        fmt.inner.str(&buf);
     }
 }
 
@@ -765,18 +773,18 @@ impl<N> Format for Display2Format<'_, N>
 where
     N: ArrayLength<u8>,
 {
-    fn format(&self, fmt: &mut Formatter) {
+    fn format(&self, fmt: Formatter) {
         use core::fmt::Write as _;
 
         let mut buf = String::<N>::new();
         core::write!(buf, "{}", self.value).ok();
 
         // tell defmt we are formatting a `str` value
-        if fmt.needs_tag() {
+        if fmt.inner.needs_tag() {
             let t = impls::str_tag();
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.str(&buf);
+        fmt.inner.str(&buf);
     }
 }
 
