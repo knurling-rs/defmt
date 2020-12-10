@@ -302,7 +302,7 @@ pub struct Str {
     address: u16,
 }
 
-/// Handle to a defmt logger.
+#[doc(hidden)]
 pub struct InternalFormatter {
     #[cfg(not(feature = "unstable-test"))]
     writer: NonNull<dyn Write>,
@@ -324,6 +324,7 @@ pub struct InternalFormatter {
 /// the maximum number of booleans that can be compressed together
 const MAX_NUM_BOOL_FLAGS: u8 = 8;
 
+/// Handle to a defmt logger.
 pub struct Formatter<'a> {
     /// Keep the formatter alive
     pub inner: &'a mut InternalFormatter,
@@ -599,7 +600,7 @@ mod test_only {
     use super::Write;
 
     #[doc(hidden)]
-    impl super::Formatter {
+    impl super::Formatter<'_> {
         /// Implementation detail
         pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
             unreachable!()

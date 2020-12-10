@@ -11,7 +11,7 @@ use cortex_m_semihosting::debug;
 struct MyStruct;
 
 impl Format for MyStruct {
-    fn format(&self, fmt: &mut defmt::Formatter) {
+    fn format(&self, fmt: defmt::Formatter) {
         defmt::write!(fmt, "one");
         defmt::write!(fmt, "two");
     }

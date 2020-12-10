@@ -1,4 +1,4 @@
-use crate::{Formatter, InternalFormatter, Str};
+use crate::{InternalFormatter, Str};
 
 #[cfg(feature = "unstable-test")]
 thread_local! {

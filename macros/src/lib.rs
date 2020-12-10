@@ -44,12 +44,12 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
         #vis struct #ident;
 
         #[no_mangle]
-        unsafe fn _defmt_acquire() -> Option<defmt::Formatter> {
-            <#ident as defmt::Logger>::acquire().map(|nn| defmt::Formatter::from_raw(nn))
+        unsafe fn _defmt_acquire() -> Option<defmt::InternalFormatter> {
+            <#ident as defmt::Logger>::acquire().map(|nn| defmt::InternalFormatter::from_raw(nn))
         }
 
         #[no_mangle]
-        unsafe fn _defmt_release(f: defmt::Formatter)  {
+        unsafe fn _defmt_release(f: defmt::InternalFormatter)  {
             <#ident as defmt::Logger>::release(f.into_raw())
         }
     )
@@ -244,7 +244,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
                         quote!()
                     } else {
                         quote!(
-                            f.u8(&#i);
+                            f.inner.u8(&#i);
                         )
                     };
 
@@ -256,7 +256,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
                             // encoded. This is required when encoding arrays like `[None, Some(x)]`
                             // with `{:?}`, since the format string of `x` won't appear for the
                             // first element.
-                            f.with_tag(|f| {
+                            f.inner.with_tag(|f| {
                                 #(#exprs;)*
                             });
                         }
@@ -265,8 +265,8 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
                 let sym = mksym(&fs, "fmt", false);
                 exprs.push(quote!(
-                    if f.needs_tag() {
-                        f.istr(&defmt::export::istr(#sym));
+                    if f.inner.needs_tag() {
+                        f.inner.istr(&defmt::export::istr(#sym));
                     }
                 ));
                 exprs.push(quote!(match self {
@@ -282,8 +282,8 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
             let sym = mksym(&fs, "fmt", false);
             exprs.push(quote!(
-                if f.needs_tag() {
-                    f.istr(&defmt::export::istr(#sym));
+                if f.inner.needs_tag() {
+                    f.inner.istr(&defmt::export::istr(#sym));
                 }
             ));
             exprs.push(quote!(match self {
@@ -316,7 +316,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
 
     quote!(
         impl #impl_generics defmt::Format for #ident #type_generics #where_clause {
-            fn format(&self, f: &mut defmt::Formatter) {
+            fn format(&self, f: defmt::Formatter) {
                 #(#exprs)*
             }
         }
@@ -362,10 +362,10 @@ fn fields(
                         core::write!(format, "{}: {{:{}}}", ident, ty).ok();
 
                         if ty == "?" {
-                            list.push(quote!(f.fmt(#ident, false)));
+                            list.push(quote!(f.inner.fmt(#ident, false)));
                         } else {
                             let method = format_ident!("{}", ty);
-                            list.push(quote!(f.#method(#ident)));
+                            list.push(quote!(f.inner.#method(#ident)));
                         }
                         pats.push(quote!( #ident ));
                     } else {
@@ -375,10 +375,10 @@ fn fields(
 
                         let ident = format_ident!("arg{}", i);
                         if ty == "?" {
-                            list.push(quote!(f.fmt(#ident, false)));
+                            list.push(quote!(f.inner.fmt(#ident, false)));
                         } else {
                             let method = format_ident!("{}", ty);
-                            list.push(quote!(f.#method(#ident)));
+                            list.push(quote!(f.inner.#method(#ident)));
                         }
 
                         let i = syn::Index::from(i);
