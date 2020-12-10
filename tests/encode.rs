@@ -18,12 +18,12 @@
 // when writing the expected output of a unit test.
 //
 // ```
-// let mut f = Formatter::new();
+// let mut f = InternalFormatter::new();
 // let index = defmt::export::fetch_string_index();
 // foo(&mut f); // NOTE increases the interner index
 // assert_eq!(f.bytes(), &[index]);
 //
-// let mut f = Formatter::new();
+// let mut f = InternalFormatter::new();
 // foo(&mut f);
 // assert_eq!(f.bytes(), &[index.wrapping_add(1)]);
 //                               ^^^^^^^^^^^^^^^ account for the previous `foo` call
@@ -36,7 +36,7 @@
 //
 // - the mocked index is 7 bits so its LEB128 encoding is the input byte
 
-use defmt::{export::fetch_string_index, write, Format, Formatter};
+use defmt::{export::fetch_string_index, write, Format, Formatter, InternalFormatter};
 
 // Increase the 7-bit mocked interned index
 fn inc(index: u8, n: u8) -> u8 {
@@ -45,8 +45,11 @@ fn inc(index: u8, n: u8) -> u8 {
 }
 
 fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: &[u8]) {
-    let mut f = Formatter::new();
-    val.format(&mut f);
+    let mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: &mut f,
+    };
+    val.format(g);
     f.finalize();
     assert_eq!(f.bytes(), expected_encoding);
 }
@@ -54,7 +57,7 @@ fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: 
 #[test]
 fn write() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(f, "The answer is {:u8}", 42);
     assert_eq!(
@@ -65,7 +68,7 @@ fn write() {
         ]
     );
 
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
     write!(f, "The answer is {:?}", 42u8);
     assert_eq!(
         f.bytes(),
@@ -80,7 +83,7 @@ fn write() {
 #[test]
 fn booleans_max_num_bool_flags() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(
         f,
@@ -99,7 +102,7 @@ fn booleans_max_num_bool_flags() {
 #[test]
 fn booleans_less_than_max_num_bool_flags() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(
         f,
@@ -118,7 +121,7 @@ fn booleans_less_than_max_num_bool_flags() {
 #[test]
 fn booleans_more_than_max_num_bool_flags() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(f, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
            false, true, true, false, true, false, true, true, false, true);
@@ -135,7 +138,7 @@ fn booleans_more_than_max_num_bool_flags() {
 #[test]
 fn booleans_mixed() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(
         f,
@@ -155,7 +158,7 @@ fn booleans_mixed() {
 #[test]
 fn booleans_mixed_no_trailing_bool() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(f, "encode mixed bools {:bool} {:u8}", false, 42);
     assert_eq!(
@@ -170,7 +173,7 @@ fn booleans_mixed_no_trailing_bool() {
 #[test]
 fn bitfields_mixed() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(
         f,
@@ -191,7 +194,7 @@ fn bitfields_mixed() {
 #[test]
 fn bitfields_across_octets() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(f, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
     assert_eq!(
@@ -207,7 +210,7 @@ fn bitfields_across_octets() {
 #[test]
 fn bitfields_truncate_lower() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(
         f,
@@ -226,7 +229,7 @@ fn bitfields_truncate_lower() {
 #[test]
 fn bitfields_assert_range_exclusive() {
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(f, "bitfields {0:6..8}", 0b1010_0101u8,);
     assert_eq!(
@@ -265,7 +268,7 @@ fn boolean_struct_mixed() {
     }
 
     let index = fetch_string_index();
-    let ref mut f = Formatter::new();
+    let ref mut f = InternalFormatter::new();
 
     write!(
         f,
@@ -312,7 +315,7 @@ fn single_struct_manual() {
     }
 
     impl Format for X {
-        fn format(&self, f: &mut Formatter) {
+        fn format(&self, f: Formatter) {
             defmt::write!(f, "X {{ x: {:u8}, y: {:u16} }}", self.y, self.z)
         }
     }
