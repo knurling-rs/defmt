@@ -884,10 +884,8 @@ fn derive_with_bounds() {
     check_format_implementation(
         &S2 { a: &1, b: &2 },
         &[
-            index,         // "S2 { a: {:?}, b: {:?} }}"
-            inc(index, 1), // "{:u8}"
+            index,         // "S2 { a: {:u8}, b: {:u8} }}"
             1,
-            inc(index, 2), // "{:u8}"
             2,
         ],
     );

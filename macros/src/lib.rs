@@ -422,6 +422,7 @@ fn as_native_type(ty: &Type) -> Option<String> {
             }
             None => None,
         },
+        Type::Reference(tref) => as_native_type(&*tref.elem),
         _ => None,
     }
 }
