@@ -447,11 +447,7 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let ls = log.litstr.value();
     let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
-        Err(e) => {
-            return parse::Error::new(log.litstr.span(), e)
-                .to_compile_error()
-                .into()
-        }
+        Err(e) => return parse::Error::new(log.litstr.span(), e).to_compile_error(),
     };
 
     let args = log
@@ -461,7 +457,7 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
 
     let (pats, exprs) = match Codegen::new(&fragments, args.len(), log.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
-        Err(e) => return e.to_compile_error().into(),
+        Err(e) => return e.to_compile_error(),
     };
 
     let sym = mksym(&ls, level.as_str(), true);
