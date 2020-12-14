@@ -457,7 +457,7 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let args = log
         .rest
         .map(|(_, exprs)| exprs.into_iter().collect())
-        .unwrap_or(vec![]);
+        .unwrap_or_else(Vec::new);
 
     let (pats, exprs) = match Codegen::new(&fragments, args.len(), log.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
