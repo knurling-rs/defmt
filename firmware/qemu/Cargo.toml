@@ -47,10 +47,6 @@ name = "log"
 test = false
 
 [[bin]]
-name = "double-write"
-test = false
-
-[[bin]]
 name = "unwrap"
 test = false
 
