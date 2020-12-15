@@ -325,33 +325,30 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
     // Check for argument type conflicts.
     let mut args = Vec::new();
     for frag in &fragments {
-        match frag {
-            Fragment::Parameter(Parameter { index, ty }) => {
-                if args.len() <= *index {
-                    args.resize(*index + 1, None);
-                }
+        if let Fragment::Parameter(Parameter { index, ty }) = frag {
+            if args.len() <= *index {
+                args.resize(*index + 1, None);
+            }
 
-                match &mut args[*index] {
-                    none @ None => {
-                        *none = Some(ty.clone());
-                    }
-                    Some(other_ty) => {
-                        // FIXME: Bitfield range shouldn't be part of the type.
-                        match (&*other_ty, ty) {
-                            (Type::BitField(_), Type::BitField(_)) => {}
-                            (a, b) if a != b => {
-                                return Err(format!(
-                                    "conflicting types for argument {}: used as {:?} and {:?}",
-                                    index, other_ty, ty
-                                )
-                                .into());
-                            }
-                            _ => {}
+            match &mut args[*index] {
+                none @ None => {
+                    *none = Some(ty.clone());
+                }
+                Some(other_ty) => {
+                    // FIXME: Bitfield range shouldn't be part of the type.
+                    match (&*other_ty, ty) {
+                        (Type::BitField(_), Type::BitField(_)) => {}
+                        (a, b) if a != b => {
+                            return Err(format!(
+                                "conflicting types for argument {}: used as {:?} and {:?}",
+                                index, other_ty, ty
+                            )
+                            .into());
                         }
+                        _ => {}
                     }
                 }
             }
-            _ => {}
         }
     }
 

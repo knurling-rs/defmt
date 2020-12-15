@@ -29,10 +29,7 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
     }
     let s = parse_macro_input!(input as ItemStruct);
     let ident = &s.ident;
-    let is_unit = match s.fields {
-        Fields::Unit => true,
-        _ => false,
-    };
+    let is_unit = matches!(s.fields, Fields::Unit);
     if !s.generics.params.is_empty() || s.generics.where_clause.is_some() || !is_unit {
         return parse::Error::new(
             ident.span(),
@@ -422,6 +419,7 @@ fn as_native_type(ty: &Type) -> Option<String> {
             }
             None => None,
         },
+        Type::Reference(tref) => as_native_type(&*tref.elem),
         _ => None,
     }
 }
@@ -446,21 +444,17 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let ls = log.litstr.value();
     let fragments = match defmt_parser::parse(&ls) {
         Ok(args) => args,
-        Err(e) => {
-            return parse::Error::new(log.litstr.span(), e)
-                .to_compile_error()
-                .into()
-        }
+        Err(e) => return parse::Error::new(log.litstr.span(), e).to_compile_error(),
     };
 
     let args = log
         .rest
         .map(|(_, exprs)| exprs.into_iter().collect())
-        .unwrap_or(vec![]);
+        .unwrap_or_else(Vec::new);
 
     let (pats, exprs) = match Codegen::new(&fragments, args.len(), log.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
-        Err(e) => return e.to_compile_error().into(),
+        Err(e) => return e.to_compile_error(),
     };
 
     let sym = mksym(&ls, level.as_str(), true);
