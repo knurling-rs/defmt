@@ -10,11 +10,11 @@ First let's see how a primitive implements the `Format` trait:
 # trait Format { fn format(&self, fmt: &mut defmt::Formatter); }
 impl Format for u8 {
     fn format(&self, fmt: &mut defmt::Formatter) {
-        if fmt.needs_tag() {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:u8}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u8(self)
+        fmt.inner.u8(self)
         // on the wire: [1, 42]
         //  string index ^  ^^ `self`
     }
