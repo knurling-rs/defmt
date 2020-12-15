@@ -160,6 +160,10 @@ pub use defmt_macros::unwrap;
 /// this macro. See [the manual] for details.
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/panic.html
+///
+/// # Inter-operation with built-in attributes
+///
+/// This attribute cannot be used together with the `export_name` or `no_mangle` attributes
 pub use defmt_macros::panic_handler;
 
 /// Creates an interned string ([`Str`]) from a string literal.
@@ -260,6 +264,10 @@ pub use defmt_macros::global_logger;
 ///     0
 /// }
 /// ```
+///
+/// # Inter-operation with built-in attributes
+///
+/// This attribute cannot be used together with the `export_name` or `no_mangle` attributes
 pub use defmt_macros::timestamp;
 
 #[doc(hidden)] // documented as the `Format` trait instead

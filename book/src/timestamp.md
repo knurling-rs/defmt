@@ -96,3 +96,7 @@ count: u64 <- (high1 << 32) | low
 ```
 
 The loop should be kept as tight as possible and the read operations must be single-instruction operations.
+
+## Inter-operation with built-in attributes
+
+The `#[timestamp]` attribute cannot be used together with the `export_name` or `no_mangle` attributes
