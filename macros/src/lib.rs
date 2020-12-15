@@ -17,8 +17,10 @@ use syn::{
     WhereClause, WherePredicate,
 };
 
-fn reject_attributes(
-    // appears in the error message
+/// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
+///
+/// The compiler error will indicate that the attribute conflicts with `attr_name`
+fn check_attribute_conflicts(
     attr_name: &str,
     attrs_to_check: &[Attribute],
     reject_list: &[&str],
@@ -122,7 +124,8 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let attrs = &f.attrs;
-    if let Err(e) = reject_attributes("panic_handler", attrs, &["export_name", "no_mangle"]) {
+    if let Err(e) = check_attribute_conflicts("panic_handler", attrs, &["export_name", "no_mangle"])
+    {
         return e.to_compile_error().into();
     }
     let block = &f.block;
@@ -173,7 +176,7 @@ pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let attrs = &f.attrs;
-    if let Err(e) = reject_attributes("timestamp", attrs, &["export_name", "no_mangle"]) {
+    if let Err(e) = check_attribute_conflicts("timestamp", attrs, &["export_name", "no_mangle"]) {
         return e.to_compile_error().into();
     }
     let block = &f.block;
