@@ -18,19 +18,20 @@ use syn::{
 };
 
 fn reject_attributes(
-    which_attr: &str,
-    attrs: &[Attribute],
-    block_list: &[&str],
+    // appears in the error message
+    attr_name: &str,
+    attrs_to_check: &[Attribute],
+    reject_list: &[&str],
 ) -> parse::Result<()> {
-    for attr in attrs {
+    for attr in attrs_to_check {
         if let Some(ident) = attr.path.get_ident() {
             let ident = ident.to_string();
-            if block_list.contains(&&*ident) {
+            if reject_list.contains(&&*ident) {
                 return Err(parse::Error::new(
                     attr.span(),
                     format!(
                         "`#[{}]` attribute cannot be used together with `#[{}]`",
-                        which_attr, ident
+                        attr_name, ident
                     ),
                 ));
             }
@@ -121,7 +122,7 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let attrs = &f.attrs;
-    if let Err(e) = reject_attributes("panic_handler", attrs, &["export_name"]) {
+    if let Err(e) = reject_attributes("panic_handler", attrs, &["export_name", "no_mangle"]) {
         return e.to_compile_error().into();
     }
     let block = &f.block;
@@ -172,7 +173,7 @@ pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let attrs = &f.attrs;
-    if let Err(e) = reject_attributes("timestamp", attrs, &["export_name"]) {
+    if let Err(e) = reject_attributes("timestamp", attrs, &["export_name", "no_mangle"]) {
         return e.to_compile_error().into();
     }
     let block = &f.block;
