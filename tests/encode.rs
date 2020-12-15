@@ -58,8 +58,11 @@ fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: 
 fn write() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
-    write!(f, "The answer is {:u8}", 42);
+    write!(g, "The answer is {:u8}", 42);
     assert_eq!(
         f.bytes(),
         &[
@@ -68,10 +71,13 @@ fn write() {
         ]
     );
 
-    let ref mut f = InternalFormatter::new();
-    write!(f, "The answer is {:?}", 42u8);
+    let ref mut f2 = InternalFormatter::new();
+    let g2 = Formatter {
+        inner: f2,
+    };
+    write!(g2, "The answer is {:?}", 42u8);
     assert_eq!(
-        f.bytes(),
+        f2.bytes(),
         &[
             inc(index, 1), // "The answer is {:?}"
             inc(index, 2), // "{:u8}" / impl Format for u8
@@ -84,9 +90,12 @@ fn write() {
 fn booleans_max_num_bool_flags() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
     write!(
-        f,
+        g,
         "encode 8 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
         false, true, true, false, true, false, true, true
     );
@@ -103,9 +112,12 @@ fn booleans_max_num_bool_flags() {
 fn booleans_less_than_max_num_bool_flags() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
     write!(
-        f,
+        g,
         "encode 3 bools {:bool} {:bool} {:bool}",
         false, true, true
     );
@@ -122,8 +134,11 @@ fn booleans_less_than_max_num_bool_flags() {
 fn booleans_more_than_max_num_bool_flags() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
-    write!(f, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+    write!(g, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
            false, true, true, false, true, false, true, true, false, true);
     assert_eq!(
         f.bytes(),
@@ -139,9 +154,12 @@ fn booleans_more_than_max_num_bool_flags() {
 fn booleans_mixed() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
     write!(
-        f,
+        g,
         "encode mixed bools {:bool} {:bool} {:u8} {:bool}",
         true, false, 42, true
     );
@@ -159,8 +177,11 @@ fn booleans_mixed() {
 fn booleans_mixed_no_trailing_bool() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
-    write!(f, "encode mixed bools {:bool} {:u8}", false, 42);
+    write!(g, "encode mixed bools {:bool} {:u8}", false, 42);
     assert_eq!(
         f.bytes(),
         &[
@@ -174,9 +195,12 @@ fn booleans_mixed_no_trailing_bool() {
 fn bitfields_mixed() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
     write!(
-        f,
+        g,
         "bitfields {0:7..12}, {1:0..5}",
         0b1110_0101_1111_0000u16, 0b1111_0000u8
     );
@@ -195,8 +219,11 @@ fn bitfields_mixed() {
 fn bitfields_across_octets() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
-    write!(f, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
+    write!(g, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
     assert_eq!(
         f.bytes(),
         &[
@@ -211,9 +238,12 @@ fn bitfields_across_octets() {
 fn bitfields_truncate_lower() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
     write!(
-        f,
+        g,
         "bitfields {0:9..14}",
         0b0000_0000_0000_1111_0110_0011_1101_0010u32
     );
@@ -230,8 +260,11 @@ fn bitfields_truncate_lower() {
 fn bitfields_assert_range_exclusive() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
-    write!(f, "bitfields {0:6..8}", 0b1010_0101u8,);
+    write!(g, "bitfields {0:6..8}", 0b1010_0101u8,);
     assert_eq!(
         f.bytes(),
         &[
@@ -269,9 +302,12 @@ fn boolean_struct_mixed() {
 
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
+    let g = Formatter {
+        inner: f,
+    };
 
     write!(
-        f,
+        g,
         "mixed formats {:bool} {:?}",
         true,
         X { y: false, z: true }

@@ -959,7 +959,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
     let fmt = &write.fmt;
     // FIXME: Introduce a new `"write"` tag and decode it in a loop (breaking change).
     let sym = mksym(&ls, "fmt", false);
-    quote!(match (&mut #fmt.inner, #(&(#args)),*) {
+    quote!(match (#fmt.inner, #(&(#args)),*) {
         (_fmt_, #(#pats),*) => {
             _fmt_.write_macro_start();
             // HACK conditional should not be here; see FIXME in `format`

@@ -600,7 +600,7 @@ mod test_only {
     use super::Write;
 
     #[doc(hidden)]
-    impl super::Formatter<'_> {
+    impl super::InternalFormatter {
         /// Implementation detail
         pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
             unreachable!()
