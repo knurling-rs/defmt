@@ -45,7 +45,7 @@ struct CRCCNF {
 }
 
 impl defmt::Format for CRCCNF {
-    fn format(&self, f: &mut defmt::Formatter) {
+    fn format(&self, f: defmt::Formatter) {
         // format the bitfields of the register as struct fields
         defmt::write!(
            f,
@@ -68,7 +68,7 @@ Example below:
 struct MyU8 { inner: u8 }
 
 impl defmt::Format for MyU8 {
-    fn format(&self, f: &mut defmt::Formatter) {
+    fn format(&self, f: defmt::Formatter) {
         self.inner.format(f)
     }
 }
