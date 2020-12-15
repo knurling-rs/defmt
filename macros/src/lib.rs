@@ -12,10 +12,36 @@ use syn::{
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam, ItemFn,
-    ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type, WhereClause,
-    WherePredicate,
+    Attribute, Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
+    ItemFn, ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type,
+    WhereClause, WherePredicate,
 };
+
+/// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
+///
+/// The compiler error will indicate that the attribute conflicts with `attr_name`
+fn check_attribute_conflicts(
+    attr_name: &str,
+    attrs_to_check: &[Attribute],
+    reject_list: &[&str],
+) -> parse::Result<()> {
+    for attr in attrs_to_check {
+        if let Some(ident) = attr.path.get_ident() {
+            let ident = ident.to_string();
+            if reject_list.contains(&&*ident) {
+                return Err(parse::Error::new(
+                    attr.span(),
+                    format!(
+                        "`#[{}]` attribute cannot be used together with `#[{}]`",
+                        attr_name, ident
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
 
 #[proc_macro_attribute]
 pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -39,8 +65,10 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
         .into();
     }
 
+    let attrs = &s.attrs;
     let vis = &s.vis;
     quote!(
+        #(#attrs)*
         #vis struct #ident;
 
         #[no_mangle]
@@ -92,8 +120,14 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
             .into();
     }
 
+    let attrs = &f.attrs;
+    if let Err(e) = check_attribute_conflicts("panic_handler", attrs, &["export_name", "no_mangle"])
+    {
+        return e.to_compile_error().into();
+    }
     let block = &f.block;
     quote!(
+        #(#attrs)*
         #[export_name = "_defmt_panic"]
         fn #ident() -> ! {
             #block
@@ -138,9 +172,14 @@ pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
             .into();
     }
 
+    let attrs = &f.attrs;
+    if let Err(e) = check_attribute_conflicts("timestamp", attrs, &["export_name", "no_mangle"]) {
+        return e.to_compile_error().into();
+    }
     let block = &f.block;
     quote!(
         #[export_name = "_defmt_timestamp"]
+        #(#attrs)*
         fn #ident() -> u64 {
             #block
         }

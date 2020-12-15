@@ -1,0 +1,5 @@
+error: `#[timestamp]` attribute cannot be used together with `#[no_mangle]`
+ --> $DIR/timestamp-no-mangle.rs:5:1
+  |
+5 | #[no_mangle]
+  | ^^^^^^^^^^^^
