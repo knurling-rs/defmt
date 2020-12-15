@@ -17,7 +17,7 @@ The re-entrancy issue arises if the `Format` implementation calls a logging macr
 # extern crate defmt;
 # struct X;
 impl defmt::Format for X {
-    fn format(&self, f: &mut defmt::Formatter) {
+    fn format(&self, f: defmt::Formatter) {
         //           ^ this is a handle to the global logger
         defmt::info!("Hello!");
         // ..
@@ -27,5 +27,5 @@ impl defmt::Format for X {
 
 `f` is a handle to the global logger.
 The `info!` call inside the `format` method is trying to access the global logger again.
-If `info!` succeeds then you have two exclusive handles (`&mut Formatter`) to the logger and that's UB.
+If `info!` succeeds then you have two exclusive handles (`Formatter`) to the logger and that's UB.
 If `info!` uses a spinlock to access the logger then this will deadlock.
