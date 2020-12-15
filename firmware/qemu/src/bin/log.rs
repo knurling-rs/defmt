@@ -501,6 +501,9 @@ fn main() -> ! {
     defmt::info!("{:?}", 340282366920938u128);
     defmt::info!("{:?}", -170141183460469i128);
 
+    defmt::info!("Hello {:char}", '💜');
+    defmt::info!("Hello {:char} & {:?}", '💜', '🍕');
+
     defmt::info!("QEMU test finished!");
 
     loop {

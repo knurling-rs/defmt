@@ -71,6 +71,8 @@ pub enum Type {
     U8Slice,
     U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     F32,
+    /// A single Unicode character
+    Char,
 }
 
 fn is_digit(c: Option<char>) -> bool {
@@ -166,6 +168,7 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
         "[u8]" => Type::U8Slice,
         "?" => Type::Format,
         "[?]" => Type::FormatSlice,
+        "char" => Type::Char,
         _ if s.starts_with(U8_ARRAY_START) => {
             s = &s[U8_ARRAY_START.len()..];
             let len = parse_array(s)?;
