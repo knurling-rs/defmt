@@ -915,16 +915,8 @@ mod tests {
     #[test]
     fn error_msg() {
         assert_eq!(
-            parse("{:dunno}"),
+            parse("{=dunno}"),
             Err("malformed format string (invalid type specifier `dunno`)".into())
-        );
-        assert_eq!(
-            parse("{}"),
-            Err("malformed format string (missing `:`)".into())
-        );
-        assert_eq!(
-            parse("{0}"),
-            Err("malformed format string (missing `:`)".into())
         );
     }
 
