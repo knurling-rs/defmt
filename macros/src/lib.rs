@@ -1013,7 +1013,6 @@ pub fn write(ts: TokenStream) -> TokenStream {
     let sym = mksym(&ls, "fmt", false);
     quote!(match (#fmt.inner, #(&(#args)),*) {
         (_fmt_, #(#pats),*) => {
-            _fmt_.write_macro_start();
             // HACK conditional should not be here; see FIXME in `format`
             if _fmt_.needs_tag() {
                 _fmt_.istr(&defmt::export::istr(#sym));
