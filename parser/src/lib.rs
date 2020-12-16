@@ -10,13 +10,15 @@
 use std::borrow::Cow;
 use std::ops::Range;
 
-/// A `{{:parameter}}` in a format string.
+/// A `{{$index=$type:$hint}}` in a format string.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Parameter {
     /// The argument index to display at this position.
     pub index: usize,
-    /// The type of the argument to display.
+    /// The type of the argument to display, e.g. '=u8', '=bool'.
     pub ty: Type,
+    /// The display hint, e.g. ':x', ':b', ':a'.
+    pub hint: Option<DisplayHint>,
 }
 
 /// All display hints
@@ -64,8 +66,8 @@ pub enum Level {
 pub enum Type {
     BitField(Range<u8>),
     Bool,
-    Format,             // "{:?}"
-    FormatSlice,        // "{:[?]}"
+    Format,             // "{=?}" OR "{}"
+    FormatSlice,        // "{=[?]}"
     FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     I8,
     I16,
@@ -370,6 +372,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
                 idx
             }),
             ty: param.ty,
+            hint: param.hint,
         }));
     }
 
@@ -381,7 +384,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
     // Check for argument type conflicts.
     let mut args = Vec::new();
     for frag in &fragments {
-        if let Fragment::Parameter(Parameter { index, ty }) = frag {
+        if let Fragment::Parameter(Parameter { index, ty, .. }) = frag {
             if args.len() <= *index {
                 args.resize(*index + 1, None);
             }
