@@ -203,13 +203,11 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
             "[?]" => Type::FormatSlice,
             "char" => Type::Char,
             _ if s.starts_with(U8_ARRAY_START) => {
-                s = &s[U8_ARRAY_START.len()..];
-                let len = parse_array(s)?;
+                let len = parse_array(&s[U8_ARRAY_START.len()..type_end])?;
                 Type::U8Array(len)
             }
             _ if s.starts_with(FORMAT_ARRAY_START) => {
-                s = &s[FORMAT_ARRAY_START.len()..];
-                let len = parse_array(s)?;
+                let len = parse_array(&s[FORMAT_ARRAY_START.len()..type_end])?;
                 Type::FormatArray(len)
             }
             _ => {
@@ -879,36 +877,39 @@ mod tests {
     #[test]
     fn arrays() {
         assert_eq!(
-            parse("{:[u8; 0]}"),
+            parse("{=[u8; 0]}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(0),
+                hint: None,
             })])
         );
 
         // Space is optional.
         assert_eq!(
-            parse("{:[u8;42]}"),
+            parse("{=[u8;42]}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(42),
+                hint: None,
             })])
         );
 
         // Multiple spaces are ok.
         assert_eq!(
-            parse("{:[u8;    257]}"),
+            parse("{=[u8;    257]}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(257),
+                hint: None,
             })])
         );
 
         // No tabs or other whitespace.
-        assert!(parse("{:[u8; \t 3]}").is_err());
-        assert!(parse("{:[u8; \n 3]}").is_err());
+        assert!(parse("{=[u8; \t 3]}").is_err());
+        assert!(parse("{=[u8; \n 3]}").is_err());
         // Too large.
-        assert!(parse("{:[u8; 9999999999999999999999999]}").is_err());
+        assert!(parse("{=[u8; 9999999999999999999999999]}").is_err());
     }
 
     #[test]
