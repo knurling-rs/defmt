@@ -575,149 +575,167 @@ mod tests {
     }
 
     #[test]
-    fn ty() {
+    fn all_types() {
         assert_eq!(
-            parse("{:bool}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=bool"),
+            Ok(Param {
+                index: None,
                 ty: Type::Bool,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:?}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=?"),
+            Ok(Param {
+                index: None,
                 ty: Type::Format,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:i16}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=i16"),
+            Ok(Param {
+                index: None,
                 ty: Type::I16,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:i32}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=i32"),
+            Ok(Param {
+                index: None,
                 ty: Type::I32,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:i64}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=i64"),
+            Ok(Param {
+                index: None,
                 ty: Type::I64,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:i128}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=i128"),
+            Ok(Param {
+                index: None,
                 ty: Type::I128,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:i8}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=i8"),
+            Ok(Param {
+                index: None,
                 ty: Type::I8,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:str}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=str"),
+            Ok(Param {
+                index: None,
                 ty: Type::Str,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            super::parse("{:u16}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=u16"),
+            Ok(Param {
+                index: None,
                 ty: Type::U16,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:u24}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=u24"),
+            Ok(Param {
+                index: None,
                 ty: Type::U24,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:u32}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=u32"),
+            Ok(Param {
+                index: None,
                 ty: Type::U32,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:u64}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=u64"),
+            Ok(Param {
+                index: None,
                 ty: Type::U64,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:u128}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=u128"),
+            Ok(Param {
+                index: None,
                 ty: Type::U128,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:f32}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=f32"),
+            Ok(Param {
+                index: None,
                 ty: Type::F32,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:u8}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=u8"),
+            Ok(Param {
+                index: None,
                 ty: Type::U8,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:[u8]}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=[u8]"),
+            Ok(Param {
+                index: None,
                 ty: Type::U8Slice,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:usize}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=usize"),
+            Ok(Param {
+                index: None,
                 ty: Type::Usize,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:isize}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=isize"),
+            Ok(Param {
+                index: None,
                 ty: Type::Isize,
-            })])
+                hint: None,
+            })
         );
     }
 
