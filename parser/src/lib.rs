@@ -19,6 +19,19 @@ pub struct Parameter {
     pub ty: Type,
 }
 
+/// All display hints
+#[derive(Clone, Debug, PartialEq)]
+pub enum DisplayHint {
+    /// ":x" OR ":X"
+    Hexadecimal { is_uppercase: bool },
+    /// ":b"
+    Binary,
+    /// ":a"
+    Ascii,
+    /// Display hints currently not supported / understood
+    Unknown(String),
+}
+
 /// A part of a format string.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Fragment<'f> {
@@ -29,9 +42,11 @@ pub enum Fragment<'f> {
     Parameter(Parameter),
 }
 
+#[derive(Debug, PartialEq)]
 struct Param {
     index: Option<usize>,
     ty: Type,
+    hint: Option<DisplayHint>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -73,6 +88,13 @@ pub enum Type {
     F32,
     /// A single Unicode character
     Char,
+}
+
+// when not specified in the format string, this type is assumed
+impl Default for Type {
+    fn default() -> Self {
+        Type::Format
+    }
 }
 
 fn is_digit(c: Option<char>) -> bool {
@@ -126,81 +148,109 @@ fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
     Ok(len)
 }
 
+// example input: "0=Type:hint" (note: no braces)
 fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
+    const TYPE_PREFIX: &str = "=";
+    const HINT_PREFIX: &str = ":";
+
     // First, optional argument index.
-    // Then, mandatory `:`.
     let mut index = None;
-    let colon_pos = s
-        .find(|c: char| !c.is_digit(10))
-        .ok_or("malformed format string (missing `:`)")?;
+    let index_end = s.find(|c: char| !c.is_digit(10)).unwrap_or(s.len());
 
-    if colon_pos != 0 {
-        index = Some(s[..colon_pos].parse::<usize>().map_err(|e| e.to_string())?);
+    if index_end != 0 {
+        index = Some(s[..index_end].parse::<usize>().map_err(|e| e.to_string())?);
     }
 
-    if !s[colon_pos..].starts_with(':') {
-        return Err("malformed format string (missing `:`)".into());
-    }
+    // Then, optional type
+    let mut ty = Type::Format; // no explicit type means `Type::Format`
+    s = &s[index_end..];
 
-    // Then, type specifier.
-    s = &s[colon_pos + 1..];
+    if s.starts_with(TYPE_PREFIX) {
+        // skip the prefix
+        s = &s[TYPE_PREFIX.len()..];
 
-    static FORMAT_ARRAY_START: &str = "[?;";
-    static U8_ARRAY_START: &str = "[u8;";
-    let ty = match s {
-        "u8" => Type::U8,
-        "u16" => Type::U16,
-        "u24" => Type::U24,
-        "u32" => Type::U32,
-        "u64" => Type::U64,
-        "u128"=> Type::U128,
-        "usize" => Type::Usize,
-        "i8" => Type::I8,
-        "i16" => Type::I16,
-        "i32" => Type::I32,
-        "i64" => Type::I64,
-        "i128" => Type::I128,
-        "isize" => Type::Isize,
-        "f32" => Type::F32,
-        "bool" => Type::Bool,
-        "str" => Type::Str,
-        "istr" => Type::IStr,
-        "[u8]" => Type::U8Slice,
-        "?" => Type::Format,
-        "[?]" => Type::FormatSlice,
-        "char" => Type::Char,
-        _ if s.starts_with(U8_ARRAY_START) => {
-            s = &s[U8_ARRAY_START.len()..];
-            let len = parse_array(s)?;
-            Type::U8Array(len)
-        }
-        _ if s.starts_with(FORMAT_ARRAY_START) => {
-            s = &s[FORMAT_ARRAY_START.len()..];
-            let len = parse_array(s)?;
-            Type::FormatArray(len)
-        }
-        _ => {
-            // Check for bitfield syntax.
-            match parse_range(s) {
-                Some((range, used)) => {
-                    if used != s.len() {
-                        return Err("trailing data after bitfield range".into());
+        // type is delimited by `HINT_PREFIX` or end-of-string
+        let type_end = s.find(HINT_PREFIX).unwrap_or(s.len());
+
+        static FORMAT_ARRAY_START: &str = "[?;";
+        static U8_ARRAY_START: &str = "[u8;";
+
+        // what comes next is the type
+        ty = match &s[..type_end] {
+            "u8" => Type::U8,
+            "u16" => Type::U16,
+            "u24" => Type::U24,
+            "u32" => Type::U32,
+            "u64" => Type::U64,
+            "u128" => Type::U128,
+            "usize" => Type::Usize,
+            "i8" => Type::I8,
+            "i16" => Type::I16,
+            "i32" => Type::I32,
+            "i64" => Type::I64,
+            "i128" => Type::I128,
+            "isize" => Type::Isize,
+            "f32" => Type::F32,
+            "bool" => Type::Bool,
+            "str" => Type::Str,
+            "istr" => Type::IStr,
+            "[u8]" => Type::U8Slice,
+            "?" => Type::Format,
+            "[?]" => Type::FormatSlice,
+            "char" => Type::Char,
+            _ if s.starts_with(U8_ARRAY_START) => {
+                s = &s[U8_ARRAY_START.len()..];
+                let len = parse_array(s)?;
+                Type::U8Array(len)
+            }
+            _ if s.starts_with(FORMAT_ARRAY_START) => {
+                s = &s[FORMAT_ARRAY_START.len()..];
+                let len = parse_array(s)?;
+                Type::FormatArray(len)
+            }
+            _ => {
+                // Check for bitfield syntax.
+                match parse_range(s) {
+                    Some((range, used)) => {
+                        if used != s.len() {
+                            return Err("trailing data after bitfield range".into());
+                        }
+
+                        Type::BitField(range)
                     }
-
-                    Type::BitField(range)
-                }
-                None => {
-                    return Err(format!(
-                        "malformed format string (invalid type specifier `{}`)",
-                        s
-                    )
-                    .into());
+                    None => {
+                        return Err(format!(
+                            "malformed format string (invalid type specifier `{}`)",
+                            s
+                        )
+                        .into());
+                    }
                 }
             }
-        }
-    };
+        };
 
-    Ok(Param { index, ty })
+        s = &s[type_end..];
+    }
+
+    // Then, optional hint
+    let mut hint = None;
+
+    if s.starts_with(':') {
+        // skip the prefix
+        s = &s[HINT_PREFIX.len()..];
+
+        hint = Some(match s {
+            "a" => DisplayHint::Ascii,
+            "b" => DisplayHint::Binary,
+            "x" => DisplayHint::Hexadecimal {
+                is_uppercase: false,
+            },
+            "X" => DisplayHint::Hexadecimal { is_uppercase: true },
+            _ => DisplayHint::Unknown(s.to_owned()),
+        });
+    }
+
+    Ok(Param { index, ty, hint })
 }
 
 fn push_literal<'f>(
@@ -380,6 +430,87 @@ impl Level {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn all_parse_param_cases() {
+        // no `Param` field present - 1 case
+        assert_eq!(
+            parse_param(""),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: None,
+            })
+        );
+
+        // only one `Param` field present - 3 cases
+        assert_eq!(
+            parse_param("=u8"),
+            Ok(Param {
+                index: None,
+                ty: Type::U8,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param(":a"),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Ascii),
+            })
+        );
+
+        assert_eq!(
+            parse_param("1"),
+            Ok(Param {
+                index: Some(1),
+                ty: Type::Format,
+                hint: None,
+            })
+        );
+
+        // two `Param` fields present - 3 cases
+        assert_eq!(
+            parse_param("=u8:x"),
+            Ok(Param {
+                index: None,
+                ty: Type::U8,
+                hint: Some(DisplayHint::Hexadecimal {
+                    is_uppercase: false
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param("0=u8"),
+            Ok(Param {
+                index: Some(0),
+                ty: Type::U8,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("0:a"),
+            Ok(Param {
+                index: Some(0),
+                ty: Type::Format,
+                hint: Some(DisplayHint::Ascii),
+            })
+        );
+
+        // all `Param` fields present - 1 case
+        assert_eq!(
+            parse_param("1=u8:b"),
+            Ok(Param {
+                index: Some(1),
+                ty: Type::U8,
+                hint: Some(DisplayHint::Binary),
+            })
+        );
+    }
 
     #[test]
     fn ty() {
