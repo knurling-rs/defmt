@@ -1,0 +1,12 @@
+error[E0382]: use of moved value: `f.inner`
+ --> $DIR/write-for-loop.rs:6:13
+  |
+6 |             defmt::write!(f, "hello");
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ value moved here, in previous iteration of loop
+  |
+  = note: move occurs because `f.inner` has type `&mut InternalFormatter`, which does not implement the `Copy` trait
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider creating a fresh reborrow of `f.inner` here
+  |
+6 |             &mut *defmt::write!(f, "hello");
+  |             ^^^^^^
