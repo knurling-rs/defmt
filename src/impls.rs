@@ -5,142 +5,142 @@ use defmt_macros::internp;
 use crate::{Format, Formatter, Str};
 
 impl Format for i8 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:i8}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u8(&(*self as u8));
+        fmt.inner.u8(&(*self as u8));
     }
 }
 
 impl Format for i16 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:i16}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u16(&(*self as u16))
+        fmt.inner.u16(&(*self as u16))
     }
 }
 
 impl Format for i32 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:i32}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.i32(self);
+        fmt.inner.i32(self);
     }
 }
 
 impl Format for i64 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:i64}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.i64(self);
+        fmt.inner.i64(self);
     }
 }
 
 impl Format for i128 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:i128}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.i128(self);
+        fmt.inner.i128(self);
     }
 }
 
 impl Format for isize {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:isize}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.isize(self);
+        fmt.inner.isize(self);
     }
 }
 
 impl Format for u8 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:u8}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u8(self)
+        fmt.inner.u8(self)
     }
 }
 
 impl Format for u16 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:u16}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u16(self);
+        fmt.inner.u16(self);
     }
 }
 
 impl Format for u32 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:u32}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u32(self);
+        fmt.inner.u32(self);
     }
 }
 
 impl Format for u64 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:u64}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u64(self);
+        fmt.inner.u64(self);
     }
 }
 
 impl Format for u128 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:u128}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u128(self);
+        fmt.inner.u128(self);
     }
 }
 
 impl Format for usize {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:usize}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.usize(self);
+        fmt.inner.usize(self);
     }
 }
 
 impl Format for f32 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:f32}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.f32(self);
+        fmt.inner.f32(self);
     }
 }
 
 impl Format for str {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = str_tag();
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.str(self);
+        fmt.inner.str(self);
     }
 }
 
@@ -149,22 +149,22 @@ pub(crate) fn str_tag() -> u8 {
 }
 
 impl Format for Str {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:istr}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.istr(self);
+        fmt.inner.istr(self);
     }
 }
 
 impl Format for char {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:char}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.u32(&(*self as u32));
+        fmt.inner.u32(&(*self as u32));
     }
 }
 
@@ -172,12 +172,12 @@ impl<T> Format for [T]
 where
     T: Format,
 {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:[?]}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.fmt_slice(self)
+        fmt.inner.fmt_slice(self)
     }
 }
 
@@ -185,7 +185,7 @@ impl<T> Format for &'_ T
 where
     T: Format + ?Sized,
 {
-    fn format(&self, fmt: &mut Formatter) {
+    fn format(&self, fmt: Formatter) {
         T::format(self, fmt)
     }
 }
@@ -194,18 +194,18 @@ impl<T> Format for &'_ mut T
 where
     T: Format + ?Sized,
 {
-    fn format(&self, fmt: &mut Formatter) {
+    fn format(&self, fmt: Formatter) {
         T::format(self, fmt)
     }
 }
 
 impl Format for bool {
-    fn format(&self, fmt: &mut Formatter) {
-        if fmt.needs_tag() {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
             let t = internp!("{:bool}");
-            fmt.u8(&t);
+            fmt.inner.u8(&t);
         }
-        fmt.bool(self);
+        fmt.inner.bool(self);
     }
 }
 
@@ -215,12 +215,12 @@ macro_rules! arrays {
         where
             T: Format
         {
-            fn format(&self, fmt: &mut Formatter) {
-                if fmt.needs_tag() {
+            fn format(&self, fmt: Formatter) {
+                if fmt.inner.needs_tag() {
                     let t = internp!($fmt);
-                    fmt.u8(&t);
+                    fmt.inner.u8(&t);
                 }
-                fmt.fmt_array(self);
+                fmt.inner.fmt_array(self);
             }
         }
     )+ };
@@ -299,16 +299,16 @@ impl<T> Format for Option<T>
 where
     T: Format,
 {
-    fn format(&self, f: &mut Formatter) {
-        if f.needs_tag() {
+    fn format(&self, f: Formatter) {
+        if f.inner.needs_tag() {
             let t = internp!("None|Some({:?})");
-            f.u8(&t);
+            f.inner.u8(&t);
         }
         match self {
-            None => f.u8(&0),
+            None => f.inner.u8(&0),
             Some(x) => {
-                f.u8(&1);
-                f.with_tag(|f| x.format(f))
+                f.inner.u8(&1);
+                f.inner.with_tag(|f| x.format(f))
             }
         }
     }
@@ -319,29 +319,29 @@ where
     T: Format,
     E: Format,
 {
-    fn format(&self, f: &mut Formatter) {
-        if f.needs_tag() {
+    fn format(&self, f: Formatter) {
+        if f.inner.needs_tag() {
             let t = internp!("Err({:?})|Ok({:?})");
-            f.u8(&t);
+            f.inner.u8(&t);
         }
         match self {
             Err(e) => {
-                f.u8(&0);
-                f.with_tag(|f| e.format(f))
+                f.inner.u8(&0);
+                f.inner.with_tag(|f| e.format(f))
             }
             Ok(x) => {
-                f.u8(&1);
-                f.with_tag(|f| x.format(f))
+                f.inner.u8(&1);
+                f.inner.with_tag(|f| x.format(f))
             }
         }
     }
 }
 
 impl Format for () {
-    fn format(&self, f: &mut Formatter) {
-        if f.needs_tag() {
+    fn format(&self, f: Formatter) {
+        if f.inner.needs_tag() {
             let t = internp!("()");
-            f.u8(&t);
+            f.inner.u8(&t);
         }
     }
 }
@@ -350,15 +350,16 @@ macro_rules! tuple {
     ( $format:expr, ($($name:ident),+) ) => (
         impl<$($name:Format),+> Format for ($($name,)+) where last_type!($($name,)+): ?Sized {
             #[allow(non_snake_case, unused_assignments)]
-            fn format(&self, f: &mut Formatter) {
-                if f.needs_tag() {
+            fn format(&self, f: Formatter) {
+                if f.inner.needs_tag() {
                     let t = internp!($format);
-                    f.u8(&t);
+                    f.inner.u8(&t);
                 }
 
                 let ($(ref $name,)+) = *self;
                 $(
-                    $name.format(f);
+                    let formatter = Formatter { inner: f.inner };
+                    $name.format(formatter);
                 )+
             }
         }
@@ -391,7 +392,7 @@ mod if_alloc {
     where
         T: ?Sized + Format,
     {
-        fn format(&self, f: &mut Formatter) {
+        fn format(&self, f: Formatter) {
             T::format(&*self, f)
         }
     }
@@ -400,7 +401,7 @@ mod if_alloc {
     where
         T: ?Sized + Format,
     {
-        fn format(&self, f: &mut Formatter) {
+        fn format(&self, f: Formatter) {
             T::format(&*self, f)
         }
     }
@@ -410,7 +411,7 @@ mod if_alloc {
     where
         T: ?Sized + Format,
     {
-        fn format(&self, f: &mut Formatter) {
+        fn format(&self, f: Formatter) {
             T::format(&*self, f)
         }
     }
@@ -419,13 +420,13 @@ mod if_alloc {
     where
         T: Format,
     {
-        fn format(&self, f: &mut Formatter) {
+        fn format(&self, f: Formatter) {
             self.as_slice().format(f)
         }
     }
 
     impl Format for alloc::string::String {
-        fn format(&self, f: &mut Formatter) {
+        fn format(&self, f: Formatter) {
             self.as_str().format(f)
         }
     }

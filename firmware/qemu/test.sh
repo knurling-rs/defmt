@@ -16,7 +16,6 @@ test "panic"
 test "assert"
 test "assert-eq"
 test "assert-ne"
-test "double-write"
 test "unwrap"
 test "defmt-test"
 if rustc -V | grep nightly; then

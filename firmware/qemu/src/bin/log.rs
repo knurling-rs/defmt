@@ -423,7 +423,7 @@ fn main() -> ! {
         struct Inner(u8);
 
         impl Format for Inner {
-            fn format(&self, f: &mut Formatter) {
+            fn format(&self, f: Formatter) {
                 defmt::write!(f, "inner value ({:u8})", self.0);
             }
         }
@@ -432,7 +432,7 @@ fn main() -> ! {
         struct MyStruct(Inner);
 
         impl Format for MyStruct {
-            fn format(&self, f: &mut Formatter) {
+            fn format(&self, f: Formatter) {
                 defmt::write!(f, "outer value ({:?})", self.0);
             }
         }
