@@ -322,11 +322,6 @@ pub struct InternalFormatter {
     // this is disabled while formatting a `{:[?]}` value (second element on-wards)
     // this is force-enable while formatting enums
     omit_tag: bool,
-    /// Whether the `write!` macro was called in the current `Format` impl. Used to prevent calling
-    /// it twice.
-    /// FIXME: Use a dedicated tag for `write!` invocations, allow calling it multiple times, and
-    /// remove this.
-    called_write_macro: bool,
 }
 
 /// the maximum number of booleans that can be compressed together
@@ -348,7 +343,6 @@ impl InternalFormatter {
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
-            called_write_macro: false,
         }
     }
 
@@ -376,7 +370,6 @@ impl InternalFormatter {
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
-            called_write_macro: false,
         }
     }
 
@@ -390,28 +383,17 @@ impl InternalFormatter {
     /// Implementation detail
     pub fn fmt(&mut self, f: &impl Format, omit_tag: bool) {
         let old_omit_tag = self.omit_tag;
-        let old_called_write_macro = self.called_write_macro;
         if omit_tag {
             self.omit_tag = true;
         }
-        self.called_write_macro = false;
 
         let formatter = Formatter { inner: self };
         f.format(formatter);
 
-        self.called_write_macro = old_called_write_macro;
         if omit_tag {
             // restore
             self.omit_tag = old_omit_tag;
         }
-    }
-
-    pub fn write_macro_start(&mut self) {
-        if self.called_write_macro {
-            core::panic!("`defmt::write!` may only be called once in a `Format` impl");
-        }
-
-        self.called_write_macro = true;
     }
 
     /// Implementation detail
