@@ -746,122 +746,134 @@ mod tests {
     fn index() {
         // implicit
         assert_eq!(
-            parse("{:u8}{:u16}"),
+            parse("{=u8}{=u16}"),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U16,
+                    hint: None,
                 }),
             ])
         );
 
         // single parameter formatted twice
         assert_eq!(
-            parse("{:u8}{0:u8}"),
+            parse("{=u8}{0=u8}"),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
             ])
         );
 
         // explicit index
         assert_eq!(
-            parse("{:u8}{1:u16}"),
+            parse("{=u8}{1=u16}"),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U16,
+                    hint: None,
                 }),
             ])
         );
 
         // reversed order
         assert_eq!(
-            parse("{1:u8}{0:u16}"),
+            parse("{1=u8}{0=u16}"),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U16,
+                    hint: None,
                 }),
             ])
         );
 
         // two different types for the same index
-        assert!(parse("{0:u8}{0:u16}").is_err());
+        assert!(parse("{0=u8}{0=u16}").is_err());
         // same thing, except `{:bool}` is auto-assigned index 0
-        assert!(parse("Hello {1:u16} {0:u8} {:bool}").is_err());
+        assert!(parse("Hello {1=u16} {0=u8} {=bool}").is_err());
 
         // omitted index 0
-        assert!(parse("{1:u8}").is_err());
+        assert!(parse("{1=u8}").is_err());
 
         // index 1 is missing
-        assert!(parse("{2:u8}{:u16}").is_err());
+        assert!(parse("{2=u8}{=u16}").is_err());
 
         // index 0 is missing
-        assert!(parse("{2:u8}{1:u16}").is_err());
+        assert!(parse("{2=u8}{1=u16}").is_err());
     }
 
     #[test]
     fn range() {
         assert_eq!(
-            parse("{:0..4}"),
+            parse("{=0..4}"),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::BitField(0..4),
+                hint: None,
             })])
         );
 
         assert_eq!(
-            parse("{0:30..31}{1:0..4}{1:2..6}"),
+            parse("{0=30..31}{1=0..4}{1=2..6}"),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::BitField(30..31),
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::BitField(0..4),
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::BitField(2..6),
+                    hint: None,
                 }),
             ])
         );
 
         // empty range
-        assert!(parse("{:0..0}").is_err());
+        assert!(parse("{=0..0}").is_err());
         // start > end
-        assert!(parse("{:1..0}").is_err());
+        assert!(parse("{=1..0}").is_err());
         // out of 32-bit range
-        assert!(parse("{:0..32}").is_err());
+        assert!(parse("{=0..32}").is_err());
         // just inside 32-bit range
-        assert!(parse("{:0..31}").is_ok());
+        assert!(parse("{=0..31}").is_ok());
 
         // missing parts
-        assert!(parse("{:0..4").is_err());
-        assert!(parse("{:0..}").is_err());
-        assert!(parse("{:..4}").is_err());
-        assert!(parse("{:0.4}").is_err());
-        assert!(parse("{:0...4}").is_err());
+        assert!(parse("{=0..4").is_err());
+        assert!(parse("{=0..}").is_err());
+        assert!(parse("{=..4}").is_err());
+        assert!(parse("{=0.4}").is_err());
+        assert!(parse("{=0...4}").is_err());
     }
 
     #[test]
