@@ -28,6 +28,8 @@ pub enum DisplayHint {
     Binary,
     /// ":a"
     Ascii,
+    /// ":?"
+    Debug,
     /// Display hints currently not supported / understood
     Unknown(String),
 }
@@ -246,6 +248,7 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
                 is_uppercase: false,
             },
             "X" => DisplayHint::Hexadecimal { is_uppercase: true },
+            "?" => DisplayHint::Debug,
             _ => DisplayHint::Unknown(s.to_owned()),
         });
     }
@@ -508,6 +511,65 @@ mod tests {
                 index: Some(1),
                 ty: Type::U8,
                 hint: Some(DisplayHint::Binary),
+            })
+        );
+    }
+
+    #[test]
+    fn all_display_hints() {
+        assert_eq!(
+            parse_param(":a"),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Ascii),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":b"),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Binary),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":x"),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal {
+                    is_uppercase: false
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":X"),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal { is_uppercase: true }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":?"),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Debug),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":unknown"),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Unknown("unknown".to_string())),
             })
         );
     }
