@@ -1,6 +1,7 @@
 //! INTERNAL; DO NOT USE. Please use the `defmt` crate to access the functionality implemented here
 mod symbol;
 
+use core::convert::TryFrom;
 use core::fmt::Write as _;
 use proc_macro::TokenStream;
 
@@ -249,22 +250,13 @@ pub fn format(ts: TokenStream) -> TokenStream {
     let mut exprs = vec![];
     match input.data {
         Data::Enum(de) => {
-            if de.variants.len() > 256 {
-                return parse::Error::new(
-                    span,
-                    "`#[derive(Format)]` does not support enums with more than 256 variants",
-                )
-                .to_compile_error()
-                .into();
-            }
-
             if de.variants.is_empty() {
                 // For zero-variant enums, this is unreachable code.
                 exprs.push(quote!(match *self {}));
             } else {
                 let mut arms = vec![];
                 let mut first = true;
-                for (var, i) in de.variants.iter().zip(0u8..) {
+                for (i, var) in de.variants.iter().enumerate() {
                     let vident = &var.ident;
 
                     if first {
@@ -278,13 +270,34 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     let exprs = fields(&var.fields, &mut fs, &mut field_types, &mut pats);
                     let pats = quote!( { #(#pats),* } );
 
-                    let encode_discriminant = if de.variants.len() == 1 {
+                    let len = de.variants.len();
+                    let encode_discriminant = if len == 1 {
                         // For single-variant enums, there is no need to encode the discriminant.
                         quote!()
-                    } else {
+                    } else if let (Ok(_), Ok(i)) = (u8::try_from(len), u8::try_from(i)) {
                         quote!(
                             f.inner.u8(&#i);
                         )
+                    } else if let (Ok(_), Ok(i)) = (u16::try_from(len), u16::try_from(i)) {
+                        quote!(
+                            f.inner.u16(&#i);
+                        )
+                    } else if let (Ok(_), Ok(i)) = (u32::try_from(len), u32::try_from(i)) {
+                        quote!(
+                            f.inner.u32(&#i);
+                        )
+                    } else if let (Ok(_), Ok(i)) = (u64::try_from(len), u64::try_from(i)) {
+                        quote!(
+                            f.inner.u64(&#i);
+                        )
+                    } else {
+                        // u128 case is omitted with the assumption, that usize is never greater than u64
+                        return parse::Error::new(
+                            span,
+                            format!("`#[derive(Format)]` does not support enums with more than {} variants", u64::MAX),
+                        )
+                        .to_compile_error()
+                        .into();
                     };
 
                     arms.push(quote!(

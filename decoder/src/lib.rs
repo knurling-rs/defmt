@@ -8,6 +8,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 
+use core::convert::{TryFrom, TryInto};
 use core::fmt::{self, Write as _};
 use core::ops::Range;
 use std::collections::BTreeMap;
@@ -566,13 +567,31 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
     fn get_variant(&mut self, format: &'t str) -> Result<&'t str, DecodeError> {
         assert!(format.contains("|"));
-        let discriminant = self.bytes.read_u8()?;
-
         // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
         // required: "A|B({:?})" where "{:?}" -> "C|D"
+        let num_variants = format.chars().filter(|c| *c == '|').count();
+
+        let discriminant: usize = if u8::try_from(num_variants).is_ok() {
+            self.bytes.read_u8()?.into()
+        } else if u16::try_from(num_variants).is_ok() {
+            self.bytes.read_u16::<LE>()?.into()
+        } else if u32::try_from(num_variants).is_ok() {
+            self.bytes
+                .read_u32::<LE>()?
+                .try_into()
+                .map_err(|_| DecodeError::Malformed)?
+        } else if u64::try_from(num_variants).is_ok() {
+            self.bytes
+                .read_u64::<LE>()?
+                .try_into()
+                .map_err(|_| DecodeError::Malformed)?
+        } else {
+            return Err(DecodeError::Malformed);
+        };
+
         format
             .split('|')
-            .nth(usize::from(discriminant))
+            .nth(discriminant)
             .ok_or(DecodeError::Malformed)
     }
 
