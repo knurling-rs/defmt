@@ -258,7 +258,7 @@ pub struct DisplayMessage<'t> {
 
 impl fmt::Display for DisplayMessage<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let args = format_args(&self.frame.format, &self.frame.args);
+        let args = format_args(&self.frame.format, &self.frame.args, None);
         f.write_str(&args)
     }
 }
@@ -294,7 +294,7 @@ impl fmt::Display for DisplayFrame<'_> {
             }
         };
 
-        let args = format_args(&self.frame.format, &self.frame.args);
+        let args = format_args(&self.frame.format, &self.frame.args, None);
 
         write!(f, "{}.{:06} {} {}", seconds, micros, level, args)
     }
@@ -893,12 +893,20 @@ enum FormatList<'t> {
     },
 }
 
-fn format_args(format: &str, args: &[Arg]) -> String {
-    format_args_real(format, args).unwrap() // cannot fail, we only write to a `String`
+fn format_args(format: &str, args: &[Arg], parent_hint: Option<&DisplayHint>) -> String {
+    format_args_real(format, args, parent_hint).unwrap() // cannot fail, we only write to a `String`
 }
 
-fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
-    fn format_u128(x: u128, hint: Option<DisplayHint>, buf: &mut String) -> Result<(), fmt::Error> {
+fn format_args_real(
+    format: &str,
+    args: &[Arg],
+    parent_hint: Option<&DisplayHint>,
+) -> Result<String, fmt::Error> {
+    fn format_u128(
+        x: u128,
+        hint: Option<&DisplayHint>,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
         match hint {
             Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
             Some(DisplayHint::Hexadecimal {
@@ -910,7 +918,11 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
         Ok(())
     }
 
-    fn format_i128(x: i128, hint: Option<DisplayHint>, buf: &mut String) -> Result<(), fmt::Error> {
+    fn format_i128(
+        x: i128,
+        hint: Option<&DisplayHint>,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
         match hint {
             Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
             Some(DisplayHint::Hexadecimal {
@@ -930,6 +942,8 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                 buf.push_str(&lit);
             }
             Fragment::Parameter(param) => {
+                let hint = param.hint.as_ref().or(parent_hint);
+
                 match &args[param.index] {
                     Arg::Bool(x) => write!(buf, "{}", x)?,
                     Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
@@ -942,15 +956,15 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                                 let bitfields = (*x << left_zeroes) >> right_zeroes;
                                 write!(&mut buf, "{:#b}", bitfields)?
                             }
-                            _ => format_u128(*x as u128, param.hint, &mut buf)?,
+                            _ => format_u128(*x as u128, hint, &mut buf)?,
                         }
                     }
-                    Arg::U128(x) => format_u128(*x, param.hint, &mut buf)?,
-                    Arg::Ixx(x) => format_i128(*x as i128, param.hint, &mut buf)?,
-                    Arg::I128(x) => format_i128(*x, param.hint, &mut buf)?,
+                    Arg::U128(x) => format_u128(*x, hint, &mut buf)?,
+                    Arg::Ixx(x) => format_i128(*x as i128, hint, &mut buf)?,
+                    Arg::I128(x) => format_i128(*x, hint, &mut buf)?,
                     Arg::Str(x) => write!(buf, "{}", x)?,
                     Arg::IStr(x) => write!(buf, "{}", x)?,
-                    Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
+                    Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
                     Arg::FormatSlice { elements } => {
                         buf.write_str("[")?;
                         let mut is_first = true;
@@ -959,7 +973,7 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                                 buf.write_str(", ")?;
                             }
                             is_first = false;
-                            buf.write_str(&format_args(element.format, &element.args))?;
+                            buf.write_str(&format_args(element.format, &element.args, hint))?;
                         }
                         buf.write_str("]")?;
                     }
