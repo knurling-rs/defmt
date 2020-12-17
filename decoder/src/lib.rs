@@ -25,7 +25,7 @@ use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
 pub use defmt_parser::Level;
-use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
+use defmt_parser::{get_max_bitfield_range, DisplayHint, Fragment, Parameter, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -898,6 +898,30 @@ fn format_args(format: &str, args: &[Arg]) -> String {
 }
 
 fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
+    fn format_u128(x: u128, hint: Option<DisplayHint>, buf: &mut String) -> Result<(), fmt::Error> {
+        match hint {
+            Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
+            Some(DisplayHint::Hexadecimal {
+                is_uppercase: false,
+            }) => write!(buf, "{:#x}", x)?,
+            Some(DisplayHint::Hexadecimal { is_uppercase: true }) => write!(buf, "{:#X}", x)?,
+            _ => write!(buf, "{}", x)?,
+        }
+        Ok(())
+    }
+
+    fn format_i128(x: i128, hint: Option<DisplayHint>, buf: &mut String) -> Result<(), fmt::Error> {
+        match hint {
+            Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
+            Some(DisplayHint::Hexadecimal {
+                is_uppercase: false,
+            }) => write!(buf, "{:#x}", x)?,
+            Some(DisplayHint::Hexadecimal { is_uppercase: true }) => write!(buf, "{:#X}", x)?,
+            _ => write!(buf, "{}", x)?,
+        }
+        Ok(())
+    }
+
     let params = defmt_parser::parse(format).unwrap();
     let mut buf = String::new();
     for param in params {
@@ -918,12 +942,12 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                                 let bitfields = (*x << left_zeroes) >> right_zeroes;
                                 write!(&mut buf, "{:#b}", bitfields)?
                             }
-                            _ => write!(buf, "{}", x)?,
+                            _ => format_u128(*x as u128, param.hint, &mut buf)?,
                         }
                     }
-                    Arg::U128(x) => write!(buf, "{}", x)?,
-                    Arg::Ixx(x) => write!(buf, "{}", x)?,
-                    Arg::I128(x) => write!(buf, "{}", x)?,
+                    Arg::U128(x) => format_u128(*x, param.hint, &mut buf)?,
+                    Arg::Ixx(x) => format_i128(*x as i128, param.hint, &mut buf)?,
+                    Arg::I128(x) => format_i128(*x, param.hint, &mut buf)?,
                     Arg::Str(x) => write!(buf, "{}", x)?,
                     Arg::IStr(x) => write!(buf, "{}", x)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
