@@ -14,9 +14,9 @@ enum Error {
 #[entry]
 fn main() -> ! {
     let x: Result<u32, Error> = Ok(42);
-    defmt::info!("The answer is {:?}", defmt::unwrap!(x));
+    defmt::info!("The answer is {=?}", defmt::unwrap!(x));
     let x: Result<u32, Error> = Err(Error::Bar);
-    defmt::info!("The answer is {:?}", defmt::unwrap!(x));
+    defmt::info!("The answer is {=?}", defmt::unwrap!(x));
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)

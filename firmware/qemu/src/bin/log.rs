@@ -12,16 +12,16 @@ use defmt_semihosting as _; // global logger
 fn main() -> ! {
     defmt::info!("Hello!");
     defmt::info!("World!");
-    defmt::info!("The answer is {:u8}", 42);
-    defmt::info!("Hello {0:u8} {0:u8}!", 42);
-    defmt::info!("Hello {1:u16} {0:u8} {2:bool}", 42u8, 256u16, false);
-    defmt::info!("🍕 slice {:[u8]}", [3, 14]);
-    defmt::info!("🍕 array {:[u8; 3]}", [3, 14, 1]);
-    defmt::info!("float like a butterfly {:f32}", 5.67f32);
-    defmt::info!("Hello {:u8}", 42u16 as u8);
+    defmt::info!("The answer is {=u8}", 42);
+    defmt::info!("Hello {0=u8} {0=u8}!", 42);
+    defmt::info!("Hello {1=u16} {0=u8} {2=bool}", 42u8, 256u16, false);
+    defmt::info!("🍕 slice {=[u8]}", [3, 14]);
+    defmt::info!("🍕 array {=[u8; 3]}", [3, 14, 1]);
+    defmt::info!("float like a butterfly {=f32}", 5.67f32);
+    defmt::info!("Hello {=u8}", 42u16 as u8);
 
     defmt::info!(
-        "u64: 0 = {:u64}, 1 = {:u64}, MAX = {:u64}, MIN = {:u64}",
+        "u64: 0 = {=u64}, 1 = {=u64}, MAX = {=u64}, MIN = {=u64}",
         0,
         1,
         u64::max_value(),
@@ -29,7 +29,7 @@ fn main() -> ! {
     );
 
     defmt::info!(
-        "i64: 0 = {:i64}, -1 = {:i64}, MAX = {:i64}, MIN = {:i64}",
+        "i64: 0 = {=i64}, -1 = {=i64}, MAX = {=i64}, MIN = {=i64}",
         0,
         -1,
         i64::max_value(),
@@ -37,21 +37,21 @@ fn main() -> ! {
     );
 
     defmt::info!(
-        "isize: 0 = {:isize}, -1 = {:isize}, MAX = {:isize}, MIN = {:isize}",
+        "isize: 0 = {=isize}, -1 = {=isize}, MAX = {=isize}, MIN = {=isize}",
         0,
         -1,
         isize::max_value(),
         isize::min_value()
     );
     defmt::info!(
-        "isize: 0 = {:?}, -1 = {:?}, MAX = {:?}, MIN = {:?}",
+        "isize: 0 = {=?}, -1 = {=?}, MAX = {=?}, MIN = {=?}",
         0,
         -1,
         isize::max_value(),
         isize::min_value()
     );
-    defmt::info!("usize: 0 = {:usize}, MAX = {:usize}", 0, usize::max_value());
-    defmt::info!("bitfields {0:0..3} {0:5..7}", 0b0110_0011_1101_0110u16);
+    defmt::info!("usize: 0 = {=usize}, MAX = {=usize}", 0, usize::max_value());
+    defmt::info!("bitfields {0=0..3} {0=5..7}", 0b0110_0011_1101_0110u16);
 
     defmt::trace!("log trace");
     defmt::debug!("log debug");
@@ -75,14 +75,14 @@ fn main() -> ! {
         z: u8,
     }
 
-    defmt::info!("{:?}", S { x: 1, y: 256 });
-    defmt::info!("{:?}", X { y: Y { z: 42 } });
+    defmt::info!("{=?}", S { x: 1, y: 256 });
+    defmt::info!("{=?}", X { y: Y { z: 42 } });
 
     let interned = defmt::intern!("interned string");
-    defmt::info!("&str = {:str}", "string slice");
-    defmt::info!("&str = {:?}", "string slice");
-    defmt::info!("&Str = {:istr}", interned);
-    defmt::info!("&Str = {:?}", interned);
+    defmt::info!("&str = {=str}", "string slice");
+    defmt::info!("&str = {=?}", "string slice");
+    defmt::info!("&Str = {=istr}", interned);
+    defmt::info!("&Str = {=?}", interned);
 
     #[derive(Format)]
     struct Arr {
@@ -92,7 +92,7 @@ fn main() -> ! {
     }
 
     defmt::info!(
-        "{:?}",
+        "{=?}",
         Arr {
             arr1: [0x1f],
             arr0: [],
@@ -101,16 +101,16 @@ fn main() -> ! {
     );
 
     let slice: &[u16] = &[256, 257, 258];
-    defmt::info!("{:[?]}", slice);
+    defmt::info!("{=[?]}", slice);
 
     let ss: &[S] = &[S { x: 128, y: 256 }, S { x: 129, y: 257 }];
-    defmt::info!("{:[?]}", ss);
+    defmt::info!("{=[?]}", ss);
 
     let xs: &[X] = &[X { y: Y { z: 128 } }, X { y: Y { z: 129 } }];
-    defmt::info!("{:[?]}", xs);
+    defmt::info!("{=[?]}", xs);
 
     let slices: &[&[u16]] = &[&[256, 257, 258], &[259, 260]];
-    defmt::info!("{:[?]}", slices);
+    defmt::info!("{=[?]}", slices);
 
     #[derive(Format)]
     enum E {
@@ -118,16 +118,16 @@ fn main() -> ! {
         B,
     }
 
-    defmt::info!("e1={:?}", E::A);
-    defmt::info!("e2={:?}", E::B);
+    defmt::info!("e1={=?}", E::A);
+    defmt::info!("e2={=?}", E::B);
 
-    defmt::info!("e3={:?}", Some(42u8));
-    defmt::info!("e4={:?}", None::<u8>);
+    defmt::info!("e3={=?}", Some(42u8));
+    defmt::info!("e4={=?}", None::<u8>);
 
-    defmt::info!("e5={:?}", Ok::<u8, u16>(42u8));
-    defmt::info!("e6={:?}", Err::<u8, u16>(256u16));
+    defmt::info!("e5={=?}", Ok::<u8, u16>(42u8));
+    defmt::info!("e6={=?}", Err::<u8, u16>(256u16));
 
-    defmt::info!("e7={:?}", Some(X { y: Y { z: 42 } }));
+    defmt::info!("e7={=?}", Some(X { y: Y { z: 42 } }));
 
     #[derive(Format)]
     struct Flags {
@@ -138,7 +138,7 @@ fn main() -> ! {
 
     // issue 74
     defmt::info!(
-        "{:bool} {:?}",
+        "{=bool} {=?}",
         true,
         Flags {
             a: true,
@@ -148,11 +148,11 @@ fn main() -> ! {
     );
 
     // issue #111
-    defmt::info!("{:[?]}", [true, true, false]);
+    defmt::info!("{=[?]}", [true, true, false]);
 
     // issue #209
-    defmt::info!("usize slice: {:?}", &[1usize, 2, 3][..]);
-    defmt::info!("isize slice: {:?}", &[-1isize, -2, -3][..]);
+    defmt::info!("usize slice: {=?}", &[1usize, 2, 3][..]);
+    defmt::info!("isize slice: {=?}", &[-1isize, -2, -3][..]);
 
     /* issue #124 (start) */
     // plain generic struct
@@ -163,7 +163,7 @@ fn main() -> ! {
             y: T,
         }
 
-        defmt::info!("{:?}", S { x: 42, y: 43u8 });
+        defmt::info!("{=?}", S { x: 42, y: 43u8 });
     }
 
     // generic struct with bounds
@@ -177,7 +177,7 @@ fn main() -> ! {
             y: T,
         }
 
-        defmt::info!("{:?}", S { x: 44, y: 45u8 });
+        defmt::info!("{=?}", S { x: 44, y: 45u8 });
     }
 
     // generic struct with `Option` field
@@ -192,7 +192,7 @@ fn main() -> ! {
         }
 
         defmt::info!(
-            "{:?}",
+            "{=?}",
             S {
                 x: 46,
                 y: Some(47u8)
@@ -212,7 +212,7 @@ fn main() -> ! {
         }
 
         defmt::info!(
-            "{:?}",
+            "{=?}",
             S {
                 x: Some(&48),
                 y: 49u8
@@ -229,9 +229,9 @@ fn main() -> ! {
             C { y: Y },
         }
 
-        defmt::info!("{:?}", E::<u8, u8>::A);
-        defmt::info!("{:?}", E::<u8, u8>::B(42));
-        defmt::info!("{:?}", E::<u8, u8>::C { y: 43 });
+        defmt::info!("{=?}", E::<u8, u8>::A);
+        defmt::info!("{=?}", E::<u8, u8>::B(42));
+        defmt::info!("{=?}", E::<u8, u8>::C { y: 43 });
     }
 
     // generic enum with bounds
@@ -246,9 +246,9 @@ fn main() -> ! {
             C { y: Y },
         }
 
-        defmt::info!("{:?}", E::<u8, u8>::A);
-        defmt::info!("{:?}", E::<u8, u8>::B(44));
-        defmt::info!("{:?}", E::<u8, u8>::C { y: 45 });
+        defmt::info!("{=?}", E::<u8, u8>::A);
+        defmt::info!("{=?}", E::<u8, u8>::B(44));
+        defmt::info!("{=?}", E::<u8, u8>::C { y: 45 });
     }
 
     /* issue #124 (end) */
@@ -261,9 +261,9 @@ fn main() -> ! {
             C { y: Result<Y, u8> },
         }
 
-        defmt::info!("{:?}", E::<u8, u8>::A);
-        defmt::info!("{:?}", E::<u8, u8>::B(Some(46)));
-        defmt::info!("{:?}", E::<u8, u8>::C { y: Ok(47) });
+        defmt::info!("{=?}", E::<u8, u8>::A);
+        defmt::info!("{=?}", E::<u8, u8>::B(Some(46)));
+        defmt::info!("{=?}", E::<u8, u8>::C { y: Ok(47) });
     }
 
     // generic enum with lifetimes and lifetime bounds
@@ -278,14 +278,14 @@ fn main() -> ! {
             C { y: T },
         }
 
-        defmt::info!("{:?}", E::<u8>::A);
-        defmt::info!("{:?}", E::<u8>::B(Some(&48)));
-        defmt::info!("{:?}", E::C { y: 49u8 });
+        defmt::info!("{=?}", E::<u8>::A);
+        defmt::info!("{=?}", E::<u8>::B(Some(&48)));
+        defmt::info!("{=?}", E::C { y: 49u8 });
     }
 
     // slice + built-in enum
-    defmt::info!("{:[?]}", &[None, Some(42u8)][..]);
-    defmt::info!("{:[?]}", &[Ok(42u8), Err(43u8)][..]);
+    defmt::info!("{=[?]}", &[None, Some(42u8)][..]);
+    defmt::info!("{=[?]}", &[Ok(42u8), Err(43u8)][..]);
 
     // slice + user-defined enum
     {
@@ -294,7 +294,7 @@ fn main() -> ! {
             A,
             B(u8),
         }
-        defmt::info!("{:[?]}", &[E::A, E::B(42)][..]);
+        defmt::info!("{=[?]}", &[E::A, E::B(42)][..]);
     }
 
     // slice + struct + built-in enum
@@ -306,7 +306,7 @@ fn main() -> ! {
         }
 
         defmt::info!(
-            "{:[?]}",
+            "{=[?]}",
             &[S { x: 42, y: None }, S { x: 43, y: Some(44) }][..]
         );
     }
@@ -319,53 +319,53 @@ fn main() -> ! {
             y: u16,
         }
 
-        defmt::info!("{:[?]}", &[None, Some(S { x: 42, y: 256 })][..]);
+        defmt::info!("{=[?]}", &[None, Some(S { x: 42, y: 256 })][..]);
     }
 
     // slice + built-in enum + slice
     let s: &[u8] = &[42, 43];
-    defmt::info!("{:[?]}", &[None, Some(s)][..]);
+    defmt::info!("{=[?]}", &[None, Some(s)][..]);
 
-    defmt::info!("after nested log: {:?}", nested());
+    defmt::info!("after nested log: {=?}", nested());
 
     // printing @ is now allowed
     defmt::info!("I can now print the @ symbol!");
     let interned = defmt::intern!("this is @n interned string");
-    defmt::info!("@nd @lso vi@ interned strings: {:istr}", interned);
+    defmt::info!("@nd @lso vi@ interned strings: {=istr}", interned);
 
     // Tuples
-    defmt::info!("empty tuple: {:?}", ());
-    defmt::info!("tuple of ints: {:?}", (1, 2, 3));
-    defmt::info!("nested tuple of ints: {:?}", (1, 2, (3, 4, 5), (6, 7, 8)));
+    defmt::info!("empty tuple: {=?}", ());
+    defmt::info!("tuple of ints: {=?}", (1, 2, 3));
+    defmt::info!("nested tuple of ints: {=?}", (1, 2, (3, 4, 5), (6, 7, 8)));
     defmt::info!(
-        "super nested tuples: {:?}",
+        "super nested tuples: {=?}",
         ((((((((),),),),),),), (((((((), (),),),),),),),)
     );
-    defmt::info!("slice of tuples: {:?}", &[(1, 2), (3, 4), (5, 6)][..]);
-    defmt::info!("tuple of slices: {:?}", (&[1, 2, 3][..], &[4, 5, 6][..]));
-    defmt::info!("tuple of [u8;4]: {:?}", ([1u8, 2, 3, 4], [5u8, 6, 7, 8]));
+    defmt::info!("slice of tuples: {=?}", &[(1, 2), (3, 4), (5, 6)][..]);
+    defmt::info!("tuple of slices: {=?}", (&[1, 2, 3][..], &[4, 5, 6][..]));
+    defmt::info!("tuple of [u8;4]: {=?}", ([1u8, 2, 3, 4], [5u8, 6, 7, 8]));
 
     // Arrays of T: Format
-    defmt::info!("[u8;0]: {:[?;0]}", [0u8; 0]);
-    defmt::info!("[u8;4]: {:[?;4]}", [1u8, 2, 3, 4]);
-    defmt::info!("[i8;4]: {:[?;4]}", [-1i8, 2, 3, -4]);
+    defmt::info!("[u8;0]: {=[?;0]}", [0u8; 0]);
+    defmt::info!("[u8;4]: {=[?;4]}", [1u8, 2, 3, 4]);
+    defmt::info!("[i8;4]: {=[?;4]}", [-1i8, 2, 3, -4]);
     defmt::info!(
-        "[(u32,u32);4]: {:[?;4]}",
+        "[(u32,u32);4]: {=[?;4]}",
         [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]
     );
 
-    defmt::info!("[u8;0]: {:?}", [0u8; 0]);
-    defmt::info!("[u8;4]: {:?}", [1u8, 2, 3, 4]);
-    defmt::info!("[i8;4]: {:?}", [-1i8, 2, 3, -4]);
-    defmt::info!("[u32;4]: {:?}", [1u32, 2, 3, 4]);
-    defmt::info!("[i32;4]: {:?}", [-1i32, 2, 3, -4]);
+    defmt::info!("[u8;0]: {=?}", [0u8; 0]);
+    defmt::info!("[u8;4]: {=?}", [1u8, 2, 3, 4]);
+    defmt::info!("[i8;4]: {=?}", [-1i8, 2, 3, -4]);
+    defmt::info!("[u32;4]: {=?}", [1u32, 2, 3, 4]);
+    defmt::info!("[i32;4]: {=?}", [-1i32, 2, 3, -4]);
     defmt::info!(
-        "[[u32;4];4]: {:?}",
+        "[[u32;4];4]: {=?}",
         [[1u32, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]]
     );
-    defmt::info!("[Option<u32>;4]: {:?}", [Some(1u32), None, Some(3), None]);
+    defmt::info!("[Option<u32>;4]: {=?}", [Some(1u32), None, Some(3), None]);
     defmt::info!(
-        "[(u32,u32);4]: {:?}",
+        "[(u32,u32);4]: {=?}",
         [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]
     );
 
@@ -375,14 +375,14 @@ fn main() -> ! {
             A { fld: u8 },
         }
 
-        defmt::info!("1-variant enum: {:?}", Single::A { fld: 123 });
+        defmt::info!("1-variant enum: {=?}", Single::A { fld: 123 });
 
         #[derive(Format)]
         enum Wrap {
             A(Single),
         }
 
-        defmt::info!("wrapped: {:?}", Wrap::A(Single::A { fld: 200 }));
+        defmt::info!("wrapped: {=?}", Wrap::A(Single::A { fld: 200 }));
     }
 
     {
@@ -395,7 +395,7 @@ fn main() -> ! {
         struct B(bool);
 
         defmt::info!(
-            "{:?}, {:?}, {:?}",
+            "{=?}, {=?}, {=?}",
             (A(true), B(true)),
             (A(false), B(true)),
             (A(true), B(false))
@@ -416,7 +416,7 @@ fn main() -> ! {
             a: [1, 2],
         };
 
-        defmt::info!("true, [1, 2]: {:?}", dhcp_repr);
+        defmt::info!("true, [1, 2]: {=?}", dhcp_repr);
     }
 
     {
@@ -424,7 +424,7 @@ fn main() -> ! {
 
         impl Format for Inner {
             fn format(&self, f: Formatter) {
-                defmt::write!(f, "inner value ({:u8})", self.0);
+                defmt::write!(f, "inner value ({=u8})", self.0);
             }
         }
 
@@ -433,12 +433,12 @@ fn main() -> ! {
 
         impl Format for MyStruct {
             fn format(&self, f: Formatter) {
-                defmt::write!(f, "outer value ({:?})", self.0);
+                defmt::write!(f, "outer value ({=?})", self.0);
             }
         }
 
         defmt::info!(
-            "nested `Format` impls using `write!`: {:?}",
+            "nested `Format` impls using `write!`: {=?}",
             MyStruct(Inner(42)),
         );
     }
@@ -452,10 +452,10 @@ fn main() -> ! {
         }
 
         let s = S { x: -1, y: 2 };
-        defmt::info!("{:?}", Debug2Format::<consts::U128>(&s));
-        defmt::info!("{:?}", Debug2Format::<consts::U128>(&Some(s)));
-        defmt::info!("{:?}", Debug2Format::<consts::U128>(&[s, s]));
-        defmt::info!("{:?}", Debug2Format::<consts::U128>(&[Some(s), None]));
+        defmt::info!("{=?}", Debug2Format::<consts::U128>(&s));
+        defmt::info!("{=?}", Debug2Format::<consts::U128>(&Some(s)));
+        defmt::info!("{=?}", Debug2Format::<consts::U128>(&[s, s]));
+        defmt::info!("{=?}", Debug2Format::<consts::U128>(&[Some(s), None]));
     }
 
     {
@@ -479,11 +479,11 @@ fn main() -> ! {
             port: 8888,
         };
 
-        defmt::info!("{:?}", Display2Format::<consts::U32>(&addr));
+        defmt::info!("{=?}", Display2Format::<consts::U32>(&addr));
     }
 
     defmt::info!(
-        "i128: 0 = {:i128}, -1 = {:i128}, MAX = {:i128}, MIN = {:i128}",
+        "i128: 0 = {=i128}, -1 = {=i128}, MAX = {=i128}, MIN = {=i128}",
         0,
         -1,
         i128::max_value(),
@@ -491,18 +491,18 @@ fn main() -> ! {
     );
 
     defmt::info!(
-        "u128: 0 = {:u128}, -1 = {:u128}, MAX = {:u128}, MIN = {:u128}",
+        "u128: 0 = {=u128}, -1 = {=u128}, MAX = {=u128}, MIN = {=u128}",
         0,
         1,
         u128::max_value(),
         u128::min_value()
     );
 
-    defmt::info!("{:?}", 340282366920938u128);
-    defmt::info!("{:?}", -170141183460469i128);
+    defmt::info!("{=?}", 340282366920938u128);
+    defmt::info!("{=?}", -170141183460469i128);
 
-    defmt::info!("Hello {:char}", '💜');
-    defmt::info!("Hello {:char} & {:?}", '💜', '🍕');
+    defmt::info!("Hello {=char}", '💜');
+    defmt::info!("Hello {=char} & {=?}", '💜', '🍕');
 
     {
         #[rustfmt::skip]
@@ -526,8 +526,8 @@ fn main() -> ! {
             A252, A253, A254, A255, A256, A257, A258, A259, A260, A261, A262, A263, A264, A265, A266, A267, A268, A269,
         }
 
-        defmt::info!("EnumLarge::{:?}", EnumLarge::A051);
-        defmt::info!("EnumLarge::{:?}", EnumLarge::A269);
+        defmt::info!("EnumLarge::{=?}", EnumLarge::A051);
+        defmt::info!("EnumLarge::{=?}", EnumLarge::A269);
     }
 
     {
@@ -553,7 +553,7 @@ struct NestedStruct {
 }
 
 fn nested() -> NestedStruct {
-    defmt::info!("in nested {:u8}", 123);
+    defmt::info!("in nested {=u8}", 123);
     NestedStruct {
         a: 0xAA,
         b: 0x12345678,
