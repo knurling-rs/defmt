@@ -66,6 +66,28 @@ fn main() -> ! {
         defmt::info!("S1 > S2 {}", S1);
     }
 
+    defmt::info!("----");
+
+    let x = b"He\x7Fllo";
+    defmt::info!("no hint {=[u8]}", *x);
+    defmt::info!("hex     {=[u8]:x}", *x);
+    defmt::info!("HEX     {=[u8]:X}", *x);
+    defmt::info!("binary  {=[u8]:b}", *x);
+    defmt::info!("ASCII   {=[u8]:a}", *x);
+    defmt::info!("Debug   {=[u8]:?}", *x);
+
+    defmt::info!("----");
+
+    {
+        let mut bytes = [0; 256];
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            *byte = i as u8;
+        }
+
+        defmt::info!("{=[u8]:a}", bytes);
+        defmt::info!("{=[u8;256]:a}", bytes);
+    }
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

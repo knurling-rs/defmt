@@ -934,6 +934,56 @@ fn format_args_real(
         Ok(())
     }
 
+    fn format_bytes(
+        bytes: &[u8],
+        hint: Option<&DisplayHint>,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
+        match hint {
+            Some(DisplayHint::Ascii) => {
+                // byte string literal syntax: b"Hello\xffworld"
+                buf.push_str("b\"");
+                for byte in bytes {
+                    match byte {
+                        // special escaping
+                        b'\t' => buf.push_str("\\t"),
+                        b'\n' => buf.push_str("\\n"),
+                        b'\r' => buf.push_str("\\r"),
+                        b' ' => buf.push(' '),
+                        b'\"' => buf.push_str("\\\""),
+                        b'\\' => buf.push_str("\\\\"),
+                        _ => {
+                            if byte.is_ascii_graphic() {
+                                buf.push(*byte as char);
+                            } else {
+                                // general escaped form
+                                write!(buf, "\\x{:02x}", byte).ok();
+                            }
+                        }
+                    }
+                }
+                buf.push('\"');
+            }
+            Some(DisplayHint::Hexadecimal { .. }) | Some(DisplayHint::Binary { .. }) => {
+                // `core::write!` doesn't quite produce the output we want, for example
+                // `write!("{:#04x?}", bytes)` produces a multi-line output
+                // `write!("{:02x?}", bytes)` is single-line but each byte doesn't include the "0x" prefix
+                buf.push('[');
+                let mut is_first = true;
+                for byte in bytes {
+                    if !is_first {
+                        buf.push_str(", ");
+                    }
+                    is_first = false;
+                    format_u128(*byte as u128, hint, buf).ok();
+                }
+                buf.push(']');
+            }
+            _ => write!(buf, "{:?}", bytes)?,
+        }
+        Ok(())
+    }
+
     let params = defmt_parser::parse(format).unwrap();
     let mut buf = String::new();
     for param in params {
@@ -977,7 +1027,7 @@ fn format_args_real(
                         }
                         buf.write_str("]")?;
                     }
-                    Arg::Slice(x) => write!(buf, "{:?}", x)?,
+                    Arg::Slice(x) => format_bytes(x, hint, &mut buf)?,
                     Arg::Char(c) => write!(buf, "{}", c)?,
                 }
             }
