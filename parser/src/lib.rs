@@ -153,7 +153,7 @@ fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
 }
 
 // example input: "0=Type:hint" (note: no braces)
-fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
+fn parse_param(mut s: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
     const TYPE_PREFIX: &str = "=";
     const HINT_PREFIX: &str = ":";
 
@@ -249,7 +249,13 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
             },
             "X" => DisplayHint::Hexadecimal { is_uppercase: true },
             "?" => DisplayHint::Debug,
-            _ => DisplayHint::Unknown(s.to_owned()),
+            _ => {
+                if strict {
+                    return Err(format!("unknown display hint: {:?}", s).into());
+                } else {
+                    DisplayHint::Unknown(s.to_owned())
+                }
+            }
         });
     } else if !s.is_empty() {
         return Err(format!("unexpected content {:?} in format string", s).into());
@@ -325,7 +331,10 @@ where
     }
 }
 
-pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'static, str>> {
+pub fn parse<'f>(
+    format_string: &'f str,
+    strict: bool,
+) -> Result<Vec<Fragment<'f>>, Cow<'static, str>> {
     let mut fragments = Vec::new();
 
     // Index after the `}` of the last format specifier.
@@ -363,7 +372,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
 
         // Parse the contents inside the braces.
         let param_str = &format_string[brace_pos + 1..][..len];
-        let param = parse_param(param_str)?;
+        let param = parse_param(param_str, strict)?;
         fragments.push(Fragment::Parameter(Parameter {
             index: param.index.unwrap_or_else(|| {
                 // If there is no explicit index, assign the next one.

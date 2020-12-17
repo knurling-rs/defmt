@@ -682,7 +682,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
     /// Decodes arguments from the stream, according to `format`.
     fn decode_format(&mut self, format: &str) -> Result<Vec<Arg<'t>>, DecodeError> {
         let mut args = vec![]; // will contain the deserialized arguments on return
-        let mut params = defmt_parser::parse(format)
+        let mut params = defmt_parser::parse(format, false)
             .map_err(|_| DecodeError::Malformed)?
             .iter()
             .filter_map(|frag| match frag {
@@ -993,7 +993,7 @@ fn format_args_real(
         Ok(())
     }
 
-    let params = defmt_parser::parse(format).unwrap();
+    let params = defmt_parser::parse(format, false).unwrap();
     let mut buf = String::new();
     for param in params {
         match param {

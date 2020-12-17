@@ -494,7 +494,7 @@ fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
 
 fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let ls = log.litstr.value();
-    let fragments = match defmt_parser::parse(&ls) {
+    let fragments = match defmt_parser::parse(&ls, true) {
         Ok(args) => args,
         Err(e) => return parse::Error::new(log.litstr.span(), e).to_compile_error(),
     };
@@ -989,7 +989,7 @@ pub fn internp(ts: TokenStream) -> TokenStream {
 pub fn write(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let fragments = match defmt_parser::parse(&ls) {
+    let fragments = match defmt_parser::parse(&ls, true) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)
