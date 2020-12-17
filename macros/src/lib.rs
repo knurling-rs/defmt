@@ -411,7 +411,7 @@ fn fields(
                         "?".to_string()
                     });
                     if let Some(ident) = f.ident.as_ref() {
-                        core::write!(format, "{}: {{:{}}}", ident, ty).ok();
+                        core::write!(format, "{}: {{={}}}", ident, ty).ok();
 
                         if ty == "?" {
                             list.push(quote!(f.inner.fmt(#ident, false)));
@@ -423,7 +423,7 @@ fn fields(
                     } else {
                         // Unnamed (tuple) field.
 
-                        core::write!(format, "{{:{}}}", ty).ok();
+                        core::write!(format, "{{={}}}", ty).ok();
 
                         let ident = format_ident!("arg{}", i);
                         if ty == "?" {
