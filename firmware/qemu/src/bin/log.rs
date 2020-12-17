@@ -530,6 +530,15 @@ fn main() -> ! {
         defmt::info!("EnumLarge::{:?}", EnumLarge::A269);
     }
 
+    {
+        #[derive(Format)]
+        struct S {
+            x: &'static str,
+        }
+
+        defmt::info!("{:?}", S { x: "hi" });
+    }
+
     defmt::info!("QEMU test finished!");
 
     loop {

@@ -46,9 +46,7 @@ fn inc(index: u8, n: u8) -> u8 {
 
 fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: &[u8]) {
     let mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: &mut f,
-    };
+    let g = Formatter { inner: &mut f };
     val.format(g);
     f.finalize();
     assert_eq!(f.bytes(), expected_encoding);
@@ -58,9 +56,7 @@ fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: 
 fn write() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(g, "The answer is {:u8}", 42);
     assert_eq!(
@@ -72,9 +68,7 @@ fn write() {
     );
 
     let ref mut f2 = InternalFormatter::new();
-    let g2 = Formatter {
-        inner: f2,
-    };
+    let g2 = Formatter { inner: f2 };
     write!(g2, "The answer is {:?}", 42u8);
     assert_eq!(
         f2.bytes(),
@@ -90,9 +84,7 @@ fn write() {
 fn booleans_max_num_bool_flags() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(
         g,
@@ -112,9 +104,7 @@ fn booleans_max_num_bool_flags() {
 fn booleans_less_than_max_num_bool_flags() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(
         g,
@@ -134,9 +124,7 @@ fn booleans_less_than_max_num_bool_flags() {
 fn booleans_more_than_max_num_bool_flags() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(g, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
            false, true, true, false, true, false, true, true, false, true);
@@ -154,9 +142,7 @@ fn booleans_more_than_max_num_bool_flags() {
 fn booleans_mixed() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(
         g,
@@ -177,9 +163,7 @@ fn booleans_mixed() {
 fn booleans_mixed_no_trailing_bool() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(g, "encode mixed bools {:bool} {:u8}", false, 42);
     assert_eq!(
@@ -195,9 +179,7 @@ fn booleans_mixed_no_trailing_bool() {
 fn bitfields_mixed() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(
         g,
@@ -219,9 +201,7 @@ fn bitfields_mixed() {
 fn bitfields_across_octets() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(g, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
     assert_eq!(
@@ -238,9 +218,7 @@ fn bitfields_across_octets() {
 fn bitfields_truncate_lower() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(
         g,
@@ -260,9 +238,7 @@ fn bitfields_truncate_lower() {
 fn bitfields_assert_range_exclusive() {
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(g, "bitfields {0:6..8}", 0b1010_0101u8,);
     assert_eq!(
@@ -302,9 +278,7 @@ fn boolean_struct_mixed() {
 
     let index = fetch_string_index();
     let ref mut f = InternalFormatter::new();
-    let g = Formatter {
-        inner: f,
-    };
+    let g = Formatter { inner: f };
 
     write!(
         g,
@@ -934,9 +908,8 @@ fn derive_with_bounds() {
     check_format_implementation(
         &S2 { a: &1, b: &2 },
         &[
-            index,         // "S2 { a: {:u8}, b: {:u8} }}"
-            1,
-            2,
+            index, // "S2 { a: {:u8}, b: {:u8} }}"
+            1, 2,
         ],
     );
 }
@@ -990,13 +963,12 @@ fn issue_208() {
 
 #[test]
 fn enum_variants() {
-
     #[allow(dead_code)]
     #[derive(Format)]
     enum EnumSmall {
         A0,
         A1,
-        A2
+        A2,
     }
 
     #[rustfmt::skip]
@@ -1023,23 +995,32 @@ fn enum_variants() {
     let e = EnumSmall::A2;
 
     let index = fetch_string_index();
-    check_format_implementation(
-        &e,
-        &[
-            index,
-            2,
-        ],
-    );
+    check_format_implementation(&e, &[index, 2]);
 
     let e = EnumLarge::A269;
 
     let index = fetch_string_index();
+    check_format_implementation(&e, &[index, 13, 1]);
+}
+
+#[test]
+fn derive_str() {
+    #[derive(Format)]
+    struct S {
+        x: &'static str,
+    }
+
+    let s = S { x: "hi" };
+
+    let index = fetch_string_index();
     check_format_implementation(
-        &e,
+        &s,
         &[
-            index,
-            13,
-            1,
+            index, // "S {{ s: {:str} }}" (NOTE: `s` field is not {:?})
+            // so no extra format string index here
+            2,   // s.x.len()
+            104, // b'h'
+            105, // b'i'
         ],
     );
 }
