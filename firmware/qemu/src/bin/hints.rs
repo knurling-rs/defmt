@@ -6,7 +6,7 @@ use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
 
-use defmt::{write, Format, Formatter};
+use defmt::{intern, write, Format, Formatter};
 use defmt_semihosting as _; // global logger
 
 #[entry]
@@ -87,6 +87,16 @@ fn main() -> ! {
         defmt::info!("{=[u8]:a}", bytes);
         defmt::info!("{=[u8;256]:a}", bytes);
     }
+
+    defmt::info!("----");
+
+    let s = "Hello";
+    let is = intern!("world");
+    defmt::info!("no hint {=str}", s);
+    defmt::info!("Debug   {=str:?}", s);
+
+    defmt::info!("no hint {=istr}", is);
+    defmt::info!("Debug   {=istr:?}", is);
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)

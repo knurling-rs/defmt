@@ -975,11 +975,20 @@ fn format_args_real(
                         buf.push_str(", ");
                     }
                     is_first = false;
-                    format_u128(*byte as u128, hint, buf).ok();
+                    format_u128(*byte as u128, hint, buf)?;
                 }
                 buf.push(']');
             }
             _ => write!(buf, "{:?}", bytes)?,
+        }
+        Ok(())
+    }
+
+    fn format_str(s: &str, hint: Option<&DisplayHint>, buf: &mut String) -> Result<(), fmt::Error> {
+        if hint == Some(&DisplayHint::Debug) {
+            write!(buf, "{:?}", s)?;
+        } else {
+            buf.push_str(s);
         }
         Ok(())
     }
@@ -1012,8 +1021,8 @@ fn format_args_real(
                     Arg::U128(x) => format_u128(*x, hint, &mut buf)?,
                     Arg::Ixx(x) => format_i128(*x as i128, hint, &mut buf)?,
                     Arg::I128(x) => format_i128(*x, hint, &mut buf)?,
-                    Arg::Str(x) => write!(buf, "{}", x)?,
-                    Arg::IStr(x) => write!(buf, "{}", x)?,
+                    Arg::Str(x) => format_str(x, hint, &mut buf)?,
+                    Arg::IStr(x) => format_str(x, hint, &mut buf)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
                     Arg::FormatSlice { elements } => {
                         buf.write_str("[")?;
