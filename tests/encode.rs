@@ -1002,3 +1002,25 @@ fn enum_variants() {
     let index = fetch_string_index();
     check_format_implementation(&e, &[index, 13, 1]);
 }
+
+#[test]
+fn derive_str() {
+    #[derive(Format)]
+    struct S {
+        x: &'static str,
+    }
+
+    let s = S { x: "hi" };
+
+    let index = fetch_string_index();
+    check_format_implementation(
+        &s,
+        &[
+            index, // "S {{ s: {:str} }}" (NOTE: `s` field is not {:?})
+            // so no extra format string index here
+            2,   // s.x.len()
+            104, // b'h'
+            105, // b'i'
+        ],
+    );
+}
