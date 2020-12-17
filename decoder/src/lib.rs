@@ -31,11 +31,11 @@ include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
-    /// A format string for use with `{:?}`. Used for both primitive format strings (which are
+    /// A format string for use with `{=?}`. Used for both primitive format strings (which are
     /// special cased to have lower indices), and user format strings created by
     /// `#[derive(Format)]`.
     Fmt,
-    /// An interned string, for use with `{:istr}`.
+    /// An interned string, for use with `{=istr}`.
     Str,
 
     Trace,
@@ -986,7 +986,7 @@ mod tests {
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Debug, "The answer is {:u8}!".to_owned()),
+            TableEntry::new_without_symbol(Tag::Debug, "The answer is {=u8}!".to_owned()),
         );
         // [IDX, TS, 42]
         //           ^^
@@ -1023,7 +1023,7 @@ mod tests {
                 Frame {
                     index: 1,
                     level: Level::Debug,
-                    format: "The answer is {:u8}!",
+                    format: "The answer is {=u8}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
@@ -1036,7 +1036,8 @@ mod tests {
 
     #[test]
     fn all_integers() {
-        const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:u64} {:u128} {:i8} {:i16} {:i32} {:i64} {:i128}!";
+        const FMT: &str =
+            "Hello, {=u8} {=u16} {=u24} {=u32} {=u64} {=u128} {=i8} {=i16} {=i32} {=i64} {=i128}!";
         let mut entries = BTreeMap::new();
         entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
 
@@ -1050,12 +1051,14 @@ mod tests {
             0, 0, 1, // u24
             0xff, 0xff, 0xff, 0xff, // u32
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // u64
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // u128
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, // u128
             0xff, // i8
             0xff, 0xff, // i16
             0xff, 0xff, 0xff, 0xff, // i32
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i64
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i128
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, // i128
         ];
 
         assert_eq!(
@@ -1073,11 +1076,11 @@ mod tests {
                         Arg::Uxx(u32::max_value().into()), // u32
                         Arg::Uxx(u64::max_value().into()), // u64
                         Arg::U128(u128::max_value().into()),
-                        Arg::Ixx(-1),                      // i8
-                        Arg::Ixx(-1),                      // i16
-                        Arg::Ixx(-1),                      // i32
-                        Arg::Ixx(-1),                      // i64
-                        Arg::I128(-1),                     // i128
+                        Arg::Ixx(-1),  // i8
+                        Arg::Ixx(-1),  // i16
+                        Arg::Ixx(-1),  // i32
+                        Arg::Ixx(-1),  // i64
+                        Arg::I128(-1), // i128
                     ],
                 },
                 bytes.len(),
@@ -1090,13 +1093,13 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "The answer is {0:u8} {0:u8}!".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "The answer is {0=u8} {0=u8}!".to_owned()),
         );
         entries.insert(
             1,
             TableEntry::new_without_symbol(
                 Tag::Info,
-                "The answer is {1:u16} {0:u8} {1:u16}!".to_owned(),
+                "The answer is {1=u16} {0=u8} {1=u16}!".to_owned(),
             ),
         );
 
@@ -1113,7 +1116,7 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
-                    format: "The answer is {0:u8} {0:u8}!",
+                    format: "The answer is {0=u8} {0=u8}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
@@ -1134,7 +1137,7 @@ mod tests {
                 Frame {
                     index: 1,
                     level: Level::Info,
-                    format: "The answer is {1:u16} {0:u8} {1:u16}!",
+                    format: "The answer is {1=u16} {0=u8} {1=u16}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42), Arg::Uxx(0xffff)],
                 },
@@ -1148,11 +1151,11 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
         let table = Table { entries };
@@ -1170,10 +1173,10 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
-                    format: "x={:?}",
+                    format: "x={=?}",
                     timestamp: 2,
                     args: vec![Arg::Format {
-                        format: "Foo {{ x: {:u8} }}",
+                        format: "Foo {{ x: {=u8} }}",
                         args: vec![Arg::Uxx(42)]
                     }],
                 },
@@ -1187,11 +1190,11 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
         let table = Table { entries };
@@ -1218,7 +1221,7 @@ mod tests {
             true as u8, // the logged bool value
         ];
 
-        decode_and_expect("my bool={:bool}", &bytes, "0.000002 INFO my bool=true");
+        decode_and_expect("my bool={=bool}", &bytes, "0.000002 INFO my bool=true");
     }
 
     #[test]
@@ -1230,7 +1233,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool capacity {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            "bool capacity {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO bool capacity false true true false false false false true",
         );
@@ -1246,7 +1249,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO bool overflow false true true false false false false true true",
         );
@@ -1262,7 +1265,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool overflow {:bool} {:u8} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            "bool overflow {=bool} {=u8} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO bool overflow false 255 true true false false false false true true",
         );
@@ -1278,7 +1281,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:u8} {:bool}",
+            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=u8} {=bool}",
             &bytes,
             "0.000002 INFO bool overflow false true true false false false false true 255 true",
         );
@@ -1294,7 +1297,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "hidden bools {:bool} {:u8} {:bool} {:bool}",
+            "hidden bools {=bool} {=u8} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO hidden bools true 9 false true",
         );
@@ -1310,7 +1313,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "no trailing bools {:bool} {:u8}",
+            "no trailing bools {=bool} {=u8}",
             &bytes,
             "0.000002 INFO no trailing bools false 9",
         );
@@ -1333,13 +1336,13 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "{:bool} {:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "{=bool} {=?}".to_owned()),
         );
         entries.insert(
             1,
             TableEntry::new_without_symbol(
                 Tag::Fmt,
-                "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned(),
+                "Flags {{ a: {=bool}, b: {=bool}, c: {=bool} }}".to_owned(),
             ),
         );
 
@@ -1367,7 +1370,7 @@ mod tests {
             0b1110_0101, // u8
         ];
         decode_and_expect(
-            "x: {0:0..4}, y: {0:3..8}",
+            "x: {0=0..4}, y: {0=3..8}",
             &bytes,
             "0.000002 INFO x: 0b101, y: 0b11100",
         );
@@ -1381,7 +1384,7 @@ mod tests {
             0b1101_0010, // u8
         ];
         decode_and_expect(
-            "x: {0:0..7}, y: {0:3..5}",
+            "x: {0=0..7}, y: {0=3..5}",
             &bytes,
             "0.000002 INFO x: 0b1010010, y: 0b10",
         );
@@ -1396,7 +1399,7 @@ mod tests {
             0b1110_0101, // u8
         ];
         decode_and_expect(
-            "#0: {0:0..5}, #1: {1:3..8}",
+            "#0: {0=0..5}, #1: {1=3..8}",
             &bytes,
             "0.000002 INFO #0: 0b10000, #1: 0b11100",
         );
@@ -1410,7 +1413,7 @@ mod tests {
             0b1111_0000,
             0b1110_0101, // u16
         ];
-        decode_and_expect("x: {0:7..12}", &bytes, "0.000002 INFO x: 0b1011");
+        decode_and_expect("x: {0=7..12}", &bytes, "0.000002 INFO x: 0b1011");
     }
 
     #[test]
@@ -1423,7 +1426,7 @@ mod tests {
             0b1111_0001, // u8
         ];
         decode_and_expect(
-            "#0: {0:7..12}, #1: {1:0..5}",
+            "#0: {0=7..12}, #1: {1=0..5}",
             &bytes,
             "0.000002 INFO #0: 0b1011, #1: 0b10001",
         );
@@ -1440,7 +1443,7 @@ mod tests {
             0b1111_0001, // u8 bitfields
         ];
         decode_and_expect(
-            "#0: {0:7..12}, #1: {1:u8}, #2: {2:0..5}",
+            "#0: {0=7..12}, #1: {1=u8}, #2: {2=0..5}",
             &bytes,
             "0.000002 INFO #0: 0b1011, #1: 42, #2: 0b10001",
         );
@@ -1455,7 +1458,7 @@ mod tests {
             0b0110_0011, // u16
         ];
         decode_and_expect(
-            "bitfields {0:0..7} {0:9..14}",
+            "bitfields {0=0..7} {0=9..14}",
             &bytes,
             "0.000002 INFO bitfields 0b1010010 0b10001",
         );
@@ -1471,7 +1474,7 @@ mod tests {
             0b1111_1111, // truncated u16
         ];
         decode_and_expect(
-            "bitfields {0:0..7} {0:9..14} {1:8..10}",
+            "bitfields {0=0..7} {0=9..14} {1=8..10}",
             &bytes,
             "0.000002 INFO bitfields 0b1010010 0b10001 0b11",
         );
@@ -1485,7 +1488,7 @@ mod tests {
             0b0110_0011, // truncated(!) u16
         ];
         decode_and_expect(
-            "bitfields {0:9..14}",
+            "bitfields {0=9..14}",
             &bytes,
             "0.000002 INFO bitfields 0b10001",
         );
@@ -1502,7 +1505,7 @@ mod tests {
             0b1100_0011, // -
         ];
         decode_and_expect(
-            "bitfields {0:0..2} {0:28..31}",
+            "bitfields {0=0..2} {0=28..31}",
             &bytes,
             "0.000002 INFO bitfields 0b11 0b100",
         );
@@ -1516,7 +1519,7 @@ mod tests {
             2, // length of the slice
             23, 42, // slice content
         ];
-        decode_and_expect("x={:[u8]}", &bytes, "0.000002 INFO x=[23, 42]");
+        decode_and_expect("x={=[u8]}", &bytes, "0.000002 INFO x=[23, 42]");
     }
 
     #[test]
@@ -1530,7 +1533,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "x={:[u8]} trailing arg={:u8}",
+            "x={=[u8]} trailing arg={=u8}",
             &bytes,
             "0.000002 INFO x=[23, 42] trailing arg=1",
         );
@@ -1545,7 +1548,7 @@ mod tests {
             b'W', b'o', b'r', b'l', b'd',
         ];
 
-        decode_and_expect("Hello {:str}", &bytes, "0.000002 INFO Hello World");
+        decode_and_expect("Hello {=str}", &bytes, "0.000002 INFO Hello World");
     }
 
     #[test]
@@ -1558,7 +1561,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "Hello {:str} {:u8}",
+            "Hello {=str} {=u8}",
             &bytes,
             "0.000002 INFO Hello World 125",
         );
@@ -1574,7 +1577,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "Supports ASCII {:char} and Unicode {:char}",
+            "Supports ASCII {=char} and Unicode {=char}",
             &bytes,
             "0.000002 INFO Supports ASCII a and Unicode 💜",
         );
@@ -1585,15 +1588,15 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             4,
-            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
         );
         entries.insert(
             3,
-            TableEntry::new_without_symbol(Tag::Fmt, "None|Some({:?})".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "None|Some({=?})".to_owned()),
         );
         entries.insert(
             2,
-            TableEntry::new_without_symbol(Tag::Fmt, "{:u8}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "{=u8}".to_owned()),
         );
 
         let table = Table { entries };
@@ -1627,10 +1630,12 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                hint: None,
             },
             Parameter {
                 index: 0,
                 ty: Type::BitField(4..7),
+                hint: None,
             },
         ];
 
@@ -1639,7 +1644,8 @@ mod tests {
             params,
             vec![Parameter {
                 index: 0,
-                ty: Type::BitField(0..7)
+                ty: Type::BitField(0..7),
+                hint: None,
             }]
         );
     }
@@ -1650,10 +1656,12 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(1..3),
+                hint: None,
             },
             Parameter {
                 index: 0,
                 ty: Type::BitField(2..5),
+                hint: None,
             },
         ];
 
@@ -1662,7 +1670,8 @@ mod tests {
             params,
             vec![Parameter {
                 index: 0,
-                ty: Type::BitField(1..5)
+                ty: Type::BitField(1..5),
+                hint: None,
             }]
         );
     }
@@ -1673,14 +1682,17 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::BitField(1..3),
+                hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::BitField(4..5),
+                hint: None,
             },
         ];
 
@@ -1690,11 +1702,13 @@ mod tests {
             vec![
                 Parameter {
                     index: 0,
-                    ty: Type::BitField(0..3)
+                    ty: Type::BitField(0..3),
+                    hint: None,
                 },
                 Parameter {
                     index: 1,
-                    ty: Type::BitField(1..5)
+                    ty: Type::BitField(1..5),
+                    hint: None,
                 }
             ]
         );
@@ -1706,18 +1720,22 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::U8,
+                hint: None,
             },
             Parameter {
                 index: 2,
                 ty: Type::BitField(1..4),
+                hint: None,
             },
             Parameter {
                 index: 2,
                 ty: Type::BitField(4..5),
+                hint: None,
             },
         ];
 
@@ -1728,15 +1746,18 @@ mod tests {
             vec![
                 Parameter {
                     index: 1,
-                    ty: Type::U8
+                    ty: Type::U8,
+                    hint: None,
                 },
                 Parameter {
                     index: 0,
-                    ty: Type::BitField(0..3)
+                    ty: Type::BitField(0..3),
+                    hint: None,
                 },
                 Parameter {
                     index: 2,
-                    ty: Type::BitField(1..5)
+                    ty: Type::BitField(1..5),
+                    hint: None,
                 }
             ]
         );
