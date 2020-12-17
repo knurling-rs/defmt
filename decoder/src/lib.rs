@@ -472,6 +472,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
                     start: smallest,
                     end: largest,
                 }),
+                hint: None, // don't care
             });
 
             // remove old bitfields with this index
