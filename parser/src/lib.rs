@@ -251,6 +251,8 @@ fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
             "?" => DisplayHint::Debug,
             _ => DisplayHint::Unknown(s.to_owned()),
         });
+    } else if !s.is_empty() {
+        return Err(format!("unexpected content {:?} in format string", s).into());
     }
 
     Ok(Param { index, ty, hint })
@@ -917,6 +919,26 @@ mod tests {
         assert_eq!(
             parse("{=dunno}"),
             Err("malformed format string (invalid type specifier `dunno`)".into())
+        );
+
+        assert_eq!(
+            parse("{dunno}"),
+            Err("unexpected content \"dunno\" in format string".into())
+        );
+
+        assert_eq!(
+            parse("{=u8;x}"),
+            Err("malformed format string (invalid type specifier `u8;x`)".into())
+        );
+
+        assert_eq!(
+            parse("{dunno=u8:x}"),
+            Err("unexpected content \"dunno=u8:x\" in format string".into())
+        );
+
+        assert_eq!(
+            parse("{0dunno}"),
+            Err("unexpected content \"dunno\" in format string".into())
         );
     }
 
