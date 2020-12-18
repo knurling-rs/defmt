@@ -241,7 +241,7 @@ fn parse_param(mut input: &str, strict: bool) -> Result<Param, Cow<'static, str>
     // Then, optional hint
     let mut hint = None;
 
-    if input.starts_with(':') {
+    if input.starts_with(HINT_PREFIX) {
         // skip the prefix
         input = &input[HINT_PREFIX.len()..];
 
