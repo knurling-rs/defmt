@@ -189,12 +189,13 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
 
         // type is delimited by `HINT_PREFIX` or end-of-string
         let type_end = input.find(HINT_PREFIX).unwrap_or(input.len());
+        let type_fragment = &input[..type_end];
 
         static FORMAT_ARRAY_START: &str = "[?;";
         static U8_ARRAY_START: &str = "[u8;";
 
         // what comes next is the type
-        ty = match &input[..type_end] {
+        ty = match type_fragment {
             "u8" => Type::U8,
             "u16" => Type::U16,
             "u24" => Type::U24,
@@ -217,18 +218,18 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
             "[?]" => Type::FormatSlice,
             "char" => Type::Char,
             _ if input.starts_with(U8_ARRAY_START) => {
-                let len = parse_array(&input[U8_ARRAY_START.len()..type_end])?;
+                let len = parse_array(&type_fragment[U8_ARRAY_START.len()..])?;
                 Type::U8Array(len)
             }
             _ if input.starts_with(FORMAT_ARRAY_START) => {
-                let len = parse_array(&input[FORMAT_ARRAY_START.len()..type_end])?;
+                let len = parse_array(&type_fragment[FORMAT_ARRAY_START.len()..])?;
                 Type::FormatArray(len)
             }
             _ => {
                 // Check for bitfield syntax.
-                match parse_range(input) {
+                match parse_range(type_fragment) {
                     Some((range, used)) => {
-                        if used != input.len() {
+                        if used != type_fragment.len() {
                             return Err("trailing data after bitfield range".into());
                         }
 
