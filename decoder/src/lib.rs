@@ -1467,7 +1467,7 @@ mod tests {
             0b1110_0101, // u8
         ];
         decode_and_expect(
-            "x: {0=0..4}, y: {0=3..8}",
+            "x: {0=0..4:b}, y: {0=3..8:b}",
             &bytes,
             "0.000002 INFO x: 0b101, y: 0b11100",
         );
@@ -1481,7 +1481,7 @@ mod tests {
             0b1101_0010, // u8
         ];
         decode_and_expect(
-            "x: {0=0..7}, y: {0=3..5}",
+            "x: {0=0..7:b}, y: {0=3..5:b}",
             &bytes,
             "0.000002 INFO x: 0b1010010, y: 0b10",
         );
@@ -1496,7 +1496,7 @@ mod tests {
             0b1110_0101, // u8
         ];
         decode_and_expect(
-            "#0: {0=0..5}, #1: {1=3..8}",
+            "#0: {0=0..5:b}, #1: {1=3..8:b}",
             &bytes,
             "0.000002 INFO #0: 0b10000, #1: 0b11100",
         );
@@ -1510,7 +1510,7 @@ mod tests {
             0b1111_0000,
             0b1110_0101, // u16
         ];
-        decode_and_expect("x: {0=7..12}", &bytes, "0.000002 INFO x: 0b1011");
+        decode_and_expect("x: {0=7..12:b}", &bytes, "0.000002 INFO x: 0b1011");
     }
 
     #[test]
@@ -1523,7 +1523,7 @@ mod tests {
             0b1111_0001, // u8
         ];
         decode_and_expect(
-            "#0: {0=7..12}, #1: {1=0..5}",
+            "#0: {0=7..12:b}, #1: {1=0..5:b}",
             &bytes,
             "0.000002 INFO #0: 0b1011, #1: 0b10001",
         );
@@ -1540,7 +1540,7 @@ mod tests {
             0b1111_0001, // u8 bitfields
         ];
         decode_and_expect(
-            "#0: {0=7..12}, #1: {1=u8}, #2: {2=0..5}",
+            "#0: {0=7..12:b}, #1: {1=u8}, #2: {2=0..5:b}",
             &bytes,
             "0.000002 INFO #0: 0b1011, #1: 42, #2: 0b10001",
         );
@@ -1555,7 +1555,7 @@ mod tests {
             0b0110_0011, // u16
         ];
         decode_and_expect(
-            "bitfields {0=0..7} {0=9..14}",
+            "bitfields {0=0..7:b} {0=9..14:b}",
             &bytes,
             "0.000002 INFO bitfields 0b1010010 0b10001",
         );
@@ -1571,7 +1571,7 @@ mod tests {
             0b1111_1111, // truncated u16
         ];
         decode_and_expect(
-            "bitfields {0=0..7} {0=9..14} {1=8..10}",
+            "bitfields {0=0..7:b} {0=9..14:b} {1=8..10:b}",
             &bytes,
             "0.000002 INFO bitfields 0b1010010 0b10001 0b11",
         );
@@ -1585,7 +1585,7 @@ mod tests {
             0b0110_0011, // truncated(!) u16
         ];
         decode_and_expect(
-            "bitfields {0=9..14}",
+            "bitfields {0=9..14:b}",
             &bytes,
             "0.000002 INFO bitfields 0b10001",
         );
@@ -1602,7 +1602,7 @@ mod tests {
             0b1100_0011, // -
         ];
         decode_and_expect(
-            "bitfields {0=0..2} {0=28..31}",
+            "bitfields {0=0..2:b} {0=28..31:b}",
             &bytes,
             "0.000002 INFO bitfields 0b11 0b100",
         );
