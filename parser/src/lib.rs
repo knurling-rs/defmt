@@ -463,7 +463,7 @@ mod tests {
     fn all_parse_param_cases() {
         // no `Param` field present - 1 case
         assert_eq!(
-            parse_param(""),
+            parse_param("", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -473,7 +473,7 @@ mod tests {
 
         // only one `Param` field present - 3 cases
         assert_eq!(
-            parse_param("=u8"),
+            parse_param("=u8", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U8,
@@ -482,7 +482,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param(":a"),
+            parse_param(":a", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -491,7 +491,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("1"),
+            parse_param("1", ParserMode::Strict),
             Ok(Param {
                 index: Some(1),
                 ty: Type::Format,
@@ -501,7 +501,7 @@ mod tests {
 
         // two `Param` fields present - 3 cases
         assert_eq!(
-            parse_param("=u8:x"),
+            parse_param("=u8:x", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U8,
@@ -512,7 +512,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("0=u8"),
+            parse_param("0=u8", ParserMode::Strict),
             Ok(Param {
                 index: Some(0),
                 ty: Type::U8,
@@ -521,7 +521,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("0:a"),
+            parse_param("0:a", ParserMode::Strict),
             Ok(Param {
                 index: Some(0),
                 ty: Type::Format,
@@ -531,7 +531,7 @@ mod tests {
 
         // all `Param` fields present - 1 case
         assert_eq!(
-            parse_param("1=u8:b"),
+            parse_param("1=u8:b", ParserMode::Strict),
             Ok(Param {
                 index: Some(1),
                 ty: Type::U8,
@@ -543,7 +543,7 @@ mod tests {
     #[test]
     fn all_display_hints() {
         assert_eq!(
-            parse_param(":a"),
+            parse_param(":a", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -552,7 +552,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param(":b"),
+            parse_param(":b", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -561,7 +561,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param(":x"),
+            parse_param(":x", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -572,7 +572,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param(":X"),
+            parse_param(":X", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -581,7 +581,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param(":?"),
+            parse_param(":?", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -590,7 +590,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param(":unknown"),
+            parse_param(":unknown", ParserMode::ForwardsCompatible),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -602,7 +602,7 @@ mod tests {
     #[test]
     fn all_types() {
         assert_eq!(
-            parse_param("=bool"),
+            parse_param("=bool", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Bool,
@@ -611,7 +611,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=?"),
+            parse_param("=?", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Format,
@@ -620,7 +620,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=i16"),
+            parse_param("=i16", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::I16,
@@ -629,7 +629,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=i32"),
+            parse_param("=i32", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::I32,
@@ -638,7 +638,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=i64"),
+            parse_param("=i64", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::I64,
@@ -647,7 +647,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=i128"),
+            parse_param("=i128", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::I128,
@@ -656,7 +656,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=i8"),
+            parse_param("=i8", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::I8,
@@ -665,7 +665,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=str"),
+            parse_param("=str", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Str,
@@ -674,7 +674,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=u16"),
+            parse_param("=u16", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U16,
@@ -683,7 +683,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=u24"),
+            parse_param("=u24", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U24,
@@ -692,7 +692,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=u32"),
+            parse_param("=u32", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U32,
@@ -701,7 +701,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=u64"),
+            parse_param("=u64", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U64,
@@ -710,7 +710,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=u128"),
+            parse_param("=u128", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U128,
@@ -719,7 +719,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=f32"),
+            parse_param("=f32", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::F32,
@@ -728,7 +728,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=u8"),
+            parse_param("=u8", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U8,
@@ -737,7 +737,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=[u8]"),
+            parse_param("=[u8]", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::U8Slice,
@@ -746,7 +746,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=usize"),
+            parse_param("=usize", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Usize,
@@ -755,7 +755,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=isize"),
+            parse_param("=isize", ParserMode::Strict),
             Ok(Param {
                 index: None,
                 ty: Type::Isize,
@@ -768,7 +768,7 @@ mod tests {
     fn index() {
         // implicit
         assert_eq!(
-            parse("{=u8}{=u16}"),
+            parse("{=u8}{=u16}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
@@ -785,7 +785,7 @@ mod tests {
 
         // single parameter formatted twice
         assert_eq!(
-            parse("{=u8}{0=u8}"),
+            parse("{=u8}{0=u8}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
@@ -802,7 +802,7 @@ mod tests {
 
         // explicit index
         assert_eq!(
-            parse("{=u8}{1=u16}"),
+            parse("{=u8}{1=u16}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
@@ -819,7 +819,7 @@ mod tests {
 
         // reversed order
         assert_eq!(
-            parse("{1=u8}{0=u16}"),
+            parse("{1=u8}{0=u16}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 1,
@@ -835,24 +835,24 @@ mod tests {
         );
 
         // two different types for the same index
-        assert!(parse("{0=u8}{0=u16}").is_err());
+        assert!(parse("{0=u8}{0=u16}", ParserMode::Strict).is_err());
         // same thing, except `{:bool}` is auto-assigned index 0
-        assert!(parse("Hello {1=u16} {0=u8} {=bool}").is_err());
+        assert!(parse("Hello {1=u16} {0=u8} {=bool}", ParserMode::Strict).is_err());
 
         // omitted index 0
-        assert!(parse("{1=u8}").is_err());
+        assert!(parse("{1=u8}", ParserMode::Strict).is_err());
 
         // index 1 is missing
-        assert!(parse("{2=u8}{=u16}").is_err());
+        assert!(parse("{2=u8}{=u16}", ParserMode::Strict).is_err());
 
         // index 0 is missing
-        assert!(parse("{2=u8}{1=u16}").is_err());
+        assert!(parse("{2=u8}{1=u16}", ParserMode::Strict).is_err());
     }
 
     #[test]
     fn range() {
         assert_eq!(
-            parse("{=0..4}"),
+            parse("{=0..4}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::BitField(0..4),
@@ -861,7 +861,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse("{0=30..31}{1=0..4}{1=2..6}"),
+            parse("{0=30..31}{1=0..4}{1=2..6}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
@@ -882,26 +882,26 @@ mod tests {
         );
 
         // empty range
-        assert!(parse("{=0..0}").is_err());
+        assert!(parse("{=0..0}", ParserMode::Strict).is_err());
         // start > end
-        assert!(parse("{=1..0}").is_err());
+        assert!(parse("{=1..0}", ParserMode::Strict).is_err());
         // out of 32-bit range
-        assert!(parse("{=0..32}").is_err());
+        assert!(parse("{=0..32}", ParserMode::Strict).is_err());
         // just inside 32-bit range
-        assert!(parse("{=0..31}").is_ok());
+        assert!(parse("{=0..31}", ParserMode::Strict).is_ok());
 
         // missing parts
-        assert!(parse("{=0..4").is_err());
-        assert!(parse("{=0..}").is_err());
-        assert!(parse("{=..4}").is_err());
-        assert!(parse("{=0.4}").is_err());
-        assert!(parse("{=0...4}").is_err());
+        assert!(parse("{=0..4", ParserMode::Strict).is_err());
+        assert!(parse("{=0..}", ParserMode::Strict).is_err());
+        assert!(parse("{=..4}", ParserMode::Strict).is_err());
+        assert!(parse("{=0.4}", ParserMode::Strict).is_err());
+        assert!(parse("{=0...4}", ParserMode::Strict).is_err());
     }
 
     #[test]
     fn arrays() {
         assert_eq!(
-            parse("{=[u8; 0]}"),
+            parse("{=[u8; 0]}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(0),
@@ -911,7 +911,7 @@ mod tests {
 
         // Space is optional.
         assert_eq!(
-            parse("{=[u8;42]}"),
+            parse("{=[u8;42]}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(42),
@@ -921,7 +921,7 @@ mod tests {
 
         // Multiple spaces are ok.
         assert_eq!(
-            parse("{=[u8;    257]}"),
+            parse("{=[u8;    257]}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(257),
@@ -930,36 +930,36 @@ mod tests {
         );
 
         // No tabs or other whitespace.
-        assert!(parse("{=[u8; \t 3]}").is_err());
-        assert!(parse("{=[u8; \n 3]}").is_err());
+        assert!(parse("{=[u8; \t 3]}", ParserMode::Strict).is_err());
+        assert!(parse("{=[u8; \n 3]}", ParserMode::Strict).is_err());
         // Too large.
-        assert!(parse("{=[u8; 9999999999999999999999999]}").is_err());
+        assert!(parse("{=[u8; 9999999999999999999999999]}", ParserMode::Strict).is_err());
     }
 
     #[test]
     fn error_msg() {
         assert_eq!(
-            parse("{=dunno}"),
+            parse("{=dunno}", ParserMode::Strict),
             Err("malformed format string (invalid type specifier `dunno`)".into())
         );
 
         assert_eq!(
-            parse("{dunno}"),
+            parse("{dunno}", ParserMode::Strict),
             Err("unexpected content \"dunno\" in format string".into())
         );
 
         assert_eq!(
-            parse("{=u8;x}"),
+            parse("{=u8;x}", ParserMode::Strict),
             Err("malformed format string (invalid type specifier `u8;x`)".into())
         );
 
         assert_eq!(
-            parse("{dunno=u8:x}"),
+            parse("{dunno=u8:x}", ParserMode::Strict),
             Err("unexpected content \"dunno=u8:x\" in format string".into())
         );
 
         assert_eq!(
-            parse("{0dunno}"),
+            parse("{0dunno}", ParserMode::Strict),
             Err("unexpected content \"dunno\" in format string".into())
         );
     }
@@ -967,23 +967,35 @@ mod tests {
     #[test]
     fn brace_escape() {
         // Stray braces.
-        assert!(parse("}string").is_err());
-        assert!(parse("{string").is_err());
-        assert!(parse("}").is_err());
-        assert!(parse("{").is_err());
+        assert!(parse("}string", ParserMode::Strict).is_err());
+        assert!(parse("{string", ParserMode::Strict).is_err());
+        assert!(parse("}", ParserMode::Strict).is_err());
+        assert!(parse("{", ParserMode::Strict).is_err());
 
         // Escaped braces.
-        assert_eq!(parse("}}"), Ok(vec![Fragment::Literal("}".into())]));
-        assert_eq!(parse("{{"), Ok(vec![Fragment::Literal("{".into())]));
         assert_eq!(
-            parse("literal{{literal"),
+            parse("}}", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("}".into())])
+        );
+        assert_eq!(
+            parse("{{", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("{".into())])
+        );
+        assert_eq!(
+            parse("literal{{literal", ParserMode::Strict),
             Ok(vec![Fragment::Literal("literal{literal".into())])
         );
         assert_eq!(
-            parse("literal}}literal"),
+            parse("literal}}literal", ParserMode::Strict),
             Ok(vec![Fragment::Literal("literal}literal".into())])
         );
-        assert_eq!(parse("{{}}"), Ok(vec![Fragment::Literal("{}".into())]));
-        assert_eq!(parse("}}{{"), Ok(vec![Fragment::Literal("}{".into())]));
+        assert_eq!(
+            parse("{{}}", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("{}".into())])
+        );
+        assert_eq!(
+            parse("}}{{", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("}{".into())])
+        );
     }
 }
