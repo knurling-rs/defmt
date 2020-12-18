@@ -6,7 +6,7 @@ Consider this log call:
 
 ``` rust
 # extern crate defmt;
-defmt::info!("answer={:u8}", 42);
+defmt::info!("answer={=u8}", 42);
 // on the wire: [2, 125, 42] <- arguments
 //  string index ^  ^^^ timestamp
 ```

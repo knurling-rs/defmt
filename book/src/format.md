@@ -49,14 +49,12 @@ impl defmt::Format for CRCCNF {
         // format the bitfields of the register as struct fields
         defmt::write!(
            f,
-           "CRCCNF {{ LEN: {0:0..2}, SKIPADDR: {0:8..10} }}",
+           "CRCCNF {{ LEN: {0=0..2}, SKIPADDR: {0=8..10} }}",
            self.bits,
         )
     }
 }
 ```
-
-NOTE: in defmt v0.1.x the `write!` macro must be invoked at most once within the implementation of the `fmt` method. Invoking the method more than once will produce a panic
 
 ## Newtypes
 
@@ -73,5 +71,3 @@ impl defmt::Format for MyU8 {
     }
 }
 ```
-
-**WARNING** never call `format` more than once, since this will corrupt the data stream!

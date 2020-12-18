@@ -7,10 +7,10 @@ See below:
 ``` rust
 # extern crate defmt;
 # let x = 0u8;
-defmt::info!("The answer is {:?}!", x /*: Struct */);
+defmt::info!("The answer is {=?}!", x /*: Struct */);
 ```
 
-As you have seen before this will first send the string index of "The answer is {:?}!" and then call `x`'s `Format::format` method.
+As you have seen before this will first send the string index of "The answer is {=?}!" and then call `x`'s `Format::format` method.
 The re-entrancy issue arises if the `Format` implementation calls a logging macro:
 
 ``` rust

@@ -1,5 +1,7 @@
 # Migrating from git defmt to stable defmt
 
+> **NOTE** this talks about migrating to defmt v0.**1**.x; v0.2.0 is on yet on crates.io!
+
 On 2020-11-11, a stable version of `defmt` became available on crates.io.
 If you are still using the git version you are encouraged to migrate your project to the crates.io version!
 Two things need to be done to use the crates.io version of `defmt`:

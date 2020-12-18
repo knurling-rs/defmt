@@ -10,7 +10,7 @@
     - [Bitfields](./bitfields.md)
     - [Interned strings](./istr.md)
     - [Format slices / arrays](./format-slices.md)
-  - [#[derive(Format)]](./format.md)
+  - [Implementing format](./format.md)
   - [Filtering](./filtering.md)
   - [#[timestamp]](./timestamp.md)
   - [#[global_logger]](./global-logger.md)
