@@ -166,7 +166,7 @@ fn parse_param(mut s: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
     }
 
     // Then, optional type
-    let mut ty = Type::Format; // no explicit type means `Type::Format`
+    let mut ty = Type::default(); // when no explicit type; use the default one
     s = &s[index_end..];
 
     if s.starts_with(TYPE_PREFIX) {
