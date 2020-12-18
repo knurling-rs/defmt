@@ -25,7 +25,7 @@ use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
 pub use defmt_parser::Level;
-use defmt_parser::{get_max_bitfield_range, DisplayHint, Fragment, Parameter, Type};
+use defmt_parser::{get_max_bitfield_range, DisplayHint, Fragment, Parameter, ParserMode, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -682,7 +682,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
     /// Decodes arguments from the stream, according to `format`.
     fn decode_format(&mut self, format: &str) -> Result<Vec<Arg<'t>>, DecodeError> {
         let mut args = vec![]; // will contain the deserialized arguments on return
-        let mut params = defmt_parser::parse(format, false)
+        let mut params = defmt_parser::parse(format, defmt_parser::ParserMode::ForwardsCompatible)
             .map_err(|_| DecodeError::Malformed)?
             .iter()
             .filter_map(|frag| match frag {
@@ -993,7 +993,7 @@ fn format_args_real(
         Ok(())
     }
 
-    let params = defmt_parser::parse(format, false).unwrap();
+    let params = defmt_parser::parse(format, ParserMode::ForwardsCompatible).unwrap();
     let mut buf = String::new();
     for param in params {
         match param {

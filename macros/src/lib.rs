@@ -5,7 +5,7 @@ use core::convert::TryFrom;
 use core::fmt::Write as _;
 use proc_macro::TokenStream;
 
-use defmt_parser::{Fragment, Level};
+use defmt_parser::{Fragment, Level, ParserMode};
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{
@@ -494,7 +494,7 @@ fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
 
 fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let ls = log.litstr.value();
-    let fragments = match defmt_parser::parse(&ls, true) {
+    let fragments = match defmt_parser::parse(&ls, ParserMode::Strict) {
         Ok(args) => args,
         Err(e) => return parse::Error::new(log.litstr.span(), e).to_compile_error(),
     };
@@ -989,7 +989,7 @@ pub fn internp(ts: TokenStream) -> TokenStream {
 pub fn write(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
     let ls = write.litstr.value();
-    let fragments = match defmt_parser::parse(&ls, true) {
+    let fragments = match defmt_parser::parse(&ls, ParserMode::Strict) {
         Ok(args) => args,
         Err(e) => {
             return parse::Error::new(write.litstr.span(), e)

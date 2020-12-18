@@ -152,8 +152,18 @@ fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
     Ok(len)
 }
 
+/// Parser mode
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ParserMode {
+    /// Rejects unknown display hints
+    Strict,
+
+    /// Accepts unknown display hints
+    ForwardsCompatible,
+}
+
 // example `input`: "0=Type:hint" (note: no curly braces)
-fn parse_param(mut input: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
+fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, str>> {
     const TYPE_PREFIX: &str = "=";
     const HINT_PREFIX: &str = ":";
 
@@ -253,13 +263,12 @@ fn parse_param(mut input: &str, strict: bool) -> Result<Param, Cow<'static, str>
             },
             "X" => DisplayHint::Hexadecimal { is_uppercase: true },
             "?" => DisplayHint::Debug,
-            _ => {
-                if strict {
+            _ => match mode {
+                ParserMode::Strict => {
                     return Err(format!("unknown display hint: {:?}", input).into());
-                } else {
-                    DisplayHint::Unknown(input.to_owned())
                 }
-            }
+                ParserMode::ForwardsCompatible => DisplayHint::Unknown(input.to_owned()),
+            },
         });
     } else if !input.is_empty() {
         return Err(format!("unexpected content {:?} in format string", input).into());
@@ -337,7 +346,7 @@ where
 
 pub fn parse<'f>(
     format_string: &'f str,
-    strict: bool,
+    mode: ParserMode,
 ) -> Result<Vec<Fragment<'f>>, Cow<'static, str>> {
     let mut fragments = Vec::new();
 
@@ -376,7 +385,7 @@ pub fn parse<'f>(
 
         // Parse the contents inside the braces.
         let param_str = &format_string[brace_pos + 1..][..len];
-        let param = parse_param(param_str, strict)?;
+        let param = parse_param(param_str, mode)?;
         fragments.push(Fragment::Parameter(Parameter {
             index: param.index.unwrap_or_else(|| {
                 // If there is no explicit index, assign the next one.
