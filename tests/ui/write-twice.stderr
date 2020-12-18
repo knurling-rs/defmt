@@ -1,0 +1,10 @@
+error[E0382]: use of moved value: `f.inner`
+ --> $DIR/write-twice.rs:6:9
+  |
+5 |         defmt::write!(f, "hello");
+  |         -------------------------- value moved here
+6 |         defmt::write!(f, "world");
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ value used here after move
+  |
+  = note: move occurs because `f.inner` has type `&mut InternalFormatter`, which does not implement the `Copy` trait
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
