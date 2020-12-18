@@ -152,35 +152,39 @@ fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
     Ok(len)
 }
 
-// example input: "0=Type:hint" (note: no braces)
-fn parse_param(mut s: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
+// example `input`: "0=Type:hint" (note: no curly braces)
+fn parse_param(mut input: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
     const TYPE_PREFIX: &str = "=";
     const HINT_PREFIX: &str = ":";
 
     // First, optional argument index.
     let mut index = None;
-    let index_end = s.find(|c: char| !c.is_digit(10)).unwrap_or(s.len());
+    let index_end = input.find(|c: char| !c.is_digit(10)).unwrap_or(input.len());
 
     if index_end != 0 {
-        index = Some(s[..index_end].parse::<usize>().map_err(|e| e.to_string())?);
+        index = Some(
+            input[..index_end]
+                .parse::<usize>()
+                .map_err(|e| e.to_string())?,
+        );
     }
 
     // Then, optional type
     let mut ty = Type::default(); // when no explicit type; use the default one
-    s = &s[index_end..];
+    input = &input[index_end..];
 
-    if s.starts_with(TYPE_PREFIX) {
+    if input.starts_with(TYPE_PREFIX) {
         // skip the prefix
-        s = &s[TYPE_PREFIX.len()..];
+        input = &input[TYPE_PREFIX.len()..];
 
         // type is delimited by `HINT_PREFIX` or end-of-string
-        let type_end = s.find(HINT_PREFIX).unwrap_or(s.len());
+        let type_end = input.find(HINT_PREFIX).unwrap_or(input.len());
 
         static FORMAT_ARRAY_START: &str = "[?;";
         static U8_ARRAY_START: &str = "[u8;";
 
         // what comes next is the type
-        ty = match &s[..type_end] {
+        ty = match &input[..type_end] {
             "u8" => Type::U8,
             "u16" => Type::U16,
             "u24" => Type::U24,
@@ -202,19 +206,19 @@ fn parse_param(mut s: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
             "?" => Type::Format,
             "[?]" => Type::FormatSlice,
             "char" => Type::Char,
-            _ if s.starts_with(U8_ARRAY_START) => {
-                let len = parse_array(&s[U8_ARRAY_START.len()..type_end])?;
+            _ if input.starts_with(U8_ARRAY_START) => {
+                let len = parse_array(&input[U8_ARRAY_START.len()..type_end])?;
                 Type::U8Array(len)
             }
-            _ if s.starts_with(FORMAT_ARRAY_START) => {
-                let len = parse_array(&s[FORMAT_ARRAY_START.len()..type_end])?;
+            _ if input.starts_with(FORMAT_ARRAY_START) => {
+                let len = parse_array(&input[FORMAT_ARRAY_START.len()..type_end])?;
                 Type::FormatArray(len)
             }
             _ => {
                 // Check for bitfield syntax.
-                match parse_range(s) {
+                match parse_range(input) {
                     Some((range, used)) => {
-                        if used != s.len() {
+                        if used != input.len() {
                             return Err("trailing data after bitfield range".into());
                         }
 
@@ -223,7 +227,7 @@ fn parse_param(mut s: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
                     None => {
                         return Err(format!(
                             "malformed format string (invalid type specifier `{}`)",
-                            s
+                            input
                         )
                         .into());
                     }
@@ -231,17 +235,17 @@ fn parse_param(mut s: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
             }
         };
 
-        s = &s[type_end..];
+        input = &input[type_end..];
     }
 
     // Then, optional hint
     let mut hint = None;
 
-    if s.starts_with(':') {
+    if input.starts_with(':') {
         // skip the prefix
-        s = &s[HINT_PREFIX.len()..];
+        input = &input[HINT_PREFIX.len()..];
 
-        hint = Some(match s {
+        hint = Some(match input {
             "a" => DisplayHint::Ascii,
             "b" => DisplayHint::Binary,
             "x" => DisplayHint::Hexadecimal {
@@ -251,14 +255,14 @@ fn parse_param(mut s: &str, strict: bool) -> Result<Param, Cow<'static, str>> {
             "?" => DisplayHint::Debug,
             _ => {
                 if strict {
-                    return Err(format!("unknown display hint: {:?}", s).into());
+                    return Err(format!("unknown display hint: {:?}", input).into());
                 } else {
-                    DisplayHint::Unknown(s.to_owned())
+                    DisplayHint::Unknown(input.to_owned())
                 }
             }
         });
-    } else if !s.is_empty() {
-        return Err(format!("unexpected content {:?} in format string", s).into());
+    } else if !input.is_empty() {
+        return Err(format!("unexpected content {:?} in format string", input).into());
     }
 
     Ok(Param { index, ty, hint })
