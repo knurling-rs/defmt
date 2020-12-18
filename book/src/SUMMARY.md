@@ -10,6 +10,7 @@
     - [Bitfields](./bitfields.md)
     - [Interned strings](./istr.md)
     - [Format slices / arrays](./format-slices.md)
+    - [Display hints](./hints.md)
   - [Implementing format](./format.md)
   - [Filtering](./filtering.md)
   - [#[timestamp]](./timestamp.md)
