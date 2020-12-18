@@ -18,6 +18,7 @@ test "assert-eq"
 test "assert-ne"
 test "unwrap"
 test "defmt-test"
+test "hints"
 if rustc -V | grep nightly; then
     test "alloc" "alloc"
 fi

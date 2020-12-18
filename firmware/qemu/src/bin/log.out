@@ -12,7 +12,7 @@
 0.000011 INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
 0.000012 INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
 0.000013 INFO usize: 0 = 0, MAX = 4294967295
-0.000014 INFO bitfields 0b110 0b10
+0.000014 INFO bitfields 6 2
 0.000015 TRACE log trace
 0.000016 DEBUG log debug
 0.000017 INFO log info
@@ -103,5 +103,5 @@
 0.000102 INFO Hello 💜 & 🍕
 0.000103 INFO EnumLarge::A051
 0.000104 INFO EnumLarge::A269
-0.000105 INFO S { x: hi }
+0.000105 INFO S { x: "hi" }
 0.000106 INFO QEMU test finished!

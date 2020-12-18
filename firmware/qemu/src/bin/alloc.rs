@@ -21,20 +21,20 @@ use defmt_semihosting as _; // global logger
 fn main() -> ! {
     if_alloc::init();
 
-    defmt::info!("Box<u32>: {:?}", Box::new(42u32));
-    defmt::info!("Box<Box<u32>>: {:?}", Box::new(Box::new(1337u32)));
-    defmt::info!("Box<NestedStruct>: {:?}", Box::new(nested()));
-    defmt::info!("Rc<u32>: {:?}", Rc::new(42u32));
-    defmt::info!("Arc<u32>: {:?}", Arc::new(42u32));
-    defmt::info!("Vec<u32>: {:?}", vec![1u32, 2, 3, 4]);
-    defmt::info!("Vec<i32>: {:?}", vec![-1i32, 2, 3, 4]);
+    defmt::info!("Box<u32>: {=?}", Box::new(42u32));
+    defmt::info!("Box<Box<u32>>: {=?}", Box::new(Box::new(1337u32)));
+    defmt::info!("Box<NestedStruct>: {=?}", Box::new(nested()));
+    defmt::info!("Rc<u32>: {=?}", Rc::new(42u32));
+    defmt::info!("Arc<u32>: {=?}", Arc::new(42u32));
+    defmt::info!("Vec<u32>: {=?}", vec![1u32, 2, 3, 4]);
+    defmt::info!("Vec<i32>: {=?}", vec![-1i32, 2, 3, 4]);
     defmt::info!(
-        "Vec<Box<i32>>: {:?}",
+        "Vec<Box<i32>>: {=?}",
         vec![Box::new(-1i32), Box::new(2), Box::new(3), Box::new(4)]
     );
-    defmt::info!("Box<Vec<i32>>: {:?}", Box::new(vec![-1i32, 2, 3, 4]));
+    defmt::info!("Box<Vec<i32>>: {=?}", Box::new(vec![-1i32, 2, 3, 4]));
     defmt::info!(
-        "String: {:?}",
+        "String: {=?}",
         String::from("Hello! I'm a heap-allocated String")
     );
 
@@ -50,7 +50,7 @@ struct NestedStruct {
 }
 
 fn nested() -> NestedStruct {
-    defmt::info!("in nested {:u8}", 123);
+    defmt::info!("in nested {=u8}", 123);
     NestedStruct {
         a: 0xAA,
         b: 0x12345678,

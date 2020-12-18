@@ -58,3 +58,7 @@ required-features = ["alloc"]
 [[bin]]
 name = "defmt-test"
 test = false
+
+[[bin]]
+name = "hints"
+test = false

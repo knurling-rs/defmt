@@ -12,7 +12,7 @@ The biggest different is in the supported formatting parameters (`:?`, `:>4`, `:
 # let len = 80u8;
 // -> INFO:  message arrived (length=80)
 defmt::info!(
-    "message arrived (length={:?})",
+    "message arrived (length={})",
     len /*: usize */,
 );
 
@@ -24,12 +24,12 @@ defmt::debug!("{:?}", message.header() /*: Header */);
 ```
 
 Unlike `core::fmt` which has several formatting traits (`Debug`, `Display`), `defmt` has a single formatting trait called `Format`.
-The `:?` formatting parameter indicates that the `Format` trait will be used.
-When `:?` is used the corresponding argument must implement the `Format` trait.
+The `{}` formatting parameter indicates that the `Format` trait will be used.
+When `{}` is used the corresponding argument must implement the `Format` trait.
 
 ``` rust
 # extern crate defmt;
 # let x = 0;
-defmt::trace!("{:?}", x);
-//                     ^ must implement the `Format` trait
+defmt::trace!("{}", x);
+//                  ^ must implement the `Format` trait
 ```

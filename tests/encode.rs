@@ -58,23 +58,23 @@ fn write() {
     let ref mut f = InternalFormatter::new();
     let g = Formatter { inner: f };
 
-    write!(g, "The answer is {:u8}", 42);
+    write!(g, "The answer is {=u8}", 42);
     assert_eq!(
         f.bytes(),
         &[
-            index, // "The answer is {:u8}",
+            index, // "The answer is {=u8}",
             42,    // u8 value
         ]
     );
 
     let ref mut f2 = InternalFormatter::new();
     let g2 = Formatter { inner: f2 };
-    write!(g2, "The answer is {:?}", 42u8);
+    write!(g2, "The answer is {=?}", 42u8);
     assert_eq!(
         f2.bytes(),
         &[
-            inc(index, 1), // "The answer is {:?}"
-            inc(index, 2), // "{:u8}" / impl Format for u8
+            inc(index, 1), // "The answer is {=?}"
+            inc(index, 2), // "{=u8}" / impl Format for u8
             42,            // u8 value
         ]
     );
@@ -88,13 +88,13 @@ fn booleans_max_num_bool_flags() {
 
     write!(
         g,
-        "encode 8 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+        "encode 8 bools {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
         false, true, true, false, true, false, true, true
     );
     assert_eq!(
         f.bytes(),
         &[
-            index,       // "encode 8 bools {:bool} {:bool} [...]",
+            index,       // "encode 8 bools {=bool} {=bool} [...]",
             0b0110_1011, // compressed bools (dec value = 107)
         ]
     );
@@ -108,13 +108,13 @@ fn booleans_less_than_max_num_bool_flags() {
 
     write!(
         g,
-        "encode 3 bools {:bool} {:bool} {:bool}",
+        "encode 3 bools {=bool} {=bool} {=bool}",
         false, true, true
     );
     assert_eq!(
         f.bytes(),
         &[
-            index, // "encode 3 bools {:bool} {:bool} {:bool}",
+            index, // "encode 3 bools {=bool} {=bool} {=bool}",
             0b011, // compressed bools
         ]
     );
@@ -126,12 +126,12 @@ fn booleans_more_than_max_num_bool_flags() {
     let ref mut f = InternalFormatter::new();
     let g = Formatter { inner: f };
 
-    write!(g, "encode 9 bools {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+    write!(g, "encode 9 bools {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
            false, true, true, false, true, false, true, true, false, true);
     assert_eq!(
         f.bytes(),
         &[
-            index,       // "encode 8 bools {:bool} {:bool} {:bool} [...]",
+            index,       // "encode 8 bools {=bool} {=bool} {=bool} [...]",
             0b0110_1011, // first 8 compressed bools
             0b01,        // final compressed bools
         ]
@@ -146,13 +146,13 @@ fn booleans_mixed() {
 
     write!(
         g,
-        "encode mixed bools {:bool} {:bool} {:u8} {:bool}",
+        "encode mixed bools {=bool} {=bool} {=u8} {=bool}",
         true, false, 42, true
     );
     assert_eq!(
         f.bytes(),
         &[
-            index, // "encode mixed bools {:bool} {:bool} {:u8} {:bool}",
+            index, // "encode mixed bools {=bool} {=bool} {=u8} {=bool}",
             42u8,  // intermediate `42`
             0b101, // all compressed bools
         ]
@@ -165,11 +165,11 @@ fn booleans_mixed_no_trailing_bool() {
     let ref mut f = InternalFormatter::new();
     let g = Formatter { inner: f };
 
-    write!(g, "encode mixed bools {:bool} {:u8}", false, 42);
+    write!(g, "encode mixed bools {=bool} {=u8}", false, 42);
     assert_eq!(
         f.bytes(),
         &[
-            index, // "encode mixed bools {:bool} {:u8}",
+            index, // "encode mixed bools {=bool} {=u8}",
             42u8, 0b0, // bool is put at the end of the args
         ]
     );
@@ -183,13 +183,13 @@ fn bitfields_mixed() {
 
     write!(
         g,
-        "bitfields {0:7..12}, {1:0..5}",
+        "bitfields {0=7..12}, {1=0..5}",
         0b1110_0101_1111_0000u16, 0b1111_0000u8
     );
     assert_eq!(
         f.bytes(),
         &[
-            index, // bitfields {0:7..12}, {1:0..5}",
+            index, // bitfields {0=7..12}, {1=0..5}",
             0b1111_0000,
             0b1110_0101,   // u16
             0b1111_0000u8, // u8
@@ -203,11 +203,11 @@ fn bitfields_across_octets() {
     let ref mut f = InternalFormatter::new();
     let g = Formatter { inner: f };
 
-    write!(g, "bitfields {0:0..7} {0:9..14}", 0b0110_0011_1101_0010u16);
+    write!(g, "bitfields {0=0..7} {0=9..14}", 0b0110_0011_1101_0010u16);
     assert_eq!(
         f.bytes(),
         &[
-            index, // bitfields {0:0..7} {0:9..14}",
+            index, // bitfields {0=0..7} {0=9..14}",
             0b1101_0010,
             0b0110_0011, // u16
         ]
@@ -222,13 +222,13 @@ fn bitfields_truncate_lower() {
 
     write!(
         g,
-        "bitfields {0:9..14}",
+        "bitfields {0=9..14}",
         0b0000_0000_0000_1111_0110_0011_1101_0010u32
     );
     assert_eq!(
         f.bytes(),
         &[
-            index,       // bitfields {0:9..14}",
+            index,       // bitfields {0=9..14}",
             0b0110_0011, // the first octet should have been truncated away
         ]
     );
@@ -240,11 +240,11 @@ fn bitfields_assert_range_exclusive() {
     let ref mut f = InternalFormatter::new();
     let g = Formatter { inner: f };
 
-    write!(g, "bitfields {0:6..8}", 0b1010_0101u8,);
+    write!(g, "bitfields {0=6..8}", 0b1010_0101u8,);
     assert_eq!(
         f.bytes(),
         &[
-            index, // "bitfields {0:6..8}"
+            index, // "bitfields {0=6..8}"
             0b1010_0101
         ]
     );
@@ -262,7 +262,7 @@ fn boolean_struct() {
     check_format_implementation(
         &X { y: false, z: true },
         &[
-            index, // "X {{ x: {:bool}, y: {:bool} }}"
+            index, // "X {{ x: {=bool}, y: {=bool} }}"
             0b01,  // y and z compressed together
         ],
     )
@@ -282,15 +282,15 @@ fn boolean_struct_mixed() {
 
     write!(
         g,
-        "mixed formats {:bool} {:?}",
+        "mixed formats {=bool} {=?}",
         true,
         X { y: false, z: true }
     );
     assert_eq!(
         f.bytes(),
         &[
-            index,         // "mixed formats {:bool} {:?}",
-            inc(index, 1), // "X {{ x: {:bool}, y: {:bool} }}"
+            index,         // "mixed formats {=bool} {=?}",
+            inc(index, 1), // "X {{ x: {=bool}, y: {=bool} }}"
             0b101,         // compressed struct bools
         ]
     );
@@ -308,7 +308,7 @@ fn single_struct() {
     check_format_implementation(
         &X { y: 1, z: 2 },
         &[
-            index, // "X {{ x: {:u8}, y: {:u16} }}"
+            index, // "X {{ x: {=u8}, y: {=u16} }}"
             1,     // x
             2,     // y.low
             0,     // y.high
@@ -326,7 +326,7 @@ fn single_struct_manual() {
 
     impl Format for X {
         fn format(&self, f: Formatter) {
-            defmt::write!(f, "X {{ x: {:u8}, y: {:u16} }}", self.y, self.z)
+            defmt::write!(f, "X {{ x: {=u8}, y: {=u16} }}", self.y, self.z)
         }
     }
 
@@ -334,7 +334,7 @@ fn single_struct_manual() {
     check_format_implementation(
         &X { y: 1, z: 2 },
         &[
-            index, // "X {{ x: {:u8}, y: {:u16} }}"
+            index, // "X {{ x: {=u8}, y: {=u16} }}"
             1,     // x
             2,     // y.low
             0,     // y.high
@@ -359,8 +359,8 @@ fn nested_struct() {
     check_format_implementation(
         &X { y: Y { z: val } },
         &[
-            index,         // "X {{ y: {:?} }}"
-            inc(index, 1), // "Y {{ z: {:u8} }}"
+            index,         // "X {{ y: {=?} }}"
+            inc(index, 1), // "Y {{ z: {=u8} }}"
             val,
         ],
     );
@@ -375,7 +375,7 @@ fn tuple_struct() {
     check_format_implementation(
         &Struct(0x1f, 0xaaaa),
         &[
-            index, // "Struct({:u8}, {:u16})"
+            index, // "Struct({=u8}, {=u16})"
             0x1f,  // u8
             0xaa, 0xaa, // u16
         ],
@@ -523,9 +523,9 @@ fn slice() {
     check_format_implementation(
         val,
         &[
-            index,           // "{:[?]}"
+            index,           // "{=[?]}"
             val.len() as u8, // length
-            inc(index, 1),   // "{:u8}"
+            inc(index, 1),   // "{=u8}"
             23,              // val[0]
             42,              // val[1]
         ],
@@ -539,9 +539,9 @@ fn slice_of_usize() {
     check_format_implementation(
         val,
         &[
-            index,           // "{:[?]}"
+            index,           // "{=[?]}"
             val.len() as u8, // length
-            inc(index, 1),   // "{:usize}"
+            inc(index, 1),   // "{=usize}"
             23,              // val[0]
             42,              // val[1]
         ],
@@ -555,9 +555,9 @@ fn slice_of_bools() {
     check_format_implementation(
         val,
         &[
-            index,           // "{:[?]}"
+            index,           // "{=[?]}"
             val.len() as u8, // length
-            inc(index, 1),   // "{:bool}"
+            inc(index, 1),   // "{=bool}"
             0b110,           // compressed bools: true, true, false
         ],
     )
@@ -569,14 +569,14 @@ fn format_primitives() {
     check_format_implementation(
         &42u8,
         &[
-            index, // "{:u8}"
+            index, // "{=u8}"
             42,
         ],
     );
     check_format_implementation(
         &42u16,
         &[
-            inc(index, 1), // "{:u16}"
+            inc(index, 1), // "{=u16}"
             42,
             0,
         ],
@@ -584,7 +584,7 @@ fn format_primitives() {
     check_format_implementation(
         &513u16,
         &[
-            inc(index, 2), // "{:u16}"
+            inc(index, 2), // "{=u16}"
             1,
             2,
         ],
@@ -593,7 +593,7 @@ fn format_primitives() {
     check_format_implementation(
         &42u32,
         &[
-            inc(index, 3), // "{:u32}"
+            inc(index, 3), // "{=u32}"
             42,
             0,
             0,
@@ -603,7 +603,7 @@ fn format_primitives() {
     check_format_implementation(
         &513u32,
         &[
-            inc(index, 4), // "{:u32}"
+            inc(index, 4), // "{=u32}"
             1,
             2,
             0,
@@ -614,7 +614,7 @@ fn format_primitives() {
     check_format_implementation(
         &5.13f32,
         &[
-            inc(index, 5), // "{:f32}"
+            inc(index, 5), // "{=f32}"
             246,
             40,
             164,
@@ -625,14 +625,14 @@ fn format_primitives() {
     check_format_implementation(
         &42i8,
         &[
-            inc(index, 6), // "{:i8}"
+            inc(index, 6), // "{=i8}"
             42,
         ],
     );
     check_format_implementation(
         &-42i8,
         &[
-            inc(index, 7), // "{:i8}"
+            inc(index, 7), // "{=i8}"
             -42i8 as u8,
         ],
     );
@@ -650,7 +650,7 @@ fn format_primitives() {
         &[
             inc(index, 9),  // "<option-format-string>"
             1,              // Some discriminant
-            inc(index, 10), // "{:u8}"
+            inc(index, 10), // "{=u8}"
             42,             // Some.0 field
         ],
     );
@@ -661,7 +661,7 @@ fn format_primitives() {
     check_format_implementation(
         &true,
         &[
-            inc(index, 13), // "{:bool}"
+            inc(index, 13), // "{=bool}"
             0b1,
         ],
     );
@@ -669,7 +669,7 @@ fn format_primitives() {
     check_format_implementation(
         &513u64,
         &[
-            inc(index, 14), // "{:u64}"
+            inc(index, 14), // "{=u64}"
             1,
             2,
             0,
@@ -684,7 +684,7 @@ fn format_primitives() {
     check_format_implementation(
         &-2i64,
         &[
-            inc(index, 15), // "{:i64}"
+            inc(index, 15), // "{=i64}"
             0xFE,
             0xFF,
             0xFF,
@@ -699,7 +699,7 @@ fn format_primitives() {
     check_format_implementation(
         &'a',
         &[
-            inc(index, 16), // "{:char}"
+            inc(index, 16), // "{=char}"
             0x61,
             0x00,
             0x00,
@@ -715,7 +715,7 @@ fn istr() {
     check_format_implementation(
         &interned,
         &[
-            inc(index, 1), // "{:istr}"
+            inc(index, 1), // "{=istr}"
             index,
         ],
     );
@@ -732,8 +732,8 @@ fn format_arrays() {
     check_format_implementation(
         &array,
         &[
-            index,         // "{:[?;3]}"
-            inc(index, 1), // "{:u16}"
+            index,         // "{=[?;3]}"
+            inc(index, 1), // "{=u16}"
             1,             // [0].low
             0,             // [0].high
             0,             // [1].low
@@ -751,9 +751,9 @@ fn format_slice_of_primitives() {
     check_format_implementation(
         slice,
         &[
-            index,             // "{:[?]}"
+            index,             // "{=[?]}"
             slice.len() as u8, //
-            inc(index, 1),     // "{:u16}"
+            inc(index, 1),     // "{=u16}"
             1,                 // [0].low
             0,                 // [0].high
             0,                 // [1].low
@@ -781,11 +781,11 @@ fn format_slice_of_structs() {
     check_format_implementation(
         slice,
         &[
-            index,             // "{:[?]}"
+            index,             // "{=[?]}"
             slice.len() as u8, //
             // first element
-            inc(index, 1), // "X {{ y: {:?} }}"
-            inc(index, 2), // "Y {{ z: {:u8} }}"
+            inc(index, 1), // "X {{ y: {=?} }}"
+            inc(index, 2), // "Y {{ z: {=u8} }}"
             42,            // [0].y.z
             // second element: no tags
             24, // [1].y.z
@@ -800,13 +800,13 @@ fn format_slice_of_slices() {
     check_format_implementation(
         slice,
         &[
-            index,             // "{:[?]}"
+            index,             // "{=[?]}"
             slice.len() as u8, //
             // first slice
-            inc(index, 1), // "{:[?]}"
+            inc(index, 1), // "{=[?]}"
             slice[0].len() as u8,
             // its first element
-            inc(index, 2), // "{:u16}"
+            inc(index, 2), // "{=u16}"
             0,             // [0][0].low
             1,             // [0][0].high
             // its second element: no tag
@@ -831,19 +831,19 @@ fn format_slice_enum_slice() {
     check_format_implementation(
         slice,
         &[
-            index,             // "{:[?]}"
+            index,             // "{=[?]}"
             slice.len() as u8, //
             // first optional slice
-            inc(index, 1), // "None|Some({:?})"
+            inc(index, 1), // "None|Some({=?})"
             0,             // discriminant
             // second optional slice
-            // omitted: "None|Some({:?})" index
+            // omitted: "None|Some({=?})" index
             1,             // discriminant
-            inc(index, 2), // "{:[?]}" (the ? behind "Some({:?})")
+            inc(index, 2), // "{=[?]}" (the ? behind "Some({=?})")
             2,             // length of second optional slice
-            inc(index, 3), // "{:u8}" (the ? behind "{:[?]}")
+            inc(index, 3), // "{=u8}" (the ? behind "{=[?]}")
             42,
-            // omitted: "{:u8}" index
+            // omitted: "{=u8}" index
             43,
         ],
     );
@@ -862,17 +862,17 @@ fn format_slice_enum_generic_struct() {
     check_format_implementation(
         slice,
         &[
-            index,             // "{:[?]}"
+            index,             // "{=[?]}"
             slice.len() as u8, //
             // first optional element
-            inc(index, 1), // "None|Some({:?})"
+            inc(index, 1), // "None|Some({=?})"
             0,             // discriminant
             // second optional element
-            // omitted: "None|Some({:?})" index
+            // omitted: "None|Some({=?})" index
             1,             // discriminant
-            inc(index, 2), // "S {{ x: {:u8}, y: {:?} }}" (the ? behind "Some({:?})")
+            inc(index, 2), // "S {{ x: {=u8}, y: {=?} }}" (the ? behind "Some({=?})")
             42,            // S.x
-            inc(index, 3), // "{:u8}" (the ? behind S.y)
+            inc(index, 3), // "{=u8}" (the ? behind S.y)
             43,            // S. y
         ],
     );
@@ -895,8 +895,8 @@ fn derive_with_bounds() {
     check_format_implementation(
         &S { val: 0 },
         &[
-            index,         // "S {{ val: {:?} }}"
-            inc(index, 1), // "{:i32}"
+            index,         // "S {{ val: {=?} }}"
+            inc(index, 1), // "{=i32}"
             0,
             0,
             0,
@@ -908,7 +908,7 @@ fn derive_with_bounds() {
     check_format_implementation(
         &S2 { a: &1, b: &2 },
         &[
-            index, // "S2 { a: {:u8}, b: {:u8} }}"
+            index, // "S2 { a: {=u8}, b: {=u8} }}"
             1, 2,
         ],
     );
@@ -926,9 +926,9 @@ fn format_bools() {
     check_format_implementation(
         &(A(true), B(true)),
         &[
-            index,         // "({:?}, {:?})"
-            inc(index, 1), // "A({:bool})"
-            inc(index, 2), // "B({:bool})"
+            index,         // "({=?}, {=?})"
+            inc(index, 1), // "A({=bool})"
+            inc(index, 2), // "B({=bool})"
             0b11,          // compressed bools
         ],
     );
@@ -951,9 +951,9 @@ fn issue_208() {
     check_format_implementation(
         &dhcp_repr,
         &[
-            index,         // "DhcpReprMin {{ broadcast: {:bool}, a: {:?} }}"
-            inc(index, 1), // "{:[?;2]}"
-            inc(index, 2), // "{:u8}"
+            index,         // "DhcpReprMin {{ broadcast: {=bool}, a: {=?} }}"
+            inc(index, 1), // "{=[?;2]}"
+            inc(index, 2), // "{=u8}"
             10,            // a[0]
             10,            // a[1]
             1,             // compressed bools

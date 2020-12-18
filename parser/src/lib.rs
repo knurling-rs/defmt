@@ -10,13 +10,30 @@
 use std::borrow::Cow;
 use std::ops::Range;
 
-/// A `{{:parameter}}` in a format string.
+/// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Parameter {
     /// The argument index to display at this position.
     pub index: usize,
-    /// The type of the argument to display.
+    /// The type of the argument to display, e.g. '=u8', '=bool'.
     pub ty: Type,
+    /// The display hint, e.g. ':x', ':b', ':a'.
+    pub hint: Option<DisplayHint>,
+}
+
+/// All display hints
+#[derive(Clone, Debug, PartialEq)]
+pub enum DisplayHint {
+    /// ":x" OR ":X"
+    Hexadecimal { is_uppercase: bool },
+    /// ":b"
+    Binary,
+    /// ":a"
+    Ascii,
+    /// ":?"
+    Debug,
+    /// Display hints currently not supported / understood
+    Unknown(String),
 }
 
 /// A part of a format string.
@@ -29,9 +46,11 @@ pub enum Fragment<'f> {
     Parameter(Parameter),
 }
 
+#[derive(Debug, PartialEq)]
 struct Param {
     index: Option<usize>,
     ty: Type,
+    hint: Option<DisplayHint>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -47,8 +66,8 @@ pub enum Level {
 pub enum Type {
     BitField(Range<u8>),
     Bool,
-    Format,             // "{:?}"
-    FormatSlice,        // "{:[?]}"
+    Format,             // "{=?}" OR "{}"
+    FormatSlice,        // "{=[?]}"
     FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     I8,
     I16,
@@ -73,6 +92,13 @@ pub enum Type {
     F32,
     /// A single Unicode character
     Char,
+}
+
+// when not specified in the format string, this type is assumed
+impl Default for Type {
+    fn default() -> Self {
+        Type::Format
+    }
 }
 
 fn is_digit(c: Option<char>) -> bool {
@@ -126,81 +152,130 @@ fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
     Ok(len)
 }
 
-fn parse_param(mut s: &str) -> Result<Param, Cow<'static, str>> {
+/// Parser mode
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ParserMode {
+    /// Rejects unknown display hints
+    Strict,
+
+    /// Accepts unknown display hints
+    ForwardsCompatible,
+}
+
+// example `input`: "0=Type:hint" (note: no curly braces)
+fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, str>> {
+    const TYPE_PREFIX: &str = "=";
+    const HINT_PREFIX: &str = ":";
+
     // First, optional argument index.
-    // Then, mandatory `:`.
     let mut index = None;
-    let colon_pos = s
-        .find(|c: char| !c.is_digit(10))
-        .ok_or("malformed format string (missing `:`)")?;
+    let index_end = input.find(|c: char| !c.is_digit(10)).unwrap_or(input.len());
 
-    if colon_pos != 0 {
-        index = Some(s[..colon_pos].parse::<usize>().map_err(|e| e.to_string())?);
+    if index_end != 0 {
+        index = Some(
+            input[..index_end]
+                .parse::<usize>()
+                .map_err(|e| e.to_string())?,
+        );
     }
 
-    if !s[colon_pos..].starts_with(':') {
-        return Err("malformed format string (missing `:`)".into());
-    }
+    // Then, optional type
+    let mut ty = Type::default(); // when no explicit type; use the default one
+    input = &input[index_end..];
 
-    // Then, type specifier.
-    s = &s[colon_pos + 1..];
+    if input.starts_with(TYPE_PREFIX) {
+        // skip the prefix
+        input = &input[TYPE_PREFIX.len()..];
 
-    static FORMAT_ARRAY_START: &str = "[?;";
-    static U8_ARRAY_START: &str = "[u8;";
-    let ty = match s {
-        "u8" => Type::U8,
-        "u16" => Type::U16,
-        "u24" => Type::U24,
-        "u32" => Type::U32,
-        "u64" => Type::U64,
-        "u128"=> Type::U128,
-        "usize" => Type::Usize,
-        "i8" => Type::I8,
-        "i16" => Type::I16,
-        "i32" => Type::I32,
-        "i64" => Type::I64,
-        "i128" => Type::I128,
-        "isize" => Type::Isize,
-        "f32" => Type::F32,
-        "bool" => Type::Bool,
-        "str" => Type::Str,
-        "istr" => Type::IStr,
-        "[u8]" => Type::U8Slice,
-        "?" => Type::Format,
-        "[?]" => Type::FormatSlice,
-        "char" => Type::Char,
-        _ if s.starts_with(U8_ARRAY_START) => {
-            s = &s[U8_ARRAY_START.len()..];
-            let len = parse_array(s)?;
-            Type::U8Array(len)
-        }
-        _ if s.starts_with(FORMAT_ARRAY_START) => {
-            s = &s[FORMAT_ARRAY_START.len()..];
-            let len = parse_array(s)?;
-            Type::FormatArray(len)
-        }
-        _ => {
-            // Check for bitfield syntax.
-            match parse_range(s) {
-                Some((range, used)) => {
-                    if used != s.len() {
-                        return Err("trailing data after bitfield range".into());
+        // type is delimited by `HINT_PREFIX` or end-of-string
+        let type_end = input.find(HINT_PREFIX).unwrap_or(input.len());
+        let type_fragment = &input[..type_end];
+
+        static FORMAT_ARRAY_START: &str = "[?;";
+        static U8_ARRAY_START: &str = "[u8;";
+
+        // what comes next is the type
+        ty = match type_fragment {
+            "u8" => Type::U8,
+            "u16" => Type::U16,
+            "u24" => Type::U24,
+            "u32" => Type::U32,
+            "u64" => Type::U64,
+            "u128" => Type::U128,
+            "usize" => Type::Usize,
+            "i8" => Type::I8,
+            "i16" => Type::I16,
+            "i32" => Type::I32,
+            "i64" => Type::I64,
+            "i128" => Type::I128,
+            "isize" => Type::Isize,
+            "f32" => Type::F32,
+            "bool" => Type::Bool,
+            "str" => Type::Str,
+            "istr" => Type::IStr,
+            "[u8]" => Type::U8Slice,
+            "?" => Type::Format,
+            "[?]" => Type::FormatSlice,
+            "char" => Type::Char,
+            _ if input.starts_with(U8_ARRAY_START) => {
+                let len = parse_array(&type_fragment[U8_ARRAY_START.len()..])?;
+                Type::U8Array(len)
+            }
+            _ if input.starts_with(FORMAT_ARRAY_START) => {
+                let len = parse_array(&type_fragment[FORMAT_ARRAY_START.len()..])?;
+                Type::FormatArray(len)
+            }
+            _ => {
+                // Check for bitfield syntax.
+                match parse_range(type_fragment) {
+                    Some((range, used)) => {
+                        if used != type_fragment.len() {
+                            return Err("trailing data after bitfield range".into());
+                        }
+
+                        Type::BitField(range)
                     }
-
-                    Type::BitField(range)
-                }
-                None => {
-                    return Err(format!(
-                        "malformed format string (invalid type specifier `{}`)",
-                        s
-                    )
-                    .into());
+                    None => {
+                        return Err(format!(
+                            "malformed format string (invalid type specifier `{}`)",
+                            input
+                        )
+                        .into());
+                    }
                 }
             }
-        }
-    };
+        };
 
-    Ok(Param { index, ty })
+        input = &input[type_end..];
+    }
+
+    // Then, optional hint
+    let mut hint = None;
+
+    if input.starts_with(HINT_PREFIX) {
+        // skip the prefix
+        input = &input[HINT_PREFIX.len()..];
+
+        hint = Some(match input {
+            "a" => DisplayHint::Ascii,
+            "b" => DisplayHint::Binary,
+            "x" => DisplayHint::Hexadecimal {
+                is_uppercase: false,
+            },
+            "X" => DisplayHint::Hexadecimal { is_uppercase: true },
+            "?" => DisplayHint::Debug,
+            _ => match mode {
+                ParserMode::Strict => {
+                    return Err(format!("unknown display hint: {:?}", input).into());
+                }
+                ParserMode::ForwardsCompatible => DisplayHint::Unknown(input.to_owned()),
+            },
+        });
+    } else if !input.is_empty() {
+        return Err(format!("unexpected content {:?} in format string", input).into());
+    }
+
+    Ok(Param { index, ty, hint })
 }
 
 fn push_literal<'f>(
@@ -270,7 +345,10 @@ where
     }
 }
 
-pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'static, str>> {
+pub fn parse<'f>(
+    format_string: &'f str,
+    mode: ParserMode,
+) -> Result<Vec<Fragment<'f>>, Cow<'static, str>> {
     let mut fragments = Vec::new();
 
     // Index after the `}` of the last format specifier.
@@ -308,7 +386,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
 
         // Parse the contents inside the braces.
         let param_str = &format_string[brace_pos + 1..][..len];
-        let param = parse_param(param_str)?;
+        let param = parse_param(param_str, mode)?;
         fragments.push(Fragment::Parameter(Parameter {
             index: param.index.unwrap_or_else(|| {
                 // If there is no explicit index, assign the next one.
@@ -317,6 +395,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
                 idx
             }),
             ty: param.ty,
+            hint: param.hint,
         }));
     }
 
@@ -328,7 +407,7 @@ pub fn parse<'f>(format_string: &'f str) -> Result<Vec<Fragment<'f>>, Cow<'stati
     // Check for argument type conflicts.
     let mut args = Vec::new();
     for frag in &fragments {
-        if let Fragment::Parameter(Parameter { index, ty }) = frag {
+        if let Fragment::Parameter(Parameter { index, ty, .. }) = frag {
             if args.len() <= *index {
                 args.resize(*index + 1, None);
             }
@@ -382,149 +461,307 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ty() {
+    fn all_parse_param_cases() {
+        // no `Param` field present - 1 case
         assert_eq!(
-            parse("{:bool}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::Bool,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:?}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("", ParserMode::Strict),
+            Ok(Param {
+                index: None,
                 ty: Type::Format,
-            })])
+                hint: None,
+            })
         );
 
+        // only one `Param` field present - 3 cases
         assert_eq!(
-            parse("{:i16}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::I16,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:i32}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::I32,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:i64}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::I64,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:i128}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::I128,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:i8}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::I8,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:str}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::Str,
-            })])
-        );
-
-        assert_eq!(
-            super::parse("{:u16}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U16,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:u24}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U24,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:u32}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U32,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:u64}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U64,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:u128}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U128,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:f32}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::F32,
-            })])
-        );
-
-        assert_eq!(
-            parse("{:u8}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=u8", ParserMode::Strict),
+            Ok(Param {
+                index: None,
                 ty: Type::U8,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:[u8]}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param(":a", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Ascii),
+            })
+        );
+
+        assert_eq!(
+            parse_param("1", ParserMode::Strict),
+            Ok(Param {
+                index: Some(1),
+                ty: Type::Format,
+                hint: None,
+            })
+        );
+
+        // two `Param` fields present - 3 cases
+        assert_eq!(
+            parse_param("=u8:x", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U8,
+                hint: Some(DisplayHint::Hexadecimal {
+                    is_uppercase: false
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param("0=u8", ParserMode::Strict),
+            Ok(Param {
+                index: Some(0),
+                ty: Type::U8,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("0:a", ParserMode::Strict),
+            Ok(Param {
+                index: Some(0),
+                ty: Type::Format,
+                hint: Some(DisplayHint::Ascii),
+            })
+        );
+
+        // all `Param` fields present - 1 case
+        assert_eq!(
+            parse_param("1=u8:b", ParserMode::Strict),
+            Ok(Param {
+                index: Some(1),
+                ty: Type::U8,
+                hint: Some(DisplayHint::Binary),
+            })
+        );
+    }
+
+    #[test]
+    fn all_display_hints() {
+        assert_eq!(
+            parse_param(":a", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Ascii),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":b", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Binary),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":x", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal {
+                    is_uppercase: false
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":X", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal { is_uppercase: true }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":?", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Debug),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":unknown", ParserMode::ForwardsCompatible),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Unknown("unknown".to_string())),
+            })
+        );
+    }
+
+    #[test]
+    fn all_types() {
+        assert_eq!(
+            parse_param("=bool", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Bool,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=?", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=i16", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::I16,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=i32", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::I32,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=i64", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::I64,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=i128", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::I128,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=i8", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::I8,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=str", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Str,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u16", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U16,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u24", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U24,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u32", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U32,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u64", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U64,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u128", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U128,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=f32", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::F32,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u8", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U8,
+                hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=[u8]", ParserMode::Strict),
+            Ok(Param {
+                index: None,
                 ty: Type::U8Slice,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:usize}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=usize", ParserMode::Strict),
+            Ok(Param {
+                index: None,
                 ty: Type::Usize,
-            })])
+                hint: None,
+            })
         );
 
         assert_eq!(
-            parse("{:isize}"),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
+            parse_param("=isize", ParserMode::Strict),
+            Ok(Param {
+                index: None,
                 ty: Type::Isize,
-            })])
+                hint: None,
+            })
         );
     }
 
@@ -532,195 +769,234 @@ mod tests {
     fn index() {
         // implicit
         assert_eq!(
-            parse("{:u8}{:u16}"),
+            parse("{=u8}{=u16}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U16,
+                    hint: None,
                 }),
             ])
         );
 
         // single parameter formatted twice
         assert_eq!(
-            parse("{:u8}{0:u8}"),
+            parse("{=u8}{0=u8}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
             ])
         );
 
         // explicit index
         assert_eq!(
-            parse("{:u8}{1:u16}"),
+            parse("{=u8}{1=u16}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U16,
+                    hint: None,
                 }),
             ])
         );
 
         // reversed order
         assert_eq!(
-            parse("{1:u8}{0:u16}"),
+            parse("{1=u8}{0=u16}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::U8,
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::U16,
+                    hint: None,
                 }),
             ])
         );
 
         // two different types for the same index
-        assert!(parse("{0:u8}{0:u16}").is_err());
+        assert!(parse("{0=u8}{0=u16}", ParserMode::Strict).is_err());
         // same thing, except `{:bool}` is auto-assigned index 0
-        assert!(parse("Hello {1:u16} {0:u8} {:bool}").is_err());
+        assert!(parse("Hello {1=u16} {0=u8} {=bool}", ParserMode::Strict).is_err());
 
         // omitted index 0
-        assert!(parse("{1:u8}").is_err());
+        assert!(parse("{1=u8}", ParserMode::Strict).is_err());
 
         // index 1 is missing
-        assert!(parse("{2:u8}{:u16}").is_err());
+        assert!(parse("{2=u8}{=u16}", ParserMode::Strict).is_err());
 
         // index 0 is missing
-        assert!(parse("{2:u8}{1:u16}").is_err());
+        assert!(parse("{2=u8}{1=u16}", ParserMode::Strict).is_err());
     }
 
     #[test]
     fn range() {
         assert_eq!(
-            parse("{:0..4}"),
+            parse("{=0..4}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::BitField(0..4),
+                hint: None,
             })])
         );
 
         assert_eq!(
-            parse("{0:30..31}{1:0..4}{1:2..6}"),
+            parse("{0=30..31}{1=0..4}{1=2..6}", ParserMode::Strict),
             Ok(vec![
                 Fragment::Parameter(Parameter {
                     index: 0,
                     ty: Type::BitField(30..31),
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::BitField(0..4),
+                    hint: None,
                 }),
                 Fragment::Parameter(Parameter {
                     index: 1,
                     ty: Type::BitField(2..6),
+                    hint: None,
                 }),
             ])
         );
 
         // empty range
-        assert!(parse("{:0..0}").is_err());
+        assert!(parse("{=0..0}", ParserMode::Strict).is_err());
         // start > end
-        assert!(parse("{:1..0}").is_err());
+        assert!(parse("{=1..0}", ParserMode::Strict).is_err());
         // out of 32-bit range
-        assert!(parse("{:0..32}").is_err());
+        assert!(parse("{=0..32}", ParserMode::Strict).is_err());
         // just inside 32-bit range
-        assert!(parse("{:0..31}").is_ok());
+        assert!(parse("{=0..31}", ParserMode::Strict).is_ok());
 
         // missing parts
-        assert!(parse("{:0..4").is_err());
-        assert!(parse("{:0..}").is_err());
-        assert!(parse("{:..4}").is_err());
-        assert!(parse("{:0.4}").is_err());
-        assert!(parse("{:0...4}").is_err());
+        assert!(parse("{=0..4", ParserMode::Strict).is_err());
+        assert!(parse("{=0..}", ParserMode::Strict).is_err());
+        assert!(parse("{=..4}", ParserMode::Strict).is_err());
+        assert!(parse("{=0.4}", ParserMode::Strict).is_err());
+        assert!(parse("{=0...4}", ParserMode::Strict).is_err());
     }
 
     #[test]
     fn arrays() {
         assert_eq!(
-            parse("{:[u8; 0]}"),
+            parse("{=[u8; 0]}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(0),
+                hint: None,
             })])
         );
 
         // Space is optional.
         assert_eq!(
-            parse("{:[u8;42]}"),
+            parse("{=[u8;42]}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(42),
+                hint: None,
             })])
         );
 
         // Multiple spaces are ok.
         assert_eq!(
-            parse("{:[u8;    257]}"),
+            parse("{=[u8;    257]}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::U8Array(257),
+                hint: None,
             })])
         );
 
         // No tabs or other whitespace.
-        assert!(parse("{:[u8; \t 3]}").is_err());
-        assert!(parse("{:[u8; \n 3]}").is_err());
+        assert!(parse("{=[u8; \t 3]}", ParserMode::Strict).is_err());
+        assert!(parse("{=[u8; \n 3]}", ParserMode::Strict).is_err());
         // Too large.
-        assert!(parse("{:[u8; 9999999999999999999999999]}").is_err());
+        assert!(parse("{=[u8; 9999999999999999999999999]}", ParserMode::Strict).is_err());
     }
 
     #[test]
     fn error_msg() {
         assert_eq!(
-            parse("{:dunno}"),
+            parse("{=dunno}", ParserMode::Strict),
             Err("malformed format string (invalid type specifier `dunno`)".into())
         );
+
         assert_eq!(
-            parse("{}"),
-            Err("malformed format string (missing `:`)".into())
+            parse("{dunno}", ParserMode::Strict),
+            Err("unexpected content \"dunno\" in format string".into())
         );
+
         assert_eq!(
-            parse("{0}"),
-            Err("malformed format string (missing `:`)".into())
+            parse("{=u8;x}", ParserMode::Strict),
+            Err("malformed format string (invalid type specifier `u8;x`)".into())
+        );
+
+        assert_eq!(
+            parse("{dunno=u8:x}", ParserMode::Strict),
+            Err("unexpected content \"dunno=u8:x\" in format string".into())
+        );
+
+        assert_eq!(
+            parse("{0dunno}", ParserMode::Strict),
+            Err("unexpected content \"dunno\" in format string".into())
         );
     }
 
     #[test]
     fn brace_escape() {
         // Stray braces.
-        assert!(parse("}string").is_err());
-        assert!(parse("{string").is_err());
-        assert!(parse("}").is_err());
-        assert!(parse("{").is_err());
+        assert!(parse("}string", ParserMode::Strict).is_err());
+        assert!(parse("{string", ParserMode::Strict).is_err());
+        assert!(parse("}", ParserMode::Strict).is_err());
+        assert!(parse("{", ParserMode::Strict).is_err());
 
         // Escaped braces.
-        assert_eq!(parse("}}"), Ok(vec![Fragment::Literal("}".into())]));
-        assert_eq!(parse("{{"), Ok(vec![Fragment::Literal("{".into())]));
         assert_eq!(
-            parse("literal{{literal"),
+            parse("}}", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("}".into())])
+        );
+        assert_eq!(
+            parse("{{", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("{".into())])
+        );
+        assert_eq!(
+            parse("literal{{literal", ParserMode::Strict),
             Ok(vec![Fragment::Literal("literal{literal".into())])
         );
         assert_eq!(
-            parse("literal}}literal"),
+            parse("literal}}literal", ParserMode::Strict),
             Ok(vec![Fragment::Literal("literal}literal".into())])
         );
-        assert_eq!(parse("{{}}"), Ok(vec![Fragment::Literal("{}".into())]));
-        assert_eq!(parse("}}{{"), Ok(vec![Fragment::Literal("}{".into())]));
+        assert_eq!(
+            parse("{{}}", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("{}".into())])
+        );
+        assert_eq!(
+            parse("}}{{", ParserMode::Strict),
+            Ok(vec![Fragment::Literal("}{".into())])
+        );
     }
 }

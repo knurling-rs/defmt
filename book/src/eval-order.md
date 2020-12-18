@@ -4,7 +4,7 @@ Consider this log invocation:
 
 ``` rust
 # extern crate defmt;
-defmt::info!("x={:?}", foo());
+defmt::info!("x={=?}", foo());
 
 fn foo() -> u8 {
     defmt::info!("Hello");

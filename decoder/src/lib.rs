@@ -25,17 +25,17 @@ use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
 pub use defmt_parser::Level;
-use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
+use defmt_parser::{get_max_bitfield_range, DisplayHint, Fragment, Parameter, ParserMode, Type};
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
-    /// A format string for use with `{:?}`. Used for both primitive format strings (which are
+    /// A format string for use with `{=?}`. Used for both primitive format strings (which are
     /// special cased to have lower indices), and user format strings created by
     /// `#[derive(Format)]`.
     Fmt,
-    /// An interned string, for use with `{:istr}`.
+    /// An interned string, for use with `{=istr}`.
     Str,
 
     Trace,
@@ -258,7 +258,7 @@ pub struct DisplayMessage<'t> {
 
 impl fmt::Display for DisplayMessage<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let args = format_args(&self.frame.format, &self.frame.args);
+        let args = format_args(&self.frame.format, &self.frame.args, None);
         f.write_str(&args)
     }
 }
@@ -294,7 +294,7 @@ impl fmt::Display for DisplayFrame<'_> {
             }
         };
 
-        let args = format_args(&self.frame.format, &self.frame.args);
+        let args = format_args(&self.frame.format, &self.frame.args, None);
 
         write!(f, "{}.{:06} {} {}", seconds, micros, level, args)
     }
@@ -472,6 +472,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
                     start: smallest,
                     end: largest,
                 }),
+                hint: None, // don't care
             });
 
             // remove old bitfields with this index
@@ -681,7 +682,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
     /// Decodes arguments from the stream, according to `format`.
     fn decode_format(&mut self, format: &str) -> Result<Vec<Arg<'t>>, DecodeError> {
         let mut args = vec![]; // will contain the deserialized arguments on return
-        let mut params = defmt_parser::parse(format)
+        let mut params = defmt_parser::parse(format, defmt_parser::ParserMode::ForwardsCompatible)
             .map_err(|_| DecodeError::Malformed)?
             .iter()
             .filter_map(|frag| match frag {
@@ -892,12 +893,107 @@ enum FormatList<'t> {
     },
 }
 
-fn format_args(format: &str, args: &[Arg]) -> String {
-    format_args_real(format, args).unwrap() // cannot fail, we only write to a `String`
+fn format_args(format: &str, args: &[Arg], parent_hint: Option<&DisplayHint>) -> String {
+    format_args_real(format, args, parent_hint).unwrap() // cannot fail, we only write to a `String`
 }
 
-fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
-    let params = defmt_parser::parse(format).unwrap();
+fn format_args_real(
+    format: &str,
+    args: &[Arg],
+    parent_hint: Option<&DisplayHint>,
+) -> Result<String, fmt::Error> {
+    fn format_u128(
+        x: u128,
+        hint: Option<&DisplayHint>,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
+        match hint {
+            Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
+            Some(DisplayHint::Hexadecimal {
+                is_uppercase: false,
+            }) => write!(buf, "{:#x}", x)?,
+            Some(DisplayHint::Hexadecimal { is_uppercase: true }) => write!(buf, "{:#X}", x)?,
+            _ => write!(buf, "{}", x)?,
+        }
+        Ok(())
+    }
+
+    fn format_i128(
+        x: i128,
+        hint: Option<&DisplayHint>,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
+        match hint {
+            Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
+            Some(DisplayHint::Hexadecimal {
+                is_uppercase: false,
+            }) => write!(buf, "{:#x}", x)?,
+            Some(DisplayHint::Hexadecimal { is_uppercase: true }) => write!(buf, "{:#X}", x)?,
+            _ => write!(buf, "{}", x)?,
+        }
+        Ok(())
+    }
+
+    fn format_bytes(
+        bytes: &[u8],
+        hint: Option<&DisplayHint>,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
+        match hint {
+            Some(DisplayHint::Ascii) => {
+                // byte string literal syntax: b"Hello\xffworld"
+                buf.push_str("b\"");
+                for byte in bytes {
+                    match byte {
+                        // special escaping
+                        b'\t' => buf.push_str("\\t"),
+                        b'\n' => buf.push_str("\\n"),
+                        b'\r' => buf.push_str("\\r"),
+                        b' ' => buf.push(' '),
+                        b'\"' => buf.push_str("\\\""),
+                        b'\\' => buf.push_str("\\\\"),
+                        _ => {
+                            if byte.is_ascii_graphic() {
+                                buf.push(*byte as char);
+                            } else {
+                                // general escaped form
+                                write!(buf, "\\x{:02x}", byte).ok();
+                            }
+                        }
+                    }
+                }
+                buf.push('\"');
+            }
+            Some(DisplayHint::Hexadecimal { .. }) | Some(DisplayHint::Binary { .. }) => {
+                // `core::write!` doesn't quite produce the output we want, for example
+                // `write!("{:#04x?}", bytes)` produces a multi-line output
+                // `write!("{:02x?}", bytes)` is single-line but each byte doesn't include the "0x" prefix
+                buf.push('[');
+                let mut is_first = true;
+                for byte in bytes {
+                    if !is_first {
+                        buf.push_str(", ");
+                    }
+                    is_first = false;
+                    format_u128(*byte as u128, hint, buf)?;
+                }
+                buf.push(']');
+            }
+            _ => write!(buf, "{:?}", bytes)?,
+        }
+        Ok(())
+    }
+
+    fn format_str(s: &str, hint: Option<&DisplayHint>, buf: &mut String) -> Result<(), fmt::Error> {
+        if hint == Some(&DisplayHint::Debug) {
+            write!(buf, "{:?}", s)?;
+        } else {
+            buf.push_str(s);
+        }
+        Ok(())
+    }
+
+    let params = defmt_parser::parse(format, ParserMode::ForwardsCompatible).unwrap();
     let mut buf = String::new();
     for param in params {
         match param {
@@ -905,6 +1001,8 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                 buf.push_str(&lit);
             }
             Fragment::Parameter(param) => {
+                let hint = param.hint.as_ref().or(parent_hint);
+
                 match &args[param.index] {
                     Arg::Bool(x) => write!(buf, "{}", x)?,
                     Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
@@ -915,17 +1013,17 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                                 let right_zeroes = left_zeroes + range.start as usize;
                                 // isolate the desired bitfields
                                 let bitfields = (*x << left_zeroes) >> right_zeroes;
-                                write!(&mut buf, "{:#b}", bitfields)?
+                                format_u128(bitfields as u128, hint, &mut buf)?;
                             }
-                            _ => write!(buf, "{}", x)?,
+                            _ => format_u128(*x as u128, hint, &mut buf)?,
                         }
                     }
-                    Arg::U128(x) => write!(buf, "{}", x)?,
-                    Arg::Ixx(x) => write!(buf, "{}", x)?,
-                    Arg::I128(x) => write!(buf, "{}", x)?,
-                    Arg::Str(x) => write!(buf, "{}", x)?,
-                    Arg::IStr(x) => write!(buf, "{}", x)?,
-                    Arg::Format { format, args } => buf.push_str(&format_args(format, args)),
+                    Arg::U128(x) => format_u128(*x, hint, &mut buf)?,
+                    Arg::Ixx(x) => format_i128(*x as i128, hint, &mut buf)?,
+                    Arg::I128(x) => format_i128(*x, hint, &mut buf)?,
+                    Arg::Str(x) => format_str(x, hint, &mut buf)?,
+                    Arg::IStr(x) => format_str(x, hint, &mut buf)?,
+                    Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
                     Arg::FormatSlice { elements } => {
                         buf.write_str("[")?;
                         let mut is_first = true;
@@ -934,11 +1032,11 @@ fn format_args_real(format: &str, args: &[Arg]) -> Result<String, fmt::Error> {
                                 buf.write_str(", ")?;
                             }
                             is_first = false;
-                            buf.write_str(&format_args(element.format, &element.args))?;
+                            buf.write_str(&format_args(element.format, &element.args, hint))?;
                         }
                         buf.write_str("]")?;
                     }
-                    Arg::Slice(x) => write!(buf, "{:?}", x)?,
+                    Arg::Slice(x) => format_bytes(x, hint, &mut buf)?,
                     Arg::Char(c) => write!(buf, "{}", c)?,
                 }
             }
@@ -985,7 +1083,7 @@ mod tests {
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Debug, "The answer is {:u8}!".to_owned()),
+            TableEntry::new_without_symbol(Tag::Debug, "The answer is {=u8}!".to_owned()),
         );
         // [IDX, TS, 42]
         //           ^^
@@ -1022,7 +1120,7 @@ mod tests {
                 Frame {
                     index: 1,
                     level: Level::Debug,
-                    format: "The answer is {:u8}!",
+                    format: "The answer is {=u8}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
@@ -1035,7 +1133,8 @@ mod tests {
 
     #[test]
     fn all_integers() {
-        const FMT: &str = "Hello, {:u8} {:u16} {:u24} {:u32} {:u64} {:u128} {:i8} {:i16} {:i32} {:i64} {:i128}!";
+        const FMT: &str =
+            "Hello, {=u8} {=u16} {=u24} {=u32} {=u64} {=u128} {=i8} {=i16} {=i32} {=i64} {=i128}!";
         let mut entries = BTreeMap::new();
         entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
 
@@ -1049,12 +1148,14 @@ mod tests {
             0, 0, 1, // u24
             0xff, 0xff, 0xff, 0xff, // u32
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // u64
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // u128
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, // u128
             0xff, // i8
             0xff, 0xff, // i16
             0xff, 0xff, 0xff, 0xff, // i32
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i64
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // i128
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, // i128
         ];
 
         assert_eq!(
@@ -1072,11 +1173,11 @@ mod tests {
                         Arg::Uxx(u32::max_value().into()), // u32
                         Arg::Uxx(u64::max_value().into()), // u64
                         Arg::U128(u128::max_value().into()),
-                        Arg::Ixx(-1),                      // i8
-                        Arg::Ixx(-1),                      // i16
-                        Arg::Ixx(-1),                      // i32
-                        Arg::Ixx(-1),                      // i64
-                        Arg::I128(-1),                     // i128
+                        Arg::Ixx(-1),  // i8
+                        Arg::Ixx(-1),  // i16
+                        Arg::Ixx(-1),  // i32
+                        Arg::Ixx(-1),  // i64
+                        Arg::I128(-1), // i128
                     ],
                 },
                 bytes.len(),
@@ -1089,13 +1190,13 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "The answer is {0:u8} {0:u8}!".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "The answer is {0=u8} {0=u8}!".to_owned()),
         );
         entries.insert(
             1,
             TableEntry::new_without_symbol(
                 Tag::Info,
-                "The answer is {1:u16} {0:u8} {1:u16}!".to_owned(),
+                "The answer is {1=u16} {0=u8} {1=u16}!".to_owned(),
             ),
         );
 
@@ -1112,7 +1213,7 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
-                    format: "The answer is {0:u8} {0:u8}!",
+                    format: "The answer is {0=u8} {0=u8}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
@@ -1133,7 +1234,7 @@ mod tests {
                 Frame {
                     index: 1,
                     level: Level::Info,
-                    format: "The answer is {1:u16} {0:u8} {1:u16}!",
+                    format: "The answer is {1=u16} {0=u8} {1=u16}!",
                     timestamp: 2,
                     args: vec![Arg::Uxx(42), Arg::Uxx(0xffff)],
                 },
@@ -1147,11 +1248,11 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
         let table = Table { entries };
@@ -1169,10 +1270,10 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
-                    format: "x={:?}",
+                    format: "x={=?}",
                     timestamp: 2,
                     args: vec![Arg::Format {
-                        format: "Foo {{ x: {:u8} }}",
+                        format: "Foo {{ x: {=u8} }}",
                         args: vec![Arg::Uxx(42)]
                     }],
                 },
@@ -1186,11 +1287,11 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {:u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
         let table = Table { entries };
@@ -1217,7 +1318,7 @@ mod tests {
             true as u8, // the logged bool value
         ];
 
-        decode_and_expect("my bool={:bool}", &bytes, "0.000002 INFO my bool=true");
+        decode_and_expect("my bool={=bool}", &bytes, "0.000002 INFO my bool=true");
     }
 
     #[test]
@@ -1229,7 +1330,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool capacity {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            "bool capacity {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO bool capacity false true true false false false false true",
         );
@@ -1245,7 +1346,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO bool overflow false true true false false false false true true",
         );
@@ -1261,7 +1362,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool overflow {:bool} {:u8} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool}",
+            "bool overflow {=bool} {=u8} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO bool overflow false 255 true true false false false false true true",
         );
@@ -1277,7 +1378,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "bool overflow {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:bool} {:u8} {:bool}",
+            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=u8} {=bool}",
             &bytes,
             "0.000002 INFO bool overflow false true true false false false false true 255 true",
         );
@@ -1293,7 +1394,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "hidden bools {:bool} {:u8} {:bool} {:bool}",
+            "hidden bools {=bool} {=u8} {=bool} {=bool}",
             &bytes,
             "0.000002 INFO hidden bools true 9 false true",
         );
@@ -1309,7 +1410,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "no trailing bools {:bool} {:u8}",
+            "no trailing bools {=bool} {=u8}",
             &bytes,
             "0.000002 INFO no trailing bools false 9",
         );
@@ -1332,13 +1433,13 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             0,
-            TableEntry::new_without_symbol(Tag::Info, "{:bool} {:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "{=bool} {=?}".to_owned()),
         );
         entries.insert(
             1,
             TableEntry::new_without_symbol(
                 Tag::Fmt,
-                "Flags {{ a: {:bool}, b: {:bool}, c: {:bool} }}".to_owned(),
+                "Flags {{ a: {=bool}, b: {=bool}, c: {=bool} }}".to_owned(),
             ),
         );
 
@@ -1366,7 +1467,7 @@ mod tests {
             0b1110_0101, // u8
         ];
         decode_and_expect(
-            "x: {0:0..4}, y: {0:3..8}",
+            "x: {0=0..4:b}, y: {0=3..8:b}",
             &bytes,
             "0.000002 INFO x: 0b101, y: 0b11100",
         );
@@ -1380,7 +1481,7 @@ mod tests {
             0b1101_0010, // u8
         ];
         decode_and_expect(
-            "x: {0:0..7}, y: {0:3..5}",
+            "x: {0=0..7:b}, y: {0=3..5:b}",
             &bytes,
             "0.000002 INFO x: 0b1010010, y: 0b10",
         );
@@ -1395,7 +1496,7 @@ mod tests {
             0b1110_0101, // u8
         ];
         decode_and_expect(
-            "#0: {0:0..5}, #1: {1:3..8}",
+            "#0: {0=0..5:b}, #1: {1=3..8:b}",
             &bytes,
             "0.000002 INFO #0: 0b10000, #1: 0b11100",
         );
@@ -1409,7 +1510,7 @@ mod tests {
             0b1111_0000,
             0b1110_0101, // u16
         ];
-        decode_and_expect("x: {0:7..12}", &bytes, "0.000002 INFO x: 0b1011");
+        decode_and_expect("x: {0=7..12:b}", &bytes, "0.000002 INFO x: 0b1011");
     }
 
     #[test]
@@ -1422,7 +1523,7 @@ mod tests {
             0b1111_0001, // u8
         ];
         decode_and_expect(
-            "#0: {0:7..12}, #1: {1:0..5}",
+            "#0: {0=7..12:b}, #1: {1=0..5:b}",
             &bytes,
             "0.000002 INFO #0: 0b1011, #1: 0b10001",
         );
@@ -1439,7 +1540,7 @@ mod tests {
             0b1111_0001, // u8 bitfields
         ];
         decode_and_expect(
-            "#0: {0:7..12}, #1: {1:u8}, #2: {2:0..5}",
+            "#0: {0=7..12:b}, #1: {1=u8}, #2: {2=0..5:b}",
             &bytes,
             "0.000002 INFO #0: 0b1011, #1: 42, #2: 0b10001",
         );
@@ -1454,7 +1555,7 @@ mod tests {
             0b0110_0011, // u16
         ];
         decode_and_expect(
-            "bitfields {0:0..7} {0:9..14}",
+            "bitfields {0=0..7:b} {0=9..14:b}",
             &bytes,
             "0.000002 INFO bitfields 0b1010010 0b10001",
         );
@@ -1470,7 +1571,7 @@ mod tests {
             0b1111_1111, // truncated u16
         ];
         decode_and_expect(
-            "bitfields {0:0..7} {0:9..14} {1:8..10}",
+            "bitfields {0=0..7:b} {0=9..14:b} {1=8..10:b}",
             &bytes,
             "0.000002 INFO bitfields 0b1010010 0b10001 0b11",
         );
@@ -1484,7 +1585,7 @@ mod tests {
             0b0110_0011, // truncated(!) u16
         ];
         decode_and_expect(
-            "bitfields {0:9..14}",
+            "bitfields {0=9..14:b}",
             &bytes,
             "0.000002 INFO bitfields 0b10001",
         );
@@ -1501,7 +1602,7 @@ mod tests {
             0b1100_0011, // -
         ];
         decode_and_expect(
-            "bitfields {0:0..2} {0:28..31}",
+            "bitfields {0=0..2:b} {0=28..31:b}",
             &bytes,
             "0.000002 INFO bitfields 0b11 0b100",
         );
@@ -1515,7 +1616,7 @@ mod tests {
             2, // length of the slice
             23, 42, // slice content
         ];
-        decode_and_expect("x={:[u8]}", &bytes, "0.000002 INFO x=[23, 42]");
+        decode_and_expect("x={=[u8]}", &bytes, "0.000002 INFO x=[23, 42]");
     }
 
     #[test]
@@ -1529,7 +1630,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "x={:[u8]} trailing arg={:u8}",
+            "x={=[u8]} trailing arg={=u8}",
             &bytes,
             "0.000002 INFO x=[23, 42] trailing arg=1",
         );
@@ -1544,7 +1645,7 @@ mod tests {
             b'W', b'o', b'r', b'l', b'd',
         ];
 
-        decode_and_expect("Hello {:str}", &bytes, "0.000002 INFO Hello World");
+        decode_and_expect("Hello {=str}", &bytes, "0.000002 INFO Hello World");
     }
 
     #[test]
@@ -1557,7 +1658,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "Hello {:str} {:u8}",
+            "Hello {=str} {=u8}",
             &bytes,
             "0.000002 INFO Hello World 125",
         );
@@ -1573,7 +1674,7 @@ mod tests {
         ];
 
         decode_and_expect(
-            "Supports ASCII {:char} and Unicode {:char}",
+            "Supports ASCII {=char} and Unicode {=char}",
             &bytes,
             "0.000002 INFO Supports ASCII a and Unicode 💜",
         );
@@ -1584,15 +1685,15 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(
             4,
-            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
         );
         entries.insert(
             3,
-            TableEntry::new_without_symbol(Tag::Fmt, "None|Some({:?})".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "None|Some({=?})".to_owned()),
         );
         entries.insert(
             2,
-            TableEntry::new_without_symbol(Tag::Fmt, "{:u8}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Fmt, "{=u8}".to_owned()),
         );
 
         let table = Table { entries };
@@ -1626,10 +1727,12 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                hint: None,
             },
             Parameter {
                 index: 0,
                 ty: Type::BitField(4..7),
+                hint: None,
             },
         ];
 
@@ -1638,7 +1741,8 @@ mod tests {
             params,
             vec![Parameter {
                 index: 0,
-                ty: Type::BitField(0..7)
+                ty: Type::BitField(0..7),
+                hint: None,
             }]
         );
     }
@@ -1649,10 +1753,12 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(1..3),
+                hint: None,
             },
             Parameter {
                 index: 0,
                 ty: Type::BitField(2..5),
+                hint: None,
             },
         ];
 
@@ -1661,7 +1767,8 @@ mod tests {
             params,
             vec![Parameter {
                 index: 0,
-                ty: Type::BitField(1..5)
+                ty: Type::BitField(1..5),
+                hint: None,
             }]
         );
     }
@@ -1672,14 +1779,17 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::BitField(1..3),
+                hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::BitField(4..5),
+                hint: None,
             },
         ];
 
@@ -1689,11 +1799,13 @@ mod tests {
             vec![
                 Parameter {
                     index: 0,
-                    ty: Type::BitField(0..3)
+                    ty: Type::BitField(0..3),
+                    hint: None,
                 },
                 Parameter {
                     index: 1,
-                    ty: Type::BitField(1..5)
+                    ty: Type::BitField(1..5),
+                    hint: None,
                 }
             ]
         );
@@ -1705,18 +1817,22 @@ mod tests {
             Parameter {
                 index: 0,
                 ty: Type::BitField(0..3),
+                hint: None,
             },
             Parameter {
                 index: 1,
                 ty: Type::U8,
+                hint: None,
             },
             Parameter {
                 index: 2,
                 ty: Type::BitField(1..4),
+                hint: None,
             },
             Parameter {
                 index: 2,
                 ty: Type::BitField(4..5),
+                hint: None,
             },
         ];
 
@@ -1727,15 +1843,18 @@ mod tests {
             vec![
                 Parameter {
                     index: 1,
-                    ty: Type::U8
+                    ty: Type::U8,
+                    hint: None,
                 },
                 Parameter {
                     index: 0,
-                    ty: Type::BitField(0..3)
+                    ty: Type::BitField(0..3),
+                    hint: None,
                 },
                 Parameter {
                     index: 2,
-                    ty: Type::BitField(1..5)
+                    ty: Type::BitField(1..5),
+                    hint: None,
                 }
             ]
         );
