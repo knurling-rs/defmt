@@ -35,3 +35,10 @@
 0.000034 INFO Debug   "Hello"
 0.000035 INFO no hint world
 0.000036 INFO Debug   "world"
+0.000037 INFO ----
+0.000038 INFO no hint 10
+0.000039 INFO hex     0xa
+0.000040 INFO HEX     0xA
+0.000041 INFO binary  0b1010
+0.000042 INFO ASCII   10
+0.000043 INFO Debug   10

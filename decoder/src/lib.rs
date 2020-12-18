@@ -1013,7 +1013,7 @@ fn format_args_real(
                                 let right_zeroes = left_zeroes + range.start as usize;
                                 // isolate the desired bitfields
                                 let bitfields = (*x << left_zeroes) >> right_zeroes;
-                                write!(&mut buf, "{:#b}", bitfields)?
+                                format_u128(bitfields as u128, hint, &mut buf)?;
                             }
                             _ => format_u128(*x as u128, hint, &mut buf)?,
                         }

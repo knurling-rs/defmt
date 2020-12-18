@@ -98,6 +98,16 @@ fn main() -> ! {
     defmt::info!("no hint {=istr}", is);
     defmt::info!("Debug   {=istr:?}", is);
 
+    defmt::info!("----");
+
+    let x = 42u32;
+    defmt::info!("no hint {=0..4}", x);
+    defmt::info!("hex     {=0..4:x}", x);
+    defmt::info!("HEX     {=0..4:X}", x);
+    defmt::info!("binary  {=0..4:b}", x);
+    defmt::info!("ASCII   {=0..4:a}", x);
+    defmt::info!("Debug   {=0..4:?}", x);
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
