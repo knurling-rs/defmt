@@ -10,7 +10,7 @@
 use std::borrow::Cow;
 use std::ops::Range;
 
-/// A `{{$index=$type:$hint}}` in a format string.
+/// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Parameter {
     /// The argument index to display at this position.
