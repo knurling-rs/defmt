@@ -101,5 +101,5 @@
 0.000100 INFO Hello 💜 & 🍕
 0.000101 INFO EnumLarge::A051
 0.000102 INFO EnumLarge::A269
-0.000103 INFO S { x: hi }
+0.000103 INFO S { x: "hi" }
 0.000104 INFO QEMU test finished!
