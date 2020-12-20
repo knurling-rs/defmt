@@ -1038,16 +1038,37 @@ fn format_args_real(
                     Arg::IStr(x) => format_str(x, hint, &mut buf)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
                     Arg::FormatSlice { elements } => {
-                        buf.write_str("[")?;
-                        let mut is_first = true;
-                        for element in elements {
-                            if !is_first {
-                                buf.write_str(", ")?;
+                        match hint {
+                            // Filter Ascii Hints, which contains u8 byte slices
+                            Some(DisplayHint::Ascii)
+                                if elements.iter().filter(|e| e.format == "{=u8}").count() != 0 =>
+                            {
+                                let vals = elements
+                                    .iter()
+                                    .map(|e| match e.args.as_slice() {
+                                        [Arg::Uxx(v)] => u8::try_from(*v).expect("the value must be in u8 range"),
+                                        _ => panic!("FormatSlice should only contain one argument"),
+                                    })
+                                    .collect::<Vec<u8>>();
+                                format_bytes(&vals, hint, &mut buf)?
                             }
-                            is_first = false;
-                            buf.write_str(&format_args(element.format, &element.args, hint))?;
+                            _ => {
+                                buf.write_str("[")?;
+                                let mut is_first = true;
+                                for element in elements {
+                                    if !is_first {
+                                        buf.write_str(", ")?;
+                                    }
+                                    is_first = false;
+                                    buf.write_str(&format_args(
+                                        element.format,
+                                        &element.args,
+                                        hint,
+                                    ))?;
+                                }
+                                buf.write_str("]")?;
+                            }
                         }
-                        buf.write_str("]")?;
                     }
                     Arg::Slice(x) => format_bytes(x, hint, &mut buf)?,
                     Arg::Char(c) => write!(buf, "{}", c)?,
