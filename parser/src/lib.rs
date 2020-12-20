@@ -127,7 +127,7 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
         return None;
     }
 
-    if start >= 32 || end > 32 {
+    if start >= 128 || end > 128 {
         return None;
     }
 
@@ -886,10 +886,12 @@ mod tests {
         assert!(parse("{=0..0}", ParserMode::Strict).is_err());
         // start > end
         assert!(parse("{=1..0}", ParserMode::Strict).is_err());
-        // out of 32-bit range
-        assert!(parse("{=0..33}", ParserMode::Strict).is_err());
-        // just inside 32-bit range
-        assert!(parse("{=0..32}", ParserMode::Strict).is_ok());
+        // out of 128-bit range
+        assert!(parse("{=0..129}", ParserMode::Strict).is_err());
+        assert!(parse("{=128..128}", ParserMode::Strict).is_err());
+        // just inside 128-bit range
+        assert!(parse("{=0..128}", ParserMode::Strict).is_ok());
+        assert!(parse("{=127..128}", ParserMode::Strict).is_ok());
 
         // missing parts
         assert!(parse("{=0..4", ParserMode::Strict).is_err());

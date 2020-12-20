@@ -104,6 +104,12 @@ mod sealed {
         }
     }
 
+    impl Truncate<u8> for u128 {
+        fn truncate(self) -> u8 {
+            self as u8
+        }
+    }
+
     // needed so we can call truncate() without having to check whether truncation is necessary first
     impl Truncate<u16> for u16 {
         fn truncate(self) -> u16 {
@@ -123,6 +129,12 @@ mod sealed {
         }
     }
 
+    impl Truncate<u16> for u128 {
+        fn truncate(self) -> u16 {
+            self as u16
+        }
+    }
+
     // needed so we can call truncate() without having to check whether truncation is necessary first
     impl Truncate<u32> for u32 {
         fn truncate(self) -> u32 {
@@ -136,9 +148,28 @@ mod sealed {
         }
     }
 
+    impl Truncate<u32> for u128 {
+        fn truncate(self) -> u32 {
+            self as u32
+        }
+    }
+
     // needed so we can call truncate() without having to check whether truncation is necessary first
     impl Truncate<u64> for u64 {
         fn truncate(self) -> u64 {
+            self
+        }
+    }
+
+    impl Truncate<u64> for u128 {
+        fn truncate(self) -> u64 {
+            self as u64
+        }
+    }
+
+    // needed so we can call truncate() without having to check whether truncation is necessary first
+    impl Truncate<u128> for u128 {
+        fn truncate(self) -> u128 {
             self
         }
     }
