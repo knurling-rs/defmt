@@ -31,7 +31,7 @@ impl<'a> Symbol<'a> {
     pub fn new(tag: &'a str, data: &'a str) -> Self {
         Self {
             // `CARGO_PKG_NAME` is set to the invoking package's name.
-            package: env::var("CARGO_PKG_NAME").unwrap_or("<unknown>".to_string()),
+            package: env::var("CARGO_PKG_NAME").unwrap_or_else(|_| "<unknown>".to_string()),
             disambiguator: {
                 // We want a deterministic, but unique-per-macro-invocation identifier. For that we
                 // hash the call site `Span`'s debug representation, which contains a counter that
