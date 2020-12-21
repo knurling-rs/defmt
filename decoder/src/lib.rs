@@ -1017,7 +1017,18 @@ fn format_args_real(
                                 let right_zeroes = left_zeroes + range.start as usize;
                                 // isolate the desired bitfields
                                 let bitfields = (*x << left_zeroes) >> right_zeroes;
-                                format_u128(bitfields as u128, hint, &mut buf)?;
+
+                                if let Some(DisplayHint::Ascii) = hint {
+                                    let bstr = bitfields
+                                        .to_be_bytes()
+                                        .iter()
+                                        .skip(right_zeroes / 8)
+                                        .copied()
+                                        .collect::<Vec<u8>>();
+                                    format_bytes(&bstr, hint, &mut buf)?
+                                } else {
+                                    format_u128(bitfields as u128, hint, &mut buf)?;
+                                }
                             }
                             _ => format_u128(*x as u128, hint, &mut buf)?,
                         }

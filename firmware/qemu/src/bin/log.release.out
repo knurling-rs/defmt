@@ -102,4 +102,5 @@
 0.000101 INFO EnumLarge::A051
 0.000102 INFO EnumLarge::A269
 0.000103 INFO S { x: "hi" }
-0.000104 INFO QEMU test finished!
+0.000104 INFO bitfields 0x97 0b10000100 12 b"42" b"hello"
+0.000105 INFO QEMU test finished!

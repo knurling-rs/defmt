@@ -52,16 +52,6 @@ fn main() -> ! {
     );
     defmt::info!("usize: 0 = {=usize}, MAX = {=usize}", 0, usize::max_value());
     defmt::info!("bitfields {0=0..3} {0=5..7}", 0b0110_0011_1101_0110u16);
-    defmt::info!(
-        "bitfields \
-        {0=120..128:x} \
-        {0=112..120:b} \
-        {0=80..88} \
-        {0=48..64:x} \
-        {=8..48:x}",
-        0x9784_89AE_FF0C_5900_3432_6865_6C6C_6F00u128
-    );
-
     defmt::trace!("log trace");
     defmt::debug!("log debug");
     defmt::info!("log info");
@@ -547,6 +537,16 @@ fn main() -> ! {
 
         defmt::info!("{:?}", S { x: "hi" });
     }
+
+    defmt::info!(
+        "bitfields \
+        {0=120..128:x} \
+        {0=112..120:b} \
+        {0=80..88} \
+        {0=48..64:a} \
+        {=8..48:a}",
+        0x9784_89AE_FF0C_5900_3432_6865_6C6C_6F00u128
+    );
 
     defmt::info!("QEMU test finished!");
 
