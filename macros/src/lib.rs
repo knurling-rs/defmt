@@ -394,7 +394,7 @@ fn fields(
                 if named {
                     format.push_str(" {{ ");
                 } else {
-                    format.push_str("(");
+                    format.push('(');
                 }
                 let mut first = true;
                 for (i, f) in fs.iter().enumerate() {
@@ -437,7 +437,7 @@ fn fields(
                 if named {
                     format.push_str(" }}");
                 } else {
-                    format.push_str(")");
+                    format.push(')');
                 }
             }
         }
