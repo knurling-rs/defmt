@@ -454,10 +454,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
     for index in 0..=max_index {
         let mut bitfields_with_index = params
             .iter()
-            .filter(|param| match (param.index, &param.ty) {
-                (i, Type::BitField(_)) if i == index => true,
-                _ => false,
-            })
+            .filter(|param| matches!((param.index, &param.ty), (i, Type::BitField(_)) if i == index))
             .peekable();
 
         if bitfields_with_index.peek().is_some() {
