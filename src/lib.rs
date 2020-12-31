@@ -709,7 +709,7 @@ where
 
 /// `Debug2Format` constructor
 #[allow(non_snake_case)]
-pub fn Debug2Format<'a, N>(value: &'a dyn fmt::Debug) -> Debug2Format<'a, N>
+pub fn Debug2Format<N>(value: &dyn fmt::Debug) -> Debug2Format<N>
 where
     N: ArrayLength<u8>,
 {
@@ -781,7 +781,7 @@ where
 
 /// `Display2Format` constructor.
 #[allow(non_snake_case)]
-pub fn Display2Format<'a, N>(value: &'a dyn fmt::Display) -> Display2Format<'a, N>
+pub fn Display2Format<N>(value: &dyn fmt::Display) -> Display2Format<N>
 where
     N: ArrayLength<u8>,
 {
