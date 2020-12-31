@@ -443,7 +443,7 @@ pub fn decode<'t>(
 /// Note that this will not change the Bitfield params in place, i.e. if `params` was sorted before
 /// a call to this function, it won't be afterwards.
 fn merge_bitfields(params: &mut Vec<Parameter>) {
-    if params.len() == 0 {
+    if params.is_empty() {
         return;
     }
 
