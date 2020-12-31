@@ -565,7 +565,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
     }
 
     fn get_variant(&mut self, format: &'t str) -> Result<&'t str, DecodeError> {
-        assert!(format.contains("|"));
+        assert!(format.contains('|'));
         // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
         // required: "A|B({:?})" where "{:?}" -> "C|D"
         let num_variants = format.chars().filter(|c| *c == '|').count();
