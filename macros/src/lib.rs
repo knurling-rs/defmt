@@ -99,10 +99,7 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let rety_is_ok = match &f.sig.output {
         ReturnType::Default => false,
-        ReturnType::Type(_, ty) => match &**ty {
-            Type::Never(_) => true,
-            _ => false,
-        },
+        ReturnType::Type(_, ty) => matches!(&**ty, Type::Never(_)),
     };
 
     let ident = &f.sig.ident;
