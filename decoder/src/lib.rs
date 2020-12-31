@@ -641,27 +641,25 @@ impl<'t, 'b> Decoder<'t, 'b> {
                         }
                     }
                 }
+            } else if is_first {
+                let mut old =
+                    mem::replace(&mut self.format_list, Some(FormatList::Build { formats }));
+                let args = self.decode_format(format)?;
+                mem::swap(&mut self.format_list, &mut old);
+                formats = match old {
+                    Some(FormatList::Build { formats, .. }) => formats,
+                    _ => unreachable!(),
+                };
+                args
             } else {
-                if is_first {
-                    let mut old =
-                        mem::replace(&mut self.format_list, Some(FormatList::Build { formats }));
-                    let args = self.decode_format(format)?;
-                    mem::swap(&mut self.format_list, &mut old);
-                    formats = match old {
-                        Some(FormatList::Build { formats, .. }) => formats,
-                        _ => unreachable!(),
-                    };
-                    args
-                } else {
-                    let formats = formats.clone();
-                    let old = mem::replace(
-                        &mut self.format_list,
-                        Some(FormatList::Use { formats, cursor: 0 }),
-                    );
-                    let args = self.decode_format(format)?;
-                    self.format_list = old;
-                    args
-                }
+                let formats = formats.clone();
+                let old = mem::replace(
+                    &mut self.format_list,
+                    Some(FormatList::Use { formats, cursor: 0 }),
+                );
+                let args = self.decode_format(format)?;
+                self.format_list = old;
+                args
             };
 
             elements.push(FormatSliceElement { format, args });
