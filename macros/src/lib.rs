@@ -1073,7 +1073,7 @@ struct Codegen {
 }
 
 impl Codegen {
-    fn new(fragments: &Vec<Fragment<'_>>, num_args: usize, span: Span2) -> parse::Result<Self> {
+    fn new(fragments: &[Fragment<'_>], num_args: usize, span: Span2) -> parse::Result<Self> {
         let parsed_params = fragments
             .iter()
             .filter_map(|frag| match frag {
