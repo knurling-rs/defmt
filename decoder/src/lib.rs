@@ -193,7 +193,7 @@ impl Table {
         }
     }
 
-    pub fn indices<'s>(&'s self) -> impl Iterator<Item = usize> + 's {
+    pub fn indices(&self) -> impl Iterator<Item = usize> + '_ {
         self.entries.iter().filter_map(move |(idx, entry)| {
             if entry.string.tag.to_level().is_some() {
                 Some(*idx)
@@ -208,7 +208,7 @@ impl Table {
     }
 
     /// Iterates over the raw symbols of the table entries
-    pub fn raw_symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
+    pub fn raw_symbols(&self) -> impl Iterator<Item = &str>  + '_ {
         self.entries.values().map(|s| &*s.raw_symbol)
     }
 }
