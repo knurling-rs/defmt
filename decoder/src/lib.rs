@@ -175,7 +175,7 @@ impl Table {
     }
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
-        let entry = self.entries.get(&index).ok_or_else(|| ())?;
+        let entry = self.entries.get(&index).ok_or(())?;
         Ok((entry.string.tag.to_level(), &entry.string.string))
     }
 
