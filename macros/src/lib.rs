@@ -995,10 +995,10 @@ pub fn write(ts: TokenStream) -> TokenStream {
         }
     };
 
-    let args = write
+    let args: Vec<_> = write
         .rest
         .map(|(_, exprs)| exprs.into_iter().collect())
-        .unwrap_or(vec![]);
+        .unwrap_or_default();
 
     let (pats, exprs) = match Codegen::new(&fragments, args.len(), write.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
