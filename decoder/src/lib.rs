@@ -462,7 +462,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 
             // create new merged bitfield for this index
             merged_bitfields.push(Parameter {
-                index: index,
+                index,
                 ty: Type::BitField(Range {
                     start: smallest,
                     end: largest,
