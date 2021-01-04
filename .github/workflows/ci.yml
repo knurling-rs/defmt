@@ -141,16 +141,3 @@ jobs:
     steps:
       - name: CI succeeded
         run: exit 0
-
-  ci-failure:
-    name: ci
-    if: ${{ !success() }}
-    needs:
-      - test
-      - no-std
-      - mdbook
-      - qemu
-    runs-on: ubuntu-20.04
-    steps:
-      - name: CI failed
-        run: exit 1
