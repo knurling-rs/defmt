@@ -332,11 +332,9 @@ enum Arg<'t> {
     Bool(Arc<Bool>),
     F32(f32),
     /// U8, U16, U24 and U32
-    Uxx(u64),
-    U128(u128),
+    Uxx(u128),
     /// I8, I16, I24 and I32
-    Ixx(i64),
-    I128(i128),
+    Ixx(i128),
     /// Str
     Str(String),
     /// Interned string
@@ -697,7 +695,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
             match &param.ty {
                 Type::U8 => {
                     let data = self.bytes.read_u8()?;
-                    args.push(Arg::Uxx(data as u64));
+                    args.push(Arg::Uxx(data as u128));
                 }
 
                 Type::Bool => {
@@ -739,61 +737,61 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 }
                 Type::I16 => {
                     let data = self.bytes.read_i16::<LE>()?;
-                    args.push(Arg::Ixx(data as i64));
+                    args.push(Arg::Ixx(data as i128));
                 }
                 Type::I32 => {
                     let data = self.bytes.read_i32::<LE>()?;
-                    args.push(Arg::Ixx(data as i64));
+                    args.push(Arg::Ixx(data as i128));
                 }
                 Type::I64 => {
                     let data = self.bytes.read_i64::<LE>()?;
-                    args.push(Arg::Ixx(data as i64));
+                    args.push(Arg::Ixx(data as i128));
                 }
                 Type::I128 => {
                     let data = self.bytes.read_i128::<LE>()?;
-                    args.push(Arg::I128(data));
+                    args.push(Arg::Ixx(data));
                 }
                 Type::I8 => {
                     let data = self.bytes.read_i8()?;
-                    args.push(Arg::Ixx(data as i64));
+                    args.push(Arg::Ixx(data as i128));
                 }
                 Type::Isize => {
                     // Signed isize is encoded in zigzag-encoding.
                     let unsigned = read_leb128(&mut self.bytes)?;
-                    args.push(Arg::Ixx(zigzag_decode(unsigned)))
+                    args.push(Arg::Ixx(zigzag_decode(unsigned) as i128))
                 }
                 Type::U16 => {
                     let data = self.bytes.read_u16::<LE>()?;
-                    args.push(Arg::Uxx(data as u64));
+                    args.push(Arg::Uxx(data as u128));
                 }
                 Type::U24 => {
                     let data_low = self.bytes.read_u8()?;
                     let data_high = self.bytes.read_u16::<LE>()?;
-                    let data = data_low as u64 | (data_high as u64) << 8;
-                    args.push(Arg::Uxx(data as u64));
+                    let data = data_low as u128 | (data_high as u128) << 8;
+                    args.push(Arg::Uxx(data as u128));
                 }
                 Type::U32 => {
                     let data = self.bytes.read_u32::<LE>()?;
-                    args.push(Arg::Uxx(data as u64));
+                    args.push(Arg::Uxx(data as u128));
                 }
                 Type::U64 => {
                     let data = self.bytes.read_u64::<LE>()?;
-                    args.push(Arg::Uxx(data as u64));
+                    args.push(Arg::Uxx(data as u128));
                 }
                 Type::U128 => {
                     let data = self.bytes.read_u128::<LE>()?;
-                    args.push(Arg::U128(data));
+                    args.push(Arg::Uxx(data as u128));
                 }
                 Type::Usize => {
                     let unsigned = read_leb128(&mut self.bytes)?;
-                    args.push(Arg::Uxx(unsigned))
+                    args.push(Arg::Uxx(unsigned as u128))
                 }
                 Type::F32 => {
                     let data = self.bytes.read_u32::<LE>()?;
                     args.push(Arg::F32(f32::from_bits(data)));
                 }
                 Type::BitField(range) => {
-                    let mut data: u64;
+                    let mut data: u128;
                     let lowest_byte = range.start / 8;
                     // -1 because `range` is range-exclusive
                     let highest_byte = (range.end - 1) / 8;
@@ -801,16 +799,22 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                     match size_after_truncation {
                         1 => {
-                            data = self.bytes.read_u8()? as u64;
+                            data = self.bytes.read_u8()? as u128;
                         }
                         2 => {
-                            data = self.bytes.read_u16::<LE>()? as u64;
+                            data = self.bytes.read_u16::<LE>()? as u128;
                         }
                         3 => {
-                            data = self.bytes.read_u24::<LE>()? as u64;
+                            data = self.bytes.read_u24::<LE>()? as u128;
                         }
                         4 => {
-                            data = self.bytes.read_u32::<LE>()? as u64;
+                            data = self.bytes.read_u32::<LE>()? as u128;
+                        }
+                        5..=8 => {
+                            data = self.bytes.read_u64::<LE>()? as u128;
+                        }
+                        9..=16 => {
+                            data = self.bytes.read_u128::<LE>()? as u128;
                         }
                         _ => {
                             unreachable!();
@@ -1009,18 +1013,27 @@ fn format_args_real(
                     Arg::Uxx(x) => {
                         match param.ty {
                             Type::BitField(range) => {
-                                let left_zeroes = mem::size_of::<u64>() * 8 - range.end as usize;
+                                let left_zeroes = mem::size_of::<u128>() * 8 - range.end as usize;
                                 let right_zeroes = left_zeroes + range.start as usize;
                                 // isolate the desired bitfields
                                 let bitfields = (*x << left_zeroes) >> right_zeroes;
-                                format_u128(bitfields as u128, hint, &mut buf)?;
+
+                                if let Some(DisplayHint::Ascii) = hint {
+                                    let bstr = bitfields
+                                        .to_be_bytes()
+                                        .iter()
+                                        .skip(right_zeroes / 8)
+                                        .copied()
+                                        .collect::<Vec<u8>>();
+                                    format_bytes(&bstr, hint, &mut buf)?
+                                } else {
+                                    format_u128(bitfields as u128, hint, &mut buf)?;
+                                }
                             }
                             _ => format_u128(*x as u128, hint, &mut buf)?,
                         }
                     }
-                    Arg::U128(x) => format_u128(*x, hint, &mut buf)?,
                     Arg::Ixx(x) => format_i128(*x as i128, hint, &mut buf)?,
-                    Arg::I128(x) => format_i128(*x, hint, &mut buf)?,
                     Arg::Str(x) => format_str(x, hint, &mut buf)?,
                     Arg::IStr(x) => format_str(x, hint, &mut buf)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
@@ -1167,17 +1180,17 @@ mod tests {
                     format: FMT,
                     timestamp: 2,
                     args: vec![
-                        Arg::Uxx(42),                      // u8
-                        Arg::Uxx(u16::max_value().into()), // u16
-                        Arg::Uxx(0x10000),                 // u24
-                        Arg::Uxx(u32::max_value().into()), // u32
-                        Arg::Uxx(u64::max_value().into()), // u64
-                        Arg::U128(u128::max_value().into()),
-                        Arg::Ixx(-1),  // i8
-                        Arg::Ixx(-1),  // i16
-                        Arg::Ixx(-1),  // i32
-                        Arg::Ixx(-1),  // i64
-                        Arg::I128(-1), // i128
+                        Arg::Uxx(42),                       // u8
+                        Arg::Uxx(u16::max_value().into()),  // u16
+                        Arg::Uxx(0x10000),                  // u24
+                        Arg::Uxx(u32::max_value().into()),  // u32
+                        Arg::Uxx(u64::max_value().into()),  // u64
+                        Arg::Uxx(u128::max_value().into()), // u128
+                        Arg::Ixx(-1),                       // i8
+                        Arg::Ixx(-1),                       // i16
+                        Arg::Ixx(-1),                       // i32
+                        Arg::Ixx(-1),                       // i64
+                        Arg::Ixx(-1),                       // i128
                     ],
                 },
                 bytes.len(),
@@ -1606,6 +1619,31 @@ mod tests {
             &bytes,
             "0.000002 INFO bitfields 0b11 0b100",
         );
+    }
+
+    #[test]
+    fn bitfields_u128() {
+        let bytes = [
+            0,           // index
+            2,           // timestamp
+            0b1110_0101, // 120..127
+            0b1110_0101, // 112..119
+            0b0000_0000, // 104..111
+            0b0000_0000, // 96..103
+            0b0000_0000, // 88..95
+            0b0000_0000, // 80..87
+            0b0000_0000, // 72..79
+            0b0000_0000, // 64..71
+            0b0000_0000, // 56..63
+            0b0000_0000, // 48..55
+            0b0000_0000, // 40..47
+            0b0000_0000, // 32..39
+            0b0000_0000, // 24..31
+            0b0000_0000, // 16..23
+            0b0000_0000, // 8..15
+            0b0000_0000, // 0..7
+        ];
+        decode_and_expect("x: {0=119..124:b}", &bytes, "0.000002 INFO x: 0b1011");
     }
 
     #[test]

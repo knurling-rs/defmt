@@ -1175,6 +1175,13 @@ impl Codegen {
                         4 => {
                             exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
                         }
+                        5..=8 => {
+                            exprs.push(quote!(_fmt_.u64(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
+                        }
+                        9..=16 => {
+                            exprs.push(quote!(_fmt_.u128(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
+                        }
+
                         _ => unreachable!(),
                     }
                 }

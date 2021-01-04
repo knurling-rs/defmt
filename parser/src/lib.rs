@@ -127,7 +127,7 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
         return None;
     }
 
-    if start >= 32 || end >= 32 {
+    if start >= 128 || end > 128 {
         return None;
     }
 
@@ -169,7 +169,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
 
     // First, optional argument index.
     let mut index = None;
-    let index_end = input.find(|c: char| !c.is_digit(10)).unwrap_or(input.len());
+    let index_end = input.find(|c: char| !c.is_digit(10)).unwrap_or_else(|| input.len());
 
     if index_end != 0 {
         index = Some(
@@ -188,7 +188,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         input = &input[TYPE_PREFIX.len()..];
 
         // type is delimited by `HINT_PREFIX` or end-of-string
-        let type_end = input.find(HINT_PREFIX).unwrap_or(input.len());
+        let type_end = input.find(HINT_PREFIX).unwrap_or_else(|| input.len());
         let type_fragment = &input[..type_end];
 
         static FORMAT_ARRAY_START: &str = "[?;";
@@ -886,10 +886,12 @@ mod tests {
         assert!(parse("{=0..0}", ParserMode::Strict).is_err());
         // start > end
         assert!(parse("{=1..0}", ParserMode::Strict).is_err());
-        // out of 32-bit range
-        assert!(parse("{=0..32}", ParserMode::Strict).is_err());
-        // just inside 32-bit range
-        assert!(parse("{=0..31}", ParserMode::Strict).is_ok());
+        // out of 128-bit range
+        assert!(parse("{=0..129}", ParserMode::Strict).is_err());
+        assert!(parse("{=128..128}", ParserMode::Strict).is_err());
+        // just inside 128-bit range
+        assert!(parse("{=0..128}", ParserMode::Strict).is_ok());
+        assert!(parse("{=127..128}", ParserMode::Strict).is_ok());
 
         // missing parts
         assert!(parse("{=0..4", ParserMode::Strict).is_err());
