@@ -104,10 +104,11 @@
 0.000103 INFO EnumLarge::A051
 0.000104 INFO EnumLarge::A269
 0.000105 INFO S { x: "hi" }
-0.000106 INFO bitfields 0x97 0b10000100 12 b"42" b"hello"
-0.000107 INFO b"Hi"
+0.000106 INFO S { x: PhantomData, y: 42 }
+0.000107 INFO bitfields 0x97 0b10000100 12 b"42" b"hello"
 0.000108 INFO b"Hi"
 0.000109 INFO b"Hi"
-0.000110 INFO [45054, 49406]
-0.000111 INFO [Data { name: b"Hi", value: true }]
-0.000112 INFO QEMU test finished!
+0.000110 INFO b"Hi"
+0.000111 INFO [45054, 49406]
+0.000112 INFO [Data { name: b"Hi", value: true }]
+0.000113 INFO QEMU test finished!
