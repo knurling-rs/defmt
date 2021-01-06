@@ -208,7 +208,7 @@ impl Table {
     }
 
     /// Iterates over the raw symbols of the table entries
-    pub fn raw_symbols(&self) -> impl Iterator<Item = &str>  + '_ {
+    pub fn raw_symbols(&self) -> impl Iterator<Item = &str> + '_ {
         self.entries.values().map(|s| &*s.raw_symbol)
     }
 }
@@ -454,7 +454,9 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
     for index in 0..=max_index {
         let mut bitfields_with_index = params
             .iter()
-            .filter(|param| matches!((param.index, &param.ty), (i, Type::BitField(_)) if i == index))
+            .filter(
+                |param| matches!((param.index, &param.ty), (i, Type::BitField(_)) if i == index),
+            )
             .peekable();
 
         if bitfields_with_index.peek().is_some() {

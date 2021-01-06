@@ -169,7 +169,9 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
 
     // First, optional argument index.
     let mut index = None;
-    let index_end = input.find(|c: char| !c.is_digit(10)).unwrap_or_else(|| input.len());
+    let index_end = input
+        .find(|c: char| !c.is_digit(10))
+        .unwrap_or_else(|| input.len());
 
     if index_end != 0 {
         index = Some(

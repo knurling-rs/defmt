@@ -7,7 +7,7 @@ use defmt_semihosting as _; // global logger
 
 #[entry]
 fn main() -> ! {
-    defmt::assert!({1 + 1} == { 2 });
+    defmt::assert!({ 1 + 1 } == { 2 });
 
     let dev = false;
     let release = false;

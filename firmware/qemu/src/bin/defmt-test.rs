@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 
-use defmt_semihosting as _; // global logger
 use core::u8::MAX;
+use defmt_semihosting as _; // global logger
 
 #[defmt_test::tests]
 mod tests {
