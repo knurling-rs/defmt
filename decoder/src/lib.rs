@@ -108,11 +108,8 @@ pub fn check_version(version: &str) -> Result<(), String> {
 
     impl Kind {
         fn of(version: &str) -> Kind {
-            if version.contains('.') {
-                // "0.1"
-                Kind::Semver
-            } else if version.parse::<u64>().is_ok() {
-                // "1"
+            if version.contains('.') || version.parse::<u64>().is_ok() {
+                // "1" or "0.1"
                 Kind::Semver
             } else {
                 // "e739d0ac703dfa629a159be329e8c62a1c3ed206" (should be)
