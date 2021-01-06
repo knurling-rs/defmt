@@ -301,6 +301,7 @@ impl fmt::Display for DisplayFrame<'_> {
 struct Bool(AtomicBool);
 
 impl Bool {
+    #[allow(clippy::declare_interior_mutable_const)]
     const FALSE: Self = Self(AtomicBool::new(false));
 
     fn set(&self, value: bool) {
