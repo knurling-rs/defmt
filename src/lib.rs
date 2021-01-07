@@ -363,6 +363,10 @@ impl InternalFormatter {
     }
 
     /// Implementation detail
+    /// # Safety
+    /// `writer` is `Copy` but the returned type is a singleton. Calling this function should not
+    /// break the singleton invariant (one should not create more than one instance of
+    /// `InternalFormatter`)
     #[cfg(not(feature = "unstable-test"))]
     pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
         Self {
@@ -375,7 +379,7 @@ impl InternalFormatter {
 
     /// Implementation detail
     #[cfg(not(feature = "unstable-test"))]
-    pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
+    pub fn into_raw(self) -> NonNull<dyn Write> {
         self.writer
     }
 
@@ -414,6 +418,9 @@ impl InternalFormatter {
 
     /// Implementation detail
     /// leb64-encode `x` and write it to self.bytes
+    // FIXME `leb64` should take a `&[MaybeUninit<u8>]` to avoid the `uninit().assume_init()`
+    // invocation, which is considered UB
+    #[allow(clippy::uninit_assumed_init)]
     pub fn leb64(&mut self, x: u64) {
         // FIXME: Avoid 64-bit arithmetic on 32-bit systems. This should only be used for
         // pointer-sized values.
