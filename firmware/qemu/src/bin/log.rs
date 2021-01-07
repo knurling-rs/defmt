@@ -548,6 +548,25 @@ fn main() -> ! {
         0x9784_89AE_FF0C_5900_3432_6865_6C6C_6F00u128
     );
 
+    let bytes: &[u8; 2] = b"Hi";
+    let array_u16: &[u16; 2] = &[0xAF_FE, 0xC0_FE];
+
+    defmt::info!("{=[u8]:a}", *bytes);
+    defmt::info!("{=[?]:a}", *bytes);
+    defmt::info!("{:a}", *bytes);
+    defmt::info!("{=[?]:a}", *array_u16);
+
+    {
+        #[derive(Format)]
+        struct Data<'a> {
+            name: &'a [u8],
+            value: bool,
+        }
+
+        let data = &[Data { name: b"Hi", value: true }];
+        defmt::info!("{=[?]:a}", *data);
+    }
+
     defmt::info!("QEMU test finished!");
 
     loop {
