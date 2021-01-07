@@ -99,10 +99,7 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let rety_is_ok = match &f.sig.output {
         ReturnType::Default => false,
-        ReturnType::Type(_, ty) => match &**ty {
-            Type::Never(_) => true,
-            _ => false,
-        },
+        ReturnType::Type(_, ty) => matches!(&**ty, Type::Never(_)),
     };
 
     let ident = &f.sig.ident;
@@ -397,7 +394,7 @@ fn fields(
                 if named {
                     format.push_str(" {{ ");
                 } else {
-                    format.push_str("(");
+                    format.push('(');
                 }
                 let mut first = true;
                 for (i, f) in fs.iter().enumerate() {
@@ -440,7 +437,7 @@ fn fields(
                 if named {
                     format.push_str(" }}");
                 } else {
-                    format.push_str(")");
+                    format.push(')');
                 }
             }
         }
@@ -998,10 +995,10 @@ pub fn write(ts: TokenStream) -> TokenStream {
         }
     };
 
-    let args = write
+    let args: Vec<_> = write
         .rest
         .map(|(_, exprs)| exprs.into_iter().collect())
-        .unwrap_or(vec![]);
+        .unwrap_or_default();
 
     let (pats, exprs) = match Codegen::new(&fragments, args.len(), write.litstr.span()) {
         Ok(cg) => (cg.pats, cg.exprs),
@@ -1076,7 +1073,7 @@ struct Codegen {
 }
 
 impl Codegen {
-    fn new(fragments: &Vec<Fragment<'_>>, num_args: usize, span: Span2) -> parse::Result<Self> {
+    fn new(fragments: &[Fragment<'_>], num_args: usize, span: Span2) -> parse::Result<Self> {
         let parsed_params = fragments
             .iter()
             .filter_map(|frag| match frag {

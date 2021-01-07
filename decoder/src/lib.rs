@@ -108,11 +108,8 @@ pub fn check_version(version: &str) -> Result<(), String> {
 
     impl Kind {
         fn of(version: &str) -> Kind {
-            if version.contains('.') {
-                // "0.1"
-                Kind::Semver
-            } else if version.parse::<u64>().is_ok() {
-                // "1"
+            if version.contains('.') || version.parse::<u64>().is_ok() {
+                // "1" or "0.1"
                 Kind::Semver
             } else {
                 // "e739d0ac703dfa629a159be329e8c62a1c3ed206" (should be)
@@ -175,7 +172,7 @@ impl Table {
     }
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
-        let entry = self.entries.get(&index).ok_or_else(|| ())?;
+        let entry = self.entries.get(&index).ok_or(())?;
         Ok((entry.string.tag.to_level(), &entry.string.string))
     }
 
@@ -193,7 +190,7 @@ impl Table {
         }
     }
 
-    pub fn indices<'s>(&'s self) -> impl Iterator<Item = usize> + 's {
+    pub fn indices(&self) -> impl Iterator<Item = usize> + '_ {
         self.entries.iter().filter_map(move |(idx, entry)| {
             if entry.string.tag.to_level().is_some() {
                 Some(*idx)
@@ -208,7 +205,7 @@ impl Table {
     }
 
     /// Iterates over the raw symbols of the table entries
-    pub fn raw_symbols<'s>(&'s self) -> impl Iterator<Item = &'s str> + 's {
+    pub fn raw_symbols(&self) -> impl Iterator<Item = &str> + '_ {
         self.entries.values().map(|s| &*s.raw_symbol)
     }
 }
@@ -304,6 +301,7 @@ impl fmt::Display for DisplayFrame<'_> {
 struct Bool(AtomicBool);
 
 impl Bool {
+    #[allow(clippy::declare_interior_mutable_const)]
     const FALSE: Self = Self(AtomicBool::new(false));
 
     fn set(&self, value: bool) {
@@ -443,7 +441,7 @@ pub fn decode<'t>(
 /// Note that this will not change the Bitfield params in place, i.e. if `params` was sorted before
 /// a call to this function, it won't be afterwards.
 fn merge_bitfields(params: &mut Vec<Parameter>) {
-    if params.len() == 0 {
+    if params.is_empty() {
         return;
     }
 
@@ -454,10 +452,9 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
     for index in 0..=max_index {
         let mut bitfields_with_index = params
             .iter()
-            .filter(|param| match (param.index, &param.ty) {
-                (i, Type::BitField(_)) if i == index => true,
-                _ => false,
-            })
+            .filter(
+                |param| matches!((param.index, &param.ty), (i, Type::BitField(_)) if i == index),
+            )
             .peekable();
 
         if bitfields_with_index.peek().is_some() {
@@ -465,7 +462,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 
             // create new merged bitfield for this index
             merged_bitfields.push(Parameter {
-                index: index,
+                index,
                 ty: Type::BitField(Range {
                     start: smallest,
                     end: largest,
@@ -565,7 +562,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
     }
 
     fn get_variant(&mut self, format: &'t str) -> Result<&'t str, DecodeError> {
-        assert!(format.contains("|"));
+        assert!(format.contains('|'));
         // NOTE nesting of enums, like "A|B(C|D)" is not possible; indirection is
         // required: "A|B({:?})" where "{:?}" -> "C|D"
         let num_variants = format.chars().filter(|c| *c == '|').count();
@@ -644,27 +641,25 @@ impl<'t, 'b> Decoder<'t, 'b> {
                         }
                     }
                 }
+            } else if is_first {
+                let mut old =
+                    mem::replace(&mut self.format_list, Some(FormatList::Build { formats }));
+                let args = self.decode_format(format)?;
+                mem::swap(&mut self.format_list, &mut old);
+                formats = match old {
+                    Some(FormatList::Build { formats, .. }) => formats,
+                    _ => unreachable!(),
+                };
+                args
             } else {
-                if is_first {
-                    let mut old =
-                        mem::replace(&mut self.format_list, Some(FormatList::Build { formats }));
-                    let args = self.decode_format(format)?;
-                    mem::swap(&mut self.format_list, &mut old);
-                    formats = match old {
-                        Some(FormatList::Build { formats, .. }) => formats,
-                        _ => unreachable!(),
-                    };
-                    args
-                } else {
-                    let formats = formats.clone();
-                    let old = mem::replace(
-                        &mut self.format_list,
-                        Some(FormatList::Use { formats, cursor: 0 }),
-                    );
-                    let args = self.decode_format(format)?;
-                    self.format_list = old;
-                    args
-                }
+                let formats = formats.clone();
+                let old = mem::replace(
+                    &mut self.format_list,
+                    Some(FormatList::Use { formats, cursor: 0 }),
+                );
+                let args = self.decode_format(format)?;
+                self.format_list = old;
+                args
             };
 
             elements.push(FormatSliceElement { format, args });
