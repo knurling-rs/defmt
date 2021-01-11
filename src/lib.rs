@@ -619,7 +619,7 @@ pub trait Write {
     fn write(&mut self, bytes: &[u8]);
 }
 
-/// Derivable trait for defmt output.
+/// Trait for types that can be formatted via defmt.
 ///
 /// This trait is used by the `{:?}` format specifier and can format a wide range of types.
 /// User-defined types can `#[derive(Format)]` to get an auto-generated implementation of this
@@ -630,7 +630,7 @@ pub trait Write {
 ///
 /// # Example
 ///
-/// It is required to `#[derive]` implementations of this trait:
+/// Usually, an implementation of this trait can be `#[derive]`d automatically:
 ///
 /// ```
 /// use defmt::Format;
@@ -642,6 +642,23 @@ pub trait Write {
 ///     sequence: u16,
 /// }
 /// ```
+///
+/// Manual implementations can make use of the [`write!`] macro:
+///
+/// ```
+/// use defmt::{Format, Formatter, write};
+///
+/// struct Id(u32);
+///
+/// impl Format for Id {
+///     fn format(&self, fmt: Formatter) {
+///         // Format as hexadecimal.
+///         write!(fmt, "Id({:x})", self.0);
+///     }
+/// }
+/// ```
+///
+/// Note that [`write!`] can only be called once, as it consumes the [`Formatter`].
 pub trait Format {
     /// Writes the defmt representation of `self` to `fmt`.
     fn format(&self, fmt: Formatter);
