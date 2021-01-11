@@ -1,7 +1,10 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::{AtomicU32, Ordering};
+use core::{
+    marker::PhantomData,
+    sync::atomic::{AtomicU32, Ordering},
+};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
 use defmt::{consts, Debug2Format, Display2Format, Format, Formatter};
@@ -538,6 +541,22 @@ fn main() -> ! {
         defmt::info!("{:?}", S { x: "hi" });
     }
 
+    {
+        #[derive(Format)]
+        struct S {
+            x: PhantomData<u8>,
+            y: u8,
+        }
+
+        defmt::info!(
+            "{:?}",
+            S {
+                x: PhantomData,
+                y: 42
+            }
+        );
+    }
+
     defmt::info!(
         "bitfields \
         {0=120..128:x} \
@@ -563,7 +582,10 @@ fn main() -> ! {
             value: bool,
         }
 
-        let data = &[Data { name: b"Hi", value: true }];
+        let data = &[Data {
+            name: b"Hi",
+            value: true,
+        }];
         defmt::info!("{=[?]:a}", *data);
     }
 

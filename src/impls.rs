@@ -346,6 +346,15 @@ impl Format for () {
     }
 }
 
+impl<T> Format for core::marker::PhantomData<T> {
+    fn format(&self, f: Formatter) {
+        if f.inner.needs_tag() {
+            let t = internp!("PhantomData");
+            f.inner.u8(&t);
+        }
+    }
+}
+
 macro_rules! tuple {
     ( $format:expr, ($($name:ident),+) ) => (
         impl<$($name:Format),+> Format for ($($name,)+) where last_type!($($name,)+): ?Sized {

@@ -1041,7 +1041,9 @@ fn format_args_real(
                                 let vals = elements
                                     .iter()
                                     .map(|e| match e.args.as_slice() {
-                                        [Arg::Uxx(v)] => u8::try_from(*v).expect("the value must be in u8 range"),
+                                        [Arg::Uxx(v)] => {
+                                            u8::try_from(*v).expect("the value must be in u8 range")
+                                        }
                                         _ => panic!("FormatSlice should only contain one argument"),
                                     })
                                     .collect::<Vec<u8>>();
