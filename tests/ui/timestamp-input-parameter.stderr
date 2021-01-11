@@ -1,0 +1,5 @@
+error: function must have signature `fn() -> u64`
+ --> $DIR/timestamp-input-parameter.rs:3:4
+  |
+3 | fn foo(x: u64) -> u64 { x + 1 }
+  |    ^^^
