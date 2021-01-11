@@ -1,0 +1,13 @@
+error: language item required, but not found: `eh_personality`
+
+error: return type should be `!`
+ --> $DIR/panic-handler-empty.rs:5:10
+  |
+5 | fn foo() {}
+  |          ^
+
+error: function should have one argument
+ --> $DIR/panic-handler-empty.rs:5:1
+  |
+5 | fn foo() {}
+  | ^^^^^^^^
