@@ -1,15 +1,5 @@
-error[E0152]: found duplicate lang item `panic_impl`
- --> $DIR/panic-handler-argument.rs:6:1
+error: function must have signature `fn() -> !`
+ --> $DIR/panic-handler-argument.rs:5:4
   |
-6 | fn foo(x: bool) -> ! { info!("{:?}", x); loop {} }
-  | ^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: the lang item is first defined in crate `std` (which `defmt` depends on)
-  = note: first definition in `std` loaded from /Users/brigitte/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/x86_64-apple-darwin/lib/libstd-518979da66993550.rlib
-  = note: second definition in the local crate (`$CRATE`)
-
-error: argument should be `&PanicInfo`
- --> $DIR/panic-handler-argument.rs:6:11
-  |
-6 | fn foo(x: bool) -> ! { info!("{:?}", x); loop {} }
-  |           ^^^^
+5 | fn foo(x: bool) -> ! { info!("{:?}", x); loop {} }
+  |    ^^^
