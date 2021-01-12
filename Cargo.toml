@@ -30,8 +30,10 @@ members = [
   ".",
   "decoder",
   "elf2table",
+  "logger",
   "macros",
   "parser",
+  "print",
   "qemu-run",
   "firmware/*",
 ]

@@ -1,0 +1,21 @@
+[package]
+authors = ["The Knurling-rs developers"]
+categories = ["embedded"]
+description = "A tool that decodes defmt logs and prints them to the console"
+edition = "2018"
+keywords = ["knurling", "logging", "formatting"]
+license = "MIT OR Apache-2.0"
+name = "defmt-print"
+readme = "README.md"
+repository = "https://github.com/knurling-rs/defmt"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.38"
+defmt-decoder = { path = "../decoder", features = ["unstable"] }
+defmt-elf2table = { path = "../elf2table", features = ["unstable"] }
+defmt-logger = { path = "../logger", features = ["unstable"] }
+log = "0.4.13"
+structopt = "0.3.21"
