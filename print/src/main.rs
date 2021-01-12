@@ -9,6 +9,7 @@ use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
 #[derive(StructOpt)]
+#[structopt(name = "defmt-print", version = version())]
 struct Opts {
     #[structopt(short, parse(from_os_str))]
     elf: PathBuf,
@@ -88,4 +89,18 @@ fn main() -> anyhow::Result<()> {
             }
         }
     }
+}
+
+// the string reported by the `--version` flag
+fn version() -> &'static str {
+    // version from Cargo.toml e.g. "0.1.4"
+    let mut output = env!("CARGO_PKG_VERSION").to_string();
+
+    output.push_str("\nsupported defmt version: ");
+    output.push_str(defmt_decoder::DEFMT_VERSION);
+
+    // leak (!) heap memory to create a `&'static str` value. `String` won't work due to how
+    // structopt uses the clap API
+    // (this is only called once so it's not that bad)
+    Box::leak(Box::<str>::from(output))
 }
