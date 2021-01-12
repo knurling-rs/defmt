@@ -330,6 +330,7 @@ const MAX_NUM_BOOL_FLAGS: u8 = 8;
 /// Handle to a defmt logger.
 pub struct Formatter<'a> {
     /// Keep the formatter alive
+    #[doc(hidden)]
     pub inner: &'a mut InternalFormatter,
 }
 
