@@ -1,0 +1,21 @@
+[package]
+authors = ["The Knurling-rs developers"]
+categories = ["embedded"]
+description = "A `log` logger that can format defmt log frames"
+edition = "2018"
+keywords = ["knurling", "logging", "formatting"]
+license = "MIT OR Apache-2.0"
+name = "defmt-logger"
+readme = "README.md"
+repository = "https://github.com/knurling-rs/defmt"
+version = "0.1.0"
+
+[dependencies]
+ansi_term = "0.12.1"
+colored = "2.0.0"
+defmt-decoder = { version = "0.1.4", path = "../decoder", features = ["unstable"] }
+difference = "2.0.0"
+log = { version = "0.4.13", features = ["std"] }
+
+[features]
+unstable = []
