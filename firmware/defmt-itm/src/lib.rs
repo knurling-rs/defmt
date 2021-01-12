@@ -1,12 +1,14 @@
-//! [`defmt`](https://github.com/knurling-rs/defmt) global logger over RTT.
+//! [`defmt`](https://github.com/knurling-rs/defmt) global logger over ITM.
 //!
-//! NOTE when using this crate it's not possible to use (link to) the `rtt-target` crate
-//!
-//! To use this crate, link to it by importing it somewhere in your project.
+//! To use this crate, call the `enable` function
 //!
 //! ```
 //! // src/main.rs or src/bin/my-app.rs
-//! use defmt_rtt as _;
+//!
+//! fn main() -> ! {
+//!     let p = cortex_m::Peripherals::take().unwrap();
+//!     defmt_itm::enable(p.ITM);
+//! }
 //! ```
 
 #![no_std]
