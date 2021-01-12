@@ -22,7 +22,9 @@ use cortex_m::{interrupt, itm, peripheral::ITM, register};
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 
-/// Enables defmt logging over the ITM stimulus port 0
+/// Enables defmt logging over the ITM stimulus port 0.
+///
+/// This needs to be called by the application before defmt logging is used, otherwise the logs will be disposed.
 pub fn enable(itm: ITM) {
     // enable stimulus port 0
     unsafe { itm.ter[0].write(1) }
