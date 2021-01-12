@@ -71,6 +71,8 @@ pub enum Type {
     Format,             // "{=?}" OR "{}"
     FormatSlice,        // "{=[?]}"
     FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
+    Debug,
+    Display,
     I8,
     I16,
     I32,
@@ -217,6 +219,8 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
             "bool" => Type::Bool,
             "str" => Type::Str,
             "istr" => Type::IStr,
+            "__internal_Debug" => Type::Debug,
+            "__internal_Display" => Type::Display,
             "[u8]" => Type::U8Slice,
             "?" => Type::Format,
             "[?]" => Type::FormatSlice,

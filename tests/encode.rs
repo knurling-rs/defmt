@@ -36,7 +36,10 @@
 //
 // - the mocked index is 7 bits so its LEB128 encoding is the input byte
 
-use defmt::{export::fetch_string_index, write, Format, Formatter, InternalFormatter};
+use defmt::{
+    export::fetch_string_index, write, Debug2Format, Display2Format, Format, Formatter,
+    InternalFormatter,
+};
 
 // Increase the 7-bit mocked interned index
 fn inc(index: u8, n: u8) -> u8 {
@@ -1023,4 +1026,12 @@ fn derive_str() {
             105, // b'i'
         ],
     );
+}
+
+#[test]
+fn core_fmt_adapters() {
+    let index = fetch_string_index();
+    check_format_implementation(&Debug2Format(123u8), &[index, b'1', b'2', b'3', 0xff]);
+    let index = fetch_string_index();
+    check_format_implementation(&Display2Format(123u8), &[index, b'1', b'2', b'3', 0xff]);
 }

@@ -16,10 +16,11 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use core::{fmt, marker::PhantomData, mem::MaybeUninit, ptr::NonNull};
+#[cfg(feature = "unstable-test")]
+use crate as defmt;
 
-pub use heapless::consts;
-use heapless::{ArrayLength, String};
+use core::fmt::Write as _;
+use core::{fmt, mem::MaybeUninit, ptr::NonNull};
 
 #[doc(hidden)]
 pub mod export;
@@ -566,6 +567,18 @@ impl InternalFormatter {
         }
     }
 
+    /// Implementation detail
+    pub fn debug(&mut self, val: &dyn core::fmt::Debug) {
+        core::write!(FmtWrite { fmt: self }, "{:?}", val).ok();
+        self.write(&[0xff]);
+    }
+
+    /// Implementation detail
+    pub fn display(&mut self, val: &dyn core::fmt::Display) {
+        core::write!(FmtWrite { fmt: self }, "{}", val).ok();
+        self.write(&[0xff]);
+    }
+
     /// The last pass in a formatting run: clean up & flush leftovers
     pub fn finalize(&mut self) {
         if self.bools_left < MAX_NUM_BOOL_FLAGS {
@@ -585,6 +598,17 @@ impl InternalFormatter {
     pub fn header(&mut self, s: &Str) {
         self.istr(s);
         self.leb64(export::timestamp())
+    }
+}
+
+struct FmtWrite<'a> {
+    fmt: &'a mut InternalFormatter,
+}
+
+impl fmt::Write for FmtWrite<'_> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.fmt.write(s.as_bytes());
+        Ok(())
     }
 }
 
@@ -675,143 +699,34 @@ fn default_panic() -> ! {
     core::panic!()
 }
 
-/// An "adapter" type to feed `Debug` values into defmt macros, which expect `defmt::Format` values
+/// An "adapter" type to feed `Debug` values into defmt macros, which expect `defmt::Format` values.
 ///
-/// This adapter disables compression! You should prefer `defmt::Format` over `Debug` whenever
-/// possible
-///
-/// This adapter works by formatting the `Debug` value into a stack-allocated buffer. You need to
-/// specify how large that buffer is. If you pick a size that's too small an *incomplete* string
-/// will be transmitted.
-///
-/// The size of the stack-allocated array is specified using one of the type-level integers in the
-/// `consts` module. Example:
-///
-/// ```
-/// use defmt::{consts, Debug2Format};
-///
-/// #[derive(Debug)]
-/// struct S { x: i8, y: i16 }
-///
-/// defmt::info!("{:?}", Debug2Format::<consts::U32>(&S { x: 1, y: 2 }));
-/// //                                  ^^^^^^^^^^^ size = 32 bytes
-/// // -> 0.000000 INFO  S { x: 1, y: 2 }
-/// ```
-pub struct Debug2Format<'a, N>
-where
-    N: ArrayLength<u8>,
-{
-    // we don't store a heapless String inline because rustc is not great at optimizing moves of
-    // large arrays and that can result in double stack usage
-    _capacity: PhantomData<N>,
+/// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
+/// `defmt::Format` over `Debug` whenever possible.
+pub struct Debug2Format<T: fmt::Debug>(pub T);
 
-    // we use a trait object here to avoid adding a second type paratemer to `Debug2Format`. if
-    // `Debug2Format` has 2 type parameter then users need to add an underscore type parameter to
-    // the turbofish: `Debug2Format::<U64, _>(value)`
-    value: &'a dyn fmt::Debug,
-}
-
-impl<N> Format for Debug2Format<'_, N>
-where
-    N: ArrayLength<u8>,
-{
+impl<T: fmt::Debug> Format for Debug2Format<T> {
     fn format(&self, fmt: Formatter) {
-        use core::fmt::Write as _;
-
-        // `Debug` format into a stack buffer; if the formatted string doesn't fit discard the
-        // excess
-        let mut buf = String::<N>::new();
-        core::write!(buf, "{:?}", self.value).ok();
-
-        // tell defmt we are formatting a `str` value
         if fmt.inner.needs_tag() {
-            let t = impls::str_tag();
+            let t = defmt_macros::internp!("{=__internal_Debug}");
             fmt.inner.u8(&t);
         }
-        fmt.inner.str(&buf);
-    }
-}
-
-/// `Debug2Format` constructor
-#[allow(non_snake_case)]
-pub fn Debug2Format<N>(value: &dyn fmt::Debug) -> Debug2Format<N>
-where
-    N: ArrayLength<u8>,
-{
-    Debug2Format {
-        _capacity: PhantomData,
-        value,
+        fmt.inner.debug(&self.0);
     }
 }
 
 /// An "adapter" type to feed `Display` values into defmt macros, which expect `defmt::Format` values.
 ///
-/// This adapter disables compression! You should prefer `defmt::Format` over `Display` whenever
-/// possible.
-///
-/// This adapter works by formatting the `Display` value into a stack-allocated buffer. You need to
-/// specify how large that buffer is. If you pick a size that's too small an *incomplete* string
-/// will be transmitted.
-///
-/// The size of the stack-allocated array is specified using one of the type-level integers in the
-/// `consts` module. Example:
-///
-/// ```
-/// use core::fmt;
-/// use defmt::{consts, Display2Format};
-///
-/// struct SocketAddr {
-///    ip: [u8; 4],
-///    port: u16,
-/// }
-///
-/// impl fmt::Display for SocketAddr {
-///     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-///         write!(f, "{}.{}.{}.{}:{}", self.ip[0], self.ip[1], self.ip[2], self.ip[3], self.port)
-///     }
-/// }
-///
-/// let addr = SocketAddr { ip: [127, 0, 0, 1], port: 8888 };
-/// defmt::info!("{:?}", Display2Format::<consts::U32>(&addr));
-/// //                                    ^^^^^^^^^^^ size = 32 bytes
-/// // -> 0.000000 INFO  127.0.0.1:8888
-/// ```
-pub struct Display2Format<'a, N>
-where
-    N: ArrayLength<u8>,
-{
-    _capacity: PhantomData<N>,
+/// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
+/// `defmt::Format` over `Display` whenever possible.
+pub struct Display2Format<T: fmt::Display>(pub T);
 
-    value: &'a dyn fmt::Display,
-}
-
-impl<N> Format for Display2Format<'_, N>
-where
-    N: ArrayLength<u8>,
-{
+impl<T: fmt::Display> Format for Display2Format<T> {
     fn format(&self, fmt: Formatter) {
-        use core::fmt::Write as _;
-
-        let mut buf = String::<N>::new();
-        core::write!(buf, "{}", self.value).ok();
-
-        // tell defmt we are formatting a `str` value
         if fmt.inner.needs_tag() {
-            let t = impls::str_tag();
+            let t = defmt_macros::internp!("{=__internal_Display}");
             fmt.inner.u8(&t);
         }
-        fmt.inner.str(&buf);
-    }
-}
-
-/// `Display2Format` constructor.
-#[allow(non_snake_case)]
-pub fn Display2Format<N>(value: &dyn fmt::Display) -> Display2Format<N>
-where
-    N: ArrayLength<u8>,
-{
-    Display2Format {
-        _capacity: PhantomData,
-        value,
+        fmt.inner.display(&self.0);
     }
 }
