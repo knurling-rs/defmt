@@ -1,10 +1,9 @@
-error[E0382]: use of moved value: `f.inner`
- --> $DIR/write-twice.rs:6:9
+error[E0382]: use of moved value: `f`
+ --> $DIR/write-twice.rs:6:23
   |
+4 |     fn format(&self, f: defmt::Formatter) {
+  |                      - move occurs because `f` has type `defmt::Formatter<'_>`, which does not implement the `Copy` trait
 5 |         defmt::write!(f, "hello");
-  |         -------------------------- value moved here
+  |                       - value moved here
 6 |         defmt::write!(f, "world");
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ value used here after move
-  |
-  = note: move occurs because `f.inner` has type `&mut InternalFormatter`, which does not implement the `Copy` trait
-  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+  |                       ^ value used here after move
