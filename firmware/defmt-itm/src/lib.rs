@@ -23,7 +23,7 @@ static ENABLED: AtomicBool = AtomicBool::new(false);
 /// Enables defmt logging over the ITM stimulus port 0
 pub fn enable(itm: ITM) {
     // enable stimulus port 0
-    itm.ter[0].write(1);
+    unsafe { itm.ter[0].write(1) }
     drop(itm);
     ENABLED.store(true, Ordering::Relaxed);
 }
