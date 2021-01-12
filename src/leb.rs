@@ -1,6 +1,4 @@
-/// # Unsafety
-/// `buf` must be large enough to hold the encoded value
-pub(crate) unsafe fn leb64(x: u64, buf: &mut [u8]) -> usize {
+pub(crate) fn leb64(x: u64, buf: &mut [u8; 10]) -> usize {
     let mut low = x as u32;
     let mut high = (x >> 32) as u32;
 
@@ -12,7 +10,7 @@ pub(crate) unsafe fn leb64(x: u64, buf: &mut [u8]) -> usize {
             byte |= 0x80;
         }
 
-        *buf.get_unchecked_mut(i) = byte;
+        buf[i] = byte;
         i += 1;
         if low == 0 {
             break;
@@ -24,19 +22,19 @@ pub(crate) unsafe fn leb64(x: u64, buf: &mut [u8]) -> usize {
     }
 
     for j in (i - 1)..4 {
-        *buf.get_unchecked_mut(j) = 0x80;
+        buf[j] = 0x80;
     }
 
     if i != 5 {
-        *buf.get_unchecked_mut(4) = 0;
+        buf[4] = 0;
     }
 
     i = 4;
-    *buf.get_unchecked_mut(i) |= (high as u8 & 0b111) << 4;
+    buf[i] |= (high as u8 & 0b111) << 4;
     high >>= 3;
 
     if high != 0 {
-        *buf.get_unchecked_mut(i) |= 0x80;
+        buf[i] |= 0x80;
     }
 
     i += 1;
@@ -52,7 +50,7 @@ pub(crate) unsafe fn leb64(x: u64, buf: &mut [u8]) -> usize {
             byte |= 0x80;
         }
 
-        *buf.get_unchecked_mut(i) = byte;
+        buf[i] = byte;
         i += 1;
         if high == 0 {
             return i;
@@ -66,43 +64,45 @@ pub fn zigzag_encode(v: i64) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn leb() {
         let mut buf = [0x55; 10];
 
-        let i = unsafe { super::leb64(0, &mut buf) };
+        let i = leb64(0, &mut buf);
         assert_eq!(buf[..i], [0]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64(1, &mut buf) };
+        let i = leb64(1, &mut buf);
         assert_eq!(buf[..i], [1]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64((1 << 7) - 1, &mut buf) };
+        let i = leb64((1 << 7) - 1, &mut buf);
         assert_eq!(buf[..i], [0x7f]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64(1 << 7, &mut buf) };
+        let i = leb64(1 << 7, &mut buf);
         assert_eq!(buf[..i], [0x80, 1]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64((1 << 32) - 1, &mut buf) };
+        let i = leb64((1 << 32) - 1, &mut buf);
         assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xf]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64((1 << 35) - 1, &mut buf) };
+        let i = leb64((1 << 35) - 1, &mut buf);
         assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0x7f]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64(1 << 35, &mut buf) };
+        let i = leb64(1 << 35, &mut buf);
         assert_eq!(buf[..i], [0x80, 0x80, 0x80, 0x80, 0x80, 1]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64((1 << 42) - 1, &mut buf) };
+        let i = leb64((1 << 42) - 1, &mut buf);
         assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = unsafe { super::leb64(u64::max_value(), &mut buf) };
+        let i = leb64(u64::max_value(), &mut buf);
         assert_eq!(
             buf[..i],
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1]
