@@ -1,14 +1,14 @@
 //! [`defmt`](https://github.com/knurling-rs/defmt) global logger over ITM.
 //!
-//! To use this crate, call the `enable` function
+//! To use this crate, call the `enable` function before using the defmt logging macros
 //!
-//! ```
+//! ``` no_run
 //! // src/main.rs or src/bin/my-app.rs
 //!
-//! fn main() -> ! {
-//!     let p = cortex_m::Peripherals::take().unwrap();
-//!     defmt_itm::enable(p.ITM);
-//! }
+//! let p = cortex_m::Peripherals::take().unwrap();
+//! defmt_itm::enable(p.ITM);
+//!
+//! defmt::info!("Hello");
 //! ```
 
 #![no_std]
