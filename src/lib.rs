@@ -706,9 +706,9 @@ fn default_panic() -> ! {
 ///
 /// Note that this always uses `{:?}` to format the contained value, meaning that any provided defmt
 /// display hints will be ignored.
-pub struct Debug2Format<T: fmt::Debug>(pub T);
+pub struct Debug2Format<'a, T: fmt::Debug + ?Sized>(pub &'a T);
 
-impl<T: fmt::Debug> Format for Debug2Format<T> {
+impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
     fn format(&self, fmt: Formatter) {
         if fmt.inner.needs_tag() {
             let t = defmt_macros::internp!("{=__internal_Debug}");
@@ -725,9 +725,9 @@ impl<T: fmt::Debug> Format for Debug2Format<T> {
 ///
 /// Note that this always uses `{}` to format the contained value, meaning that any provided defmt
 /// display hints will be ignored.
-pub struct Display2Format<T: fmt::Display>(pub T);
+pub struct Display2Format<'a, T: fmt::Display + ?Sized>(pub &'a T);
 
-impl<T: fmt::Display> Format for Display2Format<T> {
+impl<T: fmt::Display + ?Sized> Format for Display2Format<'_, T> {
     fn format(&self, fmt: Formatter) {
         if fmt.inner.needs_tag() {
             let t = defmt_macros::internp!("{=__internal_Display}");

@@ -1031,7 +1031,7 @@ fn derive_str() {
 #[test]
 fn core_fmt_adapters() {
     let index = fetch_string_index();
-    check_format_implementation(&Debug2Format(123u8), &[index, b'1', b'2', b'3', 0xff]);
+    check_format_implementation(&Debug2Format(&123u8), &[index, b'1', b'2', b'3', 0xff]);
     let index = fetch_string_index();
-    check_format_implementation(&Display2Format(123u8), &[index, b'1', b'2', b'3', 0xff]);
+    check_format_implementation(&Display2Format(&123u8), &[index, b'1', b'2', b'3', 0xff]);
 }
