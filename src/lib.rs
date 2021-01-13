@@ -703,6 +703,9 @@ fn default_panic() -> ! {
 ///
 /// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
 /// `defmt::Format` over `Debug` whenever possible.
+///
+/// Note that this always uses `{:?}` to format the contained value, meaning that any provided defmt
+/// display hints will be ignored.
 pub struct Debug2Format<T: fmt::Debug>(pub T);
 
 impl<T: fmt::Debug> Format for Debug2Format<T> {
@@ -719,6 +722,9 @@ impl<T: fmt::Debug> Format for Debug2Format<T> {
 ///
 /// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
 /// `defmt::Format` over `Display` whenever possible.
+///
+/// Note that this always uses `{}` to format the contained value, meaning that any provided defmt
+/// display hints will be ignored.
 pub struct Display2Format<T: fmt::Display>(pub T);
 
 impl<T: fmt::Display> Format for Display2Format<T> {
