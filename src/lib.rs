@@ -20,7 +20,7 @@ extern crate alloc;
 use crate as defmt;
 
 use core::fmt::Write as _;
-use core::{fmt, mem::MaybeUninit, ptr::NonNull};
+use core::{fmt, ptr::NonNull};
 
 #[doc(hidden)]
 pub mod export;
@@ -420,15 +420,12 @@ impl InternalFormatter {
 
     /// Implementation detail
     /// leb64-encode `x` and write it to self.bytes
-    // FIXME `leb64` should take a `&[MaybeUninit<u8>]` to avoid the `uninit().assume_init()`
-    // invocation, which is considered UB
-    #[allow(clippy::uninit_assumed_init)]
     pub fn leb64(&mut self, x: u64) {
         // FIXME: Avoid 64-bit arithmetic on 32-bit systems. This should only be used for
         // pointer-sized values.
-        let mut buf: [u8; 10] = unsafe { MaybeUninit::uninit().assume_init() };
-        let i = unsafe { leb::leb64(x, &mut buf) };
-        self.write(unsafe { buf.get_unchecked(..i) })
+        let mut buf: [u8; 10] = [0; 10];
+        let i = leb::leb64(x, &mut buf);
+        self.write(&buf[..i])
     }
 
     /// Implementation detail
