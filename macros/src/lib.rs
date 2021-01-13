@@ -1150,6 +1150,12 @@ impl Codegen {
                 defmt_parser::Type::Usize => {
                     exprs.push(quote!(_fmt_.usize(#arg)));
                 }
+                defmt_parser::Type::Debug => {
+                    exprs.push(quote!(_fmt_.debug(#arg)));
+                }
+                defmt_parser::Type::Display => {
+                    exprs.push(quote!(_fmt_.display(#arg)));
+                }
                 defmt_parser::Type::BitField(_) => {
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
                     let (smallest_bit_index, largest_bit_index) =

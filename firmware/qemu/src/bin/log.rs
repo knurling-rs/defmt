@@ -7,7 +7,7 @@ use core::{
 };
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
-use defmt::{consts, Debug2Format, Display2Format, Format, Formatter};
+use defmt::{Debug2Format, Display2Format, Format, Formatter};
 
 use defmt_semihosting as _; // global logger
 
@@ -454,10 +454,10 @@ fn main() -> ! {
         }
 
         let s = S { x: -1, y: 2 };
-        defmt::info!("{=?}", Debug2Format::<consts::U128>(&s));
-        defmt::info!("{=?}", Debug2Format::<consts::U128>(&Some(s)));
-        defmt::info!("{=?}", Debug2Format::<consts::U128>(&[s, s]));
-        defmt::info!("{=?}", Debug2Format::<consts::U128>(&[Some(s), None]));
+        defmt::info!("{}", Debug2Format(&s));
+        defmt::info!("{}", Debug2Format(&Some(s)));
+        defmt::info!("{}", Debug2Format(&[s, s]));
+        defmt::info!("{}", Debug2Format(&[Some(s), None]));
     }
 
     {
@@ -481,7 +481,7 @@ fn main() -> ! {
             port: 8888,
         };
 
-        defmt::info!("{=?}", Display2Format::<consts::U32>(&addr));
+        defmt::info!("{=?}", Display2Format(&addr));
     }
 
     defmt::info!(

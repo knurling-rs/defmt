@@ -349,6 +349,9 @@ enum Arg<'t> {
     Slice(Vec<u8>),
     /// Char
     Char(char),
+
+    /// `fmt::Debug` / `fmt::Display` formatted on-target.
+    Preformatted(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -873,6 +876,20 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     let c = std::char::from_u32(data).ok_or(DecodeError::Malformed)?;
                     args.push(Arg::Char(c));
                 }
+                Type::Debug | Type::Display => {
+                    // UTF-8 stream without a prefix length, terminated with `0xFF`.
+
+                    let end = self
+                        .bytes
+                        .iter()
+                        .position(|b| *b == 0xff)
+                        .ok_or(DecodeError::UnexpectedEof)?;
+                    let data = core::str::from_utf8(&self.bytes[..end])
+                        .map_err(|_| DecodeError::Malformed)?;
+                    self.bytes = &self.bytes[end + 1..];
+
+                    args.push(Arg::Preformatted(data.into()));
+                }
             }
         }
 
@@ -1029,7 +1046,7 @@ fn format_args_real(
                         }
                     }
                     Arg::Ixx(x) => format_i128(*x as i128, hint, &mut buf)?,
-                    Arg::Str(x) => format_str(x, hint, &mut buf)?,
+                    Arg::Str(x) | Arg::Preformatted(x) => format_str(x, hint, &mut buf)?,
                     Arg::IStr(x) => format_str(x, hint, &mut buf)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
                     Arg::FormatSlice { elements } => {
