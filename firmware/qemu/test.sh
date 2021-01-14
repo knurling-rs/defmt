@@ -12,6 +12,7 @@ function test() {
 }
 
 test "log"
+test "timestamp"
 test "panic"
 test "assert"
 test "assert-eq"
