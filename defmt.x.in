@@ -2,6 +2,7 @@
 EXTERN(_defmt_acquire);
 EXTERN(_defmt_release);
 EXTERN(__defmt_default_timestamp);
+EXTERN(__DEFMT_MARKER_TIMESTAMP_WAS_DEFINED);
 PROVIDE(_defmt_timestamp = __defmt_default_timestamp);
 PROVIDE(_defmt_panic = __defmt_default_panic);
 
@@ -15,6 +16,9 @@ SECTIONS
 
     /* Everything user-defined */
     *(.defmt.*);
+
+    /* Symbols that should be placed at the end of the section */
+    *(.defmt.end.*);
 
     /* $DEFMT_VERSION may contain special chars, so we quote the symbol name */
     /* Note that the quotes actually become part of the symbol name though! */

@@ -40,6 +40,7 @@ impl Symbol {
     pub fn tag(&self) -> SymbolTag<'_> {
         match &*self.tag {
             "defmt_prim" | "defmt_fmt" => SymbolTag::Defmt(Tag::Fmt),
+            "defmt_timestamp" => SymbolTag::Defmt(Tag::Timestamp),
             "defmt_str" => SymbolTag::Defmt(Tag::Str),
             "defmt_trace" => SymbolTag::Defmt(Tag::Trace),
             "defmt_debug" => SymbolTag::Defmt(Tag::Debug),

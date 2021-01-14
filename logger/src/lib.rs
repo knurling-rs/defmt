@@ -44,7 +44,11 @@ pub fn log_defmt(
         defmt_decoder::Level::Error => Level::Error,
     };
 
-    let target = format!("{}{}", DEFMT_TARGET_MARKER, frame.timestamp());
+    let timestamp = frame
+        .display_timestamp()
+        .map(|display| display.to_string())
+        .unwrap_or_default();
+    let target = format!("{}{}", DEFMT_TARGET_MARKER, timestamp);
     let display = frame.display_message();
 
     log::logger().log(

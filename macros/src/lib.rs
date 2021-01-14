@@ -134,53 +134,52 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_attribute]
-pub fn timestamp(args: TokenStream, input: TokenStream) -> TokenStream {
-    if !args.is_empty() {
-        return parse::Error::new(
-            Span2::call_site(),
-            "`#[timestamp]` attribute takes no arguments",
-        )
-        .to_compile_error()
-        .into();
-    }
-    let f = parse_macro_input!(input as ItemFn);
+#[proc_macro]
+pub fn timestamp(ts: TokenStream) -> TokenStream {
+    let f = parse_macro_input!(ts as FormatArgs);
 
-    let rety_is_ok = match &f.sig.output {
-        ReturnType::Default => false,
-        ReturnType::Type(_, ty) => match &**ty {
-            Type::Path(tp) => tp.path.get_ident().map(|id| id == "u64").unwrap_or(false),
-            _ => false,
-        },
+    let ls = f.litstr.value();
+
+    let symname = Ident2::new("S", Span2::call_site());
+    let sym = mkstatic(symname.clone(), &ls, "timestamp");
+
+    let fragments = match defmt_parser::parse(&ls, ParserMode::Strict) {
+        Ok(args) => args,
+        Err(e) => {
+            return parse::Error::new(f.litstr.span(), e)
+                .to_compile_error()
+                .into()
+        }
+    };
+    let args: Vec<_> = f
+        .rest
+        .map(|(_, exprs)| exprs.into_iter().collect())
+        .unwrap_or_default();
+    let (pats, exprs) = match Codegen::new(&fragments, args.len(), f.litstr.span()) {
+        Ok(cg) => (cg.pats, cg.exprs),
+        Err(e) => return e.to_compile_error().into(),
     };
 
-    let ident = &f.sig.ident;
-    if f.sig.constness.is_some()
-        || f.sig.asyncness.is_some()
-        || f.sig.unsafety.is_some()
-        || f.sig.abi.is_some()
-        || !f.sig.generics.params.is_empty()
-        || f.sig.generics.where_clause.is_some()
-        || f.sig.variadic.is_some()
-        || !f.sig.inputs.is_empty()
-        || !rety_is_ok
-    {
-        return parse::Error::new(ident.span(), "function must have signature `fn() -> u64`")
-            .to_compile_error()
-            .into();
-    }
-
-    let attrs = &f.attrs;
-    if let Err(e) = check_attribute_conflicts("timestamp", attrs, &["export_name", "no_mangle"]) {
-        return e.to_compile_error().into();
-    }
-    let block = &f.block;
     quote!(
-        #[export_name = "_defmt_timestamp"]
-        #(#attrs)*
-        fn #ident() -> u64 {
-            #block
-        }
+        const _: () = {
+            #[export_name = "_defmt_timestamp"]
+            fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
+                match (fmt.inner, #(&(#args)),*) {
+                    (_fmt_, #(#pats),*) => {
+                        // NOTE: No format string index, and no finalize call.
+                        #(#exprs;)*
+                    }
+                }
+            }
+
+            #sym;
+
+            // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
+            // Uses `#symname` to ensure it is not discarded by the linker.
+            #[no_mangle]
+            #[link_section = ".defmt.end.timestamp"]
+            static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#symname;
+        };
     )
     .into()
 }
@@ -1023,10 +1022,18 @@ pub fn write(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
+fn mkstatic(varname: Ident2, string: &str, tag: &str) -> TokenStream2 {
     let sym = symbol::Symbol::new(tag, string).mangle();
     let section = format!(".defmt.{}", sym);
 
+    quote!(
+        #[link_section = #section]
+        #[export_name = #sym]
+        static #varname: u8 = 0;
+    )
+}
+
+fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
     // NOTE we rely on this variable name when extracting file location information from the DWARF
     // without it we have no other mean to differentiate static variables produced by `info!` vs
     // produced by `intern!` (or `internp`)
@@ -1038,10 +1045,9 @@ fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
     if cfg!(feature = "unstable-test") {
         quote!({ defmt::export::fetch_add_string_index() })
     } else {
+        let statik = mkstatic(varname.clone(), string, tag);
         quote!({
-            #[link_section = #section]
-            #[export_name = #sym]
-            static #varname: u8 = 0;
+            #statik
             &#varname as *const u8 as usize
         })
     }

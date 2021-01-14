@@ -18,7 +18,7 @@ use std::{
 
 use anyhow::{anyhow, bail, ensure};
 pub use defmt_decoder::Table;
-use defmt_decoder::{StringEntry, TableEntry};
+use defmt_decoder::{StringEntry, TableEntry, Tag};
 use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table.
@@ -93,6 +93,7 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
+    let mut timestamp = None;
     for (_, entry) in elf.symbols() {
         // Skipping symbols with empty string names, as they may be added by
         // `objcopy`, and breaks JSON demangling
@@ -101,7 +102,7 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
             _ => continue,
         };
 
-        if is_defmt_version(name) {
+        if is_defmt_version(name) || name.starts_with("__DEFMT_MARKER") {
             // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
             // LLD and GNU LD behave differently here. LLD doesn't include `_defmt_version_`
             // (defined in a linker script) in the `.defmt` section but GNU LD does.
@@ -110,19 +111,37 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
 
         if entry.section_index() == Some(defmt_shndx) {
             let sym = symbol::Symbol::demangle(name)?;
-            if let symbol::SymbolTag::Defmt(tag) = sym.tag() {
-                map.insert(
-                    entry.address() as usize,
-                    TableEntry::new(
-                        StringEntry::new(tag, sym.data().to_string()),
-                        name.to_string(),
-                    ),
-                );
+            match sym.tag() {
+                symbol::SymbolTag::Defmt(tag) => {
+                    if tag == Tag::Timestamp {
+                        if timestamp.is_some() {
+                            bail!("multiple timestamp format specifications found");
+                        }
+
+                        timestamp = Some(TableEntry::new(
+                            StringEntry::new(tag, sym.data().to_string()),
+                            name.to_string(),
+                        ));
+                    } else {
+                        map.insert(
+                            entry.address() as usize,
+                            TableEntry::new(
+                                StringEntry::new(tag, sym.data().to_string()),
+                                name.to_string(),
+                            ),
+                        );
+                    }
+                }
+                symbol::SymbolTag::Custom(_) => {}
             }
         }
     }
 
-    Ok(Some(Table::new(map)))
+    let mut table = Table::new(map);
+    if let Some(ts) = timestamp {
+        table.set_timestamp_entry(ts);
+    }
+    Ok(Some(table))
 }
 
 #[derive(Clone)]

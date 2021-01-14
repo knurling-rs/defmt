@@ -34,6 +34,8 @@ pub enum DisplayHint {
     Ascii,
     /// ":?"
     Debug,
+    /// ":µs", formats integers as timestamps in microseconds
+    Microseconds,
     /// Display hints currently not supported / understood
     Unknown(String),
 }
@@ -265,6 +267,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         input = &input[HINT_PREFIX.len()..];
 
         hint = Some(match input {
+            "µs" => DisplayHint::Microseconds,
             "a" => DisplayHint::Ascii,
             "b" => DisplayHint::Binary,
             "x" => DisplayHint::Hexadecimal {

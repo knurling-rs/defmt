@@ -1,5 +1,0 @@
-error: `#[timestamp]` attribute cannot be used together with `#[export_name]`
- --> $DIR/timestamp-export-name.rs:5:1
-  |
-5 | #[export_name = "hello"]
-  | ^

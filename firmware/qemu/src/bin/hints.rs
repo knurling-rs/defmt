@@ -113,12 +113,8 @@ fn main() -> ! {
     }
 }
 
-#[defmt::timestamp]
-fn timestamp() -> u64 {
-    // monotonic counter
-    static COUNT: AtomicU32 = AtomicU32::new(0);
-    COUNT.fetch_add(1, Ordering::Relaxed) as u64
-}
+static COUNT: AtomicU32 = AtomicU32::new(0);
+defmt::timestamp!("{=u32:µs}", COUNT.fetch_add(1, Ordering::Relaxed));
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
 #[cfg(target_os = "none")]
