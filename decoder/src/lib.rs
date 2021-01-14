@@ -609,6 +609,41 @@ mod tests {
     }
 
     #[test]
+    fn display_use_inner_hex_hint() {
+        let mut entries = BTreeMap::new();
+
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "x={:?}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=u8:x} }}".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:µs}".to_owned(),
+            )),
+        };
+
+        let bytes = [
+            0,   // index
+            2,   // timestamp
+            1,   // index of the struct
+            42,  // value
+        ];
+
+        let frame = super::decode(&bytes, &table).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO x=S { x: 0x2a }",
+        );
+    }
+
+    #[test]
     fn bools_simple() {
         let bytes = [
             0, 0,          // index
