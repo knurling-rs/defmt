@@ -350,7 +350,8 @@ impl InternalFormatter {
 
     /// Only for testing
     #[cfg(feature = "unstable-test")]
-    pub fn bytes(&self) -> &[u8] {
+    pub fn bytes(&mut self) -> &[u8] {
+        self.finalize();
         &self.bytes
     }
 

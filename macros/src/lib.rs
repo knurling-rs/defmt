@@ -1017,7 +1017,6 @@ pub fn write(ts: TokenStream) -> TokenStream {
                     _fmt_.istr(&defmt::export::istr(#sym));
                 }
                 #(#exprs;)*
-                _fmt_.finalize();
             }
         }
     })

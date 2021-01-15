@@ -589,6 +589,9 @@ fn main() -> ! {
         defmt::info!("{=[?]:a}", *data);
     }
 
+    // #341 - should output `true true`
+    defmt::info!("{} {=bool}", True, true);
+
     defmt::info!("QEMU test finished!");
 
     loop {
@@ -607,6 +610,14 @@ fn nested() -> NestedStruct {
     NestedStruct {
         a: 0xAA,
         b: 0x12345678,
+    }
+}
+
+struct True;
+
+impl Format for True {
+    fn format(&self, fmt: Formatter<'_>) {
+        defmt::write!(fmt, "{=bool}", true);
     }
 }
 

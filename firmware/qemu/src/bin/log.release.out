@@ -109,4 +109,5 @@
 0.000108 INFO b"Hi"
 0.000109 INFO [45054, 49406]
 0.000110 INFO [Data { name: b"Hi", value: true }]
-0.000111 INFO QEMU test finished!
+0.000111 INFO true true
+0.000112 INFO QEMU test finished!
