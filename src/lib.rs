@@ -249,26 +249,22 @@ pub use defmt_macros::global_logger;
 
 /// Defines the global timestamp provider for defmt.
 ///
-/// Every message logged with defmt will include a timestamp. The function annotated with
-/// `#[timestamp]` will be used to obtain this timestamp.
+/// This macro can be used to attach a timestamp or other data to every defmt message. Its syntax
+/// works exactly like the logging macros, except that no local variables can be accessed and the
+/// macro should be placed in a module instead of a function.
 ///
-/// The `#[timestamp]` attribute needs to be applied to a function with the signature `fn() -> u64`.
-/// The returned `u64` is the current timestamp in microseconds.
+/// `timestamp!` must only be used once across the crate graph.
 ///
-/// If no crate defines a `#[timestamp]` function, defmt will default to the following dummy
-/// implementation:
+/// If no crate defines a timestamp, no timestamp will be included in the logged messages.
+///
+/// # Examples
 ///
 /// ```
-/// # use defmt_macros::timestamp;
-/// #[timestamp]
-/// fn dummy_timestamp() -> u64 {
-///     0
-/// }
+/// # use core::sync::atomic::{AtomicU32, Ordering};
+///
+/// static COUNT: AtomicU32 = AtomicU32::new(0);
+/// defmt::timestamp!("{=u32:µs}", COUNT.fetch_add(1, Ordering::Relaxed));
 /// ```
-///
-/// # Inter-operation with built-in attributes
-///
-/// This attribute cannot be used together with the `export_name` or `no_mangle` attributes
 pub use defmt_macros::timestamp;
 
 #[doc(hidden)] // documented as the `Format` trait instead
@@ -595,7 +591,7 @@ impl InternalFormatter {
     #[inline(never)]
     pub fn header(&mut self, s: &Str) {
         self.istr(s);
-        self.leb64(export::timestamp())
+        export::timestamp(Formatter { inner: self });
     }
 }
 
@@ -688,9 +684,12 @@ pub trait Format {
 }
 
 #[export_name = "__defmt_default_timestamp"]
-fn default_timestamp() -> u64 {
-    0
+fn default_timestamp(_f: Formatter<'_>) {
+    // By default, no timestamp is used.
 }
+
+// There is no default timestamp format. Instead, the decoder looks for a matching ELF symbol. If
+// absent, timestamps are turned off.
 
 #[export_name = "__defmt_default_panic"]
 fn default_panic() -> ! {

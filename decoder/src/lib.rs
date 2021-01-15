@@ -37,6 +37,8 @@ pub enum Tag {
     Fmt,
     /// An interned string, for use with `{=istr}`.
     Str,
+    /// Defines the global timestamp format.
+    Timestamp,
 
     Trace,
     Debug,
@@ -48,7 +50,7 @@ pub enum Tag {
 impl Tag {
     fn to_level(&self) -> Option<Level> {
         match self {
-            Tag::Fmt | Tag::Str => None,
+            Tag::Fmt | Tag::Str | Tag::Timestamp => None,
             Tag::Trace => Some(Level::Trace),
             Tag::Debug => Some(Level::Debug),
             Tag::Info => Some(Level::Info),
@@ -93,6 +95,7 @@ impl StringEntry {
 /// Interner table that holds log levels and maps format strings to indices
 #[derive(Debug)]
 pub struct Table {
+    timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
 }
 
@@ -168,7 +171,14 @@ impl Table {
     /// NOTE caller must verify that defmt symbols are compatible with this version of the `decoder`
     /// crate using the `check_version` function
     pub fn new(entries: BTreeMap<usize, TableEntry>) -> Self {
-        Self { entries }
+        Self {
+            entries,
+            timestamp: None,
+        }
+    }
+
+    pub fn set_timestamp_entry(&mut self, timestamp: TableEntry) {
+        self.timestamp = Some(timestamp);
     }
 
     fn _get(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
@@ -215,9 +225,10 @@ impl Table {
 pub struct Frame<'t> {
     level: Level,
     index: u64,
+    timestamp_format: Option<&'t str>,
+    timestamp_args: Vec<Arg<'t>>,
     // Format string
     format: &'t str,
-    timestamp: u64,
     args: Vec<Arg<'t>>,
 }
 
@@ -231,17 +242,23 @@ impl<'t> Frame<'t> {
         }
     }
 
+    pub fn display_timestamp(&'t self) -> Option<DisplayMessage<'t>> {
+        self.timestamp_format.map(|fmt| DisplayMessage {
+            format: fmt,
+            args: &self.timestamp_args,
+        })
+    }
+
     /// Returns a struct that will format the message contained in this log frame.
     pub fn display_message(&'t self) -> DisplayMessage<'t> {
-        DisplayMessage { frame: self }
+        DisplayMessage {
+            format: self.format,
+            args: &self.args,
+        }
     }
 
     pub fn level(&self) -> Level {
         self.level
-    }
-
-    pub fn timestamp(&self) -> u64 {
-        self.timestamp
     }
 
     pub fn index(&self) -> u64 {
@@ -250,12 +267,13 @@ impl<'t> Frame<'t> {
 }
 
 pub struct DisplayMessage<'t> {
-    frame: &'t Frame<'t>,
+    format: &'t str,
+    args: &'t [Arg<'t>],
 }
 
 impl fmt::Display for DisplayMessage<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let args = format_args(&self.frame.format, &self.frame.args, None);
+        let args = format_args(self.format, self.args, None);
         f.write_str(&args)
     }
 }
@@ -269,10 +287,6 @@ pub struct DisplayFrame<'t> {
 
 impl fmt::Display for DisplayFrame<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // 0.000000 Info Hello, world!
-        let seconds = self.frame.timestamp / 1000000;
-        let micros = self.frame.timestamp % 1000000;
-
         let level = if self.colored {
             match self.frame.level {
                 Level::Trace => "TRACE".dimmed().to_string(),
@@ -291,9 +305,14 @@ impl fmt::Display for DisplayFrame<'_> {
             }
         };
 
+        let timestamp = self
+            .frame
+            .timestamp_format
+            .map(|fmt| format!("{} ", format_args(&fmt, &self.frame.timestamp_args, None,)))
+            .unwrap_or_default();
         let args = format_args(&self.frame.format, &self.frame.args, None);
 
-        write!(f, "{}.{:06} {} {}", seconds, micros, level, args)
+        write!(f, "{}{} {}", timestamp, level, args)
     }
 }
 
@@ -410,11 +429,6 @@ pub fn decode<'t>(
 ) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
     let len = bytes.len();
     let index = read_leb128(&mut bytes)?;
-    let timestamp = read_leb128(&mut bytes)?;
-
-    let (level, format) = table
-        .get_with_level(index as usize)
-        .map_err(|_| DecodeError::Malformed)?;
 
     let mut decoder = Decoder {
         table,
@@ -423,6 +437,19 @@ pub fn decode<'t>(
         bools_tbd: Vec::new(),
         below_enum: false,
     };
+
+    let mut timestamp_format = None;
+    let mut timestamp_args = Vec::new();
+    if let Some(entry) = table.timestamp.as_ref() {
+        let format = &entry.string.string;
+        timestamp_format = Some(&**format);
+        timestamp_args = decoder.decode_format(format)?;
+    }
+
+    let (level, format) = table
+        .get_with_level(index as usize)
+        .map_err(|_| DecodeError::Malformed)?;
+
     let args = decoder.decode_format(format)?;
     if !decoder.bools_tbd.is_empty() {
         // Flush end of compression block.
@@ -432,8 +459,9 @@ pub fn decode<'t>(
     let frame = Frame {
         level,
         index,
+        timestamp_format,
+        timestamp_args,
         format,
-        timestamp,
         args,
     };
 
@@ -929,6 +957,11 @@ fn format_args_real(
                 is_uppercase: false,
             }) => write!(buf, "{:#x}", x)?,
             Some(DisplayHint::Hexadecimal { is_uppercase: true }) => write!(buf, "{:#X}", x)?,
+            Some(DisplayHint::Microseconds) => {
+                let seconds = x / 1_000_000;
+                let micros = x % 1_000_000;
+                write!(buf, "{}.{:06}", seconds, micros)?;
+            }
             _ => write!(buf, "{}", x)?,
         }
         Ok(())
@@ -1116,7 +1149,13 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Info, format.to_string()),
         );
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:µs}".to_owned(),
+            )),
+        };
 
         let frame = super::decode(&bytes, &table).unwrap().0;
         assert_eq!(frame.display(false).to_string(), expectation.to_owned());
@@ -1137,10 +1176,13 @@ mod tests {
         //           ^^
         //entries.insert(2, "The answer is {0:u8} {1:u16}!".to_owned());
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: None,
+        };
 
-        let bytes = [0, 1];
-        //     index ^  ^ timestamp
+        let bytes = [0];
+        //     index ^
 
         assert_eq!(
             super::decode(&bytes, &table),
@@ -1148,8 +1190,9 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
+                    timestamp_format: None,
+                    timestamp_args: vec![],
                     format: "Hello, world!",
-                    timestamp: 1,
                     args: vec![],
                 },
                 bytes.len(),
@@ -1158,7 +1201,6 @@ mod tests {
 
         let bytes = [
             1,  // index
-            2,  // timestamp
             42, // argument
         ];
 
@@ -1168,8 +1210,9 @@ mod tests {
                 Frame {
                     index: 1,
                     level: Level::Debug,
+                    timestamp_format: None,
+                    timestamp_args: vec![],
                     format: "The answer is {=u8}!",
-                    timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
                 bytes.len(),
@@ -1186,11 +1229,13 @@ mod tests {
         let mut entries = BTreeMap::new();
         entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: None,
+        };
 
         let bytes = [
             0,  // index
-            2,  // timestamp
             42, // u8
             0xff, 0xff, // u16
             0, 0, 1, // u24
@@ -1212,8 +1257,9 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
+                    timestamp_format: None,
+                    timestamp_args: vec![],
                     format: FMT,
-                    timestamp: 2,
                     args: vec![
                         Arg::Uxx(42),                       // u8
                         Arg::Uxx(u16::max_value().into()),  // u16
@@ -1248,10 +1294,12 @@ mod tests {
             ),
         );
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: None,
+        };
         let bytes = [
             0,  // index
-            2,  // timestamp
             42, // argument
         ];
 
@@ -1261,8 +1309,9 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
+                    timestamp_format: None,
+                    timestamp_args: vec![],
                     format: "The answer is {0=u8} {0=u8}!",
-                    timestamp: 2,
                     args: vec![Arg::Uxx(42)],
                 },
                 bytes.len(),
@@ -1271,7 +1320,6 @@ mod tests {
 
         let bytes = [
             1,  // index
-            2,  // timestamp
             42, // u8
             0xff, 0xff, // u16
         ];
@@ -1282,8 +1330,9 @@ mod tests {
                 Frame {
                     index: 1,
                     level: Level::Info,
+                    timestamp_format: None,
+                    timestamp_args: vec![],
                     format: "The answer is {1=u16} {0=u8} {1=u16}!",
-                    timestamp: 2,
                     args: vec![Arg::Uxx(42), Arg::Uxx(0xffff)],
                 },
                 bytes.len(),
@@ -1303,11 +1352,13 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: None,
+        };
 
         let bytes = [
             0,  // index
-            2,  // timestamp
             1,  // index of the struct
             42, // Foo.x
         ];
@@ -1318,8 +1369,9 @@ mod tests {
                 Frame {
                     index: 0,
                     level: Level::Info,
+                    timestamp_format: None,
+                    timestamp_args: vec![],
                     format: "x={=?}",
-                    timestamp: 2,
                     args: vec![Arg::Format {
                         format: "Foo {{ x: {=u8} }}",
                         args: vec![Arg::Uxx(42)]
@@ -1342,7 +1394,13 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:µs}".to_owned(),
+            )),
+        };
 
         let bytes = [
             0,  // index
@@ -1491,7 +1549,13 @@ mod tests {
             ),
         );
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:µs}".to_owned(),
+            )),
+        };
 
         let bytes = [
             0,      // index
@@ -1769,7 +1833,13 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Fmt, "{=u8}".to_owned()),
         );
 
-        let table = Table { entries };
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:µs}".to_owned(),
+            )),
+        };
 
         let bytes = [
             4,  // string index (INFO)

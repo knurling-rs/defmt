@@ -50,16 +50,14 @@ pub fn release(fmt: InternalFormatter) {
 
 /// For testing purposes
 #[cfg(feature = "unstable-test")]
-pub fn timestamp() -> u64 {
-    (T.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as u64
-}
+pub fn timestamp(_fmt: crate::Formatter<'_>) {}
 
 #[cfg(not(feature = "unstable-test"))]
-pub fn timestamp() -> u64 {
+pub fn timestamp(fmt: crate::Formatter<'_>) {
     extern "Rust" {
-        fn _defmt_timestamp() -> u64;
+        fn _defmt_timestamp(_: crate::Formatter<'_>);
     }
-    unsafe { _defmt_timestamp() }
+    unsafe { _defmt_timestamp(fmt) }
 }
 
 /// Returns the interned string at `address`.

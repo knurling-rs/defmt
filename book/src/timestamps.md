@@ -1,24 +1,10 @@
-# #[timestamp]
+# Timestamps
 
-*Applications* that, directly or transitively, use any of `defmt` logging macros may define a `#[timestamp]` function or include one in their dependency graph.
+*Applications* that, directly or transitively, use any of `defmt` logging macros may use the `timestamp!` macro to define additional data to be included in every log frame.
 
-All logs are timestamped.
-The `#[timestamp]` function specifies how the timestamp is computed.
-By default (if no `#[timestamp]` function is provided), a timestamp of 0 will be used.
-This function must have signature `fn() -> u64` and on each invocation *should* return a non-decreasing value.
-The function is not `unsafe` meaning that it must be thread-safe and interrupt-safe.
+The `timestamp!` macro may only be used once throughout the crate graph. Its syntax is the same as for the other logging macros (`info!`, etc.), except that `timestamp!` is global and so cannot access any local variables.
 
-## No timestamp (default behavior)
-
-When no `#[timestamp]` function is used, defmt will use one equivalent to this:
-
-``` rust
-# extern crate defmt;
-#[defmt::timestamp]
-fn timestamp() -> u64 {
-    0
-}
-```
+By default, no timestamp is provided or transferred over the defmt sink.
 
 ## Atomic timestamp
 
@@ -28,17 +14,16 @@ A simple `timestamp` function that does not depend on device specific features a
 # extern crate defmt;
 # use std::sync::atomic::{AtomicUsize, Ordering};
 // WARNING may overflow and wrap-around in long lived apps
-#[defmt::timestamp]
-fn timestamp() -> u64 {
-    static COUNT: AtomicUsize = AtomicUsize::new(0);
-    COUNT.fetch_add(1, Ordering::Relaxed) as u64
-}
+static COUNT: AtomicUsize = AtomicUsize::new(0);
+defmt::timestamp!("{=usize}", COUNT.fetch_add(1, Ordering::Relaxed));
 ```
 
 ## Hardware timestamp
 
 A `timestamp` function that uses a device-specific monotonic timer can directly read a MMIO register.
 It's OK if the function returns `0` while the timer is disabled.
+
+The `µs` display hint can be used to format an integer value as a time in microseconds (eg. `1_000_000` may be displayed as `1.000000`).
 
 ``` rust
 # extern crate defmt;
@@ -47,11 +32,10 @@ It's OK if the function returns `0` while the timer is disabled.
 #     unsafe { &mut X as *mut u32 }
 # }
 // WARNING may overflow and wrap-around in long lived apps
-#[defmt::timestamp]
-fn timestamp() -> u64 {
+defmt::timestamp!("{=u32:µs}", {
     // NOTE(interrupt-safe) single instruction volatile read operation
-    unsafe { monotonic_timer_counter_register().read_volatile() as u64 }
-}
+    unsafe { monotonic_timer_counter_register().read_volatile() }
+});
 
 # fn enable_monotonic_counter() {}
 fn main() {
@@ -96,7 +80,3 @@ count: u64 <- (high1 << 32) | low
 ```
 
 The loop should be kept as tight as possible and the read operations must be single-instruction operations.
-
-## Inter-operation with built-in attributes
-
-The `#[timestamp]` attribute cannot be used together with the `export_name` or `no_mangle` attributes

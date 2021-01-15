@@ -1,2 +1,2 @@
-0.000000 ERROR panicked at 'assertion failed: `(left != right)`: dev'
+ERROR panicked at 'assertion failed: `(left != right)`: dev'
 left/right: `42`

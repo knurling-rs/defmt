@@ -57,12 +57,9 @@ fn nested() -> NestedStruct {
     }
 }
 
-#[defmt::timestamp]
-fn timestamp() -> u64 {
-    // monotonic counter
-    static COUNT: AtomicU32 = AtomicU32::new(0);
-    COUNT.fetch_add(1, Ordering::Relaxed) as u64
-}
+// monotonic counter
+static COUNT: AtomicU32 = AtomicU32::new(0);
+defmt::timestamp!("{=u32:µs}", COUNT.fetch_add(1, Ordering::Relaxed));
 
 mod if_alloc {
     use alloc_cortex_m::CortexMHeap;

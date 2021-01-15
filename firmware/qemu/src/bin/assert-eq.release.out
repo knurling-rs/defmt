@@ -1,3 +1,3 @@
-0.000000 ERROR panicked at 'assertion failed: `(left == right)`: release'
+ERROR panicked at 'assertion failed: `(left == right)`: release'
  left: `41`
 right: `43`

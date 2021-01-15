@@ -13,7 +13,7 @@
     - [Display hints](./hints.md)
   - [Implementing format](./format.md)
   - [Filtering](./filtering.md)
-  - [#[timestamp]](./timestamp.md)
+  - [Timestamps](./timestamps.md)
   - [#[global_logger]](./global-logger.md)
   - [panic! and assert!](./panic.md)
   - [Printers](./printers.md)
