@@ -62,3 +62,7 @@ test = false
 [[bin]]
 name = "hints"
 test = false
+
+[[bin]]
+name = "timestamp"
+test = false
