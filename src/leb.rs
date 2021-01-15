@@ -1,6 +1,9 @@
-pub(crate) fn leb64(x: u64, buf: &mut [u8; 10]) -> usize {
+/// LEB128-encodes a `usize` value into `buf`.
+///
+/// This handles 32-bit and 64-bit `usize`.
+pub(crate) fn leb64(x: usize, buf: &mut [u8; 10]) -> usize {
     let mut low = x as u32;
-    let mut high = (x >> 32) as u32;
+    let mut high = ((x >> 16) >> 16) as u32;
 
     let mut i = 0;
     loop {
@@ -58,8 +61,9 @@ pub(crate) fn leb64(x: u64, buf: &mut [u8; 10]) -> usize {
     }
 }
 
-pub fn zigzag_encode(v: i64) -> u64 {
-    ((v << 1) ^ (v >> 63)) as u64
+pub fn zigzag_encode(v: isize) -> usize {
+    const USIZE_BITS: usize = core::mem::size_of::<usize>() * 8;
+    ((v << 1) ^ (v >> (USIZE_BITS - 1))) as usize
 }
 
 #[cfg(test)]
@@ -86,26 +90,28 @@ mod tests {
         assert_eq!(buf[..i], [0x80, 1]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = leb64((1 << 32) - 1, &mut buf);
-        assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xf]);
-        buf.iter_mut().for_each(|b| *b = 0x55);
+        if cfg!(target_pointer_width = "64") {
+            let i = leb64((1 << 32) - 1, &mut buf);
+            assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xf]);
+            buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = leb64((1 << 35) - 1, &mut buf);
-        assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0x7f]);
-        buf.iter_mut().for_each(|b| *b = 0x55);
+            let i = leb64((1 << 35) - 1, &mut buf);
+            assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0x7f]);
+            buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = leb64(1 << 35, &mut buf);
-        assert_eq!(buf[..i], [0x80, 0x80, 0x80, 0x80, 0x80, 1]);
-        buf.iter_mut().for_each(|b| *b = 0x55);
+            let i = leb64(1 << 35, &mut buf);
+            assert_eq!(buf[..i], [0x80, 0x80, 0x80, 0x80, 0x80, 1]);
+            buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = leb64((1 << 42) - 1, &mut buf);
-        assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
-        buf.iter_mut().for_each(|b| *b = 0x55);
+            let i = leb64((1 << 42) - 1, &mut buf);
+            assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
+            buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = leb64(u64::max_value(), &mut buf);
-        assert_eq!(
-            buf[..i],
-            [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1]
-        );
+            let i = leb64(usize::max_value(), &mut buf);
+            assert_eq!(
+                buf[..i],
+                [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1]
+            );
+        }
     }
 }
