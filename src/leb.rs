@@ -92,31 +92,34 @@ mod tests {
         let i = leb64(1 << 7, &mut buf);
         assert_eq!(buf[..i], [0x80, 1]);
         buf.iter_mut().for_each(|b| *b = 0x55);
+    }
 
-        if cfg!(target_pointer_width = "64") {
-            // Test bit patterns that require more than 32-bit `usize`s.
+    /// Smoke test for bit patterns that require 64-bit `usize`s.
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn leb_64_bit() {
+        let mut buf = [0x55; 10];
 
-            let i = leb64((1 << 32) - 1, &mut buf);
-            assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xf]);
-            buf.iter_mut().for_each(|b| *b = 0x55);
+        let i = leb64((1 << 32) - 1, &mut buf);
+        assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xf]);
+        buf.iter_mut().for_each(|b| *b = 0x55);
 
-            let i = leb64((1 << 35) - 1, &mut buf);
-            assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0x7f]);
-            buf.iter_mut().for_each(|b| *b = 0x55);
+        let i = leb64((1 << 35) - 1, &mut buf);
+        assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0x7f]);
+        buf.iter_mut().for_each(|b| *b = 0x55);
 
-            let i = leb64(1 << 35, &mut buf);
-            assert_eq!(buf[..i], [0x80, 0x80, 0x80, 0x80, 0x80, 1]);
-            buf.iter_mut().for_each(|b| *b = 0x55);
+        let i = leb64(1 << 35, &mut buf);
+        assert_eq!(buf[..i], [0x80, 0x80, 0x80, 0x80, 0x80, 1]);
+        buf.iter_mut().for_each(|b| *b = 0x55);
 
-            let i = leb64((1 << 42) - 1, &mut buf);
-            assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
-            buf.iter_mut().for_each(|b| *b = 0x55);
+        let i = leb64((1 << 42) - 1, &mut buf);
+        assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
+        buf.iter_mut().for_each(|b| *b = 0x55);
 
-            let i = leb64(usize::max_value(), &mut buf);
-            assert_eq!(
-                buf[..i],
-                [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1]
-            );
-        }
+        let i = leb64(usize::max_value(), &mut buf);
+        assert_eq!(
+            buf[..i],
+            [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1]
+        );
     }
 }
