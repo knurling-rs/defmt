@@ -417,9 +417,7 @@ impl InternalFormatter {
 
     /// Implementation detail
     /// leb64-encode `x` and write it to self.bytes
-    pub fn leb64(&mut self, x: u64) {
-        // FIXME: Avoid 64-bit arithmetic on 32-bit systems. This should only be used for
-        // pointer-sized values.
+    pub fn leb64(&mut self, x: usize) {
         let mut buf: [u8; 10] = [0; 10];
         let i = leb::leb64(x, &mut buf);
         self.write(&buf[..i])
@@ -453,12 +451,12 @@ impl InternalFormatter {
     /// Implementation detail
     pub fn isize(&mut self, b: &isize) {
         // Zig-zag encode the signed value.
-        self.leb64(leb::zigzag_encode(*b as i64));
+        self.leb64(leb::zigzag_encode(*b));
     }
 
     /// Implementation detail
     pub fn fmt_slice(&mut self, values: &[impl Format]) {
-        self.leb64(values.len() as u64);
+        self.leb64(values.len());
         let mut is_first = true;
         for value in values {
             let omit_tag = !is_first;
@@ -505,7 +503,7 @@ impl InternalFormatter {
 
     /// Implementation detail
     pub fn usize(&mut self, b: &usize) {
-        self.leb64(*b as u64);
+        self.leb64(*b);
     }
 
     /// Implementation detail
@@ -514,12 +512,12 @@ impl InternalFormatter {
     }
 
     pub fn str(&mut self, s: &str) {
-        self.leb64(s.len() as u64);
+        self.leb64(s.len());
         self.write(s.as_bytes());
     }
 
     pub fn slice(&mut self, s: &[u8]) {
-        self.leb64(s.len() as u64);
+        self.leb64(s.len());
         self.write(s);
     }
 

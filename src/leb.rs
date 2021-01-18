@@ -1,6 +1,10 @@
-pub(crate) fn leb64(x: u64, buf: &mut [u8; 10]) -> usize {
+/// LEB128-encodes a `usize` value into `buf`.
+///
+/// This handles 32-bit and 64-bit `usize`.
+pub(crate) fn leb64(x: usize, buf: &mut [u8; 10]) -> usize {
     let mut low = x as u32;
-    let mut high = (x >> 32) as u32;
+    // Shift by 16 twice, to avoid a panic/error when shifting a 32-bit usize by 32 bits.
+    let mut high = ((x >> 16) >> 16) as u32;
 
     let mut i = 0;
     loop {
@@ -58,8 +62,11 @@ pub(crate) fn leb64(x: u64, buf: &mut [u8; 10]) -> usize {
     }
 }
 
-pub fn zigzag_encode(v: i64) -> u64 {
-    ((v << 1) ^ (v >> 63)) as u64
+/// Encodes an `isize` as a `usize` by pulling its sign bit to the least-significant place (this
+/// makes it have an efficient LEB-encoding for small positive and negative values).
+pub fn zigzag_encode(v: isize) -> usize {
+    const USIZE_BITS: usize = core::mem::size_of::<usize>() * 8;
+    ((v << 1) ^ (v >> (USIZE_BITS - 1))) as usize
 }
 
 #[cfg(test)]
@@ -85,6 +92,13 @@ mod tests {
         let i = leb64(1 << 7, &mut buf);
         assert_eq!(buf[..i], [0x80, 1]);
         buf.iter_mut().for_each(|b| *b = 0x55);
+    }
+
+    /// Smoke test for bit patterns that require 64-bit `usize`s.
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn leb_64_bit() {
+        let mut buf = [0x55; 10];
 
         let i = leb64((1 << 32) - 1, &mut buf);
         assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xf]);
@@ -102,7 +116,7 @@ mod tests {
         assert_eq!(buf[..i], [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
         buf.iter_mut().for_each(|b| *b = 0x55);
 
-        let i = leb64(u64::max_value(), &mut buf);
+        let i = leb64(usize::max_value(), &mut buf);
         assert_eq!(
             buf[..i],
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1]
