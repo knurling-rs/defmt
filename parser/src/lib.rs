@@ -50,6 +50,25 @@ pub enum Fragment<'f> {
     Parameter(Parameter),
 }
 
+/// A parsed formatting parameter (contents of `{` `}` block).
+///
+/// # Syntax
+///
+/// ```notrust
+/// param := '{' [ argument ] [ '=' argtype ] [ ':' format_spec ] '}'
+/// argument := integer
+///
+/// argtype := bitfield | '?' | format-array | '[?]' | byte-array | '[u8]' | 'istr' | 'str' |
+///     'bool' | 'char' | 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'usize' | 'i8' | 'i16' | 'i32' |
+///     'i64' | 'i128 | 'isize' | 'f32'
+/// bitfield := integer '..' integer
+/// format-array := '[?;' spaces integer ']'
+/// byte-array := '[u8;' spaces integer ']'
+/// spaces := ' '*
+///
+/// format_spec := type
+/// type := 'a' | 'b' | 'o' | 'x' | 'X' | '?' | 'µs'
+/// ```
 #[derive(Debug, PartialEq)]
 struct Param {
     index: Option<usize>,
@@ -92,7 +111,7 @@ pub enum Type {
     U64,
     U128,
     Usize,
-    /// Byte slice `{:[u8]}`.
+    /// Byte slice `{=[u8]}`.
     U8Slice,
     U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     F32,
