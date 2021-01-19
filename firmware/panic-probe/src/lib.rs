@@ -88,55 +88,9 @@ mod print_rtt {
 
 #[cfg(feature = "print-defmt")]
 mod print_defmt {
-    use core::{
-        cmp,
-        fmt::{self, Write},
-        mem,
-        panic::PanicInfo,
-        str,
-    };
-
-    const DEFMT_BUF_SIZE: usize = 128;
-    const OVERFLOW_MARK: &str = "…";
-
-    struct Sink<'a> {
-        buf: &'a mut [u8],
-        pos: usize,
-        overflowed: bool,
-    }
-
-    impl<'a> fmt::Write for Sink<'a> {
-        fn write_str(&mut self, s: &str) -> fmt::Result {
-            if self.overflowed {
-                return Ok(());
-            }
-
-            let buf = mem::replace(&mut self.buf, &mut []);
-            let buf_unused = &mut buf[self.pos..];
-
-            if buf_unused.len() < s.len() {
-                self.overflowed = true;
-            }
-
-            let lim = cmp::min(buf_unused.len(), s.len());
-            buf_unused[..lim].copy_from_slice(&s.as_bytes()[..lim]);
-            self.buf = buf;
-            self.pos += lim;
-            Ok(())
-        }
-    }
+    use core::panic::PanicInfo;
 
     pub fn print(info: &PanicInfo) {
-        let mut buf = [0; DEFMT_BUF_SIZE];
-        let mut sink = Sink {
-            buf: &mut buf,
-            pos: 0,
-            overflowed: false,
-        };
-        write!(sink, "{}", info).ok();
-
-        let msg = str::from_utf8(&sink.buf[..sink.pos]).unwrap_or("<utf-8 error>");
-        let overflow = if sink.overflowed { OVERFLOW_MARK } else { "" };
-        defmt::error!("{=str}{=str}", msg, overflow);
+        defmt::error!("{}", defmt::Display2Format(info));
     }
 }
