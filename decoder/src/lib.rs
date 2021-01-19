@@ -31,10 +31,12 @@ include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
-    /// A format string for use with `{=?}`. Used for both primitive format strings (which are
-    /// special cased to have lower indices), and user format strings created by
-    /// `#[derive(Format)]`.
-    Fmt,
+    /// Defmt-controlled format string for primitive types.
+    Prim,
+    /// Format string created by `#[derive(Format)]`.
+    Derived,
+    /// A user-defined format string from a `write!` invocation.
+    Write,
     /// An interned string, for use with `{=istr}`.
     Str,
     /// Defines the global timestamp format.
@@ -50,12 +52,12 @@ pub enum Tag {
 impl Tag {
     fn to_level(&self) -> Option<Level> {
         match self {
-            Tag::Fmt | Tag::Str | Tag::Timestamp => None,
             Tag::Trace => Some(Level::Trace),
             Tag::Debug => Some(Level::Debug),
             Tag::Info => Some(Level::Info),
             Tag::Warn => Some(Level::Warn),
             Tag::Error => Some(Level::Error),
+            _ => None,
         }
     }
 }
@@ -1349,7 +1351,7 @@ mod tests {
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
         let table = Table {
@@ -1391,7 +1393,7 @@ mod tests {
         );
         entries.insert(
             1,
-            TableEntry::new_without_symbol(Tag::Fmt, "Foo {{ x: {=u8} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
         );
 
         let table = Table {
@@ -1544,7 +1546,7 @@ mod tests {
         entries.insert(
             1,
             TableEntry::new_without_symbol(
-                Tag::Fmt,
+                Tag::Derived,
                 "Flags {{ a: {=bool}, b: {=bool}, c: {=bool} }}".to_owned(),
             ),
         );
@@ -1826,11 +1828,11 @@ mod tests {
         );
         entries.insert(
             3,
-            TableEntry::new_without_symbol(Tag::Fmt, "None|Some({=?})".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "None|Some({=?})".to_owned()),
         );
         entries.insert(
             2,
-            TableEntry::new_without_symbol(Tag::Fmt, "{=u8}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "{=u8}".to_owned()),
         );
 
         let table = Table {

@@ -329,7 +329,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     ))
                 }
 
-                let sym = mksym(&fs, "fmt", false);
+                let sym = mksym(&fs, "derived", false);
                 exprs.push(quote!(
                     if f.inner.needs_tag() {
                         f.inner.istr(&defmt::export::istr(#sym));
@@ -346,7 +346,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
             let mut pats = vec![];
             let args = fields(&ds.fields, &mut fs, &mut field_types, &mut pats);
 
-            let sym = mksym(&fs, "fmt", false);
+            let sym = mksym(&fs, "derived", false);
             exprs.push(quote!(
                 if f.inner.needs_tag() {
                     f.inner.istr(&defmt::export::istr(#sym));
@@ -1023,8 +1023,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
     };
 
     let fmt = &write.fmt;
-    // FIXME: Introduce a new `"write"` tag and decode it in a loop (breaking change).
-    let sym = mksym(&ls, "fmt", false);
+    let sym = mksym(&ls, "write", false);
     quote!({
         let fmt: ::defmt::Formatter<'_> = #fmt;
         match (fmt.inner, #(&(#args)),*) {
