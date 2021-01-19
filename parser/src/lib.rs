@@ -62,8 +62,9 @@ pub enum Fragment<'f> {
 ///     'bool' | 'char' | 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'usize' | 'i8' | 'i16' | 'i32' |
 ///     'i64' | 'i128 | 'isize' | 'f32'
 /// bitfield := integer '..' integer
-/// format-array := '[?;' ' '* integer ']'
-/// byte-array := '[u8;' ' '* integer ']'
+/// format-array := '[?;' spaces integer ']'
+/// byte-array := '[u8;' spaces integer ']'
+/// spaces := ' '*
 ///
 /// format_spec := type
 /// type := 'a' | 'b' | 'o' | 'x' | 'X' | '?' | 'µs'
