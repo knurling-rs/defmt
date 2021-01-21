@@ -633,6 +633,9 @@ pub trait Write {
     ///
     /// This will be called by the defmt logging macros to transmit encoded data. The write
     /// operation must not fail.
+    ///
+    /// Note that a call to `write` does *not* correspond to a defmt logging macro invocation. A
+    /// single `defmt::info!` call can result in an arbitrary number of `write` calls.
     fn write(&mut self, bytes: &[u8]);
 }
 
