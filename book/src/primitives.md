@@ -27,6 +27,7 @@ The available types are:
 - `={i,u}{8,16,32,64}`, standard integer types
 - `={i,u}24`, 32-bit integer truncated to 24 bits
 - `=f32`, 32-bit floating point type
+- `=f64`, 64-bit floating point type
 - `=[u8; N]`, byte array
 - `=[u8]`, byte slice
 - `=str`, string slice

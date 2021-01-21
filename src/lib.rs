@@ -511,6 +511,11 @@ impl InternalFormatter {
         self.write(&f32::to_bits(*b).to_le_bytes())
     }
 
+    /// Implementation detail
+    pub fn f64(&mut self, b: &f64) {
+        self.write(&f64::to_bits(*b).to_le_bytes())
+    }
+
     pub fn str(&mut self, s: &str) {
         self.leb64(s.len());
         self.write(s.as_bytes());

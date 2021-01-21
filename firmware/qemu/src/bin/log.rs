@@ -20,7 +20,12 @@ fn main() -> ! {
     defmt::info!("Hello {1=u16} {0=u8} {2=bool}", 42u8, 256u16, false);
     defmt::info!("🍕 slice {=[u8]}", [3, 14]);
     defmt::info!("🍕 array {=[u8; 3]}", [3, 14, 1]);
-    defmt::info!("float like a butterfly {=f32}", 5.67f32);
+    defmt::info!("float like a butterfly {=f32} {}", 5.67f32, 5.67f32);
+    defmt::info!(
+        "double like a butterfly {=f64} {}",
+        5.000000000000067f64,
+        5.000000000000067f64
+    );
     defmt::info!("Hello {=u8}", 42u16 as u8);
 
     defmt::info!(

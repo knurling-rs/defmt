@@ -134,6 +134,16 @@ impl Format for f32 {
     }
 }
 
+impl Format for f64 {
+    fn format(&self, fmt: Formatter) {
+        if fmt.inner.needs_tag() {
+            let t = internp!("{=f64}");
+            fmt.inner.u8(&t);
+        }
+        fmt.inner.f64(self);
+    }
+}
+
 impl Format for str {
     fn format(&self, fmt: Formatter) {
         if fmt.inner.needs_tag() {

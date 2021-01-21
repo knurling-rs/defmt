@@ -60,7 +60,7 @@ pub enum Fragment<'f> {
 ///
 /// argtype := bitfield | '?' | format-array | '[?]' | byte-array | '[u8]' | 'istr' | 'str' |
 ///     'bool' | 'char' | 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'usize' | 'i8' | 'i16' | 'i32' |
-///     'i64' | 'i128 | 'isize' | 'f32'
+///     'i64' | 'i128 | 'isize' | 'f32' | 'f64'
 /// bitfield := integer '..' integer
 /// format-array := '[?;' spaces integer ']'
 /// byte-array := '[u8;' spaces integer ']'
@@ -115,6 +115,7 @@ pub enum Type {
     U8Slice,
     U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     F32,
+    F64,
     /// A single Unicode character
     Char,
 }
@@ -237,6 +238,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
             "i128" => Type::I128,
             "isize" => Type::Isize,
             "f32" => Type::F32,
+            "f64" => Type::F64,
             "bool" => Type::Bool,
             "str" => Type::Str,
             "istr" => Type::IStr,

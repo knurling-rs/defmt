@@ -350,6 +350,7 @@ enum Arg<'t> {
     /// Bool
     Bool(Arc<Bool>),
     F32(f32),
+    F64(f64),
     /// U8, U16, U24 and U32
     Uxx(u128),
     /// I8, I16, I24 and I32
@@ -818,6 +819,10 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     let data = self.bytes.read_u32::<LE>()?;
                     args.push(Arg::F32(f32::from_bits(data)));
                 }
+                Type::F64 => {
+                    let data = self.bytes.read_u64::<LE>()?;
+                    args.push(Arg::F64(f64::from_bits(data)));
+                }
                 Type::BitField(range) => {
                     let mut data: u128;
                     let lowest_byte = range.start / 8;
@@ -1057,6 +1062,7 @@ fn format_args_real(
                 match &args[param.index] {
                     Arg::Bool(x) => write!(buf, "{}", x)?,
                     Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
+                    Arg::F64(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
                     Arg::Uxx(x) => {
                         match param.ty {
                             Type::BitField(range) => {
