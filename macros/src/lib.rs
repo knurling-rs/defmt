@@ -479,7 +479,7 @@ fn as_native_type(ty: &Type) -> Option<String> {
                 let s = ident.to_string();
                 match &*s {
                     "u8" | "u16" | "u32" | "usize" | "i8" | "i16" | "i32" | "isize" | "f32"
-                    | "bool" | "str" => Some(s),
+                    | "f64" | "bool" | "str" => Some(s),
                     _ => None,
                 }
             }
@@ -1245,6 +1245,9 @@ impl Codegen {
                 }
                 defmt_parser::Type::F32 => {
                     exprs.push(quote!(_fmt_.f32(#arg)));
+                }
+                defmt_parser::Type::F64 => {
+                    exprs.push(quote!(_fmt_.f64(#arg)));
                 }
                 defmt_parser::Type::Char => {
                     exprs.push(quote!(_fmt_.u32(&(*#arg as u32))));
