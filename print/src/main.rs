@@ -9,10 +9,13 @@ use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
 #[derive(StructOpt)]
-#[structopt(name = "defmt-print", version = version())]
+#[structopt(name = "defmt-print")]
 struct Opts {
-    #[structopt(short, parse(from_os_str))]
-    elf: PathBuf,
+    #[structopt(short, parse(from_os_str), required_unless_one(&["version"]))]
+    elf: Option<PathBuf>,
+
+    #[structopt(short = "V", long)]
+    version: bool,
     // may want to add this later
     // #[structopt(short, long)]
     // verbose: bool,
@@ -23,10 +26,15 @@ const READ_BUFFER_SIZE: usize = 1024;
 
 fn main() -> anyhow::Result<()> {
     let opts: Opts = Opts::from_args();
+
+    if opts.version {
+        return print_version();
+    }
+
     let verbose = false;
     defmt_logger::init(verbose);
 
-    let bytes = fs::read(&opts.elf)?;
+    let bytes = fs::read(&opts.elf.unwrap())?;
 
     let table = defmt_elf2table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = defmt_elf2table::get_locations(&bytes, &table)?;
@@ -92,15 +100,9 @@ fn main() -> anyhow::Result<()> {
 }
 
 // the string reported by the `--version` flag
-fn version() -> &'static str {
+fn print_version() -> Result<(), anyhow::Error> {
     // version from Cargo.toml e.g. "0.1.4"
-    let mut output = env!("CARGO_PKG_VERSION").to_string();
-
-    output.push_str("\nsupported defmt version: ");
-    output.push_str(defmt_decoder::DEFMT_VERSION);
-
-    // leak (!) heap memory to create a `&'static str` value. `String` won't work due to how
-    // structopt uses the clap API
-    // (this is only called once so it's not that bad)
-    Box::leak(Box::<str>::from(output))
+    println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    println!("supported defmt version: {}", defmt_decoder::DEFMT_VERSION);
+    Ok(())
 }
