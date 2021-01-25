@@ -1062,7 +1062,7 @@ fn mksection(prefix: &str, symbol: &str) -> String {
         sub_section.hash(&mut hasher);
         sub_section = format!(",{:x}", hasher.finish());
     }
-    
+
     format!(".defmt{}", sub_section)
 }
 
