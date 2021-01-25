@@ -197,8 +197,8 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
                 // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
                 // Uses `#symname` to ensure it is not discarded by the linker.
                 #[no_mangle]
-                #[cfg_attr(target_os = "macos", link_section = ".defmt,end_timestamp")]
-                #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end_timestamp")]
+                #[cfg_attr(target_os = "macos", link_section = ".defmt,end.timestamp")]
+                #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end.timestamp")]
                 static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#symname;
             };
         )
