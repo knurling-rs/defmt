@@ -18,6 +18,9 @@ use syn::{
     WhereClause, WherePredicate,
 };
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 /// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
 ///
 /// The compiler error will indicate that the attribute conflicts with `attr_name`
@@ -177,6 +180,13 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
         )
         .into()
     } else {
+        let section = {
+            if cfg!(target_os = "macos") {
+                ".defmt,end_timestamp"
+            } else {
+                ".defmt.end.timestamp"
+            }
+        };
         quote!(
             const _: () = {
                 #[export_name = "_defmt_timestamp"]
@@ -194,7 +204,7 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
                 // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
                 // Uses `#symname` to ensure it is not discarded by the linker.
                 #[no_mangle]
-                #[link_section = ".defmt.end.timestamp"]
+                #[link_section = #section]
                 static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#symname;
             };
         )
@@ -984,7 +994,8 @@ pub fn internp(ts: TokenStream) -> TokenStream {
     let ls = lit.value();
 
     let sym = symbol::Symbol::new("prim", &ls).mangle();
-    let section = format!(".defmt.prim.{}", sym);
+
+    let section = mksection("prim.", &sym);
 
     if cfg!(feature = "unstable-test") {
         quote!({ defmt::export::fetch_add_string_index() as u8 })
@@ -1039,9 +1050,25 @@ pub fn write(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+/// work around restrictions on length and allowed characters imposed by macos linker
+/// returns (note the comma character for macos):
+///   under macos: ".defmt," + 16 character hex digest of symbol's hash
+///   otherwise:   ".defmt." + prefix + symbol
+fn mksection(prefix: &str, symbol: &str) -> String {
+    let mut sub_section = format!(".{}{}", prefix, symbol);
+
+    if cfg!(target_os = "macos") {
+        let mut hasher = DefaultHasher::new();
+        sub_section.hash(&mut hasher);
+        sub_section = format!(",{:x}", hasher.finish());
+    }
+    
+    format!(".defmt{}", sub_section)
+}
+
 fn mkstatic(varname: Ident2, string: &str, tag: &str) -> TokenStream2 {
     let sym = symbol::Symbol::new(tag, string).mangle();
-    let section = format!(".defmt.{}", sym);
+    let section = mksection("", &sym);
 
     quote!(
         #[link_section = #section]
