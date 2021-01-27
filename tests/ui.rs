@@ -10,7 +10,7 @@ fn ui() {
 
         // TODO once the corresponding fix in cortex-m-rt has been released,
         // ( https://github.com/rust-embedded/cortex-m-rt/pull/306
-        // https://github.com/rust-embedded/cortex-m-rt/pull/307 )
+        // https://github.com/rust-embedded/cortex-m-rt/pull/310 )
         // re-enable this test (deleted in commit d20ec32) and remove the macos special casing in `ci.yml`
         // also check out improved approach re: linker sections in the second cortex-m-rt PR
         // t.pass("tests/basic_usage.rs");
