@@ -609,7 +609,7 @@ mod tests {
     }
 
     #[test]
-    fn display_use_inner_hex_hint() {
+    fn display_use_inner_type_hint() {
         let mut entries = BTreeMap::new();
 
         entries.insert(
@@ -636,7 +636,7 @@ mod tests {
             42,  // value
         ];
 
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO x=S { x: 0x2a }",
@@ -671,7 +671,7 @@ mod tests {
             42,  // value
         ];
 
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO x=S { x: 0b101010 }",
