@@ -9,7 +9,8 @@ fn ui() {
         t.compile_fail("tests/ui/*.rs");
 
         // TODO once the corresponding fix in cortex-m-rt has been released,
-        // ()
+        // ( https://github.com/rust-embedded/cortex-m-rt/pull/306
+        // https://github.com/rust-embedded/cortex-m-rt/pull/307 )
         // re-enable this test and remove the macos special casing in `ci.yml`
         // t.pass("tests/basic_usage.rs");
     }
