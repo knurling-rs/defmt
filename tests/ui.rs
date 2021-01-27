@@ -7,6 +7,10 @@ fn ui() {
     {
         let t = trybuild::TestCases::new();
         t.compile_fail("tests/ui/*.rs");
-        t.pass("tests/basic_usage.rs");
+
+        // TODO once the corresponding fix in cortex-m-rt has been released,
+        // ()
+        // re-enable this test and remove the macos special casing in `ci.yml`
+        // t.pass("tests/basic_usage.rs");
     }
 }
