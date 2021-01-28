@@ -17,11 +17,8 @@ jobs:
     strategy:
       matrix:
         rust:
-          - stable
-          - nightly
+          - nightly-2021-01-25
         os:
-          - ubuntu-latest
-          - macOS-latest
           - windows-latest
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
