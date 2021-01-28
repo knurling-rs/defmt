@@ -679,6 +679,41 @@ mod tests {
     }
 
     #[test]
+    fn display_inner_str_in_struct() {
+        let mut entries = BTreeMap::new();
+
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "{}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=str:?} }}".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:µs}".to_owned(),
+            )),
+        };
+
+        let bytes = [
+            0,                            // index
+            2,                            // timestamp
+            1,                            // index into the struct
+            5,                            // length of the string
+            b'H', b'e', b'l', b'l', b'o', // string "Hello"
+        ];
+        let frame = super::decode(&bytes, &table).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO S { x: \"Hello\" }",
+        );
+    }
+
+    #[test]
     fn bools_simple() {
         let bytes = [
             0, 0,          // index
