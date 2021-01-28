@@ -335,6 +335,7 @@ pub struct Formatter<'a> {
 impl InternalFormatter {
     /// Only for testing
     #[cfg(feature = "unstable-test")]
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             bytes: vec![],
@@ -621,11 +622,19 @@ mod test_only {
     #[doc(hidden)]
     impl super::InternalFormatter {
         /// Implementation detail
+        ///
+        /// # Safety
+        ///
+        /// This is always safe to call and will panic. It only exists to match the non-test API.
         pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
             unreachable!()
         }
 
         /// Implementation detail
+        ///
+        /// # Safety
+        ///
+        /// This is always safe to call and will panic. It only exists to match the non-test API.
         pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
             unreachable!()
         }
