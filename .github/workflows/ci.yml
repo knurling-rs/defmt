@@ -44,8 +44,8 @@ jobs:
     - name: Check that crates build with unstable-test feature
       run: RUSTFLAGS='--deny warnings' cargo check --all --features unstable-test
       shell: bash
-    - name: Run tests on Ubuntu/Windows
-      if: matrix.os != 'macOS-latest'
+    - name: Run tests on Ubuntu
+      if: matrix.os == 'linux-latest'
       run: cargo test --workspace --features unstable-test
     - name: Run tests on macOS
       # NOTE defmt does not build for macOS because its `cortex-m-rt` dependency doesn't
@@ -53,7 +53,10 @@ jobs:
       # `cargo test --workspace` and have to build the test suites individually instead
       if: matrix.os == 'macOS-latest'
       run: cargo test -p defmt -p defmt-decoder -p defmt-parser -p defmt-macros -p defmt-logger -p defmt-print --all-features
-
+    - name: Run tests on Windows
+      # NOTE there might be a linker bug on the CI's current Windows installation, still investigating
+      if: matrix.os == 'windows-latest'
+      run: cargo test -p defmt -p defmt-decoder -p defmt-parser -p defmt-macros -p defmt-logger -p defmt-print --all-features
   no-std:
     runs-on: ubuntu-latest
     steps:

@@ -217,7 +217,8 @@ unsafe fn handle() -> &'static Channel {
         },
     };
 
-    #[link_section = ".uninit.defmt-rtt.BUFFER"]
+    #[cfg_attr(target_os = "macos", link_section = ".uninit,defmt-rtt.BUFFER")]
+    #[cfg_attr(not(target_os = "macos"), link_section = ".uninit.defmt-rtt.BUFFER")]
     static mut BUFFER: [u8; SIZE] = [0; SIZE];
 
     static NAME: &[u8] = b"defmt\0";
