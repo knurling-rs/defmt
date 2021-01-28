@@ -13,7 +13,6 @@ use defmt_semihosting as _; // global logger
 fn main() -> ! {
     {
         struct S1 { x: &'static str, y: u8 }
-
         impl defmt::Format for S1 {
             fn format(&self, f: defmt::Formatter) {
                 write!(f, "S1 {{ x: {=str:?}, y: {=u8:?} }}", self.x, self.y)
@@ -34,6 +33,16 @@ fn main() -> ! {
 
         // ignores outer bianry hint, should output: "S { x: 0x2a }"
         defmt::info!("{:b}", S2 { x: 42 });
+    }
+
+    {
+        #[derive(defmt::Format)]
+        struct S { x: &'static str, y: u32 }
+
+        // 0.1.x version
+        defmt::warn!("Debug hint: {:?}", S { x: "hello", y: 512 });
+        // 0.2.x -- equivalent output TODO fix this
+        defmt::warn!("   no hint: {}", S { x: "hello", y: 1024 });
     }
 
     loop {

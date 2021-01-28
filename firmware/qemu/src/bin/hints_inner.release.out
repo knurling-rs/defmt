@@ -1,2 +1,4 @@
 0.000000 INFO S1 { x: "hi", y: 0x2a }
 0.000001 INFO S2 { x: 0x2a }
+0.000002 WARN S { x: "hello", y: 512 }
+0.000003 WARN S { x: "hello", y: 1024 }
