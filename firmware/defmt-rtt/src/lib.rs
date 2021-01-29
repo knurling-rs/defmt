@@ -132,23 +132,11 @@ impl Channel {
             if cursor + len > SIZE {
                 // split memcpy
                 let pivot = SIZE - cursor;
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr(),
-                    self.buffer.add(cursor.into()),
-                    pivot.into(),
-                );
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr().add(pivot.into()),
-                    self.buffer,
-                    (len - pivot).into(),
-                );
+                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
+                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
             } else {
                 // single memcpy
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr(),
-                    self.buffer.add(cursor.into()),
-                    len.into(),
-                );
+                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
             }
         }
         self.write
@@ -167,23 +155,11 @@ impl Channel {
             if cursor + len > SIZE {
                 // split memcpy
                 let pivot = SIZE - cursor;
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr(),
-                    self.buffer.add(cursor.into()),
-                    pivot.into(),
-                );
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr().add(pivot.into()),
-                    self.buffer,
-                    (len - pivot).into(),
-                );
+                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
+                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
             } else {
                 // single memcpy
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr(),
-                    self.buffer.add(cursor.into()),
-                    len.into(),
-                );
+                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
             }
         }
         self.write

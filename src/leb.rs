@@ -1,6 +1,7 @@
 /// LEB128-encodes a `usize` value into `buf`.
 ///
 /// This handles 32-bit and 64-bit `usize`.
+#[allow(clippy::needless_range_loop)]
 pub(crate) fn leb64(x: usize, buf: &mut [u8; 10]) -> usize {
     let mut low = x as u32;
     // Shift by 16 twice, to avoid a panic/error when shifting a 32-bit usize by 32 bits.
