@@ -19,7 +19,7 @@ fn main() -> ! {
             }
         }
 
-        // x uses :?, y uses :x, should output: "S { x: "hi", y: 0x2a }"
+        // outputs: "S { x: "hi", y: 0x2a }"
         defmt::info!("{:x}", S1 { x: "hi", y: 42 });
     }
 
@@ -31,7 +31,7 @@ fn main() -> ! {
             }
         }
 
-        // ignores outer bianry hint, should output: "S { x: 0x2a }"
+        // ignores outer :b hint, should output: "S { x: 0x2a }"
         defmt::info!("{:b}", S2 { x: 42 });
     }
 
@@ -41,7 +41,7 @@ fn main() -> ! {
 
         // 0.1.x version
         defmt::warn!("Debug hint: {:?}", S { x: "hello", y: 512 });
-        // 0.2.x -- equivalent output TODO fix this
+        // 0.2.x version, results in same output
         defmt::warn!("   no hint: {}", S { x: "hello", y: 1024 });
     }
 
