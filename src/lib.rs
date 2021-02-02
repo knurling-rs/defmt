@@ -26,8 +26,12 @@ use core::{fmt, ptr::NonNull};
 pub mod export;
 mod impls;
 mod leb;
-#[cfg(test)]
+#[cfg(all(test, feature = "unstable-test"))]
 mod tests;
+#[cfg(all(test, not(feature = "unstable-test")))]
+compile_error!(
+    "to run unit tests enable the `unstable-test` feature, e.g. `cargo t --features unstable-test`"
+);
 
 /// Just like the [`core::assert!`] macro but `defmt` is used to log the panic message
 ///
