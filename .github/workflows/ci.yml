@@ -62,10 +62,12 @@ jobs:
       run: rustup +stable target add ${{ env.NO_STD_TARGET }} ${{ env.NO_STD_CHECK_TARGETS }}
     - name: Build defmt & dependent crates for no_std targets
       working-directory: firmware
+      # some crates will not compile to targets with no CAS support
       run: |
         for target in $NO_STD_CHECK_TARGETS; do
-          cargo check --target $target --workspace
+          cargo check --target $target --workspace --exclude defmt-itm --exclude firmware
         done
+        cargo check --target thumbv7em-none-eabi -p defmt-itm -p firmware
     - name: Build panic-probe with different features
       working-directory: firmware/panic-probe
       run: |
