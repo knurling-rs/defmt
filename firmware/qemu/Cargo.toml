@@ -27,42 +27,5 @@ default = ["defmt-default"]
 alloc = ["defmt/alloc", "alloc-cortex-m", "linked_list_allocator/const_mut_refs"]
 
 [[bin]]
-name = "assert"
-test = false
-
-[[bin]]
-name = "assert-eq"
-test = false
-
-[[bin]]
-name = "assert-ne"
-test = false
-
-[[bin]]
-name = "panic"
-test = false
-
-[[bin]]
-name = "log"
-test = false
-
-[[bin]]
-name = "unwrap"
-test = false
-
-[[bin]]
 name = "alloc"
-test = false
 required-features = ["alloc"]
-
-[[bin]]
-name = "defmt-test"
-test = false
-
-[[bin]]
-name = "hints"
-test = false
-
-[[bin]]
-name = "timestamp"
-test = false
