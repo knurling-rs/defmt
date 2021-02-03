@@ -1269,17 +1269,17 @@ mod tests {
                     timestamp_args: vec![],
                     format: FMT,
                     args: vec![
-                        Arg::Uxx(42),                       // u8
-                        Arg::Uxx(u16::max_value().into()),  // u16
-                        Arg::Uxx(0x10000),                  // u24
-                        Arg::Uxx(u32::max_value().into()),  // u32
-                        Arg::Uxx(u64::max_value().into()),  // u64
-                        Arg::Uxx(u128::max_value().into()), // u128
-                        Arg::Ixx(-1),                       // i8
-                        Arg::Ixx(-1),                       // i16
-                        Arg::Ixx(-1),                       // i32
-                        Arg::Ixx(-1),                       // i64
-                        Arg::Ixx(-1),                       // i128
+                        Arg::Uxx(42),                      // u8
+                        Arg::Uxx(u16::max_value().into()), // u16
+                        Arg::Uxx(0x10000),                 // u24
+                        Arg::Uxx(u32::max_value().into()), // u32
+                        Arg::Uxx(u64::max_value().into()), // u64
+                        Arg::Uxx(u128::max_value()),       // u128
+                        Arg::Ixx(-1),                      // i8
+                        Arg::Ixx(-1),                      // i16
+                        Arg::Ixx(-1),                      // i32
+                        Arg::Ixx(-1),                      // i64
+                        Arg::Ixx(-1),                      // i128
                     ],
                 },
                 bytes.len(),
