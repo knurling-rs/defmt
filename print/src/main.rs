@@ -78,12 +78,7 @@ fn main() -> anyhow::Result<()> {
                     }
 
                     // Forward the defmt frame to our logger.
-                    defmt_logger::log_defmt(
-                        &frame,
-                        file.as_deref(),
-                        line,
-                        mod_path.as_ref().map(|s| &**s),
-                    );
+                    defmt_logger::log_defmt(&frame, file.as_deref(), line, mod_path.as_deref());
 
                     let num_frames = frames.len();
                     frames.rotate_left(consumed);
@@ -92,6 +87,7 @@ fn main() -> anyhow::Result<()> {
                 Err(defmt_decoder::DecodeError::UnexpectedEof) => break,
                 Err(defmt_decoder::DecodeError::Malformed) => {
                     log::error!("failed to decode defmt data: {:x?}", frames);
+                    #[allow(clippy::try_err)]
                     Err(defmt_decoder::DecodeError::Malformed)?
                 }
             }

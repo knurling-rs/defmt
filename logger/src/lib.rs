@@ -111,7 +111,7 @@ impl Log for Logger {
             format!("{}.{:06}", seconds, micros)
         } else {
             // Mark host logs.
-            format!("(HOST)")
+            "(HOST)".to_string()
         };
 
         self.timing_align

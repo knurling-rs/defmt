@@ -208,17 +208,14 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                 let mut attrs = entry.attrs();
 
                 while let Some(attr) = attrs.next()? {
-                    match attr.name() {
-                        gimli::constants::DW_AT_name => {
-                            if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
-                                let s = dwarf.string(off)?;
-                                for _ in (depth as usize)..segments.len() + 1 {
-                                    segments.pop();
-                                }
-                                segments.push(core::str::from_utf8(&s)?.to_string());
+                    if attr.name() == gimli::constants::DW_AT_name {
+                        if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
+                            let s = dwarf.string(off)?;
+                            for _ in (depth as usize)..segments.len() + 1 {
+                                segments.pop();
                             }
+                            segments.push(core::str::from_utf8(&s)?.to_string());
                         }
-                        _ => {}
                     }
                 }
             } else if entry.tag() == gimli::constants::DW_TAG_variable {
