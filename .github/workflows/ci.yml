@@ -60,14 +60,18 @@ jobs:
         target: ${{ env.NO_STD_TARGET }}
     - name: Install Rust targets
       run: rustup +stable target add ${{ env.NO_STD_TARGET }} ${{ env.NO_STD_CHECK_TARGETS }}
-    - name: Build defmt & dependent crates for no_std targets
+    - name: Build defmt crates for no_std targets
+      run: |
+        for target in $NO_STD_CHECK_TARGETS; do
+          cargo check --target $target -p defmt
+          cargo check --target $target -p defmt --features alloc
+        done
+    - name: Build defmt dependent crates for cortex-m targets
       working-directory: firmware
       # some crates will not compile to targets with no CAS support
       run: |
-        for target in $NO_STD_CHECK_TARGETS; do
-          cargo check --target $target --workspace --exclude defmt-itm --exclude firmware
-        done
-        cargo check --target thumbv7em-none-eabi -p defmt-itm -p firmware
+        cargo check --target thumbv6m-none-eabi --workspace --exclude defmt-itm --exclude firmware
+        cargo check --target thumbv7m-none-eabi --workspace
     - name: Build panic-probe with different features
       working-directory: firmware/panic-probe
       run: |
