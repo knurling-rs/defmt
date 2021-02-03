@@ -71,7 +71,7 @@ jobs:
       # some crates will not compile to targets with no CAS support
       run: |
         cargo check --target thumbv6m-none-eabi --workspace --exclude defmt-itm --exclude firmware
-        cargo check --target thumbv7m-none-eabi --workspace
+        cargo check --target thumbv7em-none-eabi --workspace
     - name: Build panic-probe with different features
       working-directory: firmware/panic-probe
       run: |
