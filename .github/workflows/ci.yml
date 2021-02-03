@@ -38,25 +38,16 @@ jobs:
     - name: Install C libraries for tooling on macOS
       if: matrix.os == 'macOS-latest'
       run: brew install libusb
-    - name: Check that all crates build
-      run: RUSTFLAGS='--deny warnings' cargo check --all
+    - name: Check that all crates that can be compiled for the host build
+      run: RUSTFLAGS='--deny warnings' cargo check --workspace
       shell: bash
-    - name: Check that crates build with unstable-test feature
-      run: RUSTFLAGS='--deny warnings' cargo check --all --features unstable-test
+    - name: Check that defmt compiles with different features
+      run: |
+        RUSTFLAGS='--deny warnings' cargo check --all --features unstable-test
+        RUSTFLAGS='--deny warnings' cargo check --all --features alloc
       shell: bash
-    - name: Run tests on Ubuntu
-      if: matrix.os == 'linux-latest'
+    - name: Run all unit tests on the host
       run: cargo test --workspace --features unstable-test
-    - name: Run tests on macOS
-      # NOTE defmt does not build for macOS because its `cortex-m-rt` dependency doesn't
-      # (see https://github.com/rust-embedded/cortex-m-rt/issues/74), so we cannot use
-      # `cargo test --workspace` and have to build the test suites individually instead
-      if: matrix.os == 'macOS-latest'
-      run: cargo test -p defmt -p defmt-decoder -p defmt-parser -p defmt-macros -p defmt-logger -p defmt-print --all-features
-    - name: Run tests on Windows
-      # NOTE there might be a linker bug on the CI's current Windows installation, still investigating
-      if: matrix.os == 'windows-latest'
-      run: cargo test -p defmt -p defmt-decoder -p defmt-parser -p defmt-macros -p defmt-logger -p defmt-print --all-features
   no-std:
     runs-on: ubuntu-latest
     steps:
@@ -69,12 +60,18 @@ jobs:
         target: ${{ env.NO_STD_TARGET }}
     - name: Install Rust targets
       run: rustup +stable target add ${{ env.NO_STD_TARGET }} ${{ env.NO_STD_CHECK_TARGETS }}
-    - name: Build defmt for no_std targets
+    - name: Build defmt crates for no_std targets
       run: |
         for target in $NO_STD_CHECK_TARGETS; do
-          cargo check --target $target
-          cargo check --target $target --features alloc
+          cargo check --target $target -p defmt
+          cargo check --target $target -p defmt --features alloc
         done
+    - name: Build defmt dependent crates for cortex-m targets
+      working-directory: firmware
+      # some crates will not compile to targets with no CAS support
+      run: |
+        cargo check --target thumbv6m-none-eabi --workspace --exclude defmt-itm --exclude firmware
+        cargo check --target thumbv7em-none-eabi --workspace
     - name: Build panic-probe with different features
       working-directory: firmware/panic-probe
       run: |

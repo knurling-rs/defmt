@@ -34,6 +34,8 @@ members = [
   "parser",
   "print",
   "qemu-run",
+]
+exclude = [
   "firmware/*",
 ]
 
