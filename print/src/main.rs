@@ -87,8 +87,7 @@ fn main() -> anyhow::Result<()> {
                 Err(defmt_decoder::DecodeError::UnexpectedEof) => break,
                 Err(defmt_decoder::DecodeError::Malformed) => {
                     log::error!("failed to decode defmt data: {:x?}", frames);
-                    #[allow(clippy::try_err)]
-                    Err(defmt_decoder::DecodeError::Malformed)?
+                    return Err(defmt_decoder::DecodeError::Malformed.into());
                 }
             }
         }
