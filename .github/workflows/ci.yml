@@ -39,7 +39,7 @@ jobs:
       if: matrix.os == 'macOS-latest'
       run: brew install libusb
     - name: Check that all crates that can be compiled for the host build
-      run: RUSTFLAGS='--deny warnings' cargo check --all --workspace
+      run: RUSTFLAGS='--deny warnings' cargo check --workspace
       shell: bash
     - name: Check that defmt compiles with different features
       run: |
