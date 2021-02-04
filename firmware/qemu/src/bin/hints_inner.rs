@@ -111,6 +111,19 @@ fn main() -> ! {
         );
     }
 
+    {
+        #[derive(defmt::Format)]
+        struct S1<T> {
+            x: T,
+            y: u8,
+        }
+
+        // outputs: "S { x: hi, y: 42 }"
+        defmt::info!("{}", S1 { x: "hi", y: 42 });
+        // outputs: "S { x: hi, y: 0x2a }"
+        defmt::info!("{:x}", S1 { x: "hi", y: 42 });
+    }
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
