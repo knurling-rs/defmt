@@ -1,14 +1,15 @@
 [package]
 authors = ["The Knurling-rs developers"]
-categories = ["embedded", "no-std"]
+categories = ["embedded", "no-std", "development-tools::debugging", "value-formatting"]
 description = "A highly efficient logging framework that targets resource-constrained devices, like microcontrollers"
 edition = "2018"
-keywords = ["knurling", "logging", "formatting"]
+keywords = ["knurling", "logging", "logger", "formatting", "formatter"]
 license = "MIT OR Apache-2.0"
 links = "defmt" # Prevent multiple versions of defmt being linked
 name = "defmt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
+homepage = "https://knurling.ferrous-systems.com/"
 version = "0.1.3"
 
 [features]
