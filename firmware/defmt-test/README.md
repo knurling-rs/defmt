@@ -41,13 +41,11 @@ mod tests {
 ``` console
 $ cargo test -p testsuite
 (..)
-0.000000 INFO  running assert_true ..
+0.000000 INFO  (1/2) running `assert_true`...
 └─ test::tests::__defmt_test_entry @ tests/test.rs:7
-0.000001 INFO  .. assert_true ok
+0.000001 INFO  (2/2) running `assert_false`...
 └─ test::tests::__defmt_test_entry @ tests/test.rs:7
-0.000002 INFO  running assert_false ..
-└─ test::tests::__defmt_test_entry @ tests/test.rs:7
-0.000003 ERROR panicked at 'TODO: write actual tests', testsuite/tests/test.rs:16:9
+0.000002 ERROR panicked at 'TODO: write actual tests', testsuite/tests/test.rs:16:9
 └─ panic_probe::print_defmt::print @ (..omitted..)
 stack backtrace:
    0: HardFaultTrampoline
@@ -110,15 +108,22 @@ mod tests {
 
 ``` console
 $ cargo test -p testsuite
-0.000000 INFO  running assert_true ..
+0.000000 INFO  (1/2) running `assert_true`...
 └─ test::tests::__defmt_test_entry @ tests/test.rs:11
-0.000001 INFO  .. assert_true ok
+0.000001 INFO  (2/2) running `assert_flag`...
 └─ test::tests::__defmt_test_entry @ tests/test.rs:11
-0.000002 INFO  running assert_flag ..
-└─ test::tests::__defmt_test_entry @ tests/test.rs:11
-0.000003 INFO  .. assert_flag ok
+0.000002 INFO  all tests passed!
 └─ test::tests::__defmt_test_entry @ tests/test.rs:11
 ```
+
+## Test Outcome
+
+Test functions may either return `()` and panic on failure, or return any other type that implements the `TestOutcome` trait, such as `Result`.
+
+This allows tests to indicate failure via `Result`, which allows using the `?` operator to propagate errors.
+
+Similar to Rust's built-in `#[should_panic]` attribute, `defmt-test` supports a `#[should_error]` attribute, which inverts the meaning of the returned `TestOutcome`.
+`Err` makes the test pass, while `Ok`/`()` make it fail.
 
 ## Support
 
