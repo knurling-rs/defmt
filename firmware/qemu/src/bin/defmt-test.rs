@@ -43,6 +43,7 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
     use cortex_m_semihosting::debug;
 
     loop {
-        debug::exit(debug::EXIT_FAILURE)
+        // NOTE: we return `EXIT_SUCCESS` here, because `test.sh` expects all executables to succeed
+        debug::exit(debug::EXIT_SUCCESS)
     }
 }
