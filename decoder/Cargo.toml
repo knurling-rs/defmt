@@ -16,6 +16,12 @@ colored = "2.0.0"
 leb128 = "0.2.4"
 ryu = "1"
 
+
+# logger
+ansi_term = "0.12.1"
+difference = "2.0.0"
+log = { version = "0.4.13", features = ["std"] }
+
 # elf2table
 anyhow = "1.0.32"
 gimli = "0.22.0"
@@ -28,11 +34,6 @@ version = "0.21.0"
 default-features = false
 features = ["read_core", "elf", "std"]
 
-# logger
-ansi_term = "0.12.1"
-colored = "2.0.0"
-difference = "2.0.0"
-log = { version = "0.4.13", features = ["std"] }
 
 [build-dependencies]
 semver = "0.11.0"
