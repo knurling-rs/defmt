@@ -29,7 +29,6 @@ trybuild = "1.0.37"
 members = [
   ".",
   "decoder",
-  "elf2table",
   "logger",
   "macros",
   "parser",

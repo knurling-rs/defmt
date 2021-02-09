@@ -24,10 +24,9 @@ use std::{
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
+use crate::DEFMT_VERSION;
 pub use defmt_parser::Level;
 use defmt_parser::{get_max_bitfield_range, DisplayHint, Fragment, Parameter, ParserMode, Type};
-
-include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
@@ -1142,7 +1141,7 @@ fn zigzag_decode(unsigned: u64) -> i64 {
 mod tests {
     use super::*;
     use super::{Frame, Level, Table};
-    use crate::{merge_bitfields, Arg};
+    use crate::decoder::{merge_bitfields, Arg};
     use std::collections::BTreeMap;
 
     // helper function to initiate decoding and assert that the result is as expected.

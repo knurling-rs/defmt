@@ -15,7 +15,6 @@ version = "0.1.0"
 [dependencies]
 anyhow = "1.0.38"
 defmt-decoder = { version = "0.1.4", path = "../decoder", features = ["unstable"] }
-defmt-elf2table = { version = "0.1.0", path = "../elf2table", features = ["unstable"] }
 defmt-logger = { version = "0.1.0", path = "../logger", features = ["unstable"] }
 log = "0.4.13"
 structopt = "0.3.21"
