@@ -48,6 +48,7 @@ jobs:
       shell: bash
     - name: Run all unit tests on the host
       run: cargo test --workspace --features unstable-test
+
   no-std:
     runs-on: ubuntu-latest
     steps:
@@ -158,7 +159,7 @@ jobs:
       working-directory: firmware/qemu
       run: ./test.sh
 
- # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
+  # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
   # bors.tech integration
   ci-success:
     name: ci
@@ -166,6 +167,8 @@ jobs:
     needs:
       - test
       - no-std
+      - clippy
+      - rustfmt
       - mdbook
       - qemu
     runs-on: ubuntu-20.04
