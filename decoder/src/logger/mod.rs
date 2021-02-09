@@ -12,11 +12,12 @@ use crate::decoder::Frame;
 use ansi_term::Colour;
 use colored::{Color, Colorize};
 use difference::{Changeset, Difference};
-use log::{Level, Metadata, Record};
+use log::{Level, Log, Metadata, Record};
 
 use std::{
     fmt::{self, Write as _},
-    io,
+    io::{self, Write},
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
@@ -262,4 +263,106 @@ fn color_diff(text: String) -> String {
 
     // keep output as it is
     text.bold().to_string()
+}
+
+/// Initializes a `log` sink that handles defmt frames.
+///
+/// Defmt frames will be printed to stdout, other logs to stderr.
+///
+/// The caller has to provide a `should_log` closure that determines whether a log record should be
+/// printed.
+///
+/// If `always_include_location` is `true`, a second line containing location information will be
+/// printed for *all* records, not just for defmt frames.
+pub fn init_logger(
+    always_include_location: bool,
+    should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static,
+) {
+    log::set_boxed_logger(Box::new(Logger {
+        always_include_location,
+        should_log: Box::new(should_log),
+        timing_align: AtomicUsize::new(8),
+    }))
+    .unwrap();
+    log::set_max_level(log::LevelFilter::Trace);
+}
+
+struct Logger {
+    always_include_location: bool,
+
+    should_log: Box<dyn Fn(&log::Metadata) -> bool + Sync + Send>,
+
+    /// Number of characters used by the timestamp. This may increase over time and is used to align
+    /// messages.
+    timing_align: AtomicUsize,
+}
+
+impl Log for Logger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        (self.should_log)(metadata)
+    }
+
+    fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
+        match DefmtRecord::new(record) {
+            Some(defmt) => {
+                // defmt goes to stdout, since it's the primary output produced by this tool.
+                let stdout = io::stdout();
+                let mut sink = stdout.lock();
+
+                let len = defmt.timestamp().len();
+                self.timing_align.fetch_max(len, Ordering::Relaxed);
+                let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
+
+                defmt
+                    .print()
+                    .include_location(true) // always include location for defmt output
+                    .min_timestamp_width(min_timestamp_width)
+                    .print_colored(&mut sink)
+                    .ok();
+            }
+            None => {
+                // non-defmt logs go to stderr
+                let stderr = io::stderr();
+                let mut sink = stderr.lock();
+
+                let level_color = match record.level() {
+                    Level::Error => Color::Red,
+                    Level::Warn => Color::Yellow,
+                    Level::Info => Color::Green,
+                    Level::Debug => Color::BrightWhite,
+                    Level::Trace => Color::BrightBlack,
+                };
+
+                let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
+
+                writeln!(
+                    sink,
+                    "{timestamp:>0$} {level:5} {args}",
+                    min_timestamp_width,
+                    timestamp = "(HOST)",
+                    level = record.level().to_string().color(level_color),
+                    args = record.args()
+                )
+                .ok();
+
+                if let Some(file) = record.file() {
+                    // NOTE will be `Some` if `file` is `Some`
+                    let mod_path = record.module_path().unwrap();
+                    if self.always_include_location {
+                        let mut loc = file.to_string();
+                        if let Some(line) = record.line() {
+                            loc.push_str(&format!(":{}", line));
+                        }
+                        writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed()).ok();
+                    }
+                }
+            }
+        }
+    }
+
+    fn flush(&self) {}
 }
