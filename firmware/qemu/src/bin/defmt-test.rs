@@ -8,6 +8,9 @@ mod tests {
     use core::u8::MAX;
     use defmt::{assert, assert_eq};
 
+    #[init]
+    fn init() {}
+
     #[test]
     fn assert_true() -> () {
         assert!(true);
@@ -18,9 +21,16 @@ mod tests {
         assert_eq!(255, MAX);
     }
 
+    #[cfg(not(never))]
     #[test]
     fn result() -> Result<(), ()> {
         Ok(())
+    }
+
+    #[cfg(never)]
+    #[test]
+    fn doesnt_compile() {
+        because::this::doesnt::exist();
     }
 
     #[test]
