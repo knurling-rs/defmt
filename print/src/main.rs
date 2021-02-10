@@ -32,12 +32,13 @@ fn main() -> anyhow::Result<()> {
     }
 
     let verbose = false;
-    defmt_logger::init(verbose);
+    defmt_decoder::logger::init(verbose);
 
     let bytes = fs::read(&opts.elf.unwrap())?;
 
-    let table = defmt_elf2table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
-    let locs = defmt_elf2table::get_locations(&bytes, &table)?;
+    let table =
+        defmt_decoder::elf2table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
+    let locs = defmt_decoder::elf2table::get_locations(&bytes, &table)?;
 
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
         Some(locs)
@@ -58,7 +59,7 @@ fn main() -> anyhow::Result<()> {
         frames.extend_from_slice(&buf[..n]);
 
         loop {
-            match defmt_decoder::decode(&frames, &table) {
+            match defmt_decoder::decoder::decode(&frames, &table) {
                 Ok((frame, consumed)) => {
                     // NOTE(`[]` indexing) all indices in `table` have already been
                     // verified to exist in the `locs` map
@@ -78,16 +79,21 @@ fn main() -> anyhow::Result<()> {
                     }
 
                     // Forward the defmt frame to our logger.
-                    defmt_logger::log_defmt(&frame, file.as_deref(), line, mod_path.as_deref());
+                    defmt_decoder::logger::log_defmt(
+                        &frame,
+                        file.as_deref(),
+                        line,
+                        mod_path.as_deref(),
+                    );
 
                     let num_frames = frames.len();
                     frames.rotate_left(consumed);
                     frames.truncate(num_frames - consumed);
                 }
-                Err(defmt_decoder::DecodeError::UnexpectedEof) => break,
-                Err(defmt_decoder::DecodeError::Malformed) => {
+                Err(defmt_decoder::decoder::DecodeError::UnexpectedEof) => break,
+                Err(defmt_decoder::decoder::DecodeError::Malformed) => {
                     log::error!("failed to decode defmt data: {:x?}", frames);
-                    return Err(defmt_decoder::DecodeError::Malformed.into());
+                    return Err(defmt_decoder::decoder::DecodeError::Malformed.into());
                 }
             }
         }

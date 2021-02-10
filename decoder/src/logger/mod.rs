@@ -5,9 +5,9 @@
 
 #![cfg(feature = "unstable")]
 
+use crate::decoder::Frame;
 use ansi_term::Colour;
 use colored::{Color, Colorize};
-use defmt_decoder::Frame;
 use difference::{Changeset, Difference};
 use log::{Level, Log, Metadata, Record};
 
@@ -37,11 +37,11 @@ pub fn log_defmt(
     module_path: Option<&str>,
 ) {
     let level = match frame.level() {
-        defmt_decoder::Level::Trace => Level::Trace,
-        defmt_decoder::Level::Debug => Level::Debug,
-        defmt_decoder::Level::Info => Level::Info,
-        defmt_decoder::Level::Warn => Level::Warn,
-        defmt_decoder::Level::Error => Level::Error,
+        crate::decoder::Level::Trace => Level::Trace,
+        crate::decoder::Level::Debug => Level::Debug,
+        crate::decoder::Level::Info => Level::Info,
+        crate::decoder::Level::Warn => Level::Warn,
+        crate::decoder::Level::Error => Level::Error,
     };
 
     let timestamp = frame

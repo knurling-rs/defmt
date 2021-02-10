@@ -16,9 +16,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+pub use crate::decoder::Table;
+use crate::decoder::{StringEntry, TableEntry, Tag};
 use anyhow::{anyhow, bail, ensure};
-pub use defmt_decoder::Table;
-use defmt_decoder::{StringEntry, TableEntry, Tag};
 use object::{Object, ObjectSection};
 
 /// Parses an ELF file and returns the decoded `defmt` table.
@@ -88,7 +88,7 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
     };
 
     if check_version {
-        defmt_decoder::check_version(version).map_err(anyhow::Error::msg)?;
+        crate::decoder::check_version(version).map_err(anyhow::Error::msg)?;
     }
 
     // second pass to demangle symbols
