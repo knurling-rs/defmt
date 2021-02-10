@@ -21,7 +21,7 @@ use core::{
 use cortex_m::{interrupt, itm, peripheral::ITM, register};
 
 #[cfg(armv6m)]
-compile_error! {"`defmt-itm` cannot be used on Cortex-M0(+) chips, because it requires an ITM peripheral"}
+compile_error!("`defmt-itm` cannot be used on Cortex-M0(+) chips, because it requires an ITM peripheral");
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 
