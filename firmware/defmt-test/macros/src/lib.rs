@@ -167,7 +167,6 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
         let should_error = test.should_error;
         let ident = &test.func.sig.ident;
         let span = test.func.sig.ident.span();
-        let cfgs = &test.cfgs;
         let call = if let Some(input) = test.input.as_ref() {
             if let Some(state) = &state_ty {
                 if input.ty != **state {
@@ -188,20 +187,31 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             quote!(#ident())
         };
         unit_test_calls.push(quote!(
-            #( #cfgs )*
             #krate::export::check_outcome(#call, #should_error);
         ));
     }
 
     let test_functions = tests.iter().map(|test| &test.func);
+    let test_cfgs = tests.iter().map(|test| &test.cfgs);
+    let declare_test_count = {
+        let test_cfgs = test_cfgs.clone();
+        quote!(
+            // We can't evaluate `#[cfg]`s in the macro, but this works too.
+            const __DEFMT_TEST_COUNT: usize = {
+                let mut counter = 0;
+                #(
+                    #(#test_cfgs)*
+                    { counter += 1; }
+                )*
+                counter
+            };
+        )
+    };
     let unit_test_running = tests
         .iter()
-        .enumerate()
-        .map(|(i, test)| {
+        .map(|test| {
             format!(
-                "({}/{}) running `{}`...",
-                i + 1,
-                tests.len(),
+                "({{=usize}}/{{=usize}}) running `{}`...",
                 test.func.sig.ident
             )
         })
@@ -211,10 +221,17 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
         // TODO use `cortex-m-rt::entry` here to get the `static mut` transform
         #[export_name = "main"]
         unsafe extern "C" fn __defmt_test_entry() -> ! {
+            #declare_test_count
             #init_expr
+
+            let mut __defmt_test_number: usize = 1;
             #(
-                defmt::info!(#unit_test_running);
-                #unit_test_calls
+                #(#test_cfgs)*
+                {
+                    defmt::info!(#unit_test_running, __defmt_test_number, __DEFMT_TEST_COUNT);
+                    #unit_test_calls
+                    __defmt_test_number += 1;
+                }
             )*
 
             defmt::info!("all tests passed!");
