@@ -15,12 +15,18 @@ pub use defmt_test_macros::tests;
 #[doc(hidden)]
 pub mod export;
 
-/// Types indicating whether a test succeeded or failed.
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for () {}
+    impl<T, E> Sealed for Result<T, E> {}
+}
+
+/// Indicates whether a test succeeded or failed.
 ///
 /// This is comparable to the `Termination` trait in libstd, except stable and tailored towards the
-/// needs of defmt-test. It can be implemented by hand if desired, though normal usage shouldn't
-/// require that.
-pub trait TestOutcome: Format {
+/// needs of defmt-test. It is implemented for `()`, which always indicates success, and `Result`,
+/// where `Ok` indicates success.
+pub trait TestOutcome: Format + sealed::Sealed {
     fn is_success(&self) -> bool;
 }
 
