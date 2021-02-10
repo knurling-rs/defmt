@@ -452,6 +452,7 @@ mod if_alloc {
 }
 
 impl Format for core::convert::Infallible {
+    #[inline]
     fn format(&self, _: Formatter) {
         // type cannot be instantiated so nothing to do here
         match *self {}
