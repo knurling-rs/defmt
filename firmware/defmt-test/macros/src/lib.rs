@@ -36,30 +36,34 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
     let mut tests = vec![];
     let mut imports = vec![];
     for item in items {
-        let item_span = item.span();
         match item {
             Item::Fn(f) => {
-                // TODO span could be better here
-                let attr = if let Some(attr) = f
-                    .attrs
-                    .iter()
-                    .filter_map(|attr| {
-                        if path_is_ident(&attr.path, "init") {
-                            Some(Attr::Init)
-                        } else if path_is_ident(&attr.path, "test") {
-                            Some(Attr::Test)
-                        } else {
-                            None
-                        }
-                    })
-                    .next()
-                {
-                    attr
-                } else {
-                    return Err(parse::Error::new(
-                        item_span,
-                        "only attributes `#[test]` and `#[init]` are accepted",
-                    ));
+                let mut test_kind = None;
+                let mut should_error = false;
+
+                for attr in &f.attrs {
+                    if path_is_ident(&attr.path, "init") {
+                        test_kind = Some(Attr::Init);
+                    } else if path_is_ident(&attr.path, "test") {
+                        test_kind = Some(Attr::Test);
+                    } else if path_is_ident(&attr.path, "should_error") {
+                        should_error = true;
+                    } else {
+                        return Err(parse::Error::new(
+                            attr.span(),
+                            "only attributes `#[test]`, `#[init]` and `#[should_error]` are accepted",
+                        ));
+                    }
+                }
+
+                let attr = match test_kind {
+                    Some(it) => it,
+                    None => {
+                        return Err(parse::Error::new(
+                            f.span(),
+                            "function requires `#[init]` or `#[test]` attribute",
+                        ));
+                    }
                 };
 
                 match attr {
@@ -68,6 +72,13 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
                                 "only a single `#[init]` function can be defined",
+                            ));
+                        }
+
+                        if should_error {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[should_error]` is not allowed on the `#[init]` function",
                             ));
                         }
 
@@ -91,10 +102,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                     }
 
                     Attr::Test => {
-                        if check_fn_sig(&f.sig).is_err()
-                            || f.sig.output != ReturnType::Default
-                            || f.sig.inputs.len() > 1
-                        {
+                        if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
                                 "`#[test]` function must have signature `fn([&mut Type])` (parameter is optional)",
@@ -122,10 +130,17 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                             None
                         };
 
+                        let ret_ty = match f.sig.output {
+                            ReturnType::Default => syn::parse_str("()").unwrap(),
+                            ReturnType::Type(_, ty) => (*ty).clone(),
+                        };
+
                         tests.push(Test {
                             block: f.block,
                             ident: f.sig.ident,
                             input,
+                            ret_ty,
+                            should_error,
                         })
                     }
                 }
@@ -162,6 +177,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
 
     let mut unit_test_calls = vec![];
     for test in &tests {
+        let should_error = test.should_error;
         let ident = &test.ident;
         let span = ident.span();
         let call = if let Some(input) = test.input.as_ref() {
@@ -179,16 +195,19 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 ));
             }
 
-            quote!(#ident(&mut state);)
+            quote!(#ident(&mut state))
         } else {
-            quote!(#ident();)
+            quote!(#ident())
         };
-        unit_test_calls.push(call);
+        unit_test_calls.push(quote!(
+            #krate::export::check_outcome(#call, #should_error);
+        ));
     }
     let unit_test_names = tests.iter().map(|test| &test.ident);
     let unit_test_inputs = tests
         .iter()
         .map(|test| test.input.as_ref().map(|input| &input.arg));
+    let unit_test_outputs = tests.iter().map(|test| &test.ret_ty);
     let unit_test_blocks = tests.iter().map(|test| &test.block);
     let unit_test_running = tests
         .iter()
@@ -213,7 +232,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
         #init_fn
 
         #(
-            fn #unit_test_names(#unit_test_inputs) #unit_test_blocks
+            fn #unit_test_names(#unit_test_inputs) -> #unit_test_outputs #unit_test_blocks
         )*
     })
     .into())
@@ -235,6 +254,8 @@ struct Test {
     block: Box<Block>,
     ident: Ident,
     input: Option<Input>,
+    ret_ty: Type,
+    should_error: bool,
 }
 
 struct Input {

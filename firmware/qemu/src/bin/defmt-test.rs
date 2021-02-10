@@ -1,25 +1,38 @@
 #![no_std]
 #![no_main]
 
-use core::u8::MAX;
 use defmt_semihosting as _; // global logger
 
 #[defmt_test::tests]
 mod tests {
-    use super::MAX;
+    use core::u8::MAX;
+    use defmt::{assert, assert_eq};
+
     #[test]
-    fn assert_true() {
-        defmt::assert!(true)
+    fn assert_true() -> () {
+        assert!(true);
     }
 
     #[test]
     fn assert_imported_max() {
-        defmt::assert_eq!(255, MAX)
+        assert_eq!(255, MAX);
     }
 
     #[test]
-    fn assert_eq() {
-        defmt::assert_eq!(24, 42, "TODO: write actual tests")
+    fn result() -> Result<(), ()> {
+        Ok(())
+    }
+
+    #[test]
+    #[should_error]
+    fn should_error() -> Result<(), ()> {
+        Err(())
+    }
+
+    #[test]
+    #[should_error]
+    fn fail() -> Result<&'static str, ()> {
+        Ok("this should have returned `Err`")
     }
 }
 
@@ -30,6 +43,7 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
     use cortex_m_semihosting::debug;
 
     loop {
+        // NOTE: we return `EXIT_SUCCESS` here, because `test.sh` expects all executables to succeed
         debug::exit(debug::EXIT_SUCCESS)
     }
 }

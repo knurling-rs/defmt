@@ -18,3 +18,12 @@ defmt-test-macros = { version = "=0.1.1", path = "macros" }
 [dependencies.defmt]
 path = "../.."
 version = "0.1.0"
+
+[features]
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []
+default = ["defmt-trace"] # enable everything
