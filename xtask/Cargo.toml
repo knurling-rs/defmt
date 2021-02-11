@@ -1,0 +1,13 @@
+[package]
+name = "xtask"
+authors = ["The Knurling-rs developers"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+publish = false
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+console = "0.14.0"
+similar = "1.1.0"
