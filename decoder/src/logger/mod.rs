@@ -127,10 +127,11 @@ pub struct Printer<'a> {
 }
 
 impl<'a> Printer<'a> {
-    /// Whether to include location info (file, line) in the output.
+    /// Configure whether to include location info (file, line) in the output.
     ///
     /// If `true`, an additional line will be included in the output that contains file and line
-    /// information of the logging statement. By default, this is `false`.
+    /// information of the logging statement.
+    /// By default, this is `false`.
     pub fn include_location(&mut self, include_location: bool) -> &mut Self {
         self.include_location = include_location;
         self
