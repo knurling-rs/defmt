@@ -32,9 +32,9 @@ fn main() -> anyhow::Result<()> {
     }
 
     let verbose = false;
-    defmt_decoder::logger::init_logger(verbose, |metadata| {
+    defmt_decoder::log::init_logger(verbose, |metadata| {
         // We display *all* defmt frames, but nothing else.
-        defmt_decoder::logger::is_defmt_frame(metadata)
+        defmt_decoder::log::is_defmt_frame(metadata)
     });
 
     let bytes = fs::read(&opts.elf.unwrap())?;
@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
                     }
 
                     // Forward the defmt frame to our logger.
-                    defmt_decoder::logger::log_defmt(
+                    defmt_decoder::log::log_defmt(
                         &frame,
                         file.as_deref(),
                         line,
