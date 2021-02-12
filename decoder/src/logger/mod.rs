@@ -1,7 +1,7 @@
-//! This crate provides interoperability utilities between [`defmt`] and the [`log`] crate.
+//! This module provides interoperability utilities between [`defmt`] and the [`log`] crate.
 //!
-//! If you are implementing a custom defmt decoding tool, this crate can make it easier to integrate
-//! it with logs produced with the [`log`] crate.
+//! If you are implementing a custom defmt decoding tool, this module can make it easier to
+//! integrate it with logs produced with the [`log`] crate.
 //!
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
