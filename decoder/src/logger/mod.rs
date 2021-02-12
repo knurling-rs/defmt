@@ -64,16 +64,12 @@ pub fn is_defmt_frame(metadata: &Metadata) -> bool {
 /// A `log` record representing a defmt log frame.
 pub struct DefmtRecord<'a> {
     timestamp: &'a str,
-    level: Level,
-    args: fmt::Arguments<'a>,
-    module_path: Option<&'a str>,
-    file: Option<&'a str>,
-    line: Option<u32>,
+    log_record: &'a Record<'a>,
 }
 
 impl<'a> DefmtRecord<'a> {
     /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
-    pub fn new(record: &Record<'a>) -> Option<Self> {
+    pub fn new(record: &'a Record<'a>) -> Option<Self> {
         let target = record.metadata().target();
         let is_defmt = target.starts_with(DEFMT_TARGET_MARKER);
         if !is_defmt {
@@ -83,12 +79,8 @@ impl<'a> DefmtRecord<'a> {
         let timestamp = &target[DEFMT_TARGET_MARKER.len()..];
 
         Some(Self {
-            level: record.level(),
             timestamp,
-            args: *record.args(),
-            module_path: record.module_path(),
-            file: record.file(),
-            line: record.line(),
+            log_record: record,
         })
     }
 
@@ -98,23 +90,23 @@ impl<'a> DefmtRecord<'a> {
     }
 
     pub fn level(&self) -> Level {
-        self.level
+        self.log_record.level()
     }
 
     pub fn args(&self) -> &fmt::Arguments<'a> {
-        &self.args
+        self.log_record.args()
     }
 
     pub fn module_path(&self) -> Option<&'a str> {
-        self.module_path
+        self.log_record.module_path()
     }
 
     pub fn file(&self) -> Option<&'a str> {
-        self.file
+        self.log_record.file()
     }
 
     pub fn line(&self) -> Option<u32> {
-        self.line
+        self.log_record.line()
     }
 
     /// Returns a builder that can format this record for displaying it to the user.
@@ -172,17 +164,8 @@ impl<'a> Printer<'a> {
             args = color_diff(self.record.args().to_string()),
         )?;
 
-        if let Some(file) = self.record.file() {
-            // NOTE will be `Some` if `file` is `Some`
-            let mod_path = self.record.module_path().unwrap();
-            // Always include location info for defmt output.
-            if self.include_location {
-                let mut loc = file.to_string();
-                if let Some(line) = self.record.line() {
-                    loc.push_str(&format!(":{}", line));
-                }
-                writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed())?;
-            }
+        if self.include_location {
+            print_location(sink, self.record.log_record)?;
         }
 
         Ok(())
@@ -341,16 +324,8 @@ impl Log for Logger {
                 )
                 .ok();
 
-                if let Some(file) = record.file() {
-                    // NOTE will be `Some` if `file` is `Some`
-                    let mod_path = record.module_path().unwrap();
-                    if self.always_include_location {
-                        let mut loc = file.to_string();
-                        if let Some(line) = record.line() {
-                            loc.push_str(&format!(":{}", line));
-                        }
-                        writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed()).ok();
-                    }
+                if self.always_include_location {
+                    print_location(&mut sink, record).ok();
                 }
             }
         }
@@ -367,4 +342,18 @@ fn color_for_log_level(level: Level) -> Color {
         Level::Debug => Color::BrightWhite,
         Level::Trace => Color::BrightBlack,
     }
+}
+
+fn print_location<W: io::Write>(sink: &mut W, record: &Record) -> io::Result<()> {
+    if let Some(file) = record.file() {
+        // NOTE will always be `Some` if `file` is `Some`
+        let mod_path = record.module_path().unwrap();
+        let mut loc = file.to_string();
+        if let Some(line) = record.line() {
+            loc.push_str(&format!(":{}", line));
+        }
+        writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed())?;
+    }
+
+    Ok(())
 }
