@@ -4,10 +4,6 @@
 //! not meant to be consumed by other tools at the moment so all the API is unstable.
 
 // NOTE: always runs on the host
-#![cfg(feature = "unstable")]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(docsrs, doc(cfg(unstable)))]
-
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{self, Write as _};
 use core::ops::Range;

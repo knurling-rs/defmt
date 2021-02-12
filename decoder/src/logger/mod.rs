@@ -6,8 +6,6 @@
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
 
-#![cfg(feature = "unstable")]
-
 use crate::decoder::Frame;
 use ansi_term::Colour;
 use colored::{Color, Colorize};
