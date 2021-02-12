@@ -12,8 +12,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub use crate::decoder::Table;
-use crate::decoder::{StringEntry, TableEntry, Tag};
+pub use crate::Table;
+use crate::{StringEntry, TableEntry, Tag};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection};
 
@@ -84,7 +84,7 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
     };
 
     if check_version {
-        crate::decoder::check_version(version).map_err(anyhow::Error::msg)?;
+        crate::check_version(version).map_err(anyhow::Error::msg)?;
     }
 
     // second pass to demangle symbols

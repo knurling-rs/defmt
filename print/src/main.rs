@@ -62,7 +62,7 @@ fn main() -> anyhow::Result<()> {
         frames.extend_from_slice(&buf[..n]);
 
         loop {
-            match defmt_decoder::decoder::decode(&frames, &table) {
+            match defmt_decoder::decode(&frames, &table) {
                 Ok((frame, consumed)) => {
                     // NOTE(`[]` indexing) all indices in `table` have already been
                     // verified to exist in the `locs` map
@@ -93,10 +93,10 @@ fn main() -> anyhow::Result<()> {
                     frames.rotate_left(consumed);
                     frames.truncate(num_frames - consumed);
                 }
-                Err(defmt_decoder::decoder::DecodeError::UnexpectedEof) => break,
-                Err(defmt_decoder::decoder::DecodeError::Malformed) => {
+                Err(defmt_decoder::DecodeError::UnexpectedEof) => break,
+                Err(defmt_decoder::DecodeError::Malformed) => {
                     log::error!("failed to decode defmt data: {:x?}", frames);
-                    return Err(defmt_decoder::decoder::DecodeError::Malformed.into());
+                    return Err(defmt_decoder::DecodeError::Malformed.into());
                 }
             }
         }
