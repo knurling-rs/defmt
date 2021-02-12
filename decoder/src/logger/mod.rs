@@ -1,4 +1,7 @@
-//! A [`log`] logger that supports formatting [`defmt`] frames
+//! This module provides interoperability utilities between [`defmt`] and the [`log`] crate.
+//!
+//! If you are implementing a custom defmt decoding tool, this module can make it easier to
+//! integrate it with logs produced with the [`log`] crate.
 //!
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
@@ -12,22 +15,12 @@ use difference::{Changeset, Difference};
 use log::{Level, Log, Metadata, Record};
 
 use std::{
-    fmt::Write as _,
-    io,
+    fmt::{self, Write as _},
+    io::{self, Write},
     sync::atomic::{AtomicUsize, Ordering},
 };
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
-
-/// Initializes the `defmt-logger` logger.
-pub fn init(verbose: bool) {
-    log::set_boxed_logger(Box::new(Logger {
-        verbose,
-        timing_align: AtomicUsize::new(8),
-    }))
-    .unwrap();
-    log::set_max_level(log::LevelFilter::Trace);
-}
 
 /// Logs a defmt frame using the `log` facade.
 pub fn log_defmt(
@@ -63,98 +56,121 @@ pub fn log_defmt(
     );
 }
 
-struct Logger {
-    /// Whether to log `debug!` and `trace!`-level host messages.
-    verbose: bool,
-
-    /// Number of characters used by the timestamp. This may increase over time and is used to align
-    /// messages.
-    timing_align: AtomicUsize,
+/// Determines whether `metadata` belongs to a log record produced by [`log_defmt`].
+pub fn is_defmt_frame(metadata: &Metadata) -> bool {
+    metadata.target().starts_with(DEFMT_TARGET_MARKER)
 }
 
-impl Log for Logger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        if metadata.target().starts_with(DEFMT_TARGET_MARKER) {
-            // defmt is configured at firmware-level, we will print all of it.
-            true
-        } else {
-            // Host logs use `info!` as the default level, but with the `verbose` flag set we log at
-            // `trace!` level instead.
-            if self.verbose {
-                metadata.target().starts_with("probe_run")
-            } else {
-                metadata.target().starts_with("probe_run") && metadata.level() <= Level::Info
-            }
-        }
-    }
+/// A `log` record representing a defmt log frame.
+pub struct DefmtRecord<'a> {
+    timestamp: &'a str,
+    log_record: &'a Record<'a>,
+}
 
-    fn log(&self, record: &Record) {
-        if !self.enabled(record.metadata()) {
-            return;
-        }
-
-        let level_color = match record.level() {
-            Level::Error => Color::Red,
-            Level::Warn => Color::Yellow,
-            Level::Info => Color::Green,
-            Level::Debug => Color::BrightWhite,
-            Level::Trace => Color::BrightBlack,
-        };
-
+impl<'a> DefmtRecord<'a> {
+    /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
+    pub fn new(record: &'a Record<'a>) -> Option<Self> {
         let target = record.metadata().target();
         let is_defmt = target.starts_with(DEFMT_TARGET_MARKER);
+        if !is_defmt {
+            return None;
+        }
 
-        let timestamp = if is_defmt {
-            let timestamp = target[DEFMT_TARGET_MARKER.len()..].parse::<u64>().unwrap();
-            let seconds = timestamp / 1000000;
-            let micros = timestamp % 1000000;
-            format!("{}.{:06}", seconds, micros)
-        } else {
-            // Mark host logs.
-            "(HOST)".to_string()
-        };
+        let timestamp = &target[DEFMT_TARGET_MARKER.len()..];
 
-        self.timing_align
-            .fetch_max(timestamp.len(), Ordering::Relaxed);
+        Some(Self {
+            timestamp,
+            log_record: record,
+        })
+    }
 
-        let (stdout, stderr, mut stdout_lock, mut stderr_lock);
-        let sink: &mut dyn io::Write = if is_defmt {
-            // defmt goes to stdout, since it's the primary output produced by this tool.
-            stdout = io::stdout();
-            stdout_lock = stdout.lock();
-            &mut stdout_lock
-        } else {
-            // Everything else goes to stderr.
-            stderr = io::stderr();
-            stderr_lock = stderr.lock();
-            &mut stderr_lock
-        };
+    /// Returns the formatted defmt timestamp.
+    pub fn timestamp(&self) -> &str {
+        self.timestamp
+    }
 
+    pub fn level(&self) -> Level {
+        self.log_record.level()
+    }
+
+    pub fn args(&self) -> &fmt::Arguments<'a> {
+        self.log_record.args()
+    }
+
+    pub fn module_path(&self) -> Option<&'a str> {
+        self.log_record.module_path()
+    }
+
+    pub fn file(&self) -> Option<&'a str> {
+        self.log_record.file()
+    }
+
+    pub fn line(&self) -> Option<u32> {
+        self.log_record.line()
+    }
+
+    /// Returns a builder that can format this record for displaying it to the user.
+    pub fn printer(&'a self) -> Printer<'a> {
+        Printer {
+            record: self,
+            include_location: false,
+            min_timestamp_width: 0,
+        }
+    }
+}
+
+/// Printer for `DefmtRecord`s.
+pub struct Printer<'a> {
+    record: &'a DefmtRecord<'a>,
+    include_location: bool,
+    min_timestamp_width: usize,
+}
+
+impl<'a> Printer<'a> {
+    /// Configure whether to include location info (file, line) in the output.
+    ///
+    /// If `true`, an additional line will be included in the output that contains file and line
+    /// information of the logging statement.
+    /// By default, this is `false`.
+    pub fn include_location(&mut self, include_location: bool) -> &mut Self {
+        self.include_location = include_location;
+        self
+    }
+
+    /// Pads the defmt timestamp to take up at least the given number of characters.
+    pub fn min_timestamp_width(&mut self, min_timestamp_width: usize) -> &mut Self {
+        self.min_timestamp_width = min_timestamp_width;
+        self
+    }
+
+    /// Prints the colored log frame to `sink`.
+    ///
+    /// The format is as follows (this is not part of the stable API and may change):
+    ///
+    /// ```text
+    /// <timestamp> <level> <args>
+    /// └─ <module> @ <file>:<line>
+    /// ```
+    pub fn print_colored<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         writeln!(
             sink,
             "{timestamp:>0$} {level:5} {args}",
-            self.timing_align.load(Ordering::Relaxed),
-            timestamp = timestamp,
-            level = record.level().to_string().color(level_color),
-            args = color_diff(record.args().to_string()),
-        )
-        .ok();
+            self.min_timestamp_width,
+            timestamp = self.record.timestamp(),
+            level = self
+                .record
+                .level()
+                .to_string()
+                .color(color_for_log_level(self.record.level())),
+            args = color_diff(self.record.args().to_string()),
+        )?;
 
-        if let Some(file) = record.file() {
-            // NOTE will be `Some` if `file` is `Some`
-            let mod_path = record.module_path().unwrap();
-            // Always include location info for defmt output.
-            if is_defmt || self.verbose {
-                let mut loc = file.to_string();
-                if let Some(line) = record.line() {
-                    loc.push_str(&format!(":{}", line));
-                }
-                writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed()).ok();
-            }
+        if self.include_location {
+            print_location(sink, self.record.log_record)?;
         }
-    }
 
-    fn flush(&self) {}
+        Ok(())
+    }
 }
 
 // color the output of `defmt::assert_eq`
@@ -227,4 +243,118 @@ fn color_diff(text: String) -> String {
 
     // keep output as it is
     text.bold().to_string()
+}
+
+/// Initializes a `log` sink that handles defmt frames.
+///
+/// Defmt frames will be printed to stdout, other logs to stderr.
+///
+/// The caller has to provide a `should_log` closure that determines whether a log record should be
+/// printed.
+///
+/// If `always_include_location` is `true`, a second line containing location information will be
+/// printed for *all* records, not just for defmt frames (defmt frames always get location info
+/// included if it is available, regardless of this setting).
+pub fn init_logger(
+    always_include_location: bool,
+    should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static,
+) {
+    log::set_boxed_logger(Box::new(Logger {
+        always_include_location,
+        should_log: Box::new(should_log),
+        timing_align: AtomicUsize::new(8),
+    }))
+    .unwrap();
+    log::set_max_level(log::LevelFilter::Trace);
+}
+
+struct Logger {
+    always_include_location: bool,
+
+    should_log: Box<dyn Fn(&log::Metadata) -> bool + Sync + Send>,
+
+    /// Number of characters used by the timestamp. This may increase over time and is used to align
+    /// messages.
+    timing_align: AtomicUsize,
+}
+
+impl Log for Logger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        (self.should_log)(metadata)
+    }
+
+    fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
+        match DefmtRecord::new(record) {
+            Some(defmt) => {
+                // defmt goes to stdout, since it's the primary output produced by this tool.
+                let stdout = io::stdout();
+                let mut sink = stdout.lock();
+
+                let len = defmt.timestamp().len();
+                self.timing_align.fetch_max(len, Ordering::Relaxed);
+                let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
+
+                defmt
+                    .printer()
+                    .include_location(true) // always include location for defmt output
+                    .min_timestamp_width(min_timestamp_width)
+                    .print_colored(&mut sink)
+                    .ok();
+            }
+            None => {
+                // non-defmt logs go to stderr
+                let stderr = io::stderr();
+                let mut sink = stderr.lock();
+
+                let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
+
+                writeln!(
+                    sink,
+                    "{timestamp:>0$} {level:5} {args}",
+                    min_timestamp_width,
+                    timestamp = "(HOST)",
+                    level = record
+                        .level()
+                        .to_string()
+                        .color(color_for_log_level(record.level())),
+                    args = record.args()
+                )
+                .ok();
+
+                if self.always_include_location {
+                    print_location(&mut sink, record).ok();
+                }
+            }
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+fn color_for_log_level(level: Level) -> Color {
+    match level {
+        Level::Error => Color::Red,
+        Level::Warn => Color::Yellow,
+        Level::Info => Color::Green,
+        Level::Debug => Color::BrightWhite,
+        Level::Trace => Color::BrightBlack,
+    }
+}
+
+fn print_location<W: io::Write>(sink: &mut W, record: &Record) -> io::Result<()> {
+    if let Some(file) = record.file() {
+        // NOTE will always be `Some` if `file` is `Some`
+        let mod_path = record.module_path().unwrap();
+        let mut loc = file.to_string();
+        if let Some(line) = record.line() {
+            loc.push_str(&format!(":{}", line));
+        }
+        writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed())?;
+    }
+
+    Ok(())
 }
