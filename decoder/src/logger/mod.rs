@@ -273,7 +273,8 @@ fn color_diff(text: String) -> String {
 /// printed.
 ///
 /// If `always_include_location` is `true`, a second line containing location information will be
-/// printed for *all* records, not just for defmt frames.
+/// printed for *all* records, not just for defmt frames (defmt frames always get location info
+/// included if it is available, regardless of this setting).
 pub fn init_logger(
     always_include_location: bool,
     should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static,
