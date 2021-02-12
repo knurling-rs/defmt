@@ -110,7 +110,7 @@ impl<'a> DefmtRecord<'a> {
     }
 
     /// Returns a builder that can format this record for displaying it to the user.
-    pub fn print(&'a self) -> Printer<'a> {
+    pub fn printer(&'a self) -> Printer<'a> {
         Printer {
             record: self,
             include_location: false,
@@ -298,7 +298,7 @@ impl Log for Logger {
                 let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
                 defmt
-                    .print()
+                    .printer()
                     .include_location(true) // always include location for defmt output
                     .min_timestamp_width(min_timestamp_width)
                     .print_colored(&mut sink)
