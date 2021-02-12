@@ -159,20 +159,16 @@ impl<'a> Printer<'a> {
     /// └─ <module> @ <file>:<line>
     /// ```
     pub fn print_colored<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
-        let level_color = match self.record.level() {
-            Level::Error => Color::Red,
-            Level::Warn => Color::Yellow,
-            Level::Info => Color::Green,
-            Level::Debug => Color::BrightWhite,
-            Level::Trace => Color::BrightBlack,
-        };
-
         writeln!(
             sink,
             "{timestamp:>0$} {level:5} {args}",
             self.min_timestamp_width,
             timestamp = self.record.timestamp(),
-            level = self.record.level().to_string().color(level_color),
+            level = self
+                .record
+                .level()
+                .to_string()
+                .color(color_for_log_level(self.record.level())),
             args = color_diff(self.record.args().to_string()),
         )?;
 
@@ -330,14 +326,6 @@ impl Log for Logger {
                 let stderr = io::stderr();
                 let mut sink = stderr.lock();
 
-                let level_color = match record.level() {
-                    Level::Error => Color::Red,
-                    Level::Warn => Color::Yellow,
-                    Level::Info => Color::Green,
-                    Level::Debug => Color::BrightWhite,
-                    Level::Trace => Color::BrightBlack,
-                };
-
                 let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
                 writeln!(
@@ -345,7 +333,10 @@ impl Log for Logger {
                     "{timestamp:>0$} {level:5} {args}",
                     min_timestamp_width,
                     timestamp = "(HOST)",
-                    level = record.level().to_string().color(level_color),
+                    level = record
+                        .level()
+                        .to_string()
+                        .color(color_for_log_level(record.level())),
                     args = record.args()
                 )
                 .ok();
@@ -366,4 +357,14 @@ impl Log for Logger {
     }
 
     fn flush(&self) {}
+}
+
+fn color_for_log_level(level: Level) -> Color {
+    match level {
+        Level::Error => Color::Red,
+        Level::Warn => Color::Yellow,
+        Level::Info => Color::Green,
+        Level::Debug => Color::BrightWhite,
+        Level::Trace => Color::BrightBlack,
+    }
 }
