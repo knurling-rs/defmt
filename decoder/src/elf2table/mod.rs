@@ -12,8 +12,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub use crate::Table;
-use crate::{StringEntry, TableEntry, Tag};
+use crate::{StringEntry, Table, TableEntry, Tag};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection};
 
