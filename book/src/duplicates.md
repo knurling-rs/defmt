@@ -36,7 +36,7 @@ Because macros are expanded in isolation *each* `info!(".. DONE")` statement wil
 
 ``` rust
 #[export_name = ".. DONE"]
-#[link_section = ".."]
+#[cfg_attr(target_os = "none", link_section = "..")]
 static SYM: u8 = 0;
 ```
 
@@ -50,7 +50,7 @@ Now these two macro invocations will produce something like this:
 // first info! invocation
 {
     #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"discriminator\": \"1379186119\" }"]
-    #[link_section = ".."]
+    #[cfg_attr(target_os = "none", link_section = "..")]
     static SYM: u8 = 0;
 }
 
@@ -59,7 +59,7 @@ Now these two macro invocations will produce something like this:
 // second info! invocation
 {
     #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"discriminator\": \"346188945\" }"]
-    #[link_section = ".."]
+    #[cfg_attr(target_os = "none", link_section = "..")]
     static SYM: u8 = 0;
 }
 ```

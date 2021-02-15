@@ -46,7 +46,7 @@ Would expand to this:
 // first warn! invocation
 {
     #[export_name = "Hello@1379186119"]
-    #[link_section = ".defmt.warn.1379186119"]
+    #[cfg_attr(target_os = "none", link_section = ".defmt.warn.1379186119")]
     static SYM: u8 = 0;
 }
 
@@ -55,7 +55,7 @@ Would expand to this:
 // first error! invocation
 {
     #[export_name = "Bye@346188945"]
-    #[link_section = ".defmt.error.346188945"]
+    #[cfg_attr(target_os = "none", link_section = ".defmt.error.346188945")]
     static SYM: u8 = 0;
 }
 ```
