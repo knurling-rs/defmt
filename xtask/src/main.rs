@@ -8,7 +8,9 @@ use std::{io::Read, path::Path};
 use console::Style;
 use similar::{ChangeTag, TextDiff};
 
-fn load_expected_output(name: &str, release_mode: bool) -> String {
+use anyhow::{anyhow, Context, Result};
+
+fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
     let path = Path::new("firmware/qemu/src/bin");
 
     let filename;
@@ -20,30 +22,36 @@ fn load_expected_output(name: &str, release_mode: bool) -> String {
 
     let path = path.join(filename);
 
-    fs::read_to_string(path).unwrap()
+    // for error context closure
+    let path_str = path.to_str().unwrap_or("(non-Unicode path)").to_owned();
+
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("Failed to load expected output data from {}", path_str))?;
+    Ok(content)
 }
 
-fn run_returning_stdout(cmd: &mut Command) -> String {
-    let mut cmd = cmd.stdout(Stdio::piped()).spawn().unwrap();
-    let mut stdout = cmd.stdout.take().unwrap();
+fn run_returning_stdout(cmd: &mut Command) -> Result<String> {
+    let mut child = cmd.stdout(Stdio::piped()).spawn()?;
+    let mut stdout = child
+        .stdout
+        .ok_or(anyhow!("could not access standard output"))?;
     let mut out = String::new();
-    stdout.read_to_string(&mut out).unwrap();
-    out
+    stdout
+        .read_to_string(&mut out)
+        .with_context(|| "could not read standard output")?;
+    Ok(out)
 }
 
-fn rustc_is_nightly() -> bool {
-    let out = run_returning_stdout(Command::new("rustc").args(&["-V"]));
-    out.contains("nightly")
-}
-
-fn run_qemu(name: &str, features: &str, release_mode: bool) -> Result<(), String> {
+fn test_qemu(name: &str, features: &str, release_mode: bool) -> Result<()> {
     let display_name = format!(
         "{} ({})",
         name,
         if release_mode { "release" } else { "dev" }
     );
-    println!("testing {}", display_name,);
-    let cwd = fs::canonicalize("firmware/qemu").unwrap();
+    println!("{}", display_name);
+    let cwd_name = "firmware/qemu".to_owned();
+    let cwd = fs::canonicalize(&cwd_name)
+        .map_err(|e| anyhow!("running {} in {}: {}", display_name, cwd_name, e))?;
     let mut args;
     if release_mode {
         args = vec!["-q", "rrb", name]
@@ -54,11 +62,9 @@ fn run_qemu(name: &str, features: &str, release_mode: bool) -> Result<(), String
         args.extend_from_slice(&["--features", features]);
     }
 
-    let AAA = 1;
+    let actual = run_returning_stdout(Command::new("cargo").args(&args).current_dir(cwd))?;
 
-    let actual = run_returning_stdout(Command::new("cargo").args(&args).current_dir(cwd));
-
-    let expected = load_expected_output(name, release_mode);
+    let expected = load_expected_output(name, release_mode)?;
 
     let diff = TextDiff::from_lines(&expected, &actual);
 
@@ -84,13 +90,27 @@ fn run_qemu(name: &str, features: &str, release_mode: bool) -> Result<(), String
     if actual_matches_expected {
         Ok(())
     } else {
-        eprintln!("ERROR");
-        Err(display_name)
+        Err(anyhow!("qemu/snapshot test:{}", display_name))
     }
 }
 
-fn test_all_qemu() -> Result<(), Vec<String>> {
-    let mut errors = Vec::new();
+fn run_test<F>(t: F, context: &str, errors: &mut Vec<String>) -> ()
+where
+    F: FnOnce() -> Result<()>,
+{
+    match t() {
+        Ok(_) => {}
+        Err(e) => errors.push(format!("{} {}", context, e)),
+    }
+}
+
+fn rustc_is_nightly() -> Result<bool> {
+    let out = run_returning_stdout(Command::new("rustc").args(&["-V"]))?;
+    Ok(out.contains("nightly"))
+}
+
+fn test_snapshot(errors: &mut Vec<String>) -> () {
+    println!("*** qemu/snapshot ***");
     let mut tests = vec![
         "log",
         "timestamp",
@@ -103,8 +123,18 @@ fn test_all_qemu() -> Result<(), Vec<String>> {
         "hints",
     ];
 
-    if rustc_is_nightly() {
-        tests.push("alloc");
+    match rustc_is_nightly() {
+        Ok(is_nightly) => {
+            if is_nightly {
+                tests.push("alloc");
+            }
+        }
+        Err(e) => {
+            eprintln!(
+                "could not determine whether rust compiler is nightly - assuming it's not ({})",
+                e
+            )
+        }
     }
 
     let mut features_map = HashMap::new();
@@ -114,36 +144,25 @@ fn test_all_qemu() -> Result<(), Vec<String>> {
     for test in &tests {
         let features = features_map.get(test).unwrap_or(&no_features);
 
-        match run_qemu(test, features, false) {
-            Ok(_) => {}
-            Err(e) => errors.push(e),
-        }
-
-        match run_qemu(test, features, true) {
-            Ok(_) => {}
-            Err(e) => errors.push(e),
-        }
-    }
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(errors)
+        run_test(|| test_qemu(test, features, false), "", errors);
+        run_test(|| test_qemu(test, features, true), "", errors);
     }
 }
 
-fn get_installed_targets() -> HashSet<String> {
-    let out = run_returning_stdout(Command::new("rustup").args(&["target", "list"]));
+fn get_installed_targets() -> Result<HashSet<String>> {
+    let out = run_returning_stdout(Command::new("rustup").args(&["target", "list"]))?;
     let installed_marker = " (installed)";
     let mut targets = out.lines().collect::<Vec<_>>();
     targets.retain(|target| target.contains(installed_marker));
-    let targets = targets
+    let targets: HashSet<String> = targets
         .iter()
         .map(|target| target.replace(installed_marker, ""))
         .collect();
-    targets
+    Ok(targets)
 }
 
-fn install_targets() -> Vec<String> {
+fn install_targets() -> Result<Vec<String>> {
+    println!("installing targets");
     let required_targets = vec![
         "thumbv6m-none-eabi",
         "thumbv7m-none-eabi",
@@ -156,46 +175,88 @@ fn install_targets() -> Vec<String> {
         .map(|item| item.to_string())
         .collect::<HashSet<_>>();
 
-    let installed_targets = get_installed_targets();
+    let installed_targets = get_installed_targets()?;
     let missing_targets = all_targets.difference(&installed_targets);
     let mut added_targets = vec![];
 
+    // since installing targets is the first thing we do, hard panic is fine
     for target in missing_targets {
-        Command::new("rustup")
+        let status = Command::new("rustup")
             .args(&["target", "add", target])
-            .spawn()
-            .unwrap()
-            .wait()
-            .ok();
+            .status()
+            .unwrap();
+        if !status.success() {
+            panic!("Error installing target: {}", target);
+        }
         added_targets.push(target.to_owned());
     }
 
-    added_targets
+    Ok(added_targets)
 }
 
 fn uninstall_targets(targets: Vec<String>) {
+    println!("uninstalling targets");
+    // print all uninstall errors so the user can fix those manually if needed
     for target in targets {
-        Command::new("rustup")
-            .args(&["target", "remove", &target])
-            .spawn()
-            .unwrap()
-            .wait()
-            .ok();
+        let result = {
+            Command::new("rustup")
+                .args(&["target", "remove", &target])
+                .status()
+                .map_err(|e| anyhow!("could not run rustup: {}", e))
+                .and_then(|exit_status| {
+                    if exit_status.success() {
+                        Ok(())
+                    } else {
+                        Err(anyhow!(
+                            "rustup did not finish successfully (non-zero exit status or killed by signal): {:?}",
+                            exit_status.code()
+                        ))
+                    }
+                })
+        };
+
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Error uninstalling target {}: {}", target, e);
+            }
+        }
     }
 }
 
-// TODO currently there's a lot of unwrap() going on, meaning if anything breaks
-// the targets installed for this run will not be uninstalled again
-
-// TODO cmdline flag for keeping installed targets
 fn main() -> Result<(), String> {
     let mut args = env::args().skip(1);
     let subcommand = args.next();
     match subcommand.as_deref() {
         Some("test_all") => {
-            let added_targets = install_targets();
-            uninstall_targets(added_targets);
-            test_all_qemu().map_err(|e| format!("Some tests failed: {}", e.join(", ")))?;
+            let keep_targets = match args.next().as_deref() {
+                Some("-k") => true,
+                _ => false,
+            };
+            let added_targets = match install_targets() {
+                Ok(targets) => targets,
+                Err(e) => {
+                    panic!("Error while installing required targets: {}", e)
+                }
+            };
+
+            let mut all_errors: Vec<String> = vec![];
+
+            test_host(&mut all_errors);
+            test_cross(&mut all_errors);
+            test_snapshot(&mut all_errors);
+            test_book(&mut all_errors);
+            test_lint(&mut all_errors);
+
+            if !all_errors.is_empty() {
+                eprintln!("some tests failed:");
+                for error in all_errors {
+                    eprintln!("{}", error);
+                }
+            }
+            if !keep_targets {
+                uninstall_targets(added_targets);
+            }
             Ok(())
         }
         _ => {
@@ -206,4 +267,20 @@ fn main() -> Result<(), String> {
             Err("".into())
         }
     }
+}
+
+fn test_lint(all_errors: &mut Vec<String>) -> () {
+    todo!()
+}
+
+fn test_book(all_errors: &mut Vec<String>) -> () {
+    todo!()
+}
+
+fn test_cross(all_errors: &mut Vec<String>) -> () {
+    todo!()
+}
+
+fn test_host(all_errors: &mut Vec<String>) -> () {
+    todo!()
 }
