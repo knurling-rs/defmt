@@ -14,7 +14,7 @@ use std::{
 
 use crate::{StringEntry, Table, TableEntry, Tag};
 use anyhow::{anyhow, bail, ensure};
-use object::{Object, ObjectSection};
+use object::{Object, ObjectSection, ObjectSymbol};
 
 /// Parses an ELF file and returns the decoded `defmt` table.
 ///
@@ -38,10 +38,10 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
     let is_defmt_version = |name: &str| {
         name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ")
     };
-    for (_, entry) in elf.symbols() {
+    for entry in elf.symbols() {
         let name = match entry.name() {
-            Some(name) => name,
-            None => continue,
+            Ok(name) => name,
+            Err(_) => continue,
         };
 
         // Not in the `.defmt` section because it's not tied to the address of any symbol
@@ -89,11 +89,11 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
     let mut timestamp = None;
-    for (_, entry) in elf.symbols() {
+    for entry in elf.symbols() {
         // Skipping symbols with empty string names, as they may be added by
         // `objcopy`, and breaks JSON demangling
         let name = match entry.name() {
-            Some(name) if !name.is_empty() => name,
+            Ok(name) if !name.is_empty() => name,
             _ => continue,
         };
 
