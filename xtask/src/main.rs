@@ -8,7 +8,7 @@ use std::{io::Read, path::Path};
 use console::Style;
 use similar::{ChangeTag, TextDiff};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Error, Result};
 
 fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
     let path = Path::new("firmware/qemu/src/bin");
@@ -31,7 +31,7 @@ fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
 }
 
 fn run_returning_stdout(cmd: &mut Command) -> Result<String> {
-    let mut child = cmd.stdout(Stdio::piped()).spawn()?;
+    let child = cmd.stdout(Stdio::piped()).spawn()?;
     let mut stdout = child
         .stdout
         .ok_or(anyhow!("could not access standard output"))?;
@@ -90,7 +90,7 @@ fn test_qemu(name: &str, features: &str, release_mode: bool) -> Result<()> {
     if actual_matches_expected {
         Ok(())
     } else {
-        Err(anyhow!("qemu/snapshot test:{}", display_name))
+        Err(anyhow!("{}", display_name))
     }
 }
 
@@ -100,7 +100,7 @@ where
 {
     match t() {
         Ok(_) => {}
-        Err(e) => errors.push(format!("{} {}", context, e)),
+        Err(e) => errors.push(format!("{}: {}", context, e)),
     }
 }
 
@@ -144,8 +144,8 @@ fn test_snapshot(errors: &mut Vec<String>) -> () {
     for test in &tests {
         let features = features_map.get(test).unwrap_or(&no_features);
 
-        run_test(|| test_qemu(test, features, false), "", errors);
-        run_test(|| test_qemu(test, features, true), "", errors);
+        run_test(|| test_qemu(test, features, false), "qemu/snapshot", errors);
+        run_test(|| test_qemu(test, features, true), "qemu/snapshot", errors);
     }
 }
 
@@ -196,26 +196,10 @@ fn install_targets() -> Result<Vec<String>> {
 
 fn uninstall_targets(targets: Vec<String>) {
     println!("uninstalling targets");
+
     // print all uninstall errors so the user can fix those manually if needed
     for target in targets {
-        let result = {
-            Command::new("rustup")
-                .args(&["target", "remove", &target])
-                .status()
-                .map_err(|e| anyhow!("could not run rustup: {}", e))
-                .and_then(|exit_status| {
-                    if exit_status.success() {
-                        Ok(())
-                    } else {
-                        Err(anyhow!(
-                            "rustup did not finish successfully (non-zero exit status or killed by signal): {:?}",
-                            exit_status.code()
-                        ))
-                    }
-                })
-        };
-
-        match result {
+        match run_command(&["rustup", "target", "remove", &target]) {
             Ok(_) => {}
             Err(e) => {
                 eprintln!("Error uninstalling target {}: {}", target, e);
@@ -249,6 +233,7 @@ fn main() -> Result<(), String> {
             test_lint(&mut all_errors);
 
             if !all_errors.is_empty() {
+                eprintln!("");
                 eprintln!("some tests failed:");
                 for error in all_errors {
                     eprintln!("{}", error);
@@ -269,18 +254,67 @@ fn main() -> Result<(), String> {
     }
 }
 
-fn test_lint(all_errors: &mut Vec<String>) -> () {
-    todo!()
+fn test_lint(all_errors: &mut Vec<String>) -> () {}
+
+fn test_book(all_errors: &mut Vec<String>) -> () {}
+
+fn run_command(cmd_and_args: &[&str]) -> Result<()> {
+    let cmd_and_args = Vec::from(cmd_and_args);
+    let mut cmd = Command::new(cmd_and_args[0]);
+    if cmd_and_args.len() > 1 {
+        cmd.args(&cmd_and_args[1..]);
+    }
+
+    let cmdline = cmd_and_args.join(" ");
+    cmd.status()
+        .map_err(|e| anyhow!("could not run '{}': {}", cmdline, e))
+        .and_then(|exit_status| {
+            if exit_status.success() {
+                Ok(())
+            } else {
+                Err(anyhow!(
+                "'{}' did not finish successfully (non-zero exit status or killed by signal): {:?}",
+                cmdline,
+                exit_status.code()
+            ))
+            }
+        })
 }
 
-fn test_book(all_errors: &mut Vec<String>) -> () {
-    todo!()
+fn test_cross(errors: &mut Vec<String>) -> () {
+    println!("*** cross ***");
+    let targets = vec![
+        "thumbv6m-none-eabi",
+        "thumbv8m.base-none-eabi",
+        "riscv32i-unknown-none-elf",
+    ];
+
+    for target in targets {
+        run_test(
+            || run_command(&["cargo", "check", "--target", &target, "-p", "defmt"]),
+            "cross",
+            errors,
+        );
+        run_test(
+            || {
+                run_command(&[
+                    "cargo",
+                    "check",
+                    "--target",
+                    &target,
+                    "-p",
+                    "defmt",
+                    "--features",
+                    "alloc",
+                ])
+            },
+            "cross",
+            errors,
+        );
+    }
+
+    //cargo check --target $target -p defmt
+    //cargo check --target $target -p defmt --features alloc
 }
 
-fn test_cross(all_errors: &mut Vec<String>) -> () {
-    todo!()
-}
-
-fn test_host(all_errors: &mut Vec<String>) -> () {
-    todo!()
-}
+fn test_host(all_errors: &mut Vec<String>) -> () {}
