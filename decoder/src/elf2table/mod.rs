@@ -3,10 +3,6 @@
 //! This is an implementation detail of [`probe-run`](https://github.com/knurling-rs/probe-run) and
 //! not meant to be consumed by other tools at the moment so all the API is unstable.
 
-#![cfg(feature = "unstable")]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(docsrs, doc(cfg(unstable)))]
-
 mod symbol;
 
 use std::{
@@ -16,8 +12,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub use crate::decoder::Table;
-use crate::decoder::{StringEntry, TableEntry, Tag};
+use crate::{StringEntry, Table, TableEntry, Tag};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection};
 
@@ -88,7 +83,7 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
     };
 
     if check_version {
-        crate::decoder::check_version(version).map_err(anyhow::Error::msg)?;
+        crate::check_version(version).map_err(anyhow::Error::msg)?;
     }
 
     // second pass to demangle symbols

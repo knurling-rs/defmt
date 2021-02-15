@@ -6,9 +6,7 @@
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
 
-#![cfg(feature = "unstable")]
-
-use crate::decoder::Frame;
+use crate::Frame;
 use ansi_term::Colour;
 use colored::{Color, Colorize};
 use difference::{Changeset, Difference};
@@ -30,11 +28,11 @@ pub fn log_defmt(
     module_path: Option<&str>,
 ) {
     let level = match frame.level() {
-        crate::decoder::Level::Trace => Level::Trace,
-        crate::decoder::Level::Debug => Level::Debug,
-        crate::decoder::Level::Info => Level::Info,
-        crate::decoder::Level::Warn => Level::Warn,
-        crate::decoder::Level::Error => Level::Error,
+        crate::Level::Trace => Level::Trace,
+        crate::Level::Debug => Level::Debug,
+        crate::Level::Info => Level::Info,
+        crate::Level::Warn => Level::Warn,
+        crate::Level::Error => Level::Error,
     };
 
     let timestamp = frame

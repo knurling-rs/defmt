@@ -1,4 +1,4 @@
-use crate::decoder::Tag;
+use crate::Tag;
 use serde::Deserialize;
 
 #[derive(Deserialize, PartialEq, Eq, Hash)]
