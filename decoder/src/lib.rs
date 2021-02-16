@@ -820,33 +820,18 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::BitField(range) => {
                     let mut data: u128;
                     let lowest_byte = range.start / 8;
-                    // -1 because `range` is range-exclusive
-                    let highest_byte = (range.end - 1) / 8;
+                    let highest_byte = (range.end - 1) / 8; // -1, because `range` is range-exclusive
                     let size_after_truncation = highest_byte - lowest_byte + 1; // in octets
 
-                    match size_after_truncation {
-                        1 => {
-                            data = self.bytes.read_u8()? as u128;
-                        }
-                        2 => {
-                            data = self.bytes.read_u16::<LE>()? as u128;
-                        }
-                        3 => {
-                            data = self.bytes.read_u24::<LE>()? as u128;
-                        }
-                        4 => {
-                            data = self.bytes.read_u32::<LE>()? as u128;
-                        }
-                        5..=8 => {
-                            data = self.bytes.read_u64::<LE>()? as u128;
-                        }
-                        9..=16 => {
-                            data = self.bytes.read_u128::<LE>()? as u128;
-                        }
-                        _ => {
-                            unreachable!();
-                        }
-                    }
+                    data = match size_after_truncation {
+                        1 => self.bytes.read_u8()? as u128,
+                        2 => self.bytes.read_u16::<LE>()? as u128,
+                        3 => self.bytes.read_u24::<LE>()? as u128,
+                        4 => self.bytes.read_u32::<LE>()? as u128,
+                        5..=8 => self.bytes.read_u64::<LE>()? as u128,
+                        9..=16 => self.bytes.read_u128::<LE>()? as u128,
+                        _ => unreachable!(),
+                    };
 
                     data <<= lowest_byte * 8;
 
