@@ -32,6 +32,44 @@ use defmt_parser::Level;
 use elf2table::{parse_impl, Locations};
 use frame::Frame;
 
+/// decode the data sent by the device using the previosuly stored metadata
+///
+/// * bytes: contains the data sent by the device that logs.
+///          contains the [log string index, timestamp, optional fmt string args]
+/// * table: contains the mapping of log string indices to their format strings, as well as the log level.
+pub fn decode<'t>(
+    mut bytes: &[u8],
+    table: &'t Table,
+) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
+    let len = bytes.len();
+    let index = read_leb128(&mut bytes)?;
+
+    let mut decoder = Decoder::new(table, bytes);
+
+    let mut timestamp_format = None;
+    let mut timestamp_args = Vec::new();
+    if let Some(entry) = table.timestamp.as_ref() {
+        let format = &entry.string.string;
+        timestamp_format = Some(&**format);
+        timestamp_args = decoder.decode_format(format)?;
+    }
+
+    let (level, format) = table
+        .get_with_level(index as usize)
+        .map_err(|_| DecodeError::Malformed)?;
+
+    let args = decoder.decode_format(format)?;
+    if !decoder.bools_tbd.is_empty() {
+        // Flush end of compression block.
+        decoder.read_and_unpack_bools()?;
+    }
+
+    let frame = Frame::new(level, index, timestamp_format, timestamp_args, format, args);
+
+    let consumed = len - decoder.bytes.len();
+    Ok((frame, consumed))
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
     /// Defmt-controlled format string for primitive types.
@@ -268,44 +306,6 @@ impl fmt::Display for DecodeError {
 }
 
 impl Error for DecodeError {}
-
-/// decode the data sent by the device using the previosuly stored metadata
-///
-/// * bytes: contains the data sent by the device that logs.
-///          contains the [log string index, timestamp, optional fmt string args]
-/// * table: contains the mapping of log string indices to their format strings, as well as the log level.
-pub fn decode<'t>(
-    mut bytes: &[u8],
-    table: &'t Table,
-) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
-    let len = bytes.len();
-    let index = read_leb128(&mut bytes)?;
-
-    let mut decoder = Decoder::new(table, bytes);
-
-    let mut timestamp_format = None;
-    let mut timestamp_args = Vec::new();
-    if let Some(entry) = table.timestamp.as_ref() {
-        let format = &entry.string.string;
-        timestamp_format = Some(&**format);
-        timestamp_args = decoder.decode_format(format)?;
-    }
-
-    let (level, format) = table
-        .get_with_level(index as usize)
-        .map_err(|_| DecodeError::Malformed)?;
-
-    let args = decoder.decode_format(format)?;
-    if !decoder.bools_tbd.is_empty() {
-        // Flush end of compression block.
-        decoder.read_and_unpack_bools()?;
-    }
-
-    let frame = Frame::new(level, index, timestamp_format, timestamp_args, format, args);
-
-    let consumed = len - decoder.bytes.len();
-    Ok((frame, consumed))
-}
 
 #[cfg(test)]
 mod tests {
