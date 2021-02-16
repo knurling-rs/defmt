@@ -473,11 +473,11 @@ fn main() -> Result<(), String> {
 
             let mut all_errors: Vec<String> = vec![];
 
-            //test_host(&mut all_errors);
-            //test_cross(&mut all_errors);
-            //test_snapshot(&mut all_errors);
+            test_host(&mut all_errors);
+            test_cross(&mut all_errors);
+            test_snapshot(&mut all_errors);
             test_book(&mut all_errors);
-            //test_lint(&mut all_errors);
+            test_lint(&mut all_errors);
 
             if !all_errors.is_empty() {
                 eprintln!();
