@@ -1,4 +1,4 @@
-//! Reads ELF metadata and builds a [`defmt`](https://github.com/knurling-rs/defmt) interner table.
+//! Reads ELF metadata and builds a [`defmt`](https://github.com/knurling-rs/defmt) internal table.
 //!
 //! This is an implementation detail of [`probe-run`](https://github.com/knurling-rs/probe-run) and
 //! not meant to be consumed by other tools at the moment so all the API is unstable.
