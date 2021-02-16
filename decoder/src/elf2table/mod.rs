@@ -16,22 +16,7 @@ use crate::{StringEntry, Table, TableEntry, Tag};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection, ObjectSymbol};
 
-/// Parses an ELF file and returns the decoded `defmt` table.
-///
-/// This function returns `None` if the ELF file contains no `.defmt` section.
-pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-    parse_impl(elf, true)
-}
-
-/// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
-///
-/// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage
-/// data.
-pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-    parse_impl(elf, false)
-}
-
-fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
+pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
     // first pass to extract the `_defmt_version`
     let mut version = None;
@@ -230,31 +215,26 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                                 name = Some(off);
                             }
                         }
-
                         gimli::constants::DW_AT_decl_file => {
                             if let gimli::AttributeValue::FileIndex(idx) = attr.value() {
                                 decl_file = Some(idx);
                             }
                         }
-
                         gimli::constants::DW_AT_decl_line => {
                             if let gimli::AttributeValue::Udata(line) = attr.value() {
                                 decl_line = Some(line);
                             }
                         }
-
                         gimli::constants::DW_AT_location => {
                             if let gimli::AttributeValue::Exprloc(loc) = attr.value() {
                                 location = Some(loc);
                             }
                         }
-
                         gimli::constants::DW_AT_linkage_name => {
                             if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
                                 linkage_name = Some(off);
                             }
                         }
-
                         _ => {}
                     }
                 }

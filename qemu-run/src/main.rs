@@ -30,8 +30,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     let path = &args[0];
     let bytes = fs::read(path)?;
-    let table = defmt_decoder::elf2table::parse(&bytes)?
-        .ok_or_else(|| anyhow!("`.defmt` section not found"))?;
+    let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
 
     let mut child = KillOnDrop(
         Command::new("qemu-system-arm")

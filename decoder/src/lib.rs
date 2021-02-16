@@ -12,7 +12,7 @@
 // load DEFMT_VERSION
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
-pub mod elf2table;
+mod elf2table;
 pub mod log;
 
 use core::{
@@ -36,6 +36,7 @@ use colored::Colorize;
 use defmt_parser::{
     get_max_bitfield_range, DisplayHint, Fragment, Level, Parameter, ParserMode, Type,
 };
+use elf2table::{parse_impl, Locations};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
@@ -173,6 +174,20 @@ impl Table {
         }
     }
 
+    /// Parses an ELF file and returns the decoded `defmt` table.
+    ///
+    /// This function returns `None` if the ELF file contains no `.defmt` section.
+    pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+        parse_impl(elf, true)
+    }
+
+    /// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
+    ///
+    /// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage data.
+    pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+        parse_impl(elf, false)
+    }
+
     pub fn set_timestamp_entry(&mut self, timestamp: TableEntry) {
         self.timestamp = Some(timestamp);
     }
@@ -213,6 +228,10 @@ impl Table {
     /// Iterates over the raw symbols of the table entries
     pub fn raw_symbols(&self) -> impl Iterator<Item = &str> + '_ {
         self.entries.values().map(|s| &*s.raw_symbol)
+    }
+
+    pub fn get_locations(&self, elf: &[u8]) -> Result<Locations, anyhow::Error> {
+        elf2table::get_locations(elf, self)
     }
 }
 

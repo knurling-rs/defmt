@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::anyhow;
+use defmt_decoder::Table;
 use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
@@ -39,9 +40,8 @@ fn main() -> anyhow::Result<()> {
 
     let bytes = fs::read(&opts.elf.unwrap())?;
 
-    let table =
-        defmt_decoder::elf2table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
-    let locs = defmt_decoder::elf2table::get_locations(&bytes, &table)?;
+    let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
+    let locs = table.get_locations(&bytes)?;
 
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
         Some(locs)
