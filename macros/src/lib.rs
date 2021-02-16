@@ -1032,7 +1032,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
     let fmt = &write.fmt;
     let sym = mksym(&ls, "write", false);
     quote!({
-        let fmt: ::defmt::Formatter<'_> = #fmt;
+        let fmt: defmt::Formatter<'_> = #fmt;
         match (fmt.inner, #(&(#args)),*) {
             (_fmt_, #(#pats),*) => {
                 // HACK conditional should not be here; see FIXME in `format`
