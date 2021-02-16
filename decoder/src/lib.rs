@@ -15,11 +15,13 @@ include!(concat!(env!("OUT_DIR"), "/version.rs"));
 pub mod elf2table;
 pub mod log;
 
-use core::convert::{TryFrom, TryInto};
-use core::fmt::{self, Write as _};
-use core::ops::Range;
-use std::collections::BTreeMap;
+use core::{
+    convert::{TryFrom, TryInto},
+    fmt::{self, Write as _},
+    ops::Range,
+};
 use std::{
+    collections::BTreeMap,
     error::Error,
     io, mem,
     sync::{
@@ -31,8 +33,9 @@ use std::{
 use byteorder::{ReadBytesExt, LE};
 use colored::Colorize;
 
-pub use defmt_parser::Level;
-use defmt_parser::{get_max_bitfield_range, DisplayHint, Fragment, Parameter, ParserMode, Type};
+use defmt_parser::{
+    get_max_bitfield_range, DisplayHint, Fragment, Level, Parameter, ParserMode, Type,
+};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
