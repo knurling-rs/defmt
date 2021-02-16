@@ -102,7 +102,7 @@ impl StringEntry {
     }
 }
 
-/// Interner table that holds log levels and maps format strings to indices
+/// Internal table that holds log levels and maps format strings to indices
 #[derive(Debug)]
 pub struct Table {
     timestamp: Option<TableEntry>,
@@ -113,19 +113,17 @@ pub struct Table {
 /// `decoder` crate
 pub fn check_version(version: &str) -> Result<(), String> {
     enum Kind {
-        // "1" or "0.1"
+        /// `1` or `0.1`
         Semver,
-        // commit hash "e739d0ac703dfa629a159be329e8c62a1c3ed206"
+        /// commit hash `e739d0ac703dfa629a159be329e8c62a1c3ed206`
         Git,
     }
 
     impl Kind {
         fn of(version: &str) -> Kind {
             if version.contains('.') || version.parse::<u64>().is_ok() {
-                // "1" or "0.1"
                 Kind::Semver
             } else {
-                // "e739d0ac703dfa629a159be329e8c62a1c3ed206" (should be)
                 Kind::Git
             }
         }
@@ -178,8 +176,7 @@ panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"p
 }
 
 impl Table {
-    /// NOTE caller must verify that defmt symbols are compatible with this version of the `decoder`
-    /// crate using the `check_version` function
+    /// NOTE caller must verify that defmt symbols are compatible with this version of the `decoder` crate using the `check_version` function
     pub fn new(entries: BTreeMap<usize, TableEntry>) -> Self {
         Self {
             entries,
