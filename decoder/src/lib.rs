@@ -135,38 +135,27 @@ pub fn check_version(version: &str) -> Result<(), String> {
             version, DEFMT_VERSION
         );
 
-        match (Kind::of(version), Kind::of(DEFMT_VERSION)) {
-            (Kind::Git, Kind::Git) => {
-                write!(
-                    msg,
-                    "pin _all_ `defmt` related dependencies to revision {0}; modify Cargo.toml files as shown below
-
+        let git_sem = "migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR `cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`";
+        let sem_git = "`cargo install` a non-git version of `probe-run`: `cargo install probe-run`";
+        let sem_sem = &*format!(
+            "`cargo install` a different non-git version of `probe-run` that supports defmt {}",
+            version,
+        );
+        let git_git = &*format!(
+            "pin _all_ `defmt` related dependencies to revision {0}; modify Cargo.toml files as shown below\n
 [dependencies]
 defmt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
 defmt-rtt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
 # ONLY pin this dependency if you are using the `print-defmt` feature
 panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"print-defmt\"], rev = \"{0}\" }}",
-                    DEFMT_VERSION
-                )
-                .ok();
-            }
-            (Kind::Git, Kind::Semver) => {
-                msg.push_str("migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR
-`cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`");
-            }
-            (Kind::Semver, Kind::Git) => {
-                msg.push_str(
-                    "`cargo install` a non-git version of `probe-run`: `cargo install probe-run`",
-                );
-            }
-            (Kind::Semver, Kind::Semver) => {
-                write!(
-                    msg,
-                    "`cargo install` a different non-git version of `probe-run` that supports defmt {}",
-                    version,
-                )
-                .ok();
-            }
+            DEFMT_VERSION
+        );
+
+        match (Kind::of(version), Kind::of(DEFMT_VERSION)) {
+            (Kind::Git, Kind::Git) => msg.push_str(git_git),
+            (Kind::Git, Kind::Semver) => msg.push_str(git_sem),
+            (Kind::Semver, Kind::Git) => msg.push_str(sem_git),
+            (Kind::Semver, Kind::Semver) => msg.push_str(sem_sem),
         }
 
         return Err(msg);
