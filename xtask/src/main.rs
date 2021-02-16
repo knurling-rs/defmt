@@ -464,12 +464,13 @@ fn main() -> Result<(), String> {
                 Some("-k") => true,
                 _ => false,
             };
-            let added_targets = match install_targets() {
+
+            /* let added_targets = match install_targets() {
                 Ok(targets) => targets,
                 Err(e) => {
                     panic!("Error while installing required targets: {}", e)
                 }
-            };
+            }; */
 
             let mut all_errors: Vec<String> = vec![];
 
@@ -486,9 +487,9 @@ fn main() -> Result<(), String> {
                     eprintln!("{}", error);
                 }
             }
-            if !keep_targets {
+            /* if !keep_targets {
                 uninstall_targets(added_targets);
-            }
+            } */
             Ok(())
         }
         _ => {
