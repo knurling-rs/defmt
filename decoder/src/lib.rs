@@ -310,8 +310,6 @@ impl Error for DecodeError {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Arg;
-    use std::collections::BTreeMap;
 
     // helper function to initiate decoding and assert that the result is as expected.
     //
