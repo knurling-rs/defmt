@@ -34,11 +34,19 @@ enum TestCommand {
     TestLint,
 }
 
-fn run_command<P: AsRef<Path>>(cmd_and_args: &[&str], cwd: Option<P>) -> Result<()> {
+fn run_command<P: AsRef<Path>>(
+    cmd_and_args: &[&str],
+    cwd: Option<P>,
+    env: &[(&str, &str)],
+) -> Result<()> {
     let cmd_and_args = Vec::from(cmd_and_args);
     let mut cmd = &mut Command::new(cmd_and_args[0]);
     if cmd_and_args.len() > 1 {
         cmd.args(&cmd_and_args[1..]);
+    }
+
+    for (k, v) in env {
+        cmd.env(k, v);
     }
 
     let cwd_s: String;
@@ -236,7 +244,7 @@ fn uninstall_targets(targets: Vec<String>) {
 
     // print all uninstall errors so the user can fix those manually if needed
     for target in targets {
-        match run_command::<&str>(&["rustup", "target", "remove", &target], None) {
+        match run_command::<&str>(&["rustup", "target", "remove", &target], None, &[]) {
             Ok(_) => {}
             Err(e) => {
                 eprintln!("Error uninstalling target {}: {}", target, e);
@@ -248,13 +256,19 @@ fn uninstall_targets(targets: Vec<String>) {
 fn test_book(errors: &mut Vec<String>) -> () {
     println!("🧪 book");
     do_test(
-        || run_command::<&str>(&["cargo", "clean"], None),
+        || run_command::<&str>(&["cargo", "clean"], None, &[]),
         "book",
         errors,
     );
 
     do_test(
-        || run_command::<&str>(&["cargo", "build", "--features", "unstable-test"], None),
+        || {
+            run_command::<&str>(
+                &["cargo", "build", "--features", "unstable-test"],
+                None,
+                &[],
+            )
+        },
         "book",
         errors,
     );
@@ -271,6 +285,7 @@ fn test_book(errors: &mut Vec<String>) -> () {
                     "../target/debug/deps",
                 ],
                 Some("book"),
+                &[],
             )
         },
         "book",
@@ -281,13 +296,13 @@ fn test_book(errors: &mut Vec<String>) -> () {
 fn test_lint(errors: &mut Vec<String>) -> () {
     println!("🧪 lint");
     do_test(
-        || run_command::<&str>(&["cargo", "fmt", "--all", "--", "--check"], None),
+        || run_command::<&str>(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
         "lint",
         errors,
     );
 
     do_test(
-        || run_command::<&str>(&["cargo", "clippy", "--workspace"], None),
+        || run_command::<&str>(&["cargo", "clippy", "--workspace"], None, &[]),
         "lint",
         errors,
     );
@@ -295,6 +310,41 @@ fn test_lint(errors: &mut Vec<String>) -> () {
 
 fn test_host(errors: &mut Vec<String>) -> () {
     println!("🧪 host");
+    do_test(
+        || {
+            run_command::<&str>(
+                &["cargo", "check", "--workspace"],
+                None,
+                &[("RUSTFLAGS", "--deny warnings")],
+            )
+        },
+        "host",
+        errors,
+    );
+
+    do_test(
+        || {
+            run_command::<&str>(
+                &["cargo", "check", "--all", "--features", "unstable-test"],
+                None,
+                &[("RUSTFLAGS", "--deny warnings")],
+            )
+        },
+        "host",
+        errors,
+    );
+
+    do_test(
+        || {
+            run_command::<&str>(
+                &["cargo", "check", "--all", "--features", "alloc"],
+                None,
+                &[("RUSTFLAGS", "--deny warnings")],
+            )
+        },
+        "host",
+        errors,
+    );
 
     do_test(
         || {
@@ -307,6 +357,25 @@ fn test_host(errors: &mut Vec<String>) -> () {
                     "unstable-test",
                 ],
                 None,
+                &[],
+            )
+        },
+        "host",
+        errors,
+    );
+
+    do_test(
+        || {
+            run_command::<&str>(
+                &[
+                    "cargo",
+                    "test",
+                    "--workspace",
+                    "--features",
+                    "unstable-test",
+                ],
+                None,
+                &[],
             )
         },
         "host",
@@ -328,6 +397,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
                 run_command::<&str>(
                     &["cargo", "check", "--target", &target, "-p", "defmt"],
                     None,
+                    &[],
                 )
             },
             "cross",
@@ -347,6 +417,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
                         "alloc",
                     ],
                     None,
+                    &[],
                 )
             },
             "cross",
@@ -369,6 +440,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
                     "firmware",
                 ],
                 Some("firmware"),
+                &[],
             )
         },
         "cross",
@@ -386,6 +458,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
                     "--workspace",
                 ],
                 Some("firmware"),
+                &[],
             )
         },
         "cross",
@@ -404,6 +477,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
                     "print-defmt",
                 ],
                 Some("firmware/panic-probe"),
+                &[],
             )
         },
         "cross",
@@ -422,6 +496,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
                     "print-rtt",
                 ],
                 Some("firmware/panic-probe"),
+                &[],
             )
         },
         "cross",
