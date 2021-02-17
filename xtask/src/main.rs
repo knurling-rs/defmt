@@ -20,6 +20,14 @@ struct Options {
         help = "keep target toolchains that were installed as dependency"
     )]
     keep_targets: bool,
+
+    #[structopt(
+        long,
+        short,
+        help = "treat compiler warnings as errors (RUSTFLAGS=\"--deny warnings\")"
+    )]
+    deny_warnings: bool,
+
     #[structopt(subcommand)]
     cmd: TestCommand,
 }
@@ -312,16 +320,17 @@ fn test_lint(errors: &mut Vec<String>) {
     );
 }
 
-fn test_host(errors: &mut Vec<String>) {
+fn test_host(deny_warnings: bool, errors: &mut Vec<String>) {
     println!("🧪 host");
+
+    let env = if deny_warnings {
+        vec![("RUSTFLAGS", "--deny warnings")]
+    } else {
+        vec![]
+    };
+
     do_test(
-        || {
-            run_command::<&str>(
-                &["cargo", "check", "--workspace"],
-                None,
-                &[("RUSTFLAGS", "--deny warnings")],
-            )
-        },
+        || run_command::<&str>(&["cargo", "check", "--workspace"], None, &env),
         "host",
         errors,
     );
@@ -331,7 +340,7 @@ fn test_host(errors: &mut Vec<String>) {
             run_command::<&str>(
                 &["cargo", "check", "--all", "--features", "unstable-test"],
                 None,
-                &[("RUSTFLAGS", "--deny warnings")],
+                &env,
             )
         },
         "host",
@@ -343,7 +352,7 @@ fn test_host(errors: &mut Vec<String>) {
             run_command::<&str>(
                 &["cargo", "check", "--all", "--features", "alloc"],
                 None,
-                &[("RUSTFLAGS", "--deny warnings")],
+                &env,
             )
         },
         "host",
@@ -570,14 +579,14 @@ fn main() -> Result<(), Vec<String>> {
 
     match opt.cmd {
         TestCommand::TestAll => {
-            test_host(&mut all_errors);
+            test_host(opt.deny_warnings, &mut all_errors);
             test_cross(&mut all_errors);
             test_snapshot(&mut all_errors);
             test_book(&mut all_errors);
             test_lint(&mut all_errors);
         }
         TestCommand::TestHost => {
-            test_host(&mut all_errors);
+            test_host(opt.deny_warnings, &mut all_errors);
         }
         TestCommand::TestCross => {
             test_cross(&mut all_errors);
