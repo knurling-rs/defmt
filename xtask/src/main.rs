@@ -253,7 +253,7 @@ fn uninstall_targets(targets: Vec<String>) {
     }
 }
 
-fn test_book(errors: &mut Vec<String>) -> () {
+fn test_book(errors: &mut Vec<String>) {
     println!("🧪 book");
     do_test(
         || run_command::<&str>(&["cargo", "clean"], None, &[]),
@@ -293,7 +293,7 @@ fn test_book(errors: &mut Vec<String>) -> () {
     );
 }
 
-fn test_lint(errors: &mut Vec<String>) -> () {
+fn test_lint(errors: &mut Vec<String>) {
     println!("🧪 lint");
     do_test(
         || run_command::<&str>(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
@@ -308,7 +308,7 @@ fn test_lint(errors: &mut Vec<String>) -> () {
     );
 }
 
-fn test_host(errors: &mut Vec<String>) -> () {
+fn test_host(errors: &mut Vec<String>) {
     println!("🧪 host");
     do_test(
         || {
@@ -383,7 +383,7 @@ fn test_host(errors: &mut Vec<String>) -> () {
     );
 }
 
-fn test_cross(errors: &mut Vec<String>) -> () {
+fn test_cross(errors: &mut Vec<String>) {
     println!("🧪 cross");
     let targets = vec![
         "thumbv6m-none-eabi",
@@ -504,7 +504,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
     )
 }
 
-fn test_snapshot(errors: &mut Vec<String>) -> () {
+fn test_snapshot(errors: &mut Vec<String>) {
     println!("🧪 qemu/snapshot");
     let mut tests = vec![
         "log",
