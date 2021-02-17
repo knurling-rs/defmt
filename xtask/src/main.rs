@@ -64,13 +64,12 @@ fn run_command<P: AsRef<Path>>(
             cmd = cmd.current_dir(path_ref.as_ref());
 
             cwd_s = format!(
-                "{}{}",
+                "CWD:{} ",
                 path_ref
                     .as_ref()
                     .to_str()
                     .unwrap_or("(non-Unicode path)")
                     .to_string(),
-                std::path::MAIN_SEPARATOR
             );
         }
         None => {
