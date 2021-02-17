@@ -1,8 +1,8 @@
 use std::{
     collections::{HashMap, HashSet},
+    fs,
     process::{Command, Stdio},
 };
-use std::{env, fs};
 use std::{io::Read, path::Path};
 
 use console::Style;
@@ -10,8 +10,31 @@ use similar::{ChangeTag, TextDiff};
 
 use anyhow::{anyhow, Context, Result};
 
+use structopt::StructOpt;
+
+#[derive(StructOpt, Debug)]
+struct Options {
+    #[structopt(
+        long,
+        short,
+        help = "keep target toolchains that were installed as dependency"
+    )]
+    keep_targets: bool,
+    #[structopt(subcommand)]
+    cmd: TestCommand,
+}
+
+#[derive(StructOpt, Debug)]
+enum TestCommand {
+    TestAll,
+    TestHost,
+    TestCross,
+    TestSnapshot,
+    TestBook,
+    TestLint,
+}
+
 fn run_command<P: AsRef<Path>>(cmd_and_args: &[&str], cwd: Option<P>) -> Result<()> {
-    println!("start {:?}", cmd_and_args);
     let cmd_and_args = Vec::from(cmd_and_args);
     let mut cmd = &mut Command::new(cmd_and_args[0]);
     if cmd_and_args.len() > 1 {
@@ -43,7 +66,6 @@ fn run_command<P: AsRef<Path>>(cmd_and_args: &[&str], cwd: Option<P>) -> Result<
         .map_err(|e| anyhow!("could not run '{}{}': {}", cwd_s, cmdline, e))
         .and_then(|exit_status| {
             if exit_status.success() {
-                println!("OK {:?}", cmd_and_args);
                 Ok(())
             } else {
                 let info = match exit_status.code() {
@@ -53,7 +75,6 @@ fn run_command<P: AsRef<Path>>(cmd_and_args: &[&str], cwd: Option<P>) -> Result<
                     None => "killed by signal".to_string(),
                 };
 
-                println!("NOT OK {:?}, {}", cmdline, info);
                 Err(anyhow!(
                     "'{}' did not finish successfully: {}",
                     cmdline,
@@ -173,8 +194,6 @@ fn get_installed_targets() -> Result<HashSet<String>> {
 }
 
 fn install_targets() -> Result<Vec<String>> {
-    println!("installing targets");
-
     let required_targets = vec![
         "thumbv6m-none-eabi",
         "thumbv7m-none-eabi",
@@ -188,9 +207,12 @@ fn install_targets() -> Result<Vec<String>> {
         .collect::<HashSet<_>>();
 
     let installed_targets = get_installed_targets()?;
-    let missing_targets = all_targets.difference(&installed_targets);
+    let missing_targets: Vec<&String> = all_targets.difference(&installed_targets).collect();
     let mut added_targets: Vec<String> = vec![];
 
+    if !missing_targets.is_empty() {
+        println!("⏳ installing targets");
+    }
     // since installing targets is the first thing we do, hard panic is fine
 
     for target in missing_targets {
@@ -200,8 +222,6 @@ fn install_targets() -> Result<Vec<String>> {
             .unwrap();
         if !status.success() {
             panic!("Error installing target: {}", target);
-        } else {
-            println!("added target {}", target);
         }
         added_targets.push(target.to_owned());
     }
@@ -210,7 +230,9 @@ fn install_targets() -> Result<Vec<String>> {
 }
 
 fn uninstall_targets(targets: Vec<String>) {
-    println!("uninstalling targets");
+    if !targets.is_empty() {
+        println!("⏳ uninstalling targets");
+    }
 
     // print all uninstall errors so the user can fix those manually if needed
     for target in targets {
@@ -224,7 +246,7 @@ fn uninstall_targets(targets: Vec<String>) {
 }
 
 fn test_book(errors: &mut Vec<String>) -> () {
-    println!("*** book ***");
+    println!("🧪 book");
     do_test(
         || run_command::<&str>(&["cargo", "clean"], None),
         "book",
@@ -257,7 +279,7 @@ fn test_book(errors: &mut Vec<String>) -> () {
 }
 
 fn test_lint(errors: &mut Vec<String>) -> () {
-    println!("*** lint ***");
+    println!("🧪 lint");
     do_test(
         || run_command::<&str>(&["cargo", "fmt", "--all", "--", "--check"], None),
         "lint",
@@ -272,7 +294,7 @@ fn test_lint(errors: &mut Vec<String>) -> () {
 }
 
 fn test_host(errors: &mut Vec<String>) -> () {
-    println!("*** host ***");
+    println!("🧪 host");
 
     do_test(
         || {
@@ -293,7 +315,7 @@ fn test_host(errors: &mut Vec<String>) -> () {
 }
 
 fn test_cross(errors: &mut Vec<String>) -> () {
-    println!("*** cross ***");
+    println!("🧪 cross");
     let targets = vec![
         "thumbv6m-none-eabi",
         "thumbv8m.base-none-eabi",
@@ -408,7 +430,7 @@ fn test_cross(errors: &mut Vec<String>) -> () {
 }
 
 fn test_snapshot(errors: &mut Vec<String>) -> () {
-    println!("*** qemu/snapshot ***");
+    println!("🧪 qemu/snapshot");
     let mut tests = vec![
         "log",
         "timestamp",
@@ -455,48 +477,55 @@ fn test_snapshot(errors: &mut Vec<String>) -> () {
     }
 }
 
-fn main() -> Result<(), String> {
-    let mut args = env::args().skip(1);
-    let subcommand = args.next();
-    match subcommand.as_deref() {
-        Some("test_all") => {
-            let keep_targets = match args.next().as_deref() {
-                Some("-k") => true,
-                _ => false,
-            };
-            let added_targets = match install_targets() {
-                Ok(targets) => targets,
-                Err(e) => {
-                    panic!("Error while installing required targets: {}", e)
-                }
-            };
+fn main() -> Result<(), Vec<String>> {
+    let opt: Options = Options::from_args();
+    let mut all_errors: Vec<String> = vec![];
 
-            let mut all_errors: Vec<String> = vec![];
+    // TODO: one could argue that not all test scenarios require installation of targets
+    let added_targets = match install_targets() {
+        Ok(targets) => targets,
+        Err(e) => {
+            panic!("Error while installing required targets: {}", e)
+        }
+    };
 
+    match opt.cmd {
+        TestCommand::TestAll => {
             test_host(&mut all_errors);
             test_cross(&mut all_errors);
             test_snapshot(&mut all_errors);
             test_book(&mut all_errors);
             test_lint(&mut all_errors);
+        }
+        TestCommand::TestHost => {
+            test_host(&mut all_errors);
+        }
+        TestCommand::TestCross => {
+            test_cross(&mut all_errors);
+        }
+        TestCommand::TestSnapshot => {
+            test_snapshot(&mut all_errors);
+        }
+        TestCommand::TestBook => {
+            test_book(&mut all_errors);
+        }
+        TestCommand::TestLint => {
+            test_lint(&mut all_errors);
+        }
+    }
 
-            if !all_errors.is_empty() {
-                eprintln!();
-                eprintln!("some tests failed:");
-                for error in all_errors {
-                    eprintln!("{}", error);
-                }
-            }
-            if !keep_targets {
-                uninstall_targets(added_targets);
-            }
-            Ok(())
+    if !opt.keep_targets {
+        uninstall_targets(added_targets);
+    }
+
+    if !all_errors.is_empty() {
+        eprintln!();
+        eprintln!("☠️ some tests failed:");
+        for error in &all_errors {
+            eprintln!("{}", error);
         }
-        _ => {
-            eprintln!("usage: cargo xtask <subcommand>");
-            eprintln!();
-            eprintln!("subcommands:");
-            eprintln!("    test_all - run all tests");
-            Err("".into())
-        }
+        Err(all_errors)
+    } else {
+        Ok(())
     }
 }
