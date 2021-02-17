@@ -62,7 +62,6 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          - windows-latest
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -83,7 +82,6 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          - windows-latest
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
