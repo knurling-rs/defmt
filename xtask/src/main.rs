@@ -25,6 +25,7 @@ struct Options {
 }
 
 #[derive(StructOpt, Debug)]
+#[allow(clippy::enum_variant_names)]
 enum TestCommand {
     TestAll,
     TestHost,
@@ -96,7 +97,7 @@ fn run_capturing_stdout(cmd: &mut Command) -> Result<String> {
     let child = cmd.stdout(Stdio::piped()).spawn()?;
     let mut stdout = child
         .stdout
-        .ok_or(anyhow!("could not access standard output"))?;
+        .ok_or_else(|| anyhow!("could not access standard output"))?;
     let mut out = String::new();
     stdout
         .read_to_string(&mut out)
@@ -172,12 +173,9 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Resul
                 ChangeTag::Insert => Some(("+", Style::new().green())),
                 ChangeTag::Equal => None,
             };
-            match styled_change {
-                Some((sign, style)) => {
-                    actual_matches_expected = false;
-                    eprint!("{}{}", style.apply_to(sign).bold(), style.apply_to(change),);
-                }
-                None => {}
+            if let Some((sign, style)) = styled_change {
+                actual_matches_expected = false;
+                eprint!("{}{}", style.apply_to(sign).bold(), style.apply_to(change),);
             }
         }
     }
