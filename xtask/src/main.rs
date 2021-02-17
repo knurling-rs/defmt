@@ -520,10 +520,7 @@ fn main() -> Result<(), Vec<String>> {
 
     if !all_errors.is_empty() {
         eprintln!();
-        eprintln!("☠️ some tests failed:");
-        for error in &all_errors {
-            eprintln!("{}", error);
-        }
+        eprintln!("😔 some tests failed");
         Err(all_errors)
     } else {
         Ok(())
