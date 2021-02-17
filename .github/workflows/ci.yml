@@ -2,14 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [ main, staging, trying ]
+    branches: [main, staging, trying]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
   NO_STD_CHECK_TARGETS: thumbv6m-none-eabi thumbv8m.base-none-eabi riscv32i-unknown-none-elf
-  NO_STD_TARGET: thumbv7em-none-eabi  # firmware uses atomics
+  NO_STD_TARGET: thumbv7em-none-eabi # firmware uses atomics
   QEMU_TARGET: thumbv7m-none-eabi
 
 jobs:
@@ -26,89 +26,54 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.rust }}
-        override: true
-    - name: Install C libraries for tooling on ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
-    - name: Install C libraries for tooling on macOS
-      if: matrix.os == 'macOS-latest'
-      run: brew install libusb
-    - name: Check that all crates that can be compiled for the host build
-      run: RUSTFLAGS='--deny warnings' cargo check --workspace
-      shell: bash
-    - name: Check that defmt compiles with different features
-      run: |
-        RUSTFLAGS='--deny warnings' cargo check --all --features unstable-test
-        RUSTFLAGS='--deny warnings' cargo check --all --features alloc
-      shell: bash
-    - name: Run all unit tests on the host
-      run: cargo test --workspace --features unstable-test
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Install C libraries for tooling on ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
+      - name: Install C libraries for tooling on macOS
+        if: matrix.os == 'macOS-latest'
+        run: brew install libusb
+      - name: Check that all crates that can be compiled for the host build, check that defmt compiles with different features, run all unit tests on the host
+        run: cargo xtask -d test-host
 
   no-std:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        target: ${{ env.NO_STD_TARGET }}
-    - name: Install Rust targets
-      run: rustup +stable target add ${{ env.NO_STD_TARGET }} ${{ env.NO_STD_CHECK_TARGETS }}
-    - name: Build defmt crates for no_std targets
-      run: |
-        for target in $NO_STD_CHECK_TARGETS; do
-          cargo check --target $target -p defmt
-          cargo check --target $target -p defmt --features alloc
-        done
-    - name: Build defmt dependent crates for cortex-m targets
-      working-directory: firmware
-      # some crates will not compile to targets with no CAS support
-      run: |
-        cargo check --target thumbv6m-none-eabi --workspace --exclude defmt-itm --exclude firmware
-        cargo check --target thumbv7em-none-eabi --workspace
-    - name: Build panic-probe with different features
-      working-directory: firmware/panic-probe
-      run: |
-        cargo check --target thumbv6m-none-eabi --features print-defmt
-        cargo check --target thumbv6m-none-eabi --features print-rtt
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ env.NO_STD_TARGET }}
+      - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
+        run: cargo xtask test-cross
 
-  clippy:
-    runs-on: ubuntu-latest
+  lint:
+    strategy:
+      matrix:
+        rust:
+          - stable
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
-          override: true
           profile: minimal
-          components: clippy
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: >
-            --workspace
-
-  rustfmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           override: true
-          profile: minimal
-          components: rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - name: Run rustfmt & clippy
+        run: cargo xtask test-lint
 
   mdbook:
     strategy:
@@ -117,26 +82,23 @@ jobs:
           - stable
         os:
           - ubuntu-latest
+          - macOS-latest
           - windows-latest
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.rust }}
-        override: true
-    - name: Setup mdBook
-      uses: peaceiris/actions-mdbook@v1
-      with:
-        mdbook-version: latest
-    - name: Build defmt
-      run: cargo build --features unstable-test
-      # NOTE order of steps is important
-    - name: Run book tests
-      working-directory: book
-      run: mdbook test -L ../target/debug -L ../target/debug/deps
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: latest
+      - name: Run book tests
+        run: cargo xtask test-book
 
   qemu:
     strategy:
@@ -146,18 +108,17 @@ jobs:
           - nightly
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.rust }}
-        override: true
-        target: ${{ env.QEMU_TARGET }}
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install qemu
-    - name: Build and Run QEMU tests
-      working-directory: firmware/qemu
-      run: ./test.sh
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          target: ${{ env.QEMU_TARGET }}
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install qemu
+      - name: Run QEMU snapshot tests
+        run: cargo xtask test-snapshot
 
   # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
   # bors.tech integration
@@ -167,8 +128,7 @@ jobs:
     needs:
       - test
       - no-std
-      - clippy
-      - rustfmt
+      - lint
       - mdbook
       - qemu
     runs-on: ubuntu-20.04
