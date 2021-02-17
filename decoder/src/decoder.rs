@@ -225,11 +225,29 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
         for param in &params {
             match &param.ty {
-                Type::U8 => {
-                    let data = self.bytes.read_u8()?;
+                Type::I8 => args.push(Arg::Ixx(self.bytes.read_i8()? as i128)),
+                Type::I16 => args.push(Arg::Ixx(self.bytes.read_i16::<LE>()? as i128)),
+                Type::I32 => args.push(Arg::Ixx(self.bytes.read_i32::<LE>()? as i128)),
+                Type::I64 => args.push(Arg::Ixx(self.bytes.read_i64::<LE>()? as i128)),
+                Type::I128 => args.push(Arg::Ixx(self.bytes.read_i128::<LE>()?)),
+                // Signed isize is encoded in zigzag-encoding.
+                Type::Isize => args.push(Arg::Ixx(
+                    zigzag_decode(read_leb128(&mut self.bytes)?) as i128
+                )),
+                Type::U8 => args.push(Arg::Uxx(self.bytes.read_u8()? as u128)),
+                Type::U16 => args.push(Arg::Uxx(self.bytes.read_u16::<LE>()? as u128)),
+                Type::U24 => {
+                    let data_low = self.bytes.read_u8()?;
+                    let data_high = self.bytes.read_u16::<LE>()?;
+                    let data = data_low as u128 | (data_high as u128) << 8;
                     args.push(Arg::Uxx(data as u128));
                 }
-
+                Type::U32 => args.push(Arg::Uxx(self.bytes.read_u32::<LE>()? as u128)),
+                Type::U64 => args.push(Arg::Uxx(self.bytes.read_u64::<LE>()? as u128)),
+                Type::U128 => args.push(Arg::Uxx(self.bytes.read_u128::<LE>()? as u128)),
+                Type::Usize => args.push(Arg::Uxx(read_leb128(&mut self.bytes)? as u128)),
+                Type::F32 => args.push(Arg::F32(f32::from_bits(self.bytes.read_u32::<LE>()?))),
+                Type::F64 => args.push(Arg::F64(f64::from_bits(self.bytes.read_u64::<LE>()?))),
                 Type::Bool => {
                     let arc = Arc::new(Bool::FALSE);
                     args.push(Arg::Bool(arc.clone()));
@@ -239,7 +257,6 @@ impl<'t, 'b> Decoder<'t, 'b> {
                         self.read_and_unpack_bools()?;
                     }
                 }
-
                 Type::FormatSlice => {
                     let num_elements = read_leb128(&mut self.bytes)? as usize;
                     let elements = self.decode_format_slice(num_elements)?;
@@ -266,65 +283,6 @@ impl<'t, 'b> Decoder<'t, 'b> {
                             args: inner_args,
                         });
                     }
-                }
-                Type::I16 => {
-                    let data = self.bytes.read_i16::<LE>()?;
-                    args.push(Arg::Ixx(data as i128));
-                }
-                Type::I32 => {
-                    let data = self.bytes.read_i32::<LE>()?;
-                    args.push(Arg::Ixx(data as i128));
-                }
-                Type::I64 => {
-                    let data = self.bytes.read_i64::<LE>()?;
-                    args.push(Arg::Ixx(data as i128));
-                }
-                Type::I128 => {
-                    let data = self.bytes.read_i128::<LE>()?;
-                    args.push(Arg::Ixx(data));
-                }
-                Type::I8 => {
-                    let data = self.bytes.read_i8()?;
-                    args.push(Arg::Ixx(data as i128));
-                }
-                Type::Isize => {
-                    // Signed isize is encoded in zigzag-encoding.
-                    let unsigned = read_leb128(&mut self.bytes)?;
-                    args.push(Arg::Ixx(zigzag_decode(unsigned) as i128))
-                }
-                Type::U16 => {
-                    let data = self.bytes.read_u16::<LE>()?;
-                    args.push(Arg::Uxx(data as u128));
-                }
-                Type::U24 => {
-                    let data_low = self.bytes.read_u8()?;
-                    let data_high = self.bytes.read_u16::<LE>()?;
-                    let data = data_low as u128 | (data_high as u128) << 8;
-                    args.push(Arg::Uxx(data as u128));
-                }
-                Type::U32 => {
-                    let data = self.bytes.read_u32::<LE>()?;
-                    args.push(Arg::Uxx(data as u128));
-                }
-                Type::U64 => {
-                    let data = self.bytes.read_u64::<LE>()?;
-                    args.push(Arg::Uxx(data as u128));
-                }
-                Type::U128 => {
-                    let data = self.bytes.read_u128::<LE>()?;
-                    args.push(Arg::Uxx(data as u128));
-                }
-                Type::Usize => {
-                    let unsigned = read_leb128(&mut self.bytes)?;
-                    args.push(Arg::Uxx(unsigned as u128))
-                }
-                Type::F32 => {
-                    let data = self.bytes.read_u32::<LE>()?;
-                    args.push(Arg::F32(f32::from_bits(data)));
-                }
-                Type::F64 => {
-                    let data = self.bytes.read_u64::<LE>()?;
-                    args.push(Arg::F64(f64::from_bits(data)));
                 }
                 Type::BitField(range) => {
                     let mut data: u128;
