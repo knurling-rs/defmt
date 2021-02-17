@@ -13,7 +13,7 @@ env:
   QEMU_TARGET: thumbv7m-none-eabi
 
 jobs:
-  test:
+  host:
     strategy:
       matrix:
         rust:
@@ -41,7 +41,7 @@ jobs:
       - name: Check that all crates that can be compiled for the host build, check that defmt compiles with different features, run all unit tests on the host
         run: cargo xtask -d test-host
 
-  no-std:
+  cross:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -100,7 +100,7 @@ jobs:
       - name: Run book tests
         run: cargo xtask test-book
 
-  qemu:
+  qemu-snapshot:
     strategy:
       matrix:
         rust:
@@ -126,11 +126,11 @@ jobs:
     name: ci
     if: ${{ success() }}
     needs:
-      - test
-      - no-std
+      - host
+      - cross
       - lint
       - mdbook
-      - qemu
+      - qemu-snapshot
     runs-on: ubuntu-20.04
     steps:
       - name: CI succeeded
