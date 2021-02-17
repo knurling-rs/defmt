@@ -124,9 +124,10 @@ where
     }
 }
 
-fn rustc_is_nightly() -> Result<bool> {
-    let out = run_capturing_stdout(Command::new("rustc").args(&["-V"]))?;
-    Ok(out.contains("nightly"))
+fn rustc_is_nightly() -> bool {
+    // if this crashes the system is not in a good state, so we'll not pretend to be able to recover
+    let out = run_capturing_stdout(Command::new("rustc").args(&["-V"])).unwrap();
+    out.contains("nightly")
 }
 
 fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
@@ -228,8 +229,8 @@ fn install_targets() -> Result<Vec<String>> {
     if !missing_targets.is_empty() {
         println!("⏳ installing targets");
     }
-    // since installing targets is the first thing we do, hard panic is fine
 
+    // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
     for target in missing_targets {
         let status = Command::new("rustup")
             .args(&["target", "add", target])
@@ -531,18 +532,8 @@ fn test_snapshot(errors: &mut Vec<String>) {
         "hints",
     ];
 
-    match rustc_is_nightly() {
-        Ok(is_nightly) => {
-            if is_nightly {
-                tests.push("alloc");
-            }
-        }
-        Err(e) => {
-            eprintln!(
-                "could not determine whether rust compiler is nightly - assuming it's not ({})",
-                e
-            )
-        }
+    if rustc_is_nightly() {
+        tests.push("alloc");
     }
 
     let mut features_map = HashMap::new();
