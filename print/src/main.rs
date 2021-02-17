@@ -62,7 +62,7 @@ fn main() -> anyhow::Result<()> {
         frames.extend_from_slice(&buf[..n]);
 
         loop {
-            match defmt_decoder::decode(&frames, &table) {
+            match table.decode(&frames) {
                 Ok((frame, consumed)) => {
                     // NOTE(`[]` indexing) all indices in `table` have already been
                     // verified to exist in the `locs` map

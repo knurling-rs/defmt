@@ -91,7 +91,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
 fn decode(frames: &mut Vec<u8>, table: &Table) -> Result<(), DecodeError> {
     loop {
-        match defmt_decoder::decode(&frames, &table) {
+        match table.decode(&frames) {
             Ok((frame, consumed)) => {
                 println!("{}", frame.display(true));
                 let n = frames.len();

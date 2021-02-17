@@ -32,44 +32,6 @@ use defmt_parser::Level;
 use elf2table::{parse_impl, Locations};
 use frame::Frame;
 
-/// decode the data sent by the device using the previosuly stored metadata
-///
-/// * bytes: contains the data sent by the device that logs.
-///          contains the [log string index, timestamp, optional fmt string args]
-/// * table: contains the mapping of log string indices to their format strings, as well as the log level.
-pub fn decode<'t>(
-    mut bytes: &[u8],
-    table: &'t Table,
-) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
-    let len = bytes.len();
-    let index = read_leb128(&mut bytes)?;
-
-    let mut decoder = Decoder::new(table, bytes);
-
-    let mut timestamp_format = None;
-    let mut timestamp_args = Vec::new();
-    if let Some(entry) = table.timestamp.as_ref() {
-        let format = &entry.string.string;
-        timestamp_format = Some(&**format);
-        timestamp_args = decoder.decode_format(format)?;
-    }
-
-    let (level, format) = table
-        .get_with_level(index as usize)
-        .map_err(|_| DecodeError::Malformed)?;
-
-    let args = decoder.decode_format(format)?;
-    if !decoder.bools_tbd.is_empty() {
-        // Flush end of compression block.
-        decoder.read_and_unpack_bools()?;
-    }
-
-    let frame = Frame::new(level, index, timestamp_format, timestamp_args, format, args);
-
-    let consumed = len - decoder.bytes.len();
-    Ok((frame, consumed))
-}
-
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
     /// Defmt-controlled format string for primitive types.
@@ -210,6 +172,43 @@ impl Table {
     pub fn get_locations(&self, elf: &[u8]) -> Result<Locations, anyhow::Error> {
         elf2table::get_locations(elf, self)
     }
+
+    /// decode the data sent by the device using the previosuly stored metadata
+    ///
+    /// * bytes: contains the data sent by the device that logs.
+    ///          contains the [log string index, timestamp, optional fmt string args]
+    pub fn decode<'t>(
+        &'t self,
+        mut bytes: &[u8],
+    ) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
+        let len = bytes.len();
+        let index = read_leb128(&mut bytes)?;
+
+        let mut decoder = Decoder::new(self, bytes);
+
+        let mut timestamp_format = None;
+        let mut timestamp_args = Vec::new();
+        if let Some(entry) = self.timestamp.as_ref() {
+            let format = &entry.string.string;
+            timestamp_format = Some(&**format);
+            timestamp_args = decoder.decode_format(format)?;
+        }
+
+        let (level, format) = self
+            .get_with_level(index as usize)
+            .map_err(|_| DecodeError::Malformed)?;
+
+        let args = decoder.decode_format(format)?;
+        if !decoder.bools_tbd.is_empty() {
+            // Flush end of compression block.
+            decoder.read_and_unpack_bools()?;
+        }
+
+        let frame = Frame::new(level, index, timestamp_format, timestamp_args, format, args);
+
+        let consumed = len - decoder.bytes.len();
+        Ok((frame, consumed))
+    }
 }
 
 #[derive(Debug)]
@@ -331,7 +330,7 @@ mod tests {
             )),
         };
 
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(frame.display(false).to_string(), expectation.to_owned());
     }
 
@@ -359,7 +358,7 @@ mod tests {
         //     index ^
 
         assert_eq!(
-            super::decode(&bytes, &table),
+            table.decode(&bytes),
             Ok((
                 Frame::new(Level::Info, 0, None, vec![], "Hello, world!", vec![],),
                 bytes.len(),
@@ -372,7 +371,7 @@ mod tests {
         ];
 
         assert_eq!(
-            super::decode(&bytes, &table),
+            table.decode(&bytes),
             Ok((
                 Frame::new(
                     Level::Debug,
@@ -419,7 +418,7 @@ mod tests {
         ];
 
         assert_eq!(
-            super::decode(&bytes, &table),
+            table.decode(&bytes),
             Ok((
                 Frame::new(
                     Level::Info,
@@ -471,7 +470,7 @@ mod tests {
         ];
 
         assert_eq!(
-            super::decode(&bytes, &table),
+            table.decode(&bytes),
             Ok((
                 Frame::new(
                     Level::Info,
@@ -492,7 +491,7 @@ mod tests {
         ];
 
         assert_eq!(
-            super::decode(&bytes, &table),
+            table.decode(&bytes),
             Ok((
                 Frame::new(
                     Level::Info,
@@ -531,7 +530,7 @@ mod tests {
         ];
 
         assert_eq!(
-            super::decode(&bytes, &table),
+            table.decode(&bytes),
             Ok((
                 Frame::new(
                     Level::Info,
@@ -576,7 +575,7 @@ mod tests {
             42, // Foo.x
         ];
 
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO x=Foo { x: 42 }"
@@ -731,7 +730,7 @@ mod tests {
             0b1101, // 4 packed bools
         ];
 
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO true Flags { a: true, b: false, c: true }"
@@ -1017,7 +1016,7 @@ mod tests {
             42, // Some.0
         ];
 
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(frame.display(false).to_string(), "0.000000 INFO x=Some(42)");
 
         let bytes = [
@@ -1027,7 +1026,7 @@ mod tests {
             0, // None discriminant
         ];
 
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(frame.display(false).to_string(), "0.000001 INFO x=None");
     }
 }
