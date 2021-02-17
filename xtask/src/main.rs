@@ -71,6 +71,7 @@ fn run_command<P: AsRef<Path>>(
     }
 
     let cmdline = cmd_and_args.join(" ");
+    println!("🏃 {}{}", cwd_s, cmdline);
     cmd.status()
         .map_err(|e| anyhow!("could not run '{}{}': {}", cwd_s, cmdline, e))
         .and_then(|exit_status| {
