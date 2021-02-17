@@ -295,6 +295,11 @@ fn test_book(errors: &mut Vec<String>) {
 fn test_lint(errors: &mut Vec<String>) {
     println!("🧪 lint");
     do_test(
+        || run_command::<&str>(&["cargo", "clean"], None, &[]),
+        "lint",
+        errors,
+    );
+    do_test(
         || run_command::<&str>(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
         "lint",
         errors,
