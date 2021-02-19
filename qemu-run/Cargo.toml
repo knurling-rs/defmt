@@ -4,8 +4,8 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 name = "qemu-run"
 publish = false
-version = "0.1.0"
+version = "0.2.0"
 
 [dependencies]
 anyhow = "1.0.32"
-defmt-decoder = { path = "../decoder", features = ["unstable"], version = "=0.1.4" }
+defmt-decoder = { path = "../decoder", features = ["unstable"], version = "=0.2.0" }
