@@ -7,6 +7,150 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.2.0] - 2021-02-19
+
+### Added
+
+- [#284] Implement support for `i128` and `u128` types
+- [#291] Allows using `defmt` on x86 platforms by making the test suite use an internal Cargo feature
+- [#293] Make `defmt` attributes forward input attributes
+- [#294] Permits `use` items inside `#[defmt_test::tests]` modules
+- [#296] Allows skipping the `defmt` version check in order to make development easier
+- [#302] `derive(Format)` now supports more than 256 variants
+- [#304] impl `Format` for `char`s
+- [#313] Add display hints
+- [#323] Merge `Uxx(u64)` (`Ixx(i64)`) and `U128(u128)` (`u128(i128)`) data variants
+- [#327] `impl<T> Format for PhantomData<T>`
+- [#329] Document safety of implementation detail functions
+- [#335] Add the `defmt-itm` crate
+- [#338] Add `defmt-logger` and `defmt-print` crates
+- [#343] Customizable timestamps
+- [#347] Document the grammar of `defmt`s current format parameter syntax
+- [#351] Allow tools to distinguish user-controlled format strings from generated ones
+- [#354] Add `f64` support
+- [#376] Make `defmt-logger` more configurable, remove `probe-run` strings
+- [#377] `defmt-test`: support returning `Result` from tests
+- [#382] `impl Format for Infallible`
+- [#391] `impl Format for core::time::Duration`
+
+### Changed
+
+- [#297] Improves the output formatting and includes a progress indicator
+- [#299] Test embedded test runner (`defmt-test`) as part of our CI setup
+- [#300] `#[derive]` now uses built-in primitive formatting for primitive references
+- [#303] Employ the help of [bors]
+- [#305] `Formatter` is now passed by value, i.e. consumed during formatting
+- [#308] compile-fail test new `Formatter` move semantics
+- [#312] `str` fields in structs are now treated as a native type by the encoder instead of going through the `Format` trait
+- [#325] Update our UI tests to work with the latest stable release
+- [#331] Add more compile-fail tests
+- [#332] Improve `Format` trait docs
+- [#333] Hide `Formatter`'s `inner` field
+- [#334] Fix dead link in parser docs
+- [#337] Improve diagnostics on double `write!`
+- [#339] Make leb64 encoding fully safe (while at the same time reducing its code footprint)
+- [#340] Stream `core::fmt` adapters
+- [#345] Reduce code size by avoiding 64-bit arithmetic in LEB encoding
+- [#350] `panic-probe` now uses `defmt`s `Display2Format` to log panic messages. In consequence, panic messages won't get truncated anymore.
+- [#355] Clarify the docs on `Write::write`
+- [#352] Do not display full version with `--help`. Thanks to [Javier-varez]!
+- [#354] Support `f64` floating point numbers.
+- [#355] Clarify docs on `Write::write`.
+- [#361], [#367] Make clippy happy by improving code quality
+- [#363] Improve test coverage on basic `defmt` usage on `std` rust
+- [#364] Split firmware code into separate workspace
+- [#368] `defmt-itm`: Raise compile error on `armv6m`
+- [#369] Move `bors.toml` to `.github/`
+- [#371] Link to git version of `defmt` book
+- [#372] Update `Printers` section in `defmt` book
+- [#373] Improve information in `Cargo.toml`
+- [#379] Make link to `defmt` book clickable
+- [#380] Merge crates `elf2table` and `logger` into `decoder`
+- [#383] `defmt-test`: Modify attributes in place and handle `#[cfg]`
+- [#384] pin unstable path dependencies
+- [#385] defmt_decoder: Skip allocation of datastructure for raw symbols of the table entries in `fn get_locations`
+- [#386], [#392] Refactor decoder
+  - rename `mod logger` to `log`
+  - make `fn parse_*`, `fn get_locations`, `fn decode` methods of `struct Table`
+  - various simplifications and restructuring of internal code
+- [#387] CI: bump timeout to 20 minutes 
+- [#389] defmt_decoder: Bump deps `object` and `gimli`
+
+### Fixed
+
+- [#301] Fix the nightly builds after a `linked_list_allocator` feature change
+- [#310], [#311] remove the runtime check (and matching tests) if the `write!` macro was called multiple times as this can no longer happen since `write!` now consumes the `Formatter` due to [#305].
+- [#321] ASCII hint (`:a`) is now respected when used together with the `Format` trait (`=?` and `=[?]`).
+- [#342] Fix a data corruption issue when using `bool`s in `write!`
+- [#357] Fix issue preventing `defmt` from compiling on MacOS.
+
+[#284]: https://github.com/knurling-rs/defmt/284
+[#291]: https://github.com/knurling-rs/defmt/291
+[#293]: https://github.com/knurling-rs/defmt/293
+[#294]: https://github.com/knurling-rs/defmt/294
+[#296]: https://github.com/knurling-rs/defmt/296
+[#297]: https://github.com/knurling-rs/defmt/297
+[#299]: https://github.com/knurling-rs/defmt/299
+[#300]: https://github.com/knurling-rs/defmt/300
+[#301]: https://github.com/knurling-rs/defmt/301
+[#302]: https://github.com/knurling-rs/defmt/302
+[#303]: https://github.com/knurling-rs/defmt/303
+[#304]: https://github.com/knurling-rs/defmt/304
+[#305]: https://github.com/knurling-rs/defmt/305
+[#308]: https://github.com/knurling-rs/defmt/308
+[#310]: https://github.com/knurling-rs/defmt/310
+[#311]: https://github.com/knurling-rs/defmt/311
+[#312]: https://github.com/knurling-rs/defmt/312
+[#313]: https://github.com/knurling-rs/defmt/313
+[#321]: https://github.com/knurling-rs/defmt/321
+[#323]: https://github.com/knurling-rs/defmt/323
+[#325]: https://github.com/knurling-rs/defmt/325
+[#327]: https://github.com/knurling-rs/defmt/327
+[#329]: https://github.com/knurling-rs/defmt/329
+[#331]: https://github.com/knurling-rs/defmt/331
+[#332]: https://github.com/knurling-rs/defmt/332
+[#333]: https://github.com/knurling-rs/defmt/333
+[#334]: https://github.com/knurling-rs/defmt/334
+[#335]: https://github.com/knurling-rs/defmt/335
+[#337]: https://github.com/knurling-rs/defmt/337
+[#338]: https://github.com/knurling-rs/defmt/338
+[#339]: https://github.com/knurling-rs/defmt/339
+[#340]: https://github.com/knurling-rs/defmt/340
+[#342]: https://github.com/knurling-rs/defmt/342
+[#343]: https://github.com/knurling-rs/defmt/343
+[#345]: https://github.com/knurling-rs/defmt/345
+[#347]: https://github.com/knurling-rs/defmt/347
+[#350]: https://github.com/knurling-rs/defmt/350
+[#351]: https://github.com/knurling-rs/defmt/351
+[#354]: https://github.com/knurling-rs/defmt/354
+[#355]: https://github.com/knurling-rs/defmt/355
+[#352]: https://github.com/knurling-rs/defmt/352
+[#354]: https://github.com/knurling-rs/defmt/354
+[#355]: https://github.com/knurling-rs/defmt/355
+[#357]: https://github.com/knurling-rs/defmt/357
+[#361]: https://github.com/knurling-rs/defmt/361
+[#363]: https://github.com/knurling-rs/defmt/363
+[#364]: https://github.com/knurling-rs/defmt/364
+[#368]: https://github.com/knurling-rs/defmt/368
+[#369]: https://github.com/knurling-rs/defmt/369
+[#371]: https://github.com/knurling-rs/defmt/371
+[#372]: https://github.com/knurling-rs/defmt/372
+[#373]: https://github.com/knurling-rs/defmt/373
+[#376]: https://github.com/knurling-rs/defmt/376
+[#377]: https://github.com/knurling-rs/defmt/377
+[#379]: https://github.com/knurling-rs/defmt/379
+[#380]: https://github.com/knurling-rs/defmt/380
+[#382]: https://github.com/knurling-rs/defmt/382
+[#383]: https://github.com/knurling-rs/defmt/383
+[#384]: https://github.com/knurling-rs/defmt/384
+[#385]: https://github.com/knurling-rs/defmt/385
+[#386]: https://github.com/knurling-rs/defmt/386
+[#387]: https://github.com/knurling-rs/defmt/387
+[#389]: https://github.com/knurling-rs/defmt/389
+[#391]: https://github.com/knurling-rs/defmt/391
+[#392]: https://github.com/knurling-rs/defmt/392
+[#396]: https://github.com/knurling-rs/defmt/396
+
 ## [v0.1.3] - 2020-11-30
 
 ### Fixed
@@ -66,7 +210,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...main
+[v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...defmt-v0.2.0
 [v0.1.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...defmt-v0.1.3
 [v0.1.2]: https://github.com/knurling-rs/defmt/compare/v0.1.1...defmt-v0.1.2
 [v0.1.1]: https://github.com/knurling-rs/defmt/compare/v0.1.0...v0.1.1
