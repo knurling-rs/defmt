@@ -6,7 +6,7 @@
 
 ## Support
 
-`defmt-rtt` is part of the [Knurling] project, [Ferrous Systems]' effort at
+`defmt-itm` is part of the [Knurling] project, [Ferrous Systems]' effort at
 improving tooling used to develop for embedded systems.
 
 If you think that our work is useful, consider sponsoring it via [GitHub
