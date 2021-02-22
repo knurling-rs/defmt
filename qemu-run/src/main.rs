@@ -30,7 +30,13 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     let path = &args[0];
     let bytes = fs::read(path)?;
-    let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
+
+    let table = if env::var_os("QEMU_RUN_IGNORE_VERSION").is_some() {
+        Table::parse_ignore_version(&bytes)
+    } else {
+        Table::parse(&bytes)
+    };
+    let table = table?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
 
     let mut child = KillOnDrop(
         Command::new("qemu-system-arm")
