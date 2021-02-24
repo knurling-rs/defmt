@@ -2,7 +2,7 @@
 
 `defmt-test` is a test harness for embedded devices that lets you write and run unit tests *on your device* as if you were using the built-in `#[test]` attribute.
 
-It is compatible with [Rust-Analyzer]'s `▶Run` button, which means you can flash and run your tests straight from VSCode:
+It is compatible with [rust-analyzer]'s `▶ Run Test` button, which means you can flash and run your tests straight from VS Code:
 
 ![demo: clicking the run button above a defmt_test::tests module leads to flashing & test run ](./demo.gif)
 
