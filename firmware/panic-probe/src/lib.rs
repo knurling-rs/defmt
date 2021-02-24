@@ -18,6 +18,7 @@
 
 #![no_std]
 #![cfg(target_os = "none")]
+#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
 #[cfg(not(cortex_m))]
 compile_error!("`panic-probe` only supports Cortex-M targets (thumbvN-none-eabi[hf])");

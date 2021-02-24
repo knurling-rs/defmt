@@ -1,4 +1,7 @@
 //! INTERNAL; DO NOT USE. Please use the `defmt` crate to access the functionality implemented here
+
+#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
+
 mod symbol;
 
 use core::convert::TryFrom;

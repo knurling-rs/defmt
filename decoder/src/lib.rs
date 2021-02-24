@@ -8,6 +8,7 @@
 #![cfg(feature = "unstable")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
+#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
 // load DEFMT_VERSION
 include!(concat!(env!("OUT_DIR"), "/version.rs"));

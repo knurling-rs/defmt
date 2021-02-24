@@ -1,3 +1,5 @@
+#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
+
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
