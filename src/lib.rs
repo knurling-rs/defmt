@@ -11,6 +11,7 @@
 //! the host and target side if a breaking change in defmt is released.
 
 #![cfg_attr(not(feature = "unstable-test"), no_std)]
+#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 #![warn(missing_docs)]
 
 #[cfg(feature = "alloc")]
