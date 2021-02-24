@@ -8,7 +8,7 @@ It is compatible with [rust-analyzer]'s `▶ Run Test` button, which means you c
 
 For a full list of defmt-test's capabilities, please refer to the documentation below.
 
-[Rust-Analyzer]: https://rust-analyzer.github.io
+[rust-analyzer]: https://rust-analyzer.github.io
 
 ## Basic usage
 
