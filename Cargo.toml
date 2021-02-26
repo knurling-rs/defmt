@@ -51,6 +51,6 @@ overflow-checks = false
 semver = "0.11.0"
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["alloc"]
 rustdoc-args = [ "--cfg=docsrs" ]
 targets = ["thumbv6m-none-eabi", "thumbv7em-none-eabihf"]
