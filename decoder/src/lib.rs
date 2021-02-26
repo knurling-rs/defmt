@@ -30,8 +30,10 @@ use std::{
 
 use decoder::{read_leb128, Decoder};
 use defmt_parser::Level;
-use elf2table::{parse_impl, Locations};
+use elf2table::parse_impl;
 use frame::Frame;
+
+pub use elf2table::{Location, Locations};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
