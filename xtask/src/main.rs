@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::{HashMap, HashSet},
     fs,
     process::{Command, Stdio},
@@ -222,23 +223,21 @@ fn install_targets() -> Result<Vec<String>> {
         .collect::<HashSet<_>>();
 
     let installed_targets = get_installed_targets()?;
-    let missing_targets: Vec<&String> = all_targets.difference(&installed_targets).collect();
-    let mut added_targets: Vec<String> = vec![];
+    let added_targets: Vec<String> = all_targets
+        .difference(&installed_targets)
+        .map(|s| s.to_owned())
+        .collect();
 
-    if !missing_targets.is_empty() {
+    if !added_targets.is_empty() {
         println!("⏳ installing targets");
-    }
 
-    // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
-    for target in missing_targets {
-        let status = Command::new("rustup")
-            .args(&["target", "add", target])
-            .status()
-            .unwrap();
+        let mut args: Vec<&str> = vec!["target", "add"];
+        args.extend(added_targets.iter().map(|s| s.as_str()));
+        let status = Command::new("rustup").args(&args).status().unwrap();
         if !status.success() {
-            panic!("Error installing target: {}", target);
+            // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
+            panic!("Error installing targets: {}", added_targets.join(" "));
         }
-        added_targets.push(target.to_owned());
     }
 
     Ok(added_targets)
@@ -247,14 +246,15 @@ fn install_targets() -> Result<Vec<String>> {
 fn uninstall_targets(targets: Vec<String>) {
     if !targets.is_empty() {
         println!("⏳ uninstalling targets");
-    }
 
-    // print all uninstall errors so the user can fix those manually if needed
-    for target in targets {
-        match run_command::<&str>(&["rustup", "target", "remove", &target], None, &[]) {
+        let mut cmd_and_args: Vec<&str> = vec!["rustup", "target", "remove"];
+        cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
+
+        // only print uninstall errors so the user can fix those manually if needed
+        match run_command::<&str>(&cmd_and_args, None, &[]) {
             Ok(_) => {}
             Err(e) => {
-                eprintln!("Error uninstalling target {}: {}", target, e);
+                eprintln!("Error uninstalling targets {}: {}", targets.join(" "), e);
             }
         }
     }
