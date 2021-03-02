@@ -208,7 +208,7 @@ fn get_installed_targets() -> Result<HashSet<String>> {
     Ok(targets)
 }
 
-fn install_targets() -> Result<String> {
+fn install_targets() -> Result<Vec<String>> {
     let required_targets = vec![
         "thumbv6m-none-eabi",
         "thumbv7m-none-eabi",
@@ -222,32 +222,41 @@ fn install_targets() -> Result<String> {
         .collect::<HashSet<_>>();
 
     let installed_targets = get_installed_targets()?;
-    let missing_targets: String = all_targets
-        .difference(&installed_targets)
-        .fold(String::new(), |a, b| a + " " + b);
+    let missing_targets: Vec<&String> = all_targets.difference(&installed_targets).collect();
+    let mut added_targets: Vec<String> = vec![];
 
     if !missing_targets.is_empty() {
         println!("⏳ installing targets");
-        // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
+    }
+
+    // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
+    for target in missing_targets {
         let status = Command::new("rustup")
-            .args(&["target", "add", &missing_targets])
+            .args(&["target", "add", target])
             .status()
             .unwrap();
         if !status.success() {
-            panic!("Error installing targets {}", missing_targets);
+            panic!("Error installing target: {}", target);
         }
+        added_targets.push(target.to_owned());
     }
 
-    Ok(missing_targets)
+    Ok(added_targets)
 }
 
-fn uninstall_targets(targets: String) {
+fn uninstall_targets(targets: Vec<String>) {
     if !targets.is_empty() {
         println!("⏳ uninstalling targets");
     }
 
-    if let Err(e) = run_command::<&str>(&["rustup", "target", "remove", &targets], None, &[]) {
-        eprintln!("Error uninstalling targets {}: {}", targets, e);
+    // print all uninstall errors so the user can fix those manually if needed
+    for target in targets {
+        match run_command::<&str>(&["rustup", "target", "remove", &target], None, &[]) {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Error uninstalling target {}: {}", target, e);
+            }
+        }
     }
 }
 
