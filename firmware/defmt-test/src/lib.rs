@@ -6,6 +6,7 @@
 //! - <https://crates.io/crates/defmt-test> (crates.io version)
 //! - <https://github.com/knurling-rs/defmt/tree/main/firmware/defmt-test> (git version)
 
+#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 #![no_std]
 
 use defmt::Format;

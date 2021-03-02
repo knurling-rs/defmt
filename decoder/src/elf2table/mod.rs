@@ -1,11 +1,7 @@
-//! Reads ELF metadata and builds a [`defmt`](https://github.com/knurling-rs/defmt) interner table.
+//! Reads ELF metadata and builds a table containing [`defmt`](https://github.com/knurling-rs/defmt) format strings.
 //!
 //! This is an implementation detail of [`probe-run`](https://github.com/knurling-rs/probe-run) and
 //! not meant to be consumed by other tools at the moment so all the API is unstable.
-
-#![cfg(feature = "unstable")]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(docsrs, doc(cfg(unstable)))]
 
 mod symbol;
 
@@ -16,37 +12,21 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub use crate::decoder::Table;
-use crate::decoder::{StringEntry, TableEntry, Tag};
+use crate::{StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
 use anyhow::{anyhow, bail, ensure};
-use object::{Object, ObjectSection};
+use object::{Object, ObjectSection, ObjectSymbol};
 
-/// Parses an ELF file and returns the decoded `defmt` table.
-///
-/// This function returns `None` if the ELF file contains no `.defmt` section.
-pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-    parse_impl(elf, true)
-}
-
-/// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
-///
-/// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage
-/// data.
-pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-    parse_impl(elf, false)
-}
-
-fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
+pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
     // first pass to extract the `_defmt_version`
     let mut version = None;
     let is_defmt_version = |name: &str| {
         name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ")
     };
-    for (_, entry) in elf.symbols() {
+    for entry in elf.symbols() {
         let name = match entry.name() {
-            Some(name) => name,
-            None => continue,
+            Ok(name) => name,
+            Err(_) => continue,
         };
 
         // Not in the `.defmt` section because it's not tied to the address of any symbol
@@ -88,17 +68,17 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
     };
 
     if check_version {
-        crate::decoder::check_version(version).map_err(anyhow::Error::msg)?;
+        self::check_version(version).map_err(anyhow::Error::msg)?;
     }
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
     let mut timestamp = None;
-    for (_, entry) in elf.symbols() {
+    for entry in elf.symbols() {
         // Skipping symbols with empty string names, as they may be added by
         // `objcopy`, and breaks JSON demangling
         let name = match entry.name() {
-            Some(name) if !name.is_empty() => name,
+            Ok(name) if !name.is_empty() => name,
             _ => continue,
         };
 
@@ -144,6 +124,60 @@ fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::
     Ok(Some(table))
 }
 
+/// Checks if the version encoded in the symbol table is compatible with this version of the `decoder` crate
+fn check_version(version: &str) -> Result<(), String> {
+    enum Kind {
+        /// `1` or `0.1`
+        Semver,
+        /// commit hash `e739d0ac703dfa629a159be329e8c62a1c3ed206`
+        Git,
+    }
+
+    impl Kind {
+        fn of(version: &str) -> Kind {
+            if version.contains('.') || version.parse::<u64>().is_ok() {
+                Kind::Semver
+            } else {
+                Kind::Git
+            }
+        }
+    }
+
+    if version != DEFMT_VERSION {
+        let mut msg = format!(
+            "defmt version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: ",
+            version, DEFMT_VERSION
+        );
+
+        let git_sem = "migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR `cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`";
+        let sem_git = "`cargo install` a non-git version of `probe-run`: `cargo install probe-run`";
+        let sem_sem = &*format!(
+            "`cargo install` a different non-git version of `probe-run` that supports defmt {}",
+            version,
+        );
+        let git_git = &*format!(
+            "pin _all_ `defmt` related dependencies to revision {0}; modify Cargo.toml files as shown below\n
+[dependencies]
+defmt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
+defmt-rtt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
+# ONLY pin this dependency if you are using the `print-defmt` feature
+panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"print-defmt\"], rev = \"{0}\" }}",
+            DEFMT_VERSION
+        );
+
+        match (Kind::of(version), Kind::of(DEFMT_VERSION)) {
+            (Kind::Git, Kind::Git) => msg.push_str(git_git),
+            (Kind::Git, Kind::Semver) => msg.push_str(git_sem),
+            (Kind::Semver, Kind::Git) => msg.push_str(sem_git),
+            (Kind::Semver, Kind::Semver) => msg.push_str(sem_sem),
+        }
+
+        return Err(msg);
+    }
+
+    Ok(())
+}
+
 #[derive(Clone)]
 pub struct Location {
     pub file: PathBuf,
@@ -160,7 +194,6 @@ impl fmt::Debug for Location {
 pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
-    let live_syms = table.raw_symbols().collect::<Vec<_>>();
     let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
@@ -236,31 +269,26 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                                 name = Some(off);
                             }
                         }
-
                         gimli::constants::DW_AT_decl_file => {
                             if let gimli::AttributeValue::FileIndex(idx) = attr.value() {
                                 decl_file = Some(idx);
                             }
                         }
-
                         gimli::constants::DW_AT_decl_line => {
                             if let gimli::AttributeValue::Udata(line) = attr.value() {
                                 decl_line = Some(line);
                             }
                         }
-
                         gimli::constants::DW_AT_location => {
                             if let gimli::AttributeValue::Exprloc(loc) = attr.value() {
                                 location = Some(loc);
                             }
                         }
-
                         gimli::constants::DW_AT_linkage_name => {
                             if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
                                 linkage_name = Some(off);
                             }
                         }
-
                         _ => {}
                     }
                 }
@@ -279,7 +307,7 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                     let linkage_name = core::str::from_utf8(&linkage_name_slice)?;
 
                     if name == "DEFMT_LOG_STATEMENT" {
-                        if live_syms.contains(&linkage_name) {
+                        if table.raw_symbols().any(|i| i == linkage_name) {
                             let addr = exprloc2address(unit.encoding(), &loc)?;
                             let file = file_index_to_path(file_index, &unit, &dwarf)?;
                             let module = segments.join("::");

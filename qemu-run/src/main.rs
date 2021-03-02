@@ -10,7 +10,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
-use defmt_decoder::decoder::{DecodeError, Table};
+use defmt_decoder::{DecodeError, Table};
 use process::Child;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -30,8 +30,13 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     let path = &args[0];
     let bytes = fs::read(path)?;
-    let table = defmt_decoder::elf2table::parse(&bytes)?
-        .ok_or_else(|| anyhow!("`.defmt` section not found"))?;
+
+    let table = if env::var_os("QEMU_RUN_IGNORE_VERSION").is_some() {
+        Table::parse_ignore_version(&bytes)
+    } else {
+        Table::parse(&bytes)
+    };
+    let table = table?.ok_or_else(|| anyhow!("`.defmt` section not found"))?;
 
     let mut child = KillOnDrop(
         Command::new("qemu-system-arm")
@@ -92,7 +97,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
 fn decode(frames: &mut Vec<u8>, table: &Table) -> Result<(), DecodeError> {
     loop {
-        match defmt_decoder::decoder::decode(&frames, &table) {
+        match table.decode(&frames) {
             Ok((frame, consumed)) => {
                 println!("{}", frame.display(true));
                 let n = frames.len();

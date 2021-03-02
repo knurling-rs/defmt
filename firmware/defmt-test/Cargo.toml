@@ -8,16 +8,13 @@ license = "MIT OR Apache-2.0"
 name = "defmt-test"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.1.1"
+version = "0.2.1"
 
 [dependencies]
 cortex-m = "0.6.3"
 cortex-m-rt = "0.6.13"
-defmt-test-macros = { version = "=0.1.1", path = "macros" }
-
-[dependencies.defmt]
-path = "../.."
-version = "0.1.0"
+defmt = { version = "0.2.0", path = "../.." }
+defmt-test-macros = { version = "=0.2.0", path = "macros" }
 
 [features]
 defmt-default = []

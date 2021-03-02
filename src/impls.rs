@@ -1,4 +1,3 @@
-#[cfg(feature = "unstable-test")]
 use crate as defmt;
 use defmt_macros::internp;
 
@@ -456,5 +455,16 @@ impl Format for core::convert::Infallible {
     fn format(&self, _: Formatter) {
         // type cannot be instantiated so nothing to do here
         match *self {}
+    }
+}
+
+impl Format for core::time::Duration {
+    fn format(&self, fmt: Formatter) {
+        crate::write!(
+            fmt,
+            "Duration {{ secs: {=u64}, nanos: {=u32} }}",
+            self.as_secs(),
+            self.subsec_nanos(),
+        )
     }
 }

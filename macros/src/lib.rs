@@ -1,4 +1,7 @@
 //! INTERNAL; DO NOT USE. Please use the `defmt` crate to access the functionality implemented here
+
+#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
+
 mod symbol;
 
 use core::convert::TryFrom;
@@ -1032,7 +1035,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
     let fmt = &write.fmt;
     let sym = mksym(&ls, "write", false);
     quote!({
-        let fmt: ::defmt::Formatter<'_> = #fmt;
+        let fmt: defmt::Formatter<'_> = #fmt;
         match (fmt.inner, #(&(#args)),*) {
             (_fmt_, #(#pats),*) => {
                 // HACK conditional should not be here; see FIXME in `format`

@@ -7,10 +7,10 @@ license = "MIT OR Apache-2.0"
 name = "defmt-decoder"
 readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.1.4"
+version = "0.2.0"
 
 [dependencies]
-defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.1.0" }
+defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.2.0" }
 byteorder = "1"
 colored = "2.0.0"
 leb128 = "0.2.4"
@@ -24,13 +24,13 @@ log = { version = "0.4.13", features = ["std"] }
 
 # elf2table
 anyhow = "1.0.32"
-gimli = "0.22.0"
+gimli = "0.23.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # elf2table
 [dependencies.object]
-version = "0.21.0"
+version = "0.22.0"
 default-features = false
 features = ["read_core", "elf", "std"]
 

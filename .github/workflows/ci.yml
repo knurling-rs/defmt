@@ -24,7 +24,7 @@ jobs:
           - macOS-latest
           - windows-latest
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -117,6 +117,14 @@ jobs:
         run: sudo apt-get update && sudo apt-get install qemu
       - name: Run QEMU snapshot tests
         run: cargo xtask test-snapshot
+    - name: Backward compatibility check against decoder v0.2.0
+      working-directory: firmware/qemu
+      env:
+        CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER: qemu-run
+        QEMU_RUN_IGNORE_VERSION: 1
+      run: |
+        cargo install --debug --git https://github.com/knurling-rs/defmt --rev v0.2.0-with-qemu-run-ignore-version qemu-run
+        ./test.sh
 
   # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
   # bors.tech integration
