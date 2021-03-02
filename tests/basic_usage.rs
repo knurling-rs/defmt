@@ -6,10 +6,11 @@ fn main() {
 struct Logger;
 
 unsafe impl defmt::Logger for Logger {
-    fn acquire() -> Option<core::ptr::NonNull<dyn defmt::Write>> {
-        None
+    fn acquire() -> bool {
+        false
     }
-    unsafe fn release(_writer: core::ptr::NonNull<dyn defmt::Write>) {}
+    unsafe fn release() {}
+    unsafe fn write(_bytes: &[u8]) {}
 }
 
 defmt::timestamp!("{=u32}", 0);

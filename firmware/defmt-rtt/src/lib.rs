@@ -12,7 +12,7 @@
 #![no_std]
 
 use core::{
-    ptr::{self, NonNull},
+    ptr,
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
@@ -25,17 +25,11 @@ const SIZE: usize = 1024;
 #[defmt::global_logger]
 struct Logger;
 
-impl defmt::Write for Logger {
-    fn write(&mut self, bytes: &[u8]) {
-        unsafe { handle().write_all(bytes) }
-    }
-}
-
 static TAKEN: AtomicBool = AtomicBool::new(false);
 static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 unsafe impl defmt::Logger for Logger {
-    fn acquire() -> Option<NonNull<dyn defmt::Write>> {
+    fn acquire() -> bool {
         let primask = register::primask::read();
         interrupt::disable();
         if !TAKEN.load(Ordering::Relaxed) {
@@ -44,22 +38,26 @@ unsafe impl defmt::Logger for Logger {
 
             INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
 
-            Some(NonNull::from(&Logger as &dyn defmt::Write))
+            true
         } else {
             if primask.is_active() {
                 // re-enable interrupts
                 unsafe { interrupt::enable() }
             }
-            None
+            false
         }
     }
 
-    unsafe fn release(_: NonNull<dyn defmt::Write>) {
+    unsafe fn release() {
         TAKEN.store(false, Ordering::Relaxed);
         if INTERRUPTS_ACTIVE.load(Ordering::Relaxed) {
             // re-enable interrupts
             interrupt::enable()
         }
+    }
+
+    unsafe fn write(bytes: &[u8]) {
+        handle().write_all(bytes)
     }
 }
 

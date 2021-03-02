@@ -14,10 +14,7 @@
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 #![no_std]
 
-use core::{
-    ptr::NonNull,
-    sync::atomic::{AtomicBool, Ordering},
-};
+use core::sync::atomic::{AtomicBool, Ordering};
 
 use cortex_m::{interrupt, itm, peripheral::ITM, register};
 
@@ -41,21 +38,13 @@ pub fn enable(itm: ITM) {
 #[defmt::global_logger]
 struct Logger;
 
-impl defmt::Write for Logger {
-    fn write(&mut self, bytes: &[u8]) {
-        // NOTE(unsafe) this function will be invoked *after* `enable` has run so this crate now has
-        // ownership over the ITM thus it's OK to instantiate the ITM register block here
-        unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
-    }
-}
-
 static TAKEN: AtomicBool = AtomicBool::new(false);
 static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 unsafe impl defmt::Logger for Logger {
-    fn acquire() -> Option<NonNull<dyn defmt::Write>> {
+    fn acquire() -> bool {
         if !ENABLED.load(Ordering::Relaxed) {
-            return None;
+            return false;
         }
 
         let primask = register::primask::read();
@@ -66,21 +55,27 @@ unsafe impl defmt::Logger for Logger {
 
             INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
 
-            Some(NonNull::from(&Logger as &dyn defmt::Write))
+            true
         } else {
             if primask.is_active() {
                 // re-enable interrupts
                 unsafe { interrupt::enable() }
             }
-            None
+            false
         }
     }
 
-    unsafe fn release(_: NonNull<dyn defmt::Write>) {
+    unsafe fn release() {
         TAKEN.store(false, Ordering::Relaxed);
         if INTERRUPTS_ACTIVE.load(Ordering::Relaxed) {
             // re-enable interrupts
             interrupt::enable()
         }
+    }
+
+    unsafe fn write(bytes: &[u8]) {
+        // NOTE(unsafe) this function will be invoked *after* `enable` has run so this crate now has
+        // ownership over the ITM thus it's OK to instantiate the ITM register block here
+        itm::write_all(&mut (*ITM::ptr()).stim[0], bytes)
     }
 }

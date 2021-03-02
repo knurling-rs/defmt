@@ -21,8 +21,8 @@ extern crate alloc;
 #[cfg(feature = "unstable-test")]
 use crate as defmt;
 
+use core::fmt;
 use core::fmt::Write as _;
-use core::{fmt, ptr::NonNull};
 
 #[doc(hidden)]
 pub mod export;
@@ -30,10 +30,10 @@ mod impls;
 mod leb;
 #[cfg(all(test, feature = "unstable-test"))]
 mod tests;
-#[cfg(all(test, not(feature = "unstable-test")))]
-compile_error!(
-    "to run unit tests enable the `unstable-test` feature, e.g. `cargo t --features unstable-test`"
-);
+//#[cfg(all(test, not(feature = "unstable-test")))]
+//compile_error!(
+//    "to run unit tests enable the `unstable-test` feature, e.g. `cargo t --features unstable-test`"
+//);
 
 /// Just like the [`core::assert!`] macro but `defmt` is used to log the panic message
 ///
@@ -232,18 +232,21 @@ pub use defmt_macros::write;
 /// # Example
 ///
 /// ```
-/// use defmt::{Logger, Write, global_logger};
-/// use core::ptr::NonNull;
+/// use defmt::{Logger, global_logger};
 ///
 /// #[global_logger]
 /// struct MyLogger;
 ///
 /// unsafe impl Logger for MyLogger {
-///     fn acquire() -> Option<NonNull<dyn Write>> {
+///     fn acquire() -> bool {
 /// # todo!()
 ///         // ...
 ///     }
-///     unsafe fn release(writer: NonNull<dyn Write>) {
+///     unsafe fn release() {
+/// # todo!()
+///         // ...
+///     }
+///     unsafe fn write(bytes: &[u8]) {
 /// # todo!()
 ///         // ...
 ///     }
@@ -294,14 +297,25 @@ pub unsafe trait Logger {
     /// Returns a handle to the global logger
     ///
     /// For the requirements of the method see the documentation of the `Logger` trait
-    fn acquire() -> Option<NonNull<dyn Write>>;
+    fn acquire() -> bool;
 
     /// Releases the global logger
     ///
     /// # Safety
-    /// `writer` argument must be a value previously returned by `Self::acquire` and not, say,
-    /// `NonNull::dangling()`
-    unsafe fn release(writer: NonNull<dyn Write>);
+    /// May only be called after a successful acquire()
+    unsafe fn release();
+
+    /// Writes `bytes` to the destination.
+    ///
+    /// This will be called by the defmt logging macros to transmit encoded data. The write
+    /// operation must not fail.
+    ///
+    /// Note that a call to `write` does *not* correspond to a defmt logging macro invocation. A
+    /// single `defmt::info!` call can result in an arbitrary number of `write` calls.
+    ///
+    /// # Safety
+    /// May only be called after a successful acquire(), before the corresponding release()
+    unsafe fn write(bytes: &[u8]);
 }
 
 /// An interned string created via [`intern!`].
@@ -315,8 +329,6 @@ pub struct Str {
 
 #[doc(hidden)]
 pub struct InternalFormatter {
-    #[cfg(not(feature = "unstable-test"))]
-    writer: NonNull<dyn Write>,
     #[cfg(feature = "unstable-test")]
     bytes: Vec<u8>,
     bool_flags: u8, // the current group of consecutive bools
@@ -339,11 +351,10 @@ pub struct Formatter<'a> {
 
 #[doc(hidden)]
 impl InternalFormatter {
-    /// Only for testing
-    #[cfg(feature = "unstable-test")]
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
+            #[cfg(feature = "unstable-test")]
             bytes: vec![],
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
@@ -365,28 +376,7 @@ impl InternalFormatter {
 
     #[cfg(not(feature = "unstable-test"))]
     pub fn write(&mut self, bytes: &[u8]) {
-        unsafe { self.writer.as_mut().write(bytes) }
-    }
-
-    /// Implementation detail
-    /// # Safety
-    /// `writer` is `Copy` but the returned type is a singleton. Calling this function should not
-    /// break the singleton invariant (one should not create more than one instance of
-    /// `InternalFormatter`)
-    #[cfg(not(feature = "unstable-test"))]
-    pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
-        Self {
-            writer,
-            bool_flags: 0,
-            bools_left: MAX_NUM_BOOL_FLAGS,
-            omit_tag: false,
-        }
-    }
-
-    /// Implementation detail
-    #[cfg(not(feature = "unstable-test"))]
-    pub fn into_raw(self) -> NonNull<dyn Write> {
-        self.writer
+        export::write(bytes)
     }
 
     // TODO turn these public methods in `export` free functions
@@ -614,49 +604,6 @@ impl fmt::Write for FmtWrite<'_> {
         self.fmt.write(s.as_bytes());
         Ok(())
     }
-}
-
-// these need to be in a separate module or `unreachable!` will end up calling `defmt::panic` and
-// this will not compile
-// (using `core::unreachable!` instead of `unreachable!` doesn't help)
-#[cfg(feature = "unstable-test")]
-mod test_only {
-    use core::ptr::NonNull;
-
-    use super::Write;
-
-    #[doc(hidden)]
-    impl super::InternalFormatter {
-        /// Implementation detail
-        ///
-        /// # Safety
-        ///
-        /// This is always safe to call and will panic. It only exists to match the non-test API.
-        pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
-            unreachable!()
-        }
-
-        /// Implementation detail
-        ///
-        /// # Safety
-        ///
-        /// This is always safe to call and will panic. It only exists to match the non-test API.
-        pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
-            unreachable!()
-        }
-    }
-}
-
-/// Trait for defmt logging targets.
-pub trait Write {
-    /// Writes `bytes` to the destination.
-    ///
-    /// This will be called by the defmt logging macros to transmit encoded data. The write
-    /// operation must not fail.
-    ///
-    /// Note that a call to `write` does *not* correspond to a defmt logging macro invocation. A
-    /// single `defmt::info!` call can result in an arbitrary number of `write` calls.
-    fn write(&mut self, bytes: &[u8]);
 }
 
 /// Trait for types that can be formatted via defmt.

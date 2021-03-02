@@ -1,4 +1,4 @@
-use crate::{InternalFormatter, Str};
+use crate::Str;
 
 #[cfg(feature = "unstable-test")]
 thread_local! {
@@ -23,29 +23,38 @@ pub fn fetch_add_string_index() -> usize {
 }
 
 #[cfg(feature = "unstable-test")]
-pub fn acquire() -> Option<InternalFormatter> {
-    None
+pub fn acquire() -> bool {
+    false
 }
 
 #[cfg(not(feature = "unstable-test"))]
 #[inline(never)]
-pub fn acquire() -> Option<InternalFormatter> {
+pub fn acquire() -> bool {
     extern "Rust" {
-        fn _defmt_acquire() -> Option<InternalFormatter>;
+        fn _defmt_acquire() -> bool;
     }
     unsafe { _defmt_acquire() }
 }
 
 #[cfg(feature = "unstable-test")]
-pub fn release(_: InternalFormatter) {}
+pub fn release() {}
 
 #[cfg(not(feature = "unstable-test"))]
 #[inline(never)]
-pub fn release(fmt: InternalFormatter) {
+pub fn release() {
     extern "Rust" {
-        fn _defmt_release(fmt: InternalFormatter);
+        fn _defmt_release();
     }
-    unsafe { _defmt_release(fmt) }
+    unsafe { _defmt_release() }
+}
+
+#[cfg(not(feature = "unstable-test"))]
+#[inline(never)]
+pub fn write(bytes: &[u8]) {
+    extern "Rust" {
+        fn _defmt_write(bytes: &[u8]);
+    }
+    unsafe { _defmt_write(bytes) }
 }
 
 /// For testing purposes
