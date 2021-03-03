@@ -32,6 +32,9 @@ For a full list of defmt-test's capabilities, please refer to the documentation 
 
 #[defmt_test::tests]
 mod tests {
+    // enable diff-style failure visualization
+    use defmt::{assert, assert_eq};
+
     #[test]
     fn assert_true() {
         assert!(true)
@@ -39,7 +42,7 @@ mod tests {
 
     #[test]
     fn assert_false() {
-        assert!(false, "TODO: write actual tests")
+        assert_eq!(24, 42, "TODO: write actual tests")
     }
 }
 ```
