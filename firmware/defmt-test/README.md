@@ -22,7 +22,7 @@ For a full list of defmt-test's capabilities, please refer to the documentation 
  # testsuite/Cargo.toml
 
  [dependencies]
-+ defmt-test = "0.1.0"
++ defmt-test = "0.2.1"
 ```
 
 2. Within the `testsuite/tests/test.rs` file, create a `tests` module and mark it with the `#[defmt_test::tests]` attribute. Within that module write `std`-like unit tests: functions marked with the `#[test]` attribute.
@@ -32,6 +32,9 @@ For a full list of defmt-test's capabilities, please refer to the documentation 
 
 #[defmt_test::tests]
 mod tests {
+    // enable diff-style failure visualization
+    use defmt::{assert, assert_eq};
+
     #[test]
     fn assert_true() {
         assert!(true)
@@ -39,7 +42,7 @@ mod tests {
 
     #[test]
     fn assert_false() {
-        assert!(false, "TODO: write actual tests")
+        assert_eq!(24, 42, "TODO: write actual tests")
     }
 }
 ```
