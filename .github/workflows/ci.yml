@@ -5,6 +5,9 @@ on:
     branches: [ main, staging, trying ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # runs 1 min after 2 or 1 AM (summer/winter) berlin time
+    - cron: '1 0 * * *'
 
 env:
   CARGO_TERM_COLOR: always
@@ -154,7 +157,7 @@ jobs:
         override: true
         target: ${{ env.QEMU_TARGET }}
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install qemu
+      run: sudo apt-get update && sudo apt-get install qemu qemu-system-arm
     - name: Build and Run QEMU tests
       working-directory: firmware/qemu
       run: ./test.sh
