@@ -5,6 +5,9 @@ on:
     branches: [ main, staging, trying ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # runs 1 min after 2 or 1 AM (summer/winter) berlin time
+    - cron: '1 0 * * *'
 
 env:
   CARGO_TERM_COLOR: always
