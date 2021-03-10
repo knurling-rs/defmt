@@ -46,7 +46,7 @@ Would expand to this:
 // first warn! invocation
 {
     #[export_name = "{\"package\":\"my-app\",\"tag\":\"defmt_warn\",\"data\":\"Hello\",\"disambiguator\":\"8864866341617976971\"}"]
-    #[cfg_attr(target_os = "none", link_section = ".defmt.{\"package\":\"my-app\",\"tag\":\"defmt_warn\",\"data\":\"Hello\",\"disambiguator\":\"8864866341617976971\"}")]
+    #[link_section = ".defmt.{\"package\":\"my-app\",\"tag\":\"defmt_warn\",\"data\":\"Hello\",\"disambiguator\":\"8864866341617976971\"}"]
     static SYM: u8 = 0;
 }
 
@@ -55,7 +55,7 @@ Would expand to this:
 // first error! invocation
 {
     #[export_name = "{\"package\":\"my-app\",\"tag\":\"defmt_error\",\"data\":\"Bye\",\"disambiguator\":\"2879057613697528561\"}"]
-    #[cfg_attr(target_os = "none", link_section = ".defmt.{\"package\":\"my-app\",\"tag\":\"defmt_error\",\"data\":\"Bye\",\"disambiguator\":\"2879057613697528561\"}")]
+    #[link_section = ".defmt.{\"package\":\"my-app\",\"tag\":\"defmt_error\",\"data\":\"Bye\",\"disambiguator\":\"2879057613697528561\"}"]
     static SYM: u8 = 0;
 }
 ```

@@ -6,9 +6,9 @@ It is not without downsides as we'll see.
 
 The basic pattern for interning a string is this:
 
-``` rust
+``` rust,no_run,noplayground
 #[export_name = "the string that will be interned"]
-#[cfg_attr(target_os = "none", link_section = ".my_custom_section.some_unique_identifier")]
+#[link_section = ".my_custom_section.some_unique_identifier"]
 //             ^ this is the INPUT linker section
 static SYM: u8 = 0;
 
