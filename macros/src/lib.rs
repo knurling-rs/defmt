@@ -624,30 +624,19 @@ pub fn assert_(ts: TokenStream) -> TokenStream {
 
     let condition = assert.condition;
     let log_stmt = if let Some(args) = assert.args {
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!("panicked at '{}'", args.litstr.value()),
-                    Span2::call_site(),
-                ),
-                rest: args.rest,
-            },
-        )
+        let litstr = LitStr::new(
+            &format!("panicked at '{}'", args.litstr.value()),
+            Span2::call_site(),
+        );
+        let rest = args.rest;
+        log(Level::Error, FormatArgs { litstr, rest })
     } else {
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!(
-                        "panicked at 'assertion failed: {}'",
-                        escape_expr(&condition)
-                    ),
-                    Span2::call_site(),
-                ),
-                rest: None,
-            },
-        )
+        let value = &format!(
+            "panicked at 'assertion failed: {}'",
+            escape_expr(&condition)
+        );
+        let litstr = LitStr::new(value, Span2::call_site());
+        log(Level::Error, FormatArgs { litstr, rest: None })
     };
 
     quote!(
