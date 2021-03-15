@@ -485,8 +485,6 @@ fn is_logging_enabled(level: Level) -> TokenStream2 {
     )
 }
 
-// note that we are not using a `Level` type shared with `decoder` due to Cargo bugs in crate sharing
-// TODO -> move Level to parser?
 fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
     log(level, parse_macro_input!(ts as FormatArgs)).into()
 }
