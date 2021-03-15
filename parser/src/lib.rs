@@ -170,16 +170,20 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
 }
 
 fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
-    // Skip spaces.
+    // skip spaces
     let len_pos = s
         .find(|c: char| c != ' ')
         .ok_or("invalid array specifier (missing length)")?;
     s = &s[len_pos..];
+
+    // consume length
     let after_len = s
         .find(|c: char| !c.is_digit(10))
         .ok_or("invalid array specifier (missing `]`)")?;
     let len = s[..after_len].parse::<usize>().map_err(|e| e.to_string())?;
     s = &s[after_len..];
+
+    // consume final `]`
     if s != "]" {
         return Err("invalid array specifier (missing `]`)".into());
     }
