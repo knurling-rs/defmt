@@ -558,23 +558,14 @@ fn panic(
 ) -> TokenStream {
     let log_stmt = if ts.is_empty() {
         // panic!() -> error!("panicked at 'explicit panic'")
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(zero_args_string, Span2::call_site()),
-                rest: None,
-            },
-        )
+        let litstr = LitStr::new(zero_args_string, Span2::call_site());
+        log(Level::Error, FormatArgs { litstr, rest: None })
     } else {
         // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
         let args = parse_macro_input!(ts as FormatArgs);
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(&string_transform(&args.litstr.value()), Span2::call_site()),
-                rest: args.rest,
-            },
-        )
+        let litstr = LitStr::new(&string_transform(&args.litstr.value()), Span2::call_site());
+        let rest = args.rest;
+        log(Level::Error, FormatArgs { litstr, rest })
     };
 
     quote!(
