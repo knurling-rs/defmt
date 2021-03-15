@@ -773,34 +773,25 @@ pub fn unwrap(ts: TokenStream) -> TokenStream {
 
     let condition = assert.condition;
     let log_stmt = if let Some(args) = assert.args {
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!("panicked at '{}'", args.litstr.value()),
-                    Span2::call_site(),
-                ),
-                rest: args.rest,
-            },
-        )
+        let litstr = LitStr::new(
+            &format!("panicked at '{}'", args.litstr.value()),
+            Span2::call_site(),
+        );
+        let rest = args.rest;
+        log(Level::Error, FormatArgs { litstr, rest })
     } else {
         let mut log_args = Punctuated::new();
         log_args.push(ident_expr("_unwrap_err"));
 
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!(
-                        "panicked at 'unwrap failed: {}'
-error: `{{:?}}`",
-                        escape_expr(&condition)
-                    ),
-                    Span2::call_site(),
-                ),
-                rest: Some((syn::token::Comma::default(), log_args)),
-            },
-        )
+        let litstr = LitStr::new(
+            &format!(
+                "panicked at 'unwrap failed: {}'\nerror: `{{:?}}`",
+                escape_expr(&condition)
+            ),
+            Span2::call_site(),
+        );
+        let rest = Some((syn::token::Comma::default(), log_args));
+        log(Level::Error, FormatArgs { litstr, rest })
     };
 
     quote!(
