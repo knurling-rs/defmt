@@ -10,8 +10,7 @@
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-use std::borrow::Cow;
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range, str::FromStr};
 
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, PartialEq)]
@@ -39,6 +38,24 @@ pub enum DisplayHint {
     Microseconds,
     /// Display hints currently not supported / understood
     Unknown(String),
+}
+
+impl FromStr for DisplayHint {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "µs" => DisplayHint::Microseconds,
+            "a" => DisplayHint::Ascii,
+            "b" => DisplayHint::Binary,
+            "x" => DisplayHint::Hexadecimal {
+                is_uppercase: false,
+            },
+            "X" => DisplayHint::Hexadecimal { is_uppercase: true },
+            "?" => DisplayHint::Debug,
+            _ => return Err(()),
+        })
+    }
 }
 
 /// A part of a format string.
@@ -296,15 +313,8 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         // skip the prefix
         input = &input[HINT_PREFIX.len()..];
 
-        hint = Some(match input {
-            "µs" => DisplayHint::Microseconds,
-            "a" => DisplayHint::Ascii,
-            "b" => DisplayHint::Binary,
-            "x" => DisplayHint::Hexadecimal {
-                is_uppercase: false,
-            },
-            "X" => DisplayHint::Hexadecimal { is_uppercase: true },
-            "?" => DisplayHint::Debug,
+        hint = Some(match input.parse() {
+            Ok(a) => a,
             _ => match mode {
                 ParserMode::Strict => {
                     return Err(format!("unknown display hint: {:?}", input).into());
