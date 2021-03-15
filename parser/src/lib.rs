@@ -200,7 +200,9 @@ pub enum ParserMode {
     ForwardsCompatible,
 }
 
-// example `input`: "0=Type:hint" (note: no curly braces)
+/// Parse `Param` from `&str`
+///
+/// * example `input`: `0=Type:hint` (note: no curly braces)
 fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, str>> {
     const TYPE_PREFIX: &str = "=";
     const HINT_PREFIX: &str = ":";
@@ -231,8 +233,8 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         let type_end = input.find(HINT_PREFIX).unwrap_or_else(|| input.len());
         let type_fragment = &input[..type_end];
 
-        static FORMAT_ARRAY_START: &str = "[?;";
-        static U8_ARRAY_START: &str = "[u8;";
+        const FORMAT_ARRAY_START: &str = "[?;";
+        const U8_ARRAY_START: &str = "[u8;";
 
         // what comes next is the type
         ty = match type_fragment {
@@ -268,25 +270,20 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
                 let len = parse_array(&type_fragment[FORMAT_ARRAY_START.len()..])?;
                 Type::FormatArray(len)
             }
-            _ => {
+            _ => match parse_range(type_fragment) {
                 // Check for bitfield syntax.
-                match parse_range(type_fragment) {
-                    Some((range, used)) => {
-                        if used != type_fragment.len() {
-                            return Err("trailing data after bitfield range".into());
-                        }
-
-                        Type::BitField(range)
-                    }
-                    None => {
-                        return Err(format!(
-                            "malformed format string (invalid type specifier `{}`)",
-                            input
-                        )
-                        .into());
-                    }
+                Some((_, used)) if used != type_fragment.len() => {
+                    return Err("trailing data after bitfield range".into());
                 }
-            }
+                Some((range, _)) => Type::BitField(range),
+                None => {
+                    return Err(format!(
+                        "malformed format string (invalid type specifier `{}`)",
+                        input
+                    )
+                    .into());
+                }
+            },
         };
 
         input = &input[type_end..];
