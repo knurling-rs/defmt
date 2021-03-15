@@ -27,15 +27,15 @@ pub struct Parameter {
 /// All display hints
 #[derive(Clone, Debug, PartialEq)]
 pub enum DisplayHint {
-    /// ":x" OR ":X"
+    /// `:x` OR `:X`
     Hexadecimal { is_uppercase: bool },
-    /// ":b"
+    /// `:b`
     Binary,
-    /// ":a"
+    /// `:a`
     Ascii,
-    /// ":?"
+    /// `:?`
     Debug,
-    /// ":µs", formats integers as timestamps in microseconds
+    /// `:µs`, formats integers as timestamps in microseconds
     Microseconds,
     /// Display hints currently not supported / understood
     Unknown(String),
@@ -77,6 +77,7 @@ struct Param {
     hint: Option<DisplayHint>,
 }
 
+/// The log level
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum Level {
     Trace,
@@ -90,21 +91,33 @@ pub enum Level {
 pub enum Type {
     BitField(Range<u8>),
     Bool,
-    Format,             // "{=?}" OR "{}"
-    FormatSlice,        // "{=[?]}"
-    FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
+    /// A single Unicode character
+    Char,
+
     Debug,
     Display,
+
+    F32,
+    F64,
+
+    /// `{=?}` OR `{}`
+    Format,
+    FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
+    /// `{=[?]}`
+    FormatSlice,
+
     I8,
     I16,
     I32,
     I64,
     I128,
     Isize,
-    /// String slice (i.e. passed directly; not as interned string indices).
-    Str,
+
     /// Interned string index.
     IStr,
+    /// String slice (i.e. passed directly; not as interned string indices).
+    Str,
+
     U8,
     U16,
     U24,
@@ -112,13 +125,10 @@ pub enum Type {
     U64,
     U128,
     Usize,
+
     /// Byte slice `{=[u8]}`.
     U8Slice,
     U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
-    F32,
-    F64,
-    /// A single Unicode character
-    Char,
 }
 
 // when not specified in the format string, this type is assumed
@@ -182,7 +192,6 @@ fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
 pub enum ParserMode {
     /// Rejects unknown display hints
     Strict,
-
     /// Accepts unknown display hints
     ForwardsCompatible,
 }
