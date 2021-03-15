@@ -4,11 +4,15 @@
 
 mod symbol;
 
-use core::convert::TryFrom;
-use core::fmt::Write as _;
-use proc_macro::TokenStream;
+use std::{
+    collections::hash_map::DefaultHasher,
+    convert::TryFrom,
+    fmt::Write as _,
+    hash::{Hash, Hasher},
+};
 
 use defmt_parser::{Fragment, Level, ParserMode};
+use proc_macro::TokenStream;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{
@@ -20,9 +24,6 @@ use syn::{
     ItemFn, ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type,
     WhereClause, WherePredicate,
 };
-
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 
 /// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
 ///
