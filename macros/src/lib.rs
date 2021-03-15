@@ -1131,7 +1131,7 @@ impl Codegen {
             .iter()
             .filter_map(|frag| match frag {
                 Fragment::Parameter(param) => Some(param.clone()),
-                Fragment::Literal(_) => None,
+                _ => None,
             })
             .collect::<Vec<_>>();
 
@@ -1149,63 +1149,57 @@ impl Codegen {
             // find first use of this argument and return its type
             let param = parsed_params.iter().find(|param| param.index == i).unwrap();
             match param.ty {
-                defmt_parser::Type::Format => {
-                    exprs.push(quote!(_fmt_.fmt(#arg, false)));
-                }
-                defmt_parser::Type::FormatSlice => {
-                    exprs.push(quote!(_fmt_.fmt_slice(#arg)));
-                }
-                defmt_parser::Type::I16 => {
-                    exprs.push(quote!(_fmt_.i16(#arg)));
-                }
-                defmt_parser::Type::I32 => {
-                    exprs.push(quote!(_fmt_.i32(#arg)));
-                }
-                defmt_parser::Type::I64 => {
-                    exprs.push(quote!(_fmt_.i64(#arg)));
-                }
-                defmt_parser::Type::I128 => {
-                    exprs.push(quote!(_fmt_.i128(#arg)));
-                }
-                defmt_parser::Type::I8 => {
-                    exprs.push(quote!(_fmt_.i8(#arg)));
-                }
-                defmt_parser::Type::Isize => {
-                    exprs.push(quote!(_fmt_.isize(#arg)));
-                }
-                defmt_parser::Type::Str => {
-                    exprs.push(quote!(_fmt_.str(#arg)));
-                }
-                defmt_parser::Type::IStr => {
-                    exprs.push(quote!(_fmt_.istr(#arg)));
-                }
-                defmt_parser::Type::U16 => {
-                    exprs.push(quote!(_fmt_.u16(#arg)));
-                }
-                defmt_parser::Type::U24 => {
-                    exprs.push(quote!(_fmt_.u24(#arg)));
-                }
-                defmt_parser::Type::U32 => {
-                    exprs.push(quote!(_fmt_.u32(#arg)));
-                }
-                defmt_parser::Type::U64 => {
-                    exprs.push(quote!(_fmt_.u64(#arg)));
-                }
-                defmt_parser::Type::U128 => {
-                    exprs.push(quote!(_fmt_.u128(#arg)));
-                }
-                defmt_parser::Type::U8 => {
-                    exprs.push(quote!(_fmt_.u8(#arg)));
-                }
-                defmt_parser::Type::Usize => {
-                    exprs.push(quote!(_fmt_.usize(#arg)));
-                }
-                defmt_parser::Type::Debug => {
-                    exprs.push(quote!(_fmt_.debug(#arg)));
-                }
-                defmt_parser::Type::Display => {
-                    exprs.push(quote!(_fmt_.display(#arg)));
-                }
+                defmt_parser::Type::I8 => exprs.push(quote!(_fmt_.i8(#arg))),
+                defmt_parser::Type::I16 => exprs.push(quote!(_fmt_.i16(#arg))),
+                defmt_parser::Type::I32 => exprs.push(quote!(_fmt_.i32(#arg))),
+                defmt_parser::Type::I64 => exprs.push(quote!(_fmt_.i64(#arg))),
+                defmt_parser::Type::I128 => exprs.push(quote!(_fmt_.i128(#arg))),
+                defmt_parser::Type::Isize => exprs.push(quote!(_fmt_.isize(#arg))),
+
+                defmt_parser::Type::U8 => exprs.push(quote!(_fmt_.u8(#arg))),
+                defmt_parser::Type::U16 => exprs.push(quote!(_fmt_.u16(#arg))),
+                defmt_parser::Type::U24 => exprs.push(quote!(_fmt_.u24(#arg))),
+                defmt_parser::Type::U32 => exprs.push(quote!(_fmt_.u32(#arg))),
+                defmt_parser::Type::U64 => exprs.push(quote!(_fmt_.u64(#arg))),
+                defmt_parser::Type::U128 => exprs.push(quote!(_fmt_.u128(#arg))),
+                defmt_parser::Type::Usize => exprs.push(quote!(_fmt_.usize(#arg))),
+
+                defmt_parser::Type::F32 => exprs.push(quote!(_fmt_.f32(#arg))),
+                defmt_parser::Type::F64 => exprs.push(quote!(_fmt_.f64(#arg))),
+
+                defmt_parser::Type::Bool => exprs.push(quote!(_fmt_.bool(#arg))),
+
+                defmt_parser::Type::Str => exprs.push(quote!(_fmt_.str(#arg))),
+                defmt_parser::Type::IStr => exprs.push(quote!(_fmt_.istr(#arg))),
+                defmt_parser::Type::Char => exprs.push(quote!(_fmt_.u32(&(*#arg as u32)))),
+
+                defmt_parser::Type::Format => exprs.push(quote!(_fmt_.fmt(#arg, false))),
+                defmt_parser::Type::FormatSlice => exprs.push(quote!(_fmt_.fmt_slice(#arg))),
+                defmt_parser::Type::FormatArray(len) => exprs.push(quote!(_fmt_.fmt_array({
+                    let tmp: &[_; #len] = #arg;
+                    tmp
+                }))),
+
+                defmt_parser::Type::Debug => exprs.push(quote!(_fmt_.debug(#arg))),
+                defmt_parser::Type::Display => exprs.push(quote!(_fmt_.display(#arg))),
+
+                defmt_parser::Type::U8Slice => exprs.push(quote!(_fmt_.slice(#arg))),
+                // We cast to the expected array type (which should be a no-op cast) to provoke
+                // a type mismatch error on mismatched lengths:
+                // ```
+                // error[E0308]: mismatched types
+                //   --> src/bin/log.rs:20:5
+                //    |
+                // 20 |     defmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
+                //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                //    |     |
+                //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
+                //    |     expected due to this
+                // ```
+                defmt_parser::Type::U8Array(len) => exprs.push(quote!(_fmt_.u8_array({
+                    let tmp: &[u8; #len] = #arg;
+                    tmp
+                }))),
                 defmt_parser::Type::BitField(_) => {
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
                     let (smallest_bit_index, largest_bit_index) =
@@ -1216,92 +1210,33 @@ impl Codegen {
                     let highest_byte = (largest_bit_index - 1) / 8;
                     let truncated_sz = highest_byte - lowest_byte + 1; // in bytes
 
+                    // shift away unneeded lower octet
+                    // TODO: create helper for shifting because readability
                     match truncated_sz {
-                        1 => {
-                            // shift away unneeded lower octet
-                            // TODO: create helper for shifting because readability
-                            exprs.push(quote!(_fmt_.u8(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        2 => {
-                            exprs.push(quote!(_fmt_.u16(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        3 => {
-                            exprs.push(quote!(_fmt_.u24(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        4 => {
-                            exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        5..=8 => {
-                            exprs.push(quote!(_fmt_.u64(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        9..=16 => {
-                            exprs.push(quote!(_fmt_.u128(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-
+                        1 => exprs.push(quote!(_fmt_.u8(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        2 => exprs.push(quote!(_fmt_.u16(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        3 => exprs.push(quote!(_fmt_.u24(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        4 => exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        5..=8 => exprs.push(quote!(_fmt_.u64(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        9..=16 => exprs.push(quote!(_fmt_.u128(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
                         _ => unreachable!(),
                     }
-                }
-                defmt_parser::Type::Bool => {
-                    exprs.push(quote!(_fmt_.bool(#arg)));
-                }
-                defmt_parser::Type::U8Slice => {
-                    exprs.push(quote!(_fmt_.slice(#arg)));
-                }
-                defmt_parser::Type::U8Array(len) => {
-                    // We cast to the expected array type (which should be a no-op cast) to provoke
-                    // a type mismatch error on mismatched lengths:
-                    // ```
-                    // error[E0308]: mismatched types
-                    //   --> src/bin/log.rs:20:5
-                    //    |
-                    // 20 |     defmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
-                    //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                    //    |     |
-                    //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
-                    //    |     expected due to this
-                    // ```
-                    exprs.push(quote!(_fmt_.u8_array({
-                        let tmp: &[u8; #len] = #arg;
-                        tmp
-                    })));
-                }
-                defmt_parser::Type::FormatArray(len) => {
-                    exprs.push(quote!(_fmt_.fmt_array({
-                        let tmp: &[_; #len] = #arg;
-                        tmp
-                    })));
-                }
-                defmt_parser::Type::F32 => {
-                    exprs.push(quote!(_fmt_.f32(#arg)));
-                }
-                defmt_parser::Type::F64 => {
-                    exprs.push(quote!(_fmt_.f64(#arg)));
-                }
-                defmt_parser::Type::Char => {
-                    exprs.push(quote!(_fmt_.u32(&(*#arg as u32))));
                 }
             }
             pats.push(arg);
         }
 
-        if num_args < actual_argument_count {
-            return Err(parse::Error::new(
-                span,
-                format!(
-                    "format string requires {} arguments but only {} were provided",
-                    actual_argument_count, num_args
-                ),
-            ));
-        }
+        if num_args != actual_argument_count {
+            let mut only = "";
+            if num_args < actual_argument_count {
+                only = "only ";
+            }
 
-        if num_args > actual_argument_count {
-            return Err(parse::Error::new(
-                span,
-                format!(
-                    "format string requires {} arguments but {} were provided",
-                    actual_argument_count, num_args
-                ),
-            ));
+            let message = format!(
+                "format string requires {} arguments but {}{} were provided",
+                actual_argument_count, only, num_args
+            );
+            return Err(parse::Error::new(span, message));
         }
 
         Ok(Codegen { pats, exprs })
