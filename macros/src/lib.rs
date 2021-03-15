@@ -37,17 +37,14 @@ fn check_attribute_conflicts(
         if let Some(ident) = attr.path.get_ident() {
             let ident = ident.to_string();
             if reject_list.contains(&&*ident) {
-                return Err(parse::Error::new(
-                    attr.span(),
-                    format!(
-                        "`#[{}]` attribute cannot be used together with `#[{}]`",
-                        attr_name, ident
-                    ),
-                ));
+                let message = format!(
+                    "`#[{}]` attribute cannot be used together with `#[{}]`",
+                    attr_name, ident
+                );
+                return Err(parse::Error::new(attr.span(), message));
             }
         }
     }
-
     Ok(())
 }
 
