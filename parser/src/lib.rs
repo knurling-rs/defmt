@@ -10,7 +10,11 @@
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
+mod types;
+
 use std::{borrow::Cow, ops::Range, str::FromStr};
+
+pub use crate::types::Type;
 
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, PartialEq)]
@@ -113,91 +117,6 @@ impl Level {
             Level::Warn => "warn",
             Level::Error => "error",
         }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Type {
-    BitField(Range<u8>),
-    Bool,
-    /// A single Unicode character
-    Char,
-
-    Debug,
-    Display,
-
-    F32,
-    F64,
-
-    /// `{=?}` OR `{}`
-    Format,
-    FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
-    /// `{=[?]}`
-    FormatSlice,
-
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    Isize,
-
-    /// Interned string index.
-    IStr,
-    /// String slice (i.e. passed directly; not as interned string indices).
-    Str,
-
-    U8,
-    U16,
-    U24,
-    U32,
-    U64,
-    U128,
-    Usize,
-
-    /// Byte slice `{=[u8]}`.
-    U8Slice,
-    U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
-}
-
-impl FromStr for Type {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "u8" => Type::U8,
-            "u16" => Type::U16,
-            "u24" => Type::U24,
-            "u32" => Type::U32,
-            "u64" => Type::U64,
-            "u128" => Type::U128,
-            "usize" => Type::Usize,
-            "i8" => Type::I8,
-            "i16" => Type::I16,
-            "i32" => Type::I32,
-            "i64" => Type::I64,
-            "i128" => Type::I128,
-            "isize" => Type::Isize,
-            "f32" => Type::F32,
-            "f64" => Type::F64,
-            "bool" => Type::Bool,
-            "str" => Type::Str,
-            "istr" => Type::IStr,
-            "__internal_Debug" => Type::Debug,
-            "__internal_Display" => Type::Display,
-            "[u8]" => Type::U8Slice,
-            "?" => Type::Format,
-            "[?]" => Type::FormatSlice,
-            "char" => Type::Char,
-            _ => return Err(()),
-        })
-    }
-}
-
-// when not specified in the format string, this type is assumed
-impl Default for Type {
-    fn default() -> Self {
-        Type::Format
     }
 }
 
