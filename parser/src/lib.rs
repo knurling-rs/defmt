@@ -31,7 +31,7 @@ pub struct Parameter {
 #[derive(Clone, Debug, PartialEq)]
 pub enum DisplayHint {
     /// `:x` OR `:X`
-    Hexadecimal { is_uppercase: bool },
+    Hexadecimal { uppercase: bool },
     /// `:b`
     Binary,
     /// `:a`
@@ -52,10 +52,8 @@ impl FromStr for DisplayHint {
             "µs" => DisplayHint::Microseconds,
             "a" => DisplayHint::Ascii,
             "b" => DisplayHint::Binary,
-            "x" => DisplayHint::Hexadecimal {
-                is_uppercase: false,
-            },
-            "X" => DisplayHint::Hexadecimal { is_uppercase: true },
+            "x" => DisplayHint::Hexadecimal { uppercase: false },
+            "X" => DisplayHint::Hexadecimal { uppercase: true },
             "?" => DisplayHint::Debug,
             _ => return Err(()),
         })
@@ -484,9 +482,7 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::U8,
-                hint: Some(DisplayHint::Hexadecimal {
-                    is_uppercase: false
-                }),
+                hint: Some(DisplayHint::Hexadecimal { uppercase: false }),
             })
         );
 
@@ -544,9 +540,7 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Hexadecimal {
-                    is_uppercase: false
-                }),
+                hint: Some(DisplayHint::Hexadecimal { uppercase: false }),
             })
         );
 
@@ -555,7 +549,7 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Hexadecimal { is_uppercase: true }),
+                hint: Some(DisplayHint::Hexadecimal { uppercase: true }),
             })
         );
 
