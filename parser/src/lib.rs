@@ -378,9 +378,8 @@ fn push_literal<'f>(
     Ok(())
 }
 
-/// returns Some(smallest_bit_index, largest_bit_index) contained in `params` if
-///         `params` contains any bitfields.
-///         None otherwise
+/// Returns `Some(smallest_bit_index, largest_bit_index)` contained in `params` if
+/// `params` contains any bitfields. Otherwise `None`.
 pub fn get_max_bitfield_range<'a, I>(params: I) -> Option<(u8, u8)>
 where
     I: Iterator<Item = &'a Parameter> + Clone,
