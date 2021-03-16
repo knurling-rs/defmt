@@ -1078,7 +1078,7 @@ impl Codegen {
             .iter()
             .filter_map(|frag| match frag {
                 Fragment::Parameter(param) => Some(param.clone()),
-                _ => None,
+                Fragment::Literal(_) => None,
             })
             .collect::<Vec<_>>();
 
