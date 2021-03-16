@@ -48,6 +48,33 @@ fn check_attribute_conflicts(
     Ok(())
 }
 
+/// Defines the global defmt logger.
+///
+/// `#[global_logger]` needs to be put on a unit struct type declaration. This struct has to
+/// implement the [`Logger`] trait.
+///
+/// # Example
+///
+/// ```
+/// use defmt::{Logger, Write, global_logger};
+/// use core::ptr::NonNull;
+///
+/// #[global_logger]
+/// struct MyLogger;
+///
+/// unsafe impl Logger for MyLogger {
+///     fn acquire() -> Option<NonNull<dyn Write>> {
+/// # todo!()
+///         // ...
+///     }
+///     unsafe fn release(writer: NonNull<dyn Write>) {
+/// # todo!()
+///         // ...
+///     }
+/// }
+/// ```
+///
+/// [`Logger`]: trait.Logger.html
 #[proc_macro_attribute]
 pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
     if !args.is_empty() {
@@ -89,6 +116,17 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Overrides the panicking behavior of `defmt::panic!`
+///
+/// By default, `defmt::panic!` calls `core::panic!` after logging the panic message using `defmt`.
+/// This can result in the panic message being printed twice in some cases. To avoid that issue use
+/// this macro. See [the manual] for details.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/panic.html
+///
+/// # Inter-operation with built-in attributes
+///
+/// This attribute cannot be used together with the `export_name` or `no_mangle` attributes
 #[proc_macro_attribute]
 pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     if !args.is_empty() {
@@ -138,6 +176,24 @@ pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Defines the global timestamp provider for defmt.
+///
+/// This macro can be used to attach a timestamp or other data to every defmt message. Its syntax
+/// works exactly like the logging macros, except that no local variables can be accessed and the
+/// macro should be placed in a module instead of a function.
+///
+/// `timestamp!` must only be used once across the crate graph.
+///
+/// If no crate defines a timestamp, no timestamp will be included in the logged messages.
+///
+/// # Examples
+///
+/// ```
+/// # use core::sync::atomic::{AtomicU32, Ordering};
+///
+/// static COUNT: AtomicU32 = AtomicU32::new(0);
+/// defmt::timestamp!("{=u32:µs}", COUNT.fetch_add(1, Ordering::Relaxed));
+/// ```
 #[proc_macro]
 pub fn timestamp(ts: TokenStream) -> TokenStream {
     let f = parse_macro_input!(ts as FormatArgs);
@@ -237,7 +293,8 @@ fn necessary_features_for_level(level: Level, debug_assertions: bool) -> &'stati
     }
 }
 
-// `#[derive(Format)]`
+/// `#[derive(Format)]`
+#[doc(hidden)] // documented as the `trait Format` instead
 #[proc_macro_derive(Format)]
 pub fn format(ts: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(ts as DeriveInput);
@@ -524,26 +581,51 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     })
 }
 
+/// Logs data at *trace* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn trace(ts: TokenStream) -> TokenStream {
     log_ts(Level::Trace, ts)
 }
 
+/// Logs data at *debug* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn debug(ts: TokenStream) -> TokenStream {
     log_ts(Level::Debug, ts)
 }
 
+/// Logs data at *info* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn info(ts: TokenStream) -> TokenStream {
     log_ts(Level::Info, ts)
 }
 
+/// Logs data at *warn* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn warn(ts: TokenStream) -> TokenStream {
     log_ts(Level::Warn, ts)
 }
 
+/// Logs data at *error* level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn error(ts: TokenStream) -> TokenStream {
     log_ts(Level::Error, ts)
@@ -575,6 +657,14 @@ fn panic(
     .into()
 }
 
+/// Just like the [`core::panic!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::panic!`]: https://doc.rust-lang.org/core/macro.panic.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+
 // not naming this `panic` to avoid shadowing `core::panic` in this scope
 #[proc_macro]
 pub fn panic_(ts: TokenStream) -> TokenStream {
@@ -583,6 +673,14 @@ pub fn panic_(ts: TokenStream) -> TokenStream {
     })
 }
 
+/// Just like the [`core::todo!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::todo!`]: https://doc.rust-lang.org/core/macro.todo.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+
 // not naming this `todo` to avoid shadowing `core::todo` in this scope
 #[proc_macro]
 pub fn todo_(ts: TokenStream) -> TokenStream {
@@ -590,6 +688,14 @@ pub fn todo_(ts: TokenStream) -> TokenStream {
         format!("panicked at 'not yet implemented: {}'", format_string)
     })
 }
+
+/// Just like the [`core::unreachable!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::unreachable!`]: https://doc.rust-lang.org/core/macro.unreachable.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 
 // not naming this `unreachable` to avoid shadowing `core::unreachable` in this scope
 #[proc_macro]
@@ -605,6 +711,14 @@ pub fn unreachable_(ts: TokenStream) -> TokenStream {
         },
     )
 }
+
+/// Just like the [`core::assert!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::assert!`]: https://doc.rust-lang.org/core/macro.assert.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 
 // not naming this `assert` to avoid shadowing `core::assert` in this scope
 #[proc_macro]
@@ -643,11 +757,27 @@ enum BinOp {
     Ne,
 }
 
+/// Just like the [`core::assert_eq!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::assert_eq!`]: https://doc.rust-lang.org/core/macro.assert_eq.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+
 // not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
 #[proc_macro]
 pub fn assert_eq_(ts: TokenStream) -> TokenStream {
     assert_binop(ts, BinOp::Eq)
 }
+
+/// Just like the [`core::assert_ne!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::assert_ne!`]: https://doc.rust-lang.org/core/macro.assert_ne.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 
 // not naming this `assert_ne` to avoid shadowing `core::assert_ne` in this scope
 #[proc_macro]
@@ -738,6 +868,14 @@ left/right: `{{:?}}`",
 // results in an incorrect source code location being reported: the location of the `macro_rules!`
 // statement is reported. Using a proc-macro results in the call site being reported, which is what
 // we want
+
+/// Just like the [`core::debug_assert!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::debug_assert!`]: https://doc.rust-lang.org/core/macro.debug_assert.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn debug_assert_(ts: TokenStream) -> TokenStream {
     let assert = TokenStream2::from(assert_(ts));
@@ -747,6 +885,13 @@ pub fn debug_assert_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Just like the [`core::debug_assert_eq!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::debug_assert_eq!`]: https://doc.rust-lang.org/core/macro.debug_assert_eq.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn debug_assert_eq_(ts: TokenStream) -> TokenStream {
     let assert = TokenStream2::from(assert_eq_(ts));
@@ -756,6 +901,13 @@ pub fn debug_assert_eq_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Just like the [`core::debug_assert_ne!`] macro but `defmt` is used to log the panic message
+///
+/// [`core::debug_assert_ne!`]: https://doc.rust-lang.org/core/macro.debug_assert_ne.html
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
     let assert = TokenStream2::from(assert_ne_(ts));
@@ -765,6 +917,39 @@ pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Unwraps an `Option` or `Result`, panicking if it is `None` or `Err`.
+///
+/// This macro is roughly equivalent to `{Option,Result}::{expect,unwrap}` but invocation looks
+/// a bit different because this is a macro and not a method. The other difference is that
+/// `unwrap!`-ing a `Result<T, E>` value requires that the error type `E` implements the `Format`
+/// trait
+///
+/// The following snippet shows the differences between core's unwrap method and defmt's unwrap
+/// macro:
+///
+/// ```
+/// use defmt::unwrap;
+///
+/// # let option = Some(());
+/// let x = option.unwrap();
+/// let x = unwrap!(option);
+///
+/// # let result = Ok::<(), ()>(());
+/// let x = result.unwrap();
+/// let x = unwrap!(result);
+///
+/// # let value = result;
+/// let x = value.expect("text");
+/// let x = unwrap!(value, "text");
+///
+/// # let arg = ();
+/// let x = value.expect(&format!("text {:?}", arg));
+/// let x = unwrap!(value, "text {:?}", arg); // arg must be implement `Format`
+/// ```
+///
+/// If used, the format string must follow the defmt syntax (documented in [the manual])
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
 #[proc_macro]
 pub fn unwrap(ts: TokenStream) -> TokenStream {
     let assert = parse_macro_input!(ts as Assert);
@@ -919,6 +1104,19 @@ impl Parse for FormatArgs {
     }
 }
 
+/// Creates an interned string ([`Str`]) from a string literal.
+///
+/// This must be called on a string literal, and will allocate the literal in the object file. At
+/// runtime, only a small string index is required to refer to the string, represented as the
+/// [`Str`] type.
+///
+/// # Example
+///
+/// ```
+/// let interned = defmt::intern!("long string literal taking up little space");
+/// ```
+///
+/// [`Str`]: struct.Str.html
 #[proc_macro]
 pub fn intern(ts: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(ts as LitStr);
@@ -955,6 +1153,9 @@ pub fn internp(ts: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Writes formatted data to a [`Formatter`].
+///
+/// [`Formatter`]: struct.Formatter.html
 #[proc_macro]
 pub fn write(ts: TokenStream) -> TokenStream {
     let write = parse_macro_input!(ts as Write);
