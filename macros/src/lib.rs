@@ -931,7 +931,6 @@ pub fn intern(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-// TODO(likely) remove
 #[proc_macro]
 pub fn internp(ts: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(ts as LitStr);
