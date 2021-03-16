@@ -478,20 +478,18 @@ pub fn parse<'f>(
                 none @ None => {
                     *none = Some(ty.clone());
                 }
-                Some(other_ty) => {
+                Some(other_ty) => match (other_ty, ty) {
                     // FIXME: Bitfield range shouldn't be part of the type.
-                    match (&*other_ty, ty) {
-                        (Type::BitField(_), Type::BitField(_)) => {}
-                        (a, b) if a != b => {
-                            return Err(format!(
-                                "conflicting types for argument {}: used as {:?} and {:?}",
-                                index, other_ty, ty
-                            )
-                            .into());
-                        }
-                        _ => {}
+                    (Type::BitField(_), Type::BitField(_)) => {}
+                    (a, b) if a != b => {
+                        return Err(format!(
+                            "conflicting types for argument {}: used as {:?} and {:?}",
+                            index, a, ty
+                        )
+                        .into());
                     }
-                }
+                    _ => {}
+                },
             }
         }
     }
