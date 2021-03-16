@@ -4,11 +4,15 @@
 
 mod symbol;
 
-use core::convert::TryFrom;
-use core::fmt::Write as _;
-use proc_macro::TokenStream;
+use std::{
+    collections::hash_map::DefaultHasher,
+    convert::TryFrom,
+    fmt::Write as _,
+    hash::{Hash, Hasher},
+};
 
 use defmt_parser::{Fragment, Level, ParserMode};
+use proc_macro::TokenStream;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{
@@ -20,9 +24,6 @@ use syn::{
     ItemFn, ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type,
     WhereClause, WherePredicate,
 };
-
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 
 /// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
 ///
@@ -36,17 +37,14 @@ fn check_attribute_conflicts(
         if let Some(ident) = attr.path.get_ident() {
             let ident = ident.to_string();
             if reject_list.contains(&&*ident) {
-                return Err(parse::Error::new(
-                    attr.span(),
-                    format!(
-                        "`#[{}]` attribute cannot be used together with `#[{}]`",
-                        attr_name, ident
-                    ),
-                ));
+                let message = format!(
+                    "`#[{}]` attribute cannot be used together with `#[{}]`",
+                    attr_name, ident
+                );
+                return Err(parse::Error::new(attr.span(), message));
             }
         }
     }
-
     Ok(())
 }
 
@@ -209,53 +207,33 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
     }
 }
 
-// returns a list of features of which one has to be enabled for `level` to be active
+/// Returns a list of features of which one has to be enabled for `level` to be active
+///
+/// * `debug_assertions == true` means that dev profile is enabled
+/// * `"defmt-default"` is enabled for dev & release profile so debug_assertions does not matter
 fn necessary_features_for_level(level: Level, debug_assertions: bool) -> &'static [&'static str] {
     match level {
-        Level::Trace => {
-            if debug_assertions {
-                // dev profile
-                &["defmt-trace", "defmt-default"]
-            } else {
-                &["defmt-trace"]
-            }
-        }
-        Level::Debug => {
-            if debug_assertions {
-                // dev profile
-                &["defmt-debug", "defmt-trace", "defmt-default"]
-            } else {
-                &["defmt-debug", "defmt-trace"]
-            }
-        }
-        Level::Info => {
-            // defmt-default is enabled for dev & release profile so debug_assertions
-            // does not matter
-            &["defmt-info", "defmt-debug", "defmt-trace", "defmt-default"]
-        }
-        Level::Warn => {
-            // defmt-default is enabled for dev & release profile so debug_assertions
-            // does not matter
-            &[
-                "defmt-warn",
-                "defmt-info",
-                "defmt-debug",
-                "defmt-trace",
-                "defmt-default",
-            ]
-        }
-        Level::Error => {
-            // defmt-default is enabled for dev & release profile so debug_assertions
-            // does not matter
-            &[
-                "defmt-error",
-                "defmt-warn",
-                "defmt-info",
-                "defmt-debug",
-                "defmt-trace",
-                "defmt-default",
-            ]
-        }
+        Level::Trace if debug_assertions => &["defmt-trace", "defmt-default"],
+        Level::Debug if debug_assertions => &["defmt-debug", "defmt-trace", "defmt-default"],
+
+        Level::Trace => &["defmt-trace"],
+        Level::Debug => &["defmt-debug", "defmt-trace"],
+        Level::Info => &["defmt-info", "defmt-debug", "defmt-trace", "defmt-default"],
+        Level::Warn => &[
+            "defmt-warn",
+            "defmt-info",
+            "defmt-debug",
+            "defmt-trace",
+            "defmt-default",
+        ],
+        Level::Error => &[
+            "defmt-error",
+            "defmt-warn",
+            "defmt-info",
+            "defmt-debug",
+            "defmt-trace",
+            "defmt-default",
+        ],
     }
 }
 
@@ -507,8 +485,6 @@ fn is_logging_enabled(level: Level) -> TokenStream2 {
     )
 }
 
-// note that we are not using a `Level` type shared with `decoder` due to Cargo bugs in crate sharing
-// TODO -> move Level to parser?
 fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
     log(level, parse_macro_input!(ts as FormatArgs)).into()
 }
@@ -580,23 +556,14 @@ fn panic(
 ) -> TokenStream {
     let log_stmt = if ts.is_empty() {
         // panic!() -> error!("panicked at 'explicit panic'")
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(zero_args_string, Span2::call_site()),
-                rest: None,
-            },
-        )
+        let litstr = LitStr::new(zero_args_string, Span2::call_site());
+        log(Level::Error, FormatArgs { litstr, rest: None })
     } else {
         // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
         let args = parse_macro_input!(ts as FormatArgs);
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(&string_transform(&args.litstr.value()), Span2::call_site()),
-                rest: args.rest,
-            },
-        )
+        let litstr = LitStr::new(&string_transform(&args.litstr.value()), Span2::call_site());
+        let rest = args.rest;
+        log(Level::Error, FormatArgs { litstr, rest })
     };
 
     quote!(
@@ -646,30 +613,19 @@ pub fn assert_(ts: TokenStream) -> TokenStream {
 
     let condition = assert.condition;
     let log_stmt = if let Some(args) = assert.args {
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!("panicked at '{}'", args.litstr.value()),
-                    Span2::call_site(),
-                ),
-                rest: args.rest,
-            },
-        )
+        let litstr = LitStr::new(
+            &format!("panicked at '{}'", args.litstr.value()),
+            Span2::call_site(),
+        );
+        let rest = args.rest;
+        log(Level::Error, FormatArgs { litstr, rest })
     } else {
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!(
-                        "panicked at 'assertion failed: {}'",
-                        escape_expr(&condition)
-                    ),
-                    Span2::call_site(),
-                ),
-                rest: None,
-            },
-        )
+        let value = &format!(
+            "panicked at 'assertion failed: {}'",
+            escape_expr(&condition)
+        );
+        let litstr = LitStr::new(value, Span2::call_site());
+        log(Level::Error, FormatArgs { litstr, rest: None })
     };
 
     quote!(
@@ -815,34 +771,25 @@ pub fn unwrap(ts: TokenStream) -> TokenStream {
 
     let condition = assert.condition;
     let log_stmt = if let Some(args) = assert.args {
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!("panicked at '{}'", args.litstr.value()),
-                    Span2::call_site(),
-                ),
-                rest: args.rest,
-            },
-        )
+        let litstr = LitStr::new(
+            &format!("panicked at '{}'", args.litstr.value()),
+            Span2::call_site(),
+        );
+        let rest = args.rest;
+        log(Level::Error, FormatArgs { litstr, rest })
     } else {
         let mut log_args = Punctuated::new();
         log_args.push(ident_expr("_unwrap_err"));
 
-        log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!(
-                        "panicked at 'unwrap failed: {}'
-error: `{{:?}}`",
-                        escape_expr(&condition)
-                    ),
-                    Span2::call_site(),
-                ),
-                rest: Some((syn::token::Comma::default(), log_args)),
-            },
-        )
+        let litstr = LitStr::new(
+            &format!(
+                "panicked at 'unwrap failed: {}'\nerror: `{{:?}}`",
+                escape_expr(&condition)
+            ),
+            Span2::call_site(),
+        );
+        let rest = Some((syn::token::Comma::default(), log_args));
+        log(Level::Error, FormatArgs { litstr, rest })
     };
 
     quote!(
@@ -984,7 +931,6 @@ pub fn intern(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-// TODO(likely) remove
 #[proc_macro]
 pub fn internp(ts: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(ts as LitStr);
@@ -1149,63 +1095,57 @@ impl Codegen {
             // find first use of this argument and return its type
             let param = parsed_params.iter().find(|param| param.index == i).unwrap();
             match param.ty {
-                defmt_parser::Type::Format => {
-                    exprs.push(quote!(_fmt_.fmt(#arg, false)));
-                }
-                defmt_parser::Type::FormatSlice => {
-                    exprs.push(quote!(_fmt_.fmt_slice(#arg)));
-                }
-                defmt_parser::Type::I16 => {
-                    exprs.push(quote!(_fmt_.i16(#arg)));
-                }
-                defmt_parser::Type::I32 => {
-                    exprs.push(quote!(_fmt_.i32(#arg)));
-                }
-                defmt_parser::Type::I64 => {
-                    exprs.push(quote!(_fmt_.i64(#arg)));
-                }
-                defmt_parser::Type::I128 => {
-                    exprs.push(quote!(_fmt_.i128(#arg)));
-                }
-                defmt_parser::Type::I8 => {
-                    exprs.push(quote!(_fmt_.i8(#arg)));
-                }
-                defmt_parser::Type::Isize => {
-                    exprs.push(quote!(_fmt_.isize(#arg)));
-                }
-                defmt_parser::Type::Str => {
-                    exprs.push(quote!(_fmt_.str(#arg)));
-                }
-                defmt_parser::Type::IStr => {
-                    exprs.push(quote!(_fmt_.istr(#arg)));
-                }
-                defmt_parser::Type::U16 => {
-                    exprs.push(quote!(_fmt_.u16(#arg)));
-                }
-                defmt_parser::Type::U24 => {
-                    exprs.push(quote!(_fmt_.u24(#arg)));
-                }
-                defmt_parser::Type::U32 => {
-                    exprs.push(quote!(_fmt_.u32(#arg)));
-                }
-                defmt_parser::Type::U64 => {
-                    exprs.push(quote!(_fmt_.u64(#arg)));
-                }
-                defmt_parser::Type::U128 => {
-                    exprs.push(quote!(_fmt_.u128(#arg)));
-                }
-                defmt_parser::Type::U8 => {
-                    exprs.push(quote!(_fmt_.u8(#arg)));
-                }
-                defmt_parser::Type::Usize => {
-                    exprs.push(quote!(_fmt_.usize(#arg)));
-                }
-                defmt_parser::Type::Debug => {
-                    exprs.push(quote!(_fmt_.debug(#arg)));
-                }
-                defmt_parser::Type::Display => {
-                    exprs.push(quote!(_fmt_.display(#arg)));
-                }
+                defmt_parser::Type::I8 => exprs.push(quote!(_fmt_.i8(#arg))),
+                defmt_parser::Type::I16 => exprs.push(quote!(_fmt_.i16(#arg))),
+                defmt_parser::Type::I32 => exprs.push(quote!(_fmt_.i32(#arg))),
+                defmt_parser::Type::I64 => exprs.push(quote!(_fmt_.i64(#arg))),
+                defmt_parser::Type::I128 => exprs.push(quote!(_fmt_.i128(#arg))),
+                defmt_parser::Type::Isize => exprs.push(quote!(_fmt_.isize(#arg))),
+
+                defmt_parser::Type::U8 => exprs.push(quote!(_fmt_.u8(#arg))),
+                defmt_parser::Type::U16 => exprs.push(quote!(_fmt_.u16(#arg))),
+                defmt_parser::Type::U24 => exprs.push(quote!(_fmt_.u24(#arg))),
+                defmt_parser::Type::U32 => exprs.push(quote!(_fmt_.u32(#arg))),
+                defmt_parser::Type::U64 => exprs.push(quote!(_fmt_.u64(#arg))),
+                defmt_parser::Type::U128 => exprs.push(quote!(_fmt_.u128(#arg))),
+                defmt_parser::Type::Usize => exprs.push(quote!(_fmt_.usize(#arg))),
+
+                defmt_parser::Type::F32 => exprs.push(quote!(_fmt_.f32(#arg))),
+                defmt_parser::Type::F64 => exprs.push(quote!(_fmt_.f64(#arg))),
+
+                defmt_parser::Type::Bool => exprs.push(quote!(_fmt_.bool(#arg))),
+
+                defmt_parser::Type::Str => exprs.push(quote!(_fmt_.str(#arg))),
+                defmt_parser::Type::IStr => exprs.push(quote!(_fmt_.istr(#arg))),
+                defmt_parser::Type::Char => exprs.push(quote!(_fmt_.u32(&(*#arg as u32)))),
+
+                defmt_parser::Type::Format => exprs.push(quote!(_fmt_.fmt(#arg, false))),
+                defmt_parser::Type::FormatSlice => exprs.push(quote!(_fmt_.fmt_slice(#arg))),
+                defmt_parser::Type::FormatArray(len) => exprs.push(quote!(_fmt_.fmt_array({
+                    let tmp: &[_; #len] = #arg;
+                    tmp
+                }))),
+
+                defmt_parser::Type::Debug => exprs.push(quote!(_fmt_.debug(#arg))),
+                defmt_parser::Type::Display => exprs.push(quote!(_fmt_.display(#arg))),
+
+                defmt_parser::Type::U8Slice => exprs.push(quote!(_fmt_.slice(#arg))),
+                // We cast to the expected array type (which should be a no-op cast) to provoke
+                // a type mismatch error on mismatched lengths:
+                // ```
+                // error[E0308]: mismatched types
+                //   --> src/bin/log.rs:20:5
+                //    |
+                // 20 |     defmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
+                //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                //    |     |
+                //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
+                //    |     expected due to this
+                // ```
+                defmt_parser::Type::U8Array(len) => exprs.push(quote!(_fmt_.u8_array({
+                    let tmp: &[u8; #len] = #arg;
+                    tmp
+                }))),
                 defmt_parser::Type::BitField(_) => {
                     let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
                     let (smallest_bit_index, largest_bit_index) =
@@ -1216,92 +1156,33 @@ impl Codegen {
                     let highest_byte = (largest_bit_index - 1) / 8;
                     let truncated_sz = highest_byte - lowest_byte + 1; // in bytes
 
+                    // shift away unneeded lower octet
+                    // TODO: create helper for shifting because readability
                     match truncated_sz {
-                        1 => {
-                            // shift away unneeded lower octet
-                            // TODO: create helper for shifting because readability
-                            exprs.push(quote!(_fmt_.u8(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        2 => {
-                            exprs.push(quote!(_fmt_.u16(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        3 => {
-                            exprs.push(quote!(_fmt_.u24(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        4 => {
-                            exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        5..=8 => {
-                            exprs.push(quote!(_fmt_.u64(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-                        9..=16 => {
-                            exprs.push(quote!(_fmt_.u128(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8)))));
-                        }
-
+                        1 => exprs.push(quote!(_fmt_.u8(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        2 => exprs.push(quote!(_fmt_.u16(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        3 => exprs.push(quote!(_fmt_.u24(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        4 => exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        5..=8 => exprs.push(quote!(_fmt_.u64(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        9..=16 => exprs.push(quote!(_fmt_.u128(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
                         _ => unreachable!(),
                     }
-                }
-                defmt_parser::Type::Bool => {
-                    exprs.push(quote!(_fmt_.bool(#arg)));
-                }
-                defmt_parser::Type::U8Slice => {
-                    exprs.push(quote!(_fmt_.slice(#arg)));
-                }
-                defmt_parser::Type::U8Array(len) => {
-                    // We cast to the expected array type (which should be a no-op cast) to provoke
-                    // a type mismatch error on mismatched lengths:
-                    // ```
-                    // error[E0308]: mismatched types
-                    //   --> src/bin/log.rs:20:5
-                    //    |
-                    // 20 |     defmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
-                    //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                    //    |     |
-                    //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
-                    //    |     expected due to this
-                    // ```
-                    exprs.push(quote!(_fmt_.u8_array({
-                        let tmp: &[u8; #len] = #arg;
-                        tmp
-                    })));
-                }
-                defmt_parser::Type::FormatArray(len) => {
-                    exprs.push(quote!(_fmt_.fmt_array({
-                        let tmp: &[_; #len] = #arg;
-                        tmp
-                    })));
-                }
-                defmt_parser::Type::F32 => {
-                    exprs.push(quote!(_fmt_.f32(#arg)));
-                }
-                defmt_parser::Type::F64 => {
-                    exprs.push(quote!(_fmt_.f64(#arg)));
-                }
-                defmt_parser::Type::Char => {
-                    exprs.push(quote!(_fmt_.u32(&(*#arg as u32))));
                 }
             }
             pats.push(arg);
         }
 
-        if num_args < actual_argument_count {
-            return Err(parse::Error::new(
-                span,
-                format!(
-                    "format string requires {} arguments but only {} were provided",
-                    actual_argument_count, num_args
-                ),
-            ));
-        }
+        if num_args != actual_argument_count {
+            let mut only = "";
+            if num_args < actual_argument_count {
+                only = "only ";
+            }
 
-        if num_args > actual_argument_count {
-            return Err(parse::Error::new(
-                span,
-                format!(
-                    "format string requires {} arguments but {} were provided",
-                    actual_argument_count, num_args
-                ),
-            ));
+            let message = format!(
+                "format string requires {} arguments but {}{} were provided",
+                actual_argument_count, only, num_args
+            );
+            return Err(parse::Error::new(span, message));
         }
 
         Ok(Codegen { pats, exprs })
