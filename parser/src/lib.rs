@@ -104,6 +104,18 @@ pub enum Level {
     Error,
 }
 
+impl Level {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Level::Trace => "trace",
+            Level::Debug => "debug",
+            Level::Info => "info",
+            Level::Warn => "warn",
+            Level::Error => "error",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Type {
     BitField(Range<u8>),
@@ -501,18 +513,6 @@ pub fn parse<'f>(
     }
 
     Ok(fragments)
-}
-
-impl Level {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Level::Trace => "trace",
-            Level::Debug => "debug",
-            Level::Info => "info",
-            Level::Warn => "warn",
-            Level::Error => "error",
-        }
-    }
 }
 
 #[cfg(test)]
