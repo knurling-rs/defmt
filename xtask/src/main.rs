@@ -558,12 +558,7 @@ fn main() -> Result<(), Vec<String>> {
     let mut all_errors: Vec<String> = vec![];
 
     // TODO: one could argue that not all test scenarios require installation of targets
-    let added_targets = match install_targets() {
-        Ok(targets) => targets,
-        Err(e) => {
-            panic!("Error while installing required targets: {}", e)
-        }
-    };
+    let added_targets = install_targets().expect("Error while installing required targets");
 
     match opt.cmd {
         TestCommand::TestAll => {
