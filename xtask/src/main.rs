@@ -1,15 +1,14 @@
 use std::{
     collections::{HashMap, HashSet},
     fs,
+    io::Read,
+    path::Path,
     process::{Command, Stdio},
 };
-use std::{io::Read, path::Path};
-
-use console::Style;
-use similar::{ChangeTag, TextDiff};
 
 use anyhow::{anyhow, Context, Result};
-
+use console::Style;
+use similar::{ChangeTag, TextDiff};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
