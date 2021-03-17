@@ -568,21 +568,11 @@ fn main() -> Result<(), Vec<String>> {
             test_book(&mut all_errors);
             test_lint(&mut all_errors);
         }
-        TestCommand::TestHost => {
-            test_host(opt.deny_warnings, &mut all_errors);
-        }
-        TestCommand::TestCross => {
-            test_cross(&mut all_errors);
-        }
-        TestCommand::TestSnapshot => {
-            test_snapshot(&mut all_errors);
-        }
-        TestCommand::TestBook => {
-            test_book(&mut all_errors);
-        }
-        TestCommand::TestLint => {
-            test_lint(&mut all_errors);
-        }
+        TestCommand::TestHost => test_host(opt.deny_warnings, &mut all_errors),
+        TestCommand::TestCross => test_cross(&mut all_errors),
+        TestCommand::TestSnapshot => test_snapshot(&mut all_errors),
+        TestCommand::TestBook => test_book(&mut all_errors),
+        TestCommand::TestLint => test_lint(&mut all_errors),
     }
 
     if !opt.keep_targets {
