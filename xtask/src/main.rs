@@ -497,7 +497,7 @@ fn test_cross(errors: &mut Vec<String>) {
 
     do_test(
         || {
-            run_command::<&str>(
+            run_command(
                 &[
                     "cargo",
                     "check",
