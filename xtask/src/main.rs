@@ -203,13 +203,13 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Resul
 }
 
 fn get_installed_targets() -> Result<HashSet<String>> {
+    const INSTALLED_MARKER: &str = " (installed)";
     let out = run_capturing_stdout(Command::new("rustup").args(&["target", "list"]))?;
-    let installed_marker = " (installed)";
     let mut targets = out.lines().collect::<Vec<_>>();
-    targets.retain(|target| target.contains(installed_marker));
+    targets.retain(|target| target.contains(INSTALLED_MARKER));
     let targets: HashSet<String> = targets
         .iter()
-        .map(|target| target.replace(installed_marker, ""))
+        .map(|target| target.replace(INSTALLED_MARKER, ""))
         .collect();
     Ok(targets)
 }
