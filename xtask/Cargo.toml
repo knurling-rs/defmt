@@ -11,5 +11,6 @@ version = "0.1.0"
 [dependencies]
 anyhow = "1.0"
 console = "0.14"
+once_cell = "1.7"
 similar = "1.1"
 structopt = "0.3"

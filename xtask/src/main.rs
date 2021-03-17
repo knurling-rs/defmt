@@ -4,12 +4,16 @@ use std::{
     io::Read,
     path::Path,
     process::{Command, Stdio},
+    sync::Mutex,
 };
 
 use anyhow::{anyhow, Context, Result};
 use console::Style;
+use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
 use structopt::StructOpt;
+
+static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 
 #[derive(Debug, StructOpt)]
 struct Options {
@@ -112,13 +116,16 @@ fn run_capturing_stdout(cmd: &mut Command) -> Result<String> {
     Ok(out)
 }
 
-fn do_test<F>(t: F, context: &str, errors: &mut Vec<String>)
+fn do_test<F>(t: F, context: &str)
 where
     F: FnOnce() -> Result<()>,
 {
     match t() {
         Ok(_) => {}
-        Err(e) => errors.push(format!("{}: {}", context, e)),
+        Err(e) => ALL_ERRORS
+            .lock()
+            .unwrap()
+            .push(format!("{}: {}", context, e)),
     }
 }
 
@@ -258,12 +265,11 @@ fn uninstall_targets(targets: Vec<String>) {
     }
 }
 
-fn test_book(errors: &mut Vec<String>) {
+fn test_book() {
     println!("🧪 book");
     do_test(
         || run_command::<&str>(&["cargo", "clean"], None, &[]),
         "book",
-        errors,
     );
 
     do_test(
@@ -275,7 +281,6 @@ fn test_book(errors: &mut Vec<String>) {
             )
         },
         "book",
-        errors,
     );
 
     do_test(
@@ -294,31 +299,27 @@ fn test_book(errors: &mut Vec<String>) {
             )
         },
         "book",
-        errors,
     );
 }
 
-fn test_lint(errors: &mut Vec<String>) {
+fn test_lint() {
     println!("🧪 lint");
     do_test(
         || run_command::<&str>(&["cargo", "clean"], None, &[]),
         "lint",
-        errors,
     );
     do_test(
         || run_command::<&str>(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
         "lint",
-        errors,
     );
 
     do_test(
         || run_command::<&str>(&["cargo", "clippy", "--workspace"], None, &[]),
         "lint",
-        errors,
     );
 }
 
-fn test_host(deny_warnings: bool, errors: &mut Vec<String>) {
+fn test_host(deny_warnings: bool) {
     println!("🧪 host");
 
     let env = if deny_warnings {
@@ -330,7 +331,6 @@ fn test_host(deny_warnings: bool, errors: &mut Vec<String>) {
     do_test(
         || run_command::<&str>(&["cargo", "check", "--workspace"], None, &env),
         "host",
-        errors,
     );
 
     do_test(
@@ -342,7 +342,6 @@ fn test_host(deny_warnings: bool, errors: &mut Vec<String>) {
             )
         },
         "host",
-        errors,
     );
 
     do_test(
@@ -354,7 +353,6 @@ fn test_host(deny_warnings: bool, errors: &mut Vec<String>) {
             )
         },
         "host",
-        errors,
     );
 
     do_test(
@@ -372,7 +370,6 @@ fn test_host(deny_warnings: bool, errors: &mut Vec<String>) {
             )
         },
         "host",
-        errors,
     );
 
     do_test(
@@ -390,11 +387,10 @@ fn test_host(deny_warnings: bool, errors: &mut Vec<String>) {
             )
         },
         "host",
-        errors,
     );
 }
 
-fn test_cross(errors: &mut Vec<String>) {
+fn test_cross() {
     println!("🧪 cross");
     let targets = vec![
         "thumbv6m-none-eabi",
@@ -412,7 +408,6 @@ fn test_cross(errors: &mut Vec<String>) {
                 )
             },
             "cross",
-            errors,
         );
         do_test(
             || {
@@ -432,7 +427,6 @@ fn test_cross(errors: &mut Vec<String>) {
                 )
             },
             "cross",
-            errors,
         );
     }
 
@@ -455,7 +449,6 @@ fn test_cross(errors: &mut Vec<String>) {
             )
         },
         "cross",
-        errors,
     );
 
     do_test(
@@ -473,7 +466,6 @@ fn test_cross(errors: &mut Vec<String>) {
             )
         },
         "cross",
-        errors,
     );
 
     do_test(
@@ -492,7 +484,6 @@ fn test_cross(errors: &mut Vec<String>) {
             )
         },
         "cross",
-        errors,
     );
 
     do_test(
@@ -511,11 +502,10 @@ fn test_cross(errors: &mut Vec<String>) {
             )
         },
         "cross",
-        errors,
     )
 }
 
-fn test_snapshot(errors: &mut Vec<String>) {
+fn test_snapshot() {
     println!("🧪 qemu/snapshot");
     let mut tests = vec![
         "log",
@@ -543,45 +533,42 @@ fn test_snapshot(errors: &mut Vec<String>) {
         do_test(
             || test_single_snapshot(test, features, false),
             "qemu/snapshot",
-            errors,
         );
         do_test(
             || test_single_snapshot(test, features, true),
             "qemu/snapshot",
-            errors,
         );
     }
 }
 
 fn main() -> Result<(), Vec<String>> {
     let opt: Options = Options::from_args();
-    let mut all_errors: Vec<String> = vec![];
 
     // TODO: one could argue that not all test scenarios require installation of targets
     let added_targets = install_targets().expect("Error while installing required targets");
 
     match opt.cmd {
         TestCommand::TestAll => {
-            test_host(opt.deny_warnings, &mut all_errors);
-            test_cross(&mut all_errors);
-            test_snapshot(&mut all_errors);
-            test_book(&mut all_errors);
-            test_lint(&mut all_errors);
+            test_host(opt.deny_warnings);
+            test_cross();
+            test_snapshot();
+            test_book();
+            test_lint();
         }
         TestCommand::TestHost => {
-            test_host(opt.deny_warnings, &mut all_errors);
+            test_host(opt.deny_warnings);
         }
         TestCommand::TestCross => {
-            test_cross(&mut all_errors);
+            test_cross();
         }
         TestCommand::TestSnapshot => {
-            test_snapshot(&mut all_errors);
+            test_snapshot();
         }
         TestCommand::TestBook => {
-            test_book(&mut all_errors);
+            test_book();
         }
         TestCommand::TestLint => {
-            test_lint(&mut all_errors);
+            test_lint();
         }
     }
 
@@ -589,10 +576,11 @@ fn main() -> Result<(), Vec<String>> {
         uninstall_targets(added_targets);
     }
 
+    let all_errors = ALL_ERRORS.lock().unwrap();
     if !all_errors.is_empty() {
         eprintln!();
         eprintln!("😔 some tests failed");
-        Err(all_errors)
+        Err(all_errors.clone())
     } else {
         Ok(())
     }
