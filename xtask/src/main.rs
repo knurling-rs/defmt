@@ -35,11 +35,11 @@ struct Options {
 #[allow(clippy::enum_variant_names)]
 enum TestCommand {
     TestAll,
-    TestHost,
-    TestCross,
-    TestSnapshot,
     TestBook,
+    TestCross,
+    TestHost,
     TestLint,
+    TestSnapshot,
 }
 
 fn run_command<P: AsRef<Path>>(
