@@ -11,7 +11,7 @@ use console::Style;
 use similar::{ChangeTag, TextDiff};
 use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
 struct Options {
     #[structopt(
         long,
