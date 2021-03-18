@@ -203,23 +203,22 @@ fn get_installed_targets() -> Result<HashSet<String>> {
 }
 
 fn install_targets() -> Result<Vec<String>> {
-    let required_targets = vec![
+    let required_targets = [
         "thumbv6m-none-eabi",
         "thumbv7m-none-eabi",
         "thumbv7em-none-eabi",
         "thumbv8m.base-none-eabi",
         "riscv32i-unknown-none-elf",
-    ];
-    let all_targets = required_targets
-        .iter()
-        .map(|item| item.to_string())
-        .collect::<HashSet<_>>();
+    ]
+    .iter()
+    .map(|item| item.to_string())
+    .collect::<HashSet<_>>();
 
     let installed_targets = get_installed_targets()?;
-    let added_targets: Vec<String> = all_targets
+    let added_targets = required_targets
         .difference(&installed_targets)
-        .map(|s| s.to_owned())
-        .collect();
+        .cloned()
+        .collect::<Vec<_>>();
 
     if !added_targets.is_empty() {
         println!("⏳ installing targets");
@@ -374,17 +373,17 @@ fn test_host(deny_warnings: bool) {
 
 fn test_cross() {
     println!("🧪 cross");
-    let targets = vec![
+    let targets = [
         "thumbv6m-none-eabi",
         "thumbv8m.base-none-eabi",
         "riscv32i-unknown-none-elf",
     ];
 
-    for target in targets {
+    for target in &targets {
         do_test(
             || {
                 run_command(
-                    &["cargo", "check", "--target", &target, "-p", "defmt"],
+                    &["cargo", "check", "--target", target, "-p", "defmt"],
                     None,
                     &[],
                 )
@@ -398,7 +397,7 @@ fn test_cross() {
                         "cargo",
                         "check",
                         "--target",
-                        &target,
+                        target,
                         "-p",
                         "defmt",
                         "--features",
