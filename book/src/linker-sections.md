@@ -42,7 +42,7 @@ defmt::error!("Bye");
 
 Would expand to this:
 
-``` rust
+``` rust,no_run,noplayground
 // first warn! invocation
 {
     #[export_name = "{\"package\":\"my-app\",\"tag\":\"defmt_warn\",\"data\":\"Hello\",\"disambiguator\":\"8864866341617976971\"}"]
