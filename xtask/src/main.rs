@@ -42,11 +42,7 @@ enum TestCommand {
     TestSnapshot,
 }
 
-fn run_command<P: AsRef<Path>>(
-    cmd_and_args: &[&str],
-    cwd: Option<P>,
-    env: &[(&str, &str)],
-) -> Result<()> {
+fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> Result<()> {
     let cmd_and_args = Vec::from(cmd_and_args);
     let mut cmd = &mut Command::new(cmd_and_args[0]);
     if cmd_and_args.len() > 1 {
