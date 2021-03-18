@@ -58,14 +58,11 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
     }
 
     let cwd_s: String;
-    match cwd {
-        Some(path_ref) => {
-            cmd = cmd.current_dir(path_ref);
-            cwd_s = format!("CWD:{} ", path_ref);
-        }
-        None => {
-            cwd_s = "".to_string();
-        }
+    if let Some(path_ref) = cwd {
+        cmd = cmd.current_dir(path_ref);
+        cwd_s = format!("CWD:{} ", path_ref);
+    } else {
+        cwd_s = "".to_string();
     }
 
     let cmdline = cmd_and_args.join(" ");
