@@ -60,16 +60,8 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
     let cwd_s: String;
     match cwd {
         Some(path_ref) => {
-            cmd = cmd.current_dir(path_ref.as_ref());
-
-            cwd_s = format!(
-                "CWD:{} ",
-                path_ref
-                    .as_ref()
-                    .to_str()
-                    .unwrap_or("(non-Unicode path)")
-                    .to_string(),
-            );
+            cmd = cmd.current_dir(path_ref);
+            cwd_s = format!("CWD:{} ", path_ref);
         }
         None => {
             cwd_s = "".to_string();
@@ -252,7 +244,7 @@ fn uninstall_targets(targets: Vec<String>) {
         cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
 
         // only print uninstall errors so the user can fix those manually if needed
-        match run_command::<&str>(&cmd_and_args, None, &[]) {
+        match run_command(&cmd_and_args, None, &[]) {
             Ok(_) => {}
             Err(e) => {
                 eprintln!("Error uninstalling targets {}: {}", targets.join(" "), e);
@@ -263,14 +255,11 @@ fn uninstall_targets(targets: Vec<String>) {
 
 fn test_book() {
     println!("🧪 book");
-    do_test(
-        || run_command::<&str>(&["cargo", "clean"], None, &[]),
-        "book",
-    );
+    do_test(|| run_command(&["cargo", "clean"], None, &[]), "book");
 
     do_test(
         || {
-            run_command::<&str>(
+            run_command(
                 &["cargo", "build", "--features", "unstable-test"],
                 None,
                 &[],
@@ -300,17 +289,14 @@ fn test_book() {
 
 fn test_lint() {
     println!("🧪 lint");
+    do_test(|| run_command(&["cargo", "clean"], None, &[]), "lint");
     do_test(
-        || run_command::<&str>(&["cargo", "clean"], None, &[]),
-        "lint",
-    );
-    do_test(
-        || run_command::<&str>(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
+        || run_command(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
         "lint",
     );
 
     do_test(
-        || run_command::<&str>(&["cargo", "clippy", "--workspace"], None, &[]),
+        || run_command(&["cargo", "clippy", "--workspace"], None, &[]),
         "lint",
     );
 }
@@ -325,13 +311,13 @@ fn test_host(deny_warnings: bool) {
     };
 
     do_test(
-        || run_command::<&str>(&["cargo", "check", "--workspace"], None, &env),
+        || run_command(&["cargo", "check", "--workspace"], None, &env),
         "host",
     );
 
     do_test(
         || {
-            run_command::<&str>(
+            run_command(
                 &["cargo", "check", "--all", "--features", "unstable-test"],
                 None,
                 &env,
@@ -342,7 +328,7 @@ fn test_host(deny_warnings: bool) {
 
     do_test(
         || {
-            run_command::<&str>(
+            run_command(
                 &["cargo", "check", "--all", "--features", "alloc"],
                 None,
                 &env,
@@ -353,7 +339,7 @@ fn test_host(deny_warnings: bool) {
 
     do_test(
         || {
-            run_command::<&str>(
+            run_command(
                 &[
                     "cargo",
                     "test",
@@ -370,7 +356,7 @@ fn test_host(deny_warnings: bool) {
 
     do_test(
         || {
-            run_command::<&str>(
+            run_command(
                 &[
                     "cargo",
                     "test",
@@ -397,7 +383,7 @@ fn test_cross() {
     for target in targets {
         do_test(
             || {
-                run_command::<&str>(
+                run_command(
                     &["cargo", "check", "--target", &target, "-p", "defmt"],
                     None,
                     &[],
@@ -407,7 +393,7 @@ fn test_cross() {
         );
         do_test(
             || {
-                run_command::<&str>(
+                run_command(
                     &[
                         "cargo",
                         "check",
@@ -551,11 +537,11 @@ fn main() -> Result<(), Vec<String>> {
             test_book();
             test_lint();
         }
-        TestCommand::TestHost => test_host(opt.deny_warnings, &mut all_errors),
-        TestCommand::TestCross => test_cross(&mut all_errors),
-        TestCommand::TestSnapshot => test_snapshot(&mut all_errors),
-        TestCommand::TestBook => test_book(&mut all_errors),
-        TestCommand::TestLint => test_lint(&mut all_errors),
+        TestCommand::TestHost => test_host(opt.deny_warnings),
+        TestCommand::TestCross => test_cross(),
+        TestCommand::TestSnapshot => test_snapshot(),
+        TestCommand::TestBook => test_book(),
+        TestCommand::TestLint => test_lint(),
     }
 
     if !opt.keep_targets {
