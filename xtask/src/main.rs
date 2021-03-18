@@ -46,11 +46,7 @@ enum TestCommand {
     TestSnapshot,
 }
 
-fn run_command<P: AsRef<Path>>(
-    cmd_and_args: &[&str],
-    cwd: Option<P>,
-    env: &[(&str, &str)],
-) -> Result<()> {
+fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> Result<()> {
     let cmd_and_args = Vec::from(cmd_and_args);
     let mut cmd = &mut Command::new(cmd_and_args[0]);
     if cmd_and_args.len() > 1 {
@@ -488,7 +484,7 @@ fn test_cross() {
 
     do_test(
         || {
-            run_command::<&str>(
+            run_command(
                 &[
                     "cargo",
                     "check",
@@ -555,21 +551,11 @@ fn main() -> Result<(), Vec<String>> {
             test_book();
             test_lint();
         }
-        TestCommand::TestHost => {
-            test_host(opt.deny_warnings);
-        }
-        TestCommand::TestCross => {
-            test_cross();
-        }
-        TestCommand::TestSnapshot => {
-            test_snapshot();
-        }
-        TestCommand::TestBook => {
-            test_book();
-        }
-        TestCommand::TestLint => {
-            test_lint();
-        }
+        TestCommand::TestHost => test_host(opt.deny_warnings, &mut all_errors),
+        TestCommand::TestCross => test_cross(&mut all_errors),
+        TestCommand::TestSnapshot => test_snapshot(&mut all_errors),
+        TestCommand::TestBook => test_book(&mut all_errors),
+        TestCommand::TestLint => test_lint(&mut all_errors),
     }
 
     if !opt.keep_targets {
