@@ -219,7 +219,7 @@ fn uninstall_targets(targets: Vec<String>) {
     if !targets.is_empty() {
         println!("⏳ uninstalling targets");
 
-        let mut cmd_and_args: Vec<&str> = vec!["rustup", "target", "remove"];
+        let mut cmd_and_args = vec!["rustup", "target", "remove"];
         cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
 
         // only print uninstall errors so the user can fix those manually if needed
