@@ -281,7 +281,7 @@ fn test_host(deny_warnings: bool) {
     );
 
     do_test(
-        || run_command(&["cargo", "check", "--all", "--features", "alloc"], None, &env),
+        || run_command(&["cargo", "check", "--workspace", "--features", "alloc"], None, &env),
         "host",
     );
 
