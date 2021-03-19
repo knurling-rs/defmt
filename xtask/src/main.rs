@@ -53,13 +53,12 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
         cmd.env(k, v);
     }
 
-    let cwd_s: String;
-    if let Some(path_ref) = cwd {
+    let cwd_s = if let Some(path_ref) = cwd {
         cmd = cmd.current_dir(path_ref);
-        cwd_s = format!("CWD:{} ", path_ref);
+        format!("CWD:{} ", path_ref)
     } else {
-        cwd_s = "".to_string();
-    }
+        "".to_string()
+    };
 
     let cmdline = cmd_and_args.join(" ");
     println!("🏃 {}{}", cwd_s, cmdline);
