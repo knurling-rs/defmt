@@ -17,11 +17,7 @@ static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 
 #[derive(Debug, StructOpt)]
 struct Options {
-    #[structopt(
-        long,
-        short,
-        help = "keep target toolchains that were installed as dependency"
-    )]
+    #[structopt(long, short, help = "keep target toolchains that were installed as dependency")]
     keep_targets: bool,
 
     #[structopt(
@@ -80,11 +76,7 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
                     None => "killed by signal".to_string(),
                 };
 
-                Err(anyhow!(
-                    "'{}' did not finish successfully: {}",
-                    cmdline,
-                    info
-                ))
+                Err(anyhow!("'{}' did not finish successfully: {}", cmdline, info))
             }
         })
 }
@@ -107,10 +99,7 @@ where
 {
     match t() {
         Ok(_) => {}
-        Err(e) => ALL_ERRORS
-            .lock()
-            .unwrap()
-            .push(format!("{}: {}", context, e)),
+        Err(e) => ALL_ERRORS.lock().unwrap().push(format!("{}: {}", context, e)),
     }
 }
 
@@ -141,11 +130,7 @@ fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
 }
 
 fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Result<()> {
-    let display_name = format!(
-        "{} ({})",
-        name,
-        if release_mode { "release" } else { "dev" }
-    );
+    let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
     println!("{}", display_name);
     let cwd_name = "firmware/qemu".to_string();
     let mut args;
@@ -254,27 +239,14 @@ fn test_book() {
     do_test(|| run_command(&["cargo", "clean"], None, &[]), "book");
 
     do_test(
-        || {
-            run_command(
-                &["cargo", "build", "--features", "unstable-test"],
-                None,
-                &[],
-            )
-        },
+        || run_command(&["cargo", "build", "--features", "unstable-test"], None, &[]),
         "book",
     );
 
     do_test(
         || {
             run_command(
-                &[
-                    "mdbook",
-                    "test",
-                    "-L",
-                    "../target/debug",
-                    "-L",
-                    "../target/debug/deps",
-                ],
+                &["mdbook", "test", "-L", "../target/debug", "-L", "../target/debug/deps"],
                 Some("book"),
                 &[],
             )
@@ -291,10 +263,7 @@ fn test_lint() {
         "lint",
     );
 
-    do_test(
-        || run_command(&["cargo", "clippy", "--workspace"], None, &[]),
-        "lint",
-    );
+    do_test(|| run_command(&["cargo", "clippy", "--workspace"], None, &[]), "lint");
 }
 
 fn test_host(deny_warnings: bool) {
@@ -306,43 +275,22 @@ fn test_host(deny_warnings: bool) {
         vec![]
     };
 
+    do_test(|| run_command(&["cargo", "check", "--workspace"], None, &env), "host");
+
     do_test(
-        || run_command(&["cargo", "check", "--workspace"], None, &env),
+        || run_command(&["cargo", "check", "--all", "--features", "unstable-test"], None, &env),
+        "host",
+    );
+
+    do_test(
+        || run_command(&["cargo", "check", "--all", "--features", "alloc"], None, &env),
         "host",
     );
 
     do_test(
         || {
             run_command(
-                &["cargo", "check", "--all", "--features", "unstable-test"],
-                None,
-                &env,
-            )
-        },
-        "host",
-    );
-
-    do_test(
-        || {
-            run_command(
-                &["cargo", "check", "--all", "--features", "alloc"],
-                None,
-                &env,
-            )
-        },
-        "host",
-    );
-
-    do_test(
-        || {
-            run_command(
-                &[
-                    "cargo",
-                    "test",
-                    "--workspace",
-                    "--features",
-                    "unstable-test",
-                ],
+                &["cargo", "test", "--workspace", "--features", "unstable-test"],
                 None,
                 &[],
             )
@@ -353,13 +301,7 @@ fn test_host(deny_warnings: bool) {
     do_test(
         || {
             run_command(
-                &[
-                    "cargo",
-                    "test",
-                    "--workspace",
-                    "--features",
-                    "unstable-test",
-                ],
+                &["cargo", "test", "--workspace", "--features", "unstable-test"],
                 None,
                 &[],
             )
@@ -378,13 +320,7 @@ fn test_cross() {
 
     for target in &targets {
         do_test(
-            || {
-                run_command(
-                    &["cargo", "check", "--target", target, "-p", "defmt"],
-                    None,
-                    &[],
-                )
-            },
+            || run_command(&["cargo", "check", "--target", target, "-p", "defmt"], None, &[]),
             "cross",
         );
         do_test(
@@ -432,13 +368,7 @@ fn test_cross() {
     do_test(
         || {
             run_command(
-                &[
-                    "cargo",
-                    "check",
-                    "--target",
-                    "thumbv7em-none-eabi",
-                    "--workspace",
-                ],
+                &["cargo", "check", "--target", "thumbv7em-none-eabi", "--workspace"],
                 Some("firmware"),
                 &[],
             )
@@ -508,14 +438,8 @@ fn test_snapshot() {
     for test in &tests {
         let features = features_map.get(test).unwrap_or(&no_features);
 
-        do_test(
-            || test_single_snapshot(test, features, false),
-            "qemu/snapshot",
-        );
-        do_test(
-            || test_single_snapshot(test, features, true),
-            "qemu/snapshot",
-        );
+        do_test(|| test_single_snapshot(test, features, false), "qemu/snapshot");
+        do_test(|| test_single_snapshot(test, features, true), "qemu/snapshot");
     }
 }
 
