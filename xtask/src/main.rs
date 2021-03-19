@@ -203,7 +203,7 @@ fn install_targets() -> Result<Vec<String>> {
     if !added_targets.is_empty() {
         println!("⏳ installing targets");
 
-        let mut args: Vec<&str> = vec!["target", "add"];
+        let mut args = vec!["target", "add"];
         args.extend(added_targets.iter().map(|s| s.as_str()));
         let status = Command::new("rustup").args(&args).status().unwrap();
         if !status.success() {
