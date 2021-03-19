@@ -276,7 +276,7 @@ fn test_host(deny_warnings: bool) {
     do_test(|| run_command(&["cargo", "check", "--workspace"], None, &env), "host");
 
     do_test(
-        || run_command(&["cargo", "check", "--all", "--features", "unstable-test"], None, &env),
+        || run_command(&["cargo", "check", "--workspace", "--features", "unstable-test"], None, &env),
         "host",
     );
 
