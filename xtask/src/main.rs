@@ -433,7 +433,7 @@ fn test_snapshot() {
     features_map.insert("alloc", "alloc");
     let no_features = "";
 
-    for test in &tests {
+    for test in tests {
         let features = features_map.get(test).unwrap_or(&no_features);
 
         do_test(|| test_single_snapshot(test, features, false), "qemu/snapshot");
