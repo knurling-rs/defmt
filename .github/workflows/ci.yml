@@ -114,7 +114,7 @@ jobs:
           override: true
           target: ${{ env.QEMU_TARGET }}
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install qemu
+        run: sudo apt-get update && sudo apt-get install qemu qemu-system-arm
       - name: Run QEMU snapshot tests
         run: cargo xtask test-snapshot
       - name: install decoder v0.2.0
