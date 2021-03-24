@@ -10,8 +10,11 @@
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-use std::borrow::Cow;
-use std::ops::Range;
+mod types;
+
+use std::{borrow::Cow, ops::Range, str::FromStr};
+
+pub use crate::types::Type;
 
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, PartialEq)]
@@ -27,18 +30,34 @@ pub struct Parameter {
 /// All display hints
 #[derive(Clone, Debug, PartialEq)]
 pub enum DisplayHint {
-    /// ":x" OR ":X"
-    Hexadecimal { is_uppercase: bool },
-    /// ":b"
+    /// `:x` OR `:X`
+    Hexadecimal { uppercase: bool },
+    /// `:b`
     Binary,
-    /// ":a"
+    /// `:a`
     Ascii,
-    /// ":?"
+    /// `:?`
     Debug,
-    /// ":µs", formats integers as timestamps in microseconds
+    /// `:µs`, formats integers as timestamps in microseconds
     Microseconds,
     /// Display hints currently not supported / understood
     Unknown(String),
+}
+
+impl FromStr for DisplayHint {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "µs" => DisplayHint::Microseconds,
+            "a" => DisplayHint::Ascii,
+            "b" => DisplayHint::Binary,
+            "x" => DisplayHint::Hexadecimal { uppercase: false },
+            "X" => DisplayHint::Hexadecimal { uppercase: true },
+            "?" => DisplayHint::Debug,
+            _ => return Err(()),
+        })
+    }
 }
 
 /// A part of a format string.
@@ -77,6 +96,7 @@ struct Param {
     hint: Option<DisplayHint>,
 }
 
+/// The log level
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum Level {
     Trace,
@@ -86,75 +106,43 @@ pub enum Level {
     Error,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Type {
-    BitField(Range<u8>),
-    Bool,
-    Format,             // "{=?}" OR "{}"
-    FormatSlice,        // "{=[?]}"
-    FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
-    Debug,
-    Display,
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    Isize,
-    /// String slice (i.e. passed directly; not as interned string indices).
-    Str,
-    /// Interned string index.
-    IStr,
-    U8,
-    U16,
-    U24,
-    U32,
-    U64,
-    U128,
-    Usize,
-    /// Byte slice `{=[u8]}`.
-    U8Slice,
-    U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
-    F32,
-    F64,
-    /// A single Unicode character
-    Char,
-}
-
-// when not specified in the format string, this type is assumed
-impl Default for Type {
-    fn default() -> Self {
-        Type::Format
+impl Level {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Level::Trace => "trace",
+            Level::Debug => "debug",
+            Level::Info => "info",
+            Level::Warn => "warn",
+            Level::Error => "error",
+        }
     }
 }
 
-fn is_digit(c: Option<char>) -> bool {
-    matches!(c.unwrap_or('\0'), '0'..='9')
-}
-
 fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
+    // consume first number
     let start_digits = s
         .as_bytes()
         .iter()
-        .take_while(|b| is_digit(Some(**b as char)))
+        .take_while(|b| (**b as char).is_ascii_digit())
         .count();
     let start = s[..start_digits].parse().ok()?;
+
+    // next two `char`s should be `..`
     if &s[start_digits..start_digits + 2] != ".." {
         return None;
     }
     s = &s[start_digits + 2..];
+
+    // consume second number
     let end_digits = s
         .as_bytes()
         .iter()
-        .take_while(|b| is_digit(Some(**b as char)))
+        .take_while(|b| (**b as char).is_ascii_digit())
         .count();
     let end = s[..end_digits].parse().ok()?;
 
-    if end <= start {
-        return None;
-    }
-
-    if start >= 128 || end > 128 {
+    // check for faulty state
+    if end <= start || start >= 128 || end > 128 {
         return None;
     }
 
@@ -162,16 +150,20 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
 }
 
 fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
-    // Skip spaces.
+    // skip spaces
     let len_pos = s
         .find(|c: char| c != ' ')
         .ok_or("invalid array specifier (missing length)")?;
     s = &s[len_pos..];
+
+    // consume length
     let after_len = s
         .find(|c: char| !c.is_digit(10))
         .ok_or("invalid array specifier (missing `]`)")?;
     let len = s[..after_len].parse::<usize>().map_err(|e| e.to_string())?;
     s = &s[after_len..];
+
+    // consume final `]`
     if s != "]" {
         return Err("invalid array specifier (missing `]`)".into());
     }
@@ -184,12 +176,13 @@ fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
 pub enum ParserMode {
     /// Rejects unknown display hints
     Strict,
-
     /// Accepts unknown display hints
     ForwardsCompatible,
 }
 
-// example `input`: "0=Type:hint" (note: no curly braces)
+/// Parse `Param` from `&str`
+///
+/// * example `input`: `0=Type:hint` (note: no curly braces)
 fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, str>> {
     const TYPE_PREFIX: &str = "=";
     const HINT_PREFIX: &str = ":";
@@ -220,35 +213,12 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         let type_end = input.find(HINT_PREFIX).unwrap_or_else(|| input.len());
         let type_fragment = &input[..type_end];
 
-        static FORMAT_ARRAY_START: &str = "[?;";
-        static U8_ARRAY_START: &str = "[u8;";
+        const FORMAT_ARRAY_START: &str = "[?;";
+        const U8_ARRAY_START: &str = "[u8;";
 
         // what comes next is the type
-        ty = match type_fragment {
-            "u8" => Type::U8,
-            "u16" => Type::U16,
-            "u24" => Type::U24,
-            "u32" => Type::U32,
-            "u64" => Type::U64,
-            "u128" => Type::U128,
-            "usize" => Type::Usize,
-            "i8" => Type::I8,
-            "i16" => Type::I16,
-            "i32" => Type::I32,
-            "i64" => Type::I64,
-            "i128" => Type::I128,
-            "isize" => Type::Isize,
-            "f32" => Type::F32,
-            "f64" => Type::F64,
-            "bool" => Type::Bool,
-            "str" => Type::Str,
-            "istr" => Type::IStr,
-            "__internal_Debug" => Type::Debug,
-            "__internal_Display" => Type::Display,
-            "[u8]" => Type::U8Slice,
-            "?" => Type::Format,
-            "[?]" => Type::FormatSlice,
-            "char" => Type::Char,
+        ty = match type_fragment.parse() {
+            Ok(ty) => ty,
             _ if input.starts_with(U8_ARRAY_START) => {
                 let len = parse_array(&type_fragment[U8_ARRAY_START.len()..])?;
                 Type::U8Array(len)
@@ -257,25 +227,20 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
                 let len = parse_array(&type_fragment[FORMAT_ARRAY_START.len()..])?;
                 Type::FormatArray(len)
             }
-            _ => {
+            _ => match parse_range(type_fragment) {
                 // Check for bitfield syntax.
-                match parse_range(type_fragment) {
-                    Some((range, used)) => {
-                        if used != type_fragment.len() {
-                            return Err("trailing data after bitfield range".into());
-                        }
-
-                        Type::BitField(range)
-                    }
-                    None => {
-                        return Err(format!(
-                            "malformed format string (invalid type specifier `{}`)",
-                            input
-                        )
-                        .into());
-                    }
+                Some((_, used)) if used != type_fragment.len() => {
+                    return Err("trailing data after bitfield range".into());
                 }
-            }
+                Some((range, _)) => Type::BitField(range),
+                None => {
+                    return Err(format!(
+                        "malformed format string (invalid type specifier `{}`)",
+                        input
+                    )
+                    .into());
+                }
+            },
         };
 
         input = &input[type_end..];
@@ -288,15 +253,8 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         // skip the prefix
         input = &input[HINT_PREFIX.len()..];
 
-        hint = Some(match input {
-            "µs" => DisplayHint::Microseconds,
-            "a" => DisplayHint::Ascii,
-            "b" => DisplayHint::Binary,
-            "x" => DisplayHint::Hexadecimal {
-                is_uppercase: false,
-            },
-            "X" => DisplayHint::Hexadecimal { is_uppercase: true },
-            "?" => DisplayHint::Debug,
+        hint = Some(match input.parse() {
+            Ok(a) => a,
             _ => match mode {
                 ParserMode::Strict => {
                     return Err(format!("unknown display hint: {:?}", input).into());
@@ -349,9 +307,8 @@ fn push_literal<'f>(
     Ok(())
 }
 
-/// returns Some(smallest_bit_index, largest_bit_index) contained in `params` if
-///         `params` contains any bitfields.
-///         None otherwise
+/// Returns `Some(smallest_bit_index, largest_bit_index)` contained in `params` if
+/// `params` contains any bitfields. Otherwise `None`.
 pub fn get_max_bitfield_range<'a, I>(params: I) -> Option<(u8, u8)>
 where
     I: Iterator<Item = &'a Parameter> + Clone,
@@ -449,20 +406,18 @@ pub fn parse<'f>(
                 none @ None => {
                     *none = Some(ty.clone());
                 }
-                Some(other_ty) => {
+                Some(other_ty) => match (other_ty, ty) {
                     // FIXME: Bitfield range shouldn't be part of the type.
-                    match (&*other_ty, ty) {
-                        (Type::BitField(_), Type::BitField(_)) => {}
-                        (a, b) if a != b => {
-                            return Err(format!(
-                                "conflicting types for argument {}: used as {:?} and {:?}",
-                                index, other_ty, ty
-                            )
-                            .into());
-                        }
-                        _ => {}
+                    (Type::BitField(_), Type::BitField(_)) => {}
+                    (a, b) if a != b => {
+                        return Err(format!(
+                            "conflicting types for argument {}: used as {:?} and {:?}",
+                            index, a, ty
+                        )
+                        .into());
                     }
-                }
+                    _ => {}
+                },
             }
         }
     }
@@ -475,18 +430,6 @@ pub fn parse<'f>(
     }
 
     Ok(fragments)
-}
-
-impl Level {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Level::Trace => "trace",
-            Level::Debug => "debug",
-            Level::Info => "info",
-            Level::Warn => "warn",
-            Level::Error => "error",
-        }
-    }
 }
 
 #[cfg(test)]
@@ -539,9 +482,7 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::U8,
-                hint: Some(DisplayHint::Hexadecimal {
-                    is_uppercase: false
-                }),
+                hint: Some(DisplayHint::Hexadecimal { uppercase: false }),
             })
         );
 
@@ -599,9 +540,7 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Hexadecimal {
-                    is_uppercase: false
-                }),
+                hint: Some(DisplayHint::Hexadecimal { uppercase: false }),
             })
         );
 
@@ -610,7 +549,7 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Hexadecimal { is_uppercase: true }),
+                hint: Some(DisplayHint::Hexadecimal { uppercase: true }),
             })
         );
 

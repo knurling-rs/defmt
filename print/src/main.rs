@@ -103,9 +103,11 @@ fn main() -> anyhow::Result<()> {
     }
 }
 
-// the string reported by the `--version` flag
-fn print_version() -> Result<(), anyhow::Error> {
-    // version from Cargo.toml e.g. "0.1.4"
+/// Report version from Cargo.toml _(e.g. "0.1.4")_ and supported `defmt`-versions.
+///
+/// Used by `--version` flag.
+#[allow(clippy::unnecessary_wraps)]
+fn print_version() -> anyhow::Result<()> {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     println!("supported defmt version: {}", defmt_decoder::DEFMT_VERSION);
     Ok(())
