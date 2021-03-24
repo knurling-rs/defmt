@@ -131,7 +131,7 @@ fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
 fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Result<()> {
     let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
     println!("{}", display_name);
-    let cwd_name = "firmware/qemu".to_string();
+    let cwd_name = "firmware/qemu";
     let mut args = if release_mode {
         vec!["-q", "rrb", name]
     } else {
