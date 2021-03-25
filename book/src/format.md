@@ -71,3 +71,14 @@ impl defmt::Format for MyU8 {
     }
 }
 ```
+
+## Uncompressed adapters
+
+If you quickly want to get some code running and do not care about it being efficient you can use the two adapter types [`Display2Format`] and [`Debug2Format`].
+
+These adapter disable compression and use the `core::fmt` code on-device! You should always prefer `defmt::Format` over `Debug` whenever possible.
+
+Note that this always uses `{:?}` to format the contained value, meaning that any provided defmt display hints will be ignored.
+
+[`Display2Format`]: https://docs.rs/defmt/*/defmt/struct.Display2Format.html
+[`Debug2Format`]: https://docs.rs/defmt/*/defmt/struct.Debug2Format.html
