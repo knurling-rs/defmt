@@ -12,42 +12,9 @@ For a full list of defmt-test's capabilities, please refer to the documentation 
 
 ## Basic usage
 
-0. If you don't have a project setup yet, start from the [`app-template`], then proceed with step 3. If you have a project based on an old version of `app-template` then proceed with step 1.
+Start from the [`app-template`] and then run `cargo test -p testsuite` to run the unit tests:
 
 [`app-template`]: https://github.com/knurling-rs/app-template
-
-1. In the **testsuite** crate, add `defmt-test` to the dependencies:
-
-``` diff
- # testsuite/Cargo.toml
-
- [dependencies]
-+ defmt-test = "0.2.1"
-```
-
-2. Within the `testsuite/tests/test.rs` file, create a `tests` module and mark it with the `#[defmt_test::tests]` attribute. Within that module write `std`-like unit tests: functions marked with the `#[test]` attribute.
-
-``` rust
-// testsuite/tests/test.rs
-
-#[defmt_test::tests]
-mod tests {
-    // enable diff-style failure visualization
-    use defmt::{assert, assert_eq};
-
-    #[test]
-    fn assert_true() {
-        assert!(true)
-    }
-
-    #[test]
-    fn assert_false() {
-        assert_eq!(24, 42, "TODO: write actual tests")
-    }
-}
-```
-
-3. Run `cargo test -p testsuite` to run the unit tests
 
 ``` console
 $ cargo test -p testsuite
