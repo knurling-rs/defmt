@@ -706,7 +706,7 @@ mod tests {
             5, // length of the string
             b'H', b'e', b'l', b'l', b'o', // string "Hello"
         ];
-        let frame = super::decode(&bytes, &table).unwrap().0;
+        let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO S { x: \"Hello\" }",
