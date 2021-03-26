@@ -31,10 +31,11 @@ use std::{
 use decoder::{read_leb128, Decoder};
 use defmt_parser::Level;
 use elf2table::parse_impl;
-use frame::Frame;
 
 pub use elf2table::{Location, Locations};
+pub use frame::Frame;
 
+/// Specifies the origin of a format string
 #[derive(PartialEq, Eq, Debug)]
 pub enum Tag {
     /// Defmt-controlled format string for primitive types.
@@ -68,6 +69,7 @@ impl Tag {
     }
 }
 
+/// Entry in [`Table`] combining a format string with it's raw symbol
 #[derive(Debug)]
 pub struct TableEntry {
     string: StringEntry,
@@ -88,6 +90,7 @@ impl TableEntry {
     }
 }
 
+/// A format string and it's [`Tag`]
 #[derive(Debug)]
 pub struct StringEntry {
     tag: Tag,
