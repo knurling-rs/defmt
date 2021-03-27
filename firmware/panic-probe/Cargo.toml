@@ -11,10 +11,10 @@ repository = "https://github.com/knurling-rs/defmt"
 version = "0.2.0"
 
 [dependencies]
-cortex-m = "0.6.3"
-cortex-m-rt = "0.6.12"
+cortex-m = "0.7.2"
+cortex-m-rt = "0.6.13"
 defmt = { version = "0.2.0", path = "../..", optional = true }
-rtt-target = { version = "0.2.2", optional = true }
+rtt-target = { version = "0.3.0", optional = true }
 
 
 [features]
