@@ -11,5 +11,5 @@ repository = "https://github.com/knurling-rs/defmt"
 version = "0.2.0"
 
 [dependencies]
-cortex-m = "0.6.4"
+cortex-m = "0.7.2"
 defmt = { version = "0.2.0", path = "../.." }
