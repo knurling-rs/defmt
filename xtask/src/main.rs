@@ -1,9 +1,8 @@
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    io::Read,
     path::Path,
-    process::{Command, Stdio},
+    process::Command,
     str,
     sync::Mutex,
 };
@@ -270,7 +269,13 @@ fn test_host(deny_warnings: bool) {
     do_test(|| run_command(&["cargo", "check", "--workspace"], None, &env), "host");
 
     do_test(
-        || run_command(&["cargo", "check", "--workspace", "--features", "unstable-test"], None, &env),
+        || {
+            run_command(
+                &["cargo", "check", "--workspace", "--features", "unstable-test"],
+                None,
+                &env,
+            )
+        },
         "host",
     );
 
