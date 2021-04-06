@@ -81,15 +81,8 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
 }
 
 fn run_capturing_stdout(cmd: &mut Command) -> Result<String> {
-    let child = cmd.stdout(Stdio::piped()).spawn()?;
-    let mut stdout = child
-        .stdout
-        .ok_or_else(|| anyhow!("could not access standard output"))?;
-    let mut out = String::new();
-    stdout
-        .read_to_string(&mut out)
-        .with_context(|| "could not read standard output")?;
-    Ok(out)
+    let o = cmd.output()?.stdout;
+    Ok(str::from_utf8(&o)?.to_string())
 }
 
 fn do_test<F>(t: F, context: &str)
