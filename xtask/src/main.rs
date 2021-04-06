@@ -250,7 +250,7 @@ fn test_lint() {
     println!("🧪 lint");
     do_test(|| run_command(&["cargo", "clean"], None, &[]), "lint");
     do_test(
-        || run_command(&["cargo", "fmt", "--workspace", "--", "--check"], None, &[]),
+        || run_command(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
         "lint",
     );
 
