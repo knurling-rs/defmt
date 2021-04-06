@@ -4,6 +4,7 @@ use std::{
     io::Read,
     path::Path,
     process::{Command, Stdio},
+    str,
     sync::Mutex,
 };
 
