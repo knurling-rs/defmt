@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.2.1] - 2021-03-08
+
+### Added
+- [#403] Add knurling logo to API docs
+
+### Fixed
+- [#413] Fix docs-rs build, by disabling feature "unstable-test"
+- [#427] Drop outdated note about `defmt v0.2.0` from book
+
+[#403]: https://github.com/knurling-rs/defmt/pull/403
+[#413]: https://github.com/knurling-rs/defmt/pull/413
+[#427]: https://github.com/knurling-rs/defmt/pull/427
+
 ## [v0.2.0] - 2021-02-19
 
 ### Added
@@ -211,6 +224,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 Initial release
 
 [Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...main
+[v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...defmt-v0.2.1
 [v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...defmt-v0.2.0
 [v0.1.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...defmt-v0.1.3
 [v0.1.2]: https://github.com/knurling-rs/defmt/compare/v0.1.1...defmt-v0.1.2

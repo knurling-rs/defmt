@@ -138,10 +138,8 @@ fn format_args_real(
     ) -> Result<(), fmt::Error> {
         match hint {
             Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
-            Some(DisplayHint::Hexadecimal {
-                is_uppercase: false,
-            }) => write!(buf, "{:#x}", x)?,
-            Some(DisplayHint::Hexadecimal { is_uppercase: true }) => write!(buf, "{:#X}", x)?,
+            Some(DisplayHint::Hexadecimal { uppercase: false }) => write!(buf, "{:#x}", x)?,
+            Some(DisplayHint::Hexadecimal { uppercase: true }) => write!(buf, "{:#X}", x)?,
             Some(DisplayHint::Microseconds) => {
                 let seconds = x / 1_000_000;
                 let micros = x % 1_000_000;
@@ -159,10 +157,8 @@ fn format_args_real(
     ) -> Result<(), fmt::Error> {
         match hint {
             Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
-            Some(DisplayHint::Hexadecimal {
-                is_uppercase: false,
-            }) => write!(buf, "{:#x}", x)?,
-            Some(DisplayHint::Hexadecimal { is_uppercase: true }) => write!(buf, "{:#X}", x)?,
+            Some(DisplayHint::Hexadecimal { uppercase: false }) => write!(buf, "{:#x}", x)?,
+            Some(DisplayHint::Hexadecimal { uppercase: true }) => write!(buf, "{:#X}", x)?,
             _ => write!(buf, "{}", x)?,
         }
         Ok(())
