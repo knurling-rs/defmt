@@ -8,5 +8,5 @@ version = "0.1.0"
 
 [dependencies]
 defmt = { path = "../.." }
-cortex-m = "0.6.3"
-cortex-m-semihosting = "0.3.5"
+cortex-m = "0.7.2"
+cortex-m-semihosting = "0.3.7"

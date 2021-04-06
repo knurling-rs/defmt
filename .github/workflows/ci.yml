@@ -4,7 +4,10 @@ on:
   push:
     branches: [main, staging, trying]
   pull_request:
-    branches: [main]
+    branches: [ main ]
+  schedule:
+    # runs 1 min after 2 or 1 AM (summer/winter) berlin time
+    - cron: '1 0 * * *'
 
 env:
   CARGO_TERM_COLOR: always
@@ -125,7 +128,6 @@ jobs:
           CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER: qemu-run
           QEMU_RUN_IGNORE_VERSION: 1
         run: cargo xtask test-snapshot
-
   # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
   # bors.tech integration
   ci-success:

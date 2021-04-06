@@ -178,6 +178,7 @@ panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"p
     Ok(())
 }
 
+/// Location of a defmt log statement in the elf-file
 #[derive(Clone)]
 pub struct Location {
     pub file: PathBuf,
@@ -191,6 +192,7 @@ impl fmt::Debug for Location {
     }
 }
 
+/// Mapping of memory address to [`Location`]
 pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {

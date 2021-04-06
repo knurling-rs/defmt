@@ -2,10 +2,6 @@
 
 `defmt` is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
-> **NOTE** this hosted version of the `defmt` book corresponds to the *unreleased* `defmt` v0.2.0,
-> which is currently only available as a git dependency. If you are looking for `defmt` v0.1.x's
-> documentation head to <https://defmt.ferrous-systems.com>.
-
 ## Features
 
 - `println!`-like formatting
