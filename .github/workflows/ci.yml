@@ -62,10 +62,7 @@ jobs:
       matrix:
         rust:
           - stable
-        os:
-          - ubuntu-latest
-          - macOS-latest
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
@@ -84,7 +81,8 @@ jobs:
           - stable
         os:
           - ubuntu-latest
-          - macOS-latest
+          # as of 2021-04 github SIGKILLs us on macos for unknown reasons (possible OOM)
+          # - macOS-latest
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
