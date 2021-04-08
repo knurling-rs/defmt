@@ -68,14 +68,7 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
             if exit_status.success() {
                 Ok(())
             } else {
-                let info = match exit_status.code() {
-                    Some(code) => {
-                        format!("non-zero exit status: {}", code)
-                    }
-                    None => "killed by signal".to_string(),
-                };
-
-                Err(anyhow!("'{}' did not finish successfully: {}", cmdline, info))
+                Err(anyhow!("'{}' did not finish successfully: {}", cmdline, exit_status))
             }
         })
 }
