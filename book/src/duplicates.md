@@ -17,7 +17,7 @@ This produces two symbols with the name "X".
 How can this occur in logging?
 The user may write:
 
-``` rust
+``` rust,no_run,noplayground
 # extern crate defmt;
 fn foo() {
     defmt::info!("foo started ..");
@@ -34,7 +34,7 @@ fn bar() {
 
 Because macros are expanded in isolation *each* `info!(".. DONE")` statement will produce this to intern its string:
 
-``` rust
+``` rust,no_run,noplayground
 #[export_name = ".. DONE"]
 #[link_section = ".."]
 static SYM: u8 = 0;
@@ -46,7 +46,7 @@ To avoid this issue we store each interned string as a JSON object with 3 fields
 The discriminator is a hash of the source code location of the log statement so it should be unique per crate.
 Now these two macro invocations will produce something like this:
 
-``` rust
+``` rust,no_run,noplayground
 // first info! invocation
 {
     #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"discriminator\": \"1379186119\" }"]

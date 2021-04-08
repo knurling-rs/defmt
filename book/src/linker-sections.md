@@ -42,11 +42,11 @@ defmt::error!("Bye");
 
 Would expand to this:
 
-``` rust
+``` rust,no_run,noplayground
 // first warn! invocation
 {
-    #[export_name = "Hello@1379186119"]
-    #[link_section = ".defmt.warn.1379186119"]
+    #[export_name = "{\"package\":\"my-app\",\"tag\":\"defmt_warn\",\"data\":\"Hello\",\"disambiguator\":\"8864866341617976971\"}"]
+    #[link_section = ".defmt.{\"package\":\"my-app\",\"tag\":\"defmt_warn\",\"data\":\"Hello\",\"disambiguator\":\"8864866341617976971\"}"]
     static SYM: u8 = 0;
 }
 
@@ -54,8 +54,8 @@ Would expand to this:
 
 // first error! invocation
 {
-    #[export_name = "Bye@346188945"]
-    #[link_section = ".defmt.error.346188945"]
+    #[export_name = "{\"package\":\"my-app\",\"tag\":\"defmt_error\",\"data\":\"Bye\",\"disambiguator\":\"2879057613697528561\"}"]
+    #[link_section = ".defmt.{\"package\":\"my-app\",\"tag\":\"defmt_error\",\"data\":\"Bye\",\"disambiguator\":\"2879057613697528561\"}"]
     static SYM: u8 = 0;
 }
 ```
