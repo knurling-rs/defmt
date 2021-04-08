@@ -2,13 +2,23 @@
 
 `defmt` ("de format", short for "deferred formatting") is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
+For more details about the framework check the book at <https://defmt.ferrous-systems.com>.
+
+The git version of the defmt book can be viewed at <https://defmt-next.ferrous-systems.com/>.
+
+## Setup
+
+### New project
+
 The fastest way to get started with `defmt` is to use our [app-template] to set up a new Cortex-M embedded project.
 
 [app-template]: https://github.com/knurling-rs/app-template
 
-For more details about the framework check the book at <https://defmt.ferrous-systems.com>.
+### Existing project
 
-The git version of the defmt book can be viewed at <https://defmt-next.ferrous-systems.com/>.
+To include `defmt` in your existing project, follow our [Application Setup guide].
+
+[Application Setup guide]: https://defmt.ferrous-systems.com/setup-app.html
 
 ## Support
 
