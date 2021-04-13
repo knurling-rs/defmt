@@ -722,7 +722,7 @@ fn default_panic() -> ! {
 /// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
 /// `defmt::Format` over `Debug` whenever possible.
 ///
-/// example usage:
+/// # Examples
 ///
 /// ```rust
 /// # #[derive(Debug)]
@@ -753,11 +753,11 @@ impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
 /// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
 /// `defmt::Format` over `Display` whenever possible.
 ///
-/// example usage:
+/// # Examples
 ///
 /// ```rust
 /// # struct ExpensiveThing();
-///
+/// #
 /// # impl core::fmt::Display for ExpensiveThing {
 /// #     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 /// #         write!(f, "{}", "expensive")
