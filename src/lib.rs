@@ -722,8 +722,20 @@ fn default_panic() -> ! {
 /// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
 /// `defmt::Format` over `Debug` whenever possible.
 ///
-/// Note that this always uses `{:?}` to format the contained value, meaning that any provided defmt
-/// display hints will be ignored.
+/// # Examples
+///
+/// ```rust
+/// # #[derive(Debug)]
+/// # struct ExpensiveThing();
+/// # let expensive_thing = ExpensiveThing();
+/// #
+/// defmt::info!("{:?}", defmt::Debug2Format(&expensive_thing));
+/// //                                        ˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆ
+/// //                                        must `#[derive(Debug)]`
+/// ```
+///
+/// Note that any provided defmt display hints will be ignored
+/// because this always uses `{:?}` to format the contained value.
 pub struct Debug2Format<'a, T: fmt::Debug + ?Sized>(pub &'a T);
 
 impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
@@ -741,8 +753,25 @@ impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
 /// This adapter disables compression and uses the `core::fmt` code on-device! You should prefer
 /// `defmt::Format` over `Display` whenever possible.
 ///
-/// Note that this always uses `{}` to format the contained value, meaning that any provided defmt
-/// display hints will be ignored.
+/// # Examples
+///
+/// ```rust
+/// # struct ExpensiveThing();
+/// #
+/// # impl core::fmt::Display for ExpensiveThing {
+/// #     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+/// #         write!(f, "{}", "expensive")
+/// #     }
+/// #  }
+/// # let expensive_thing = ExpensiveThing();
+/// #
+/// defmt::info!("{}", defmt::Display2Format(&expensive_thing));
+/// //                                        ˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆ
+/// //                                        must implement `fmt::Display`
+/// ```
+///
+/// Note that any provided defmt display hints will be ignored
+/// because this always uses `{}` to format the contained value.
 pub struct Display2Format<'a, T: fmt::Display + ?Sized>(pub &'a T);
 
 impl<T: fmt::Display + ?Sized> Format for Display2Format<'_, T> {
