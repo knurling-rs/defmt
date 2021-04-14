@@ -20,6 +20,11 @@ To include `defmt` in your existing project, follow our [Application Setup guide
 
 [Application Setup guide]: https://defmt.ferrous-systems.com/setup-app.html
 
+## MSRV
+`defmt` always compiles on the [latest `stable` rust release](https://github.com/rust-lang/rust/releases/latest). This is enforced by our CI building and testing against this version.
+
+It still might work on older rust versions, but this isn't ensured.
+
 ## Support
 
 `defmt` is part of the [Knurling] project, [Ferrous Systems]' effort at
