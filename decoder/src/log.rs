@@ -260,7 +260,7 @@ pub fn init_logger(
     log::set_boxed_logger(Box::new(Logger {
         always_include_location,
         should_log: Box::new(should_log),
-        timing_align: AtomicUsize::new(8),
+        timing_align: AtomicUsize::new(0),
     }))
     .unwrap();
     log::set_max_level(log::LevelFilter::Trace);
