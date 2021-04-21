@@ -523,7 +523,6 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
                     let mut _fmt_ = defmt::InternalFormatter::new();
                     _fmt_.header(&defmt::export::istr(#sym));
                     #(#exprs;)*
-                    _fmt_.finalize();
                     defmt::export::release()
                 }
             }

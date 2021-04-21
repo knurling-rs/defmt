@@ -51,7 +51,6 @@ fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: 
     let mut f = InternalFormatter::new();
     let g = Formatter { inner: &mut f };
     val.format(g);
-    f.finalize();
     assert_eq!(f.bytes(), expected_encoding);
 }
 
@@ -79,101 +78,6 @@ fn write() {
             inc(index, 1), // "The answer is {=?}"
             inc(index, 2), // "{=u8}" / impl Format for u8
             42,            // u8 value
-        ]
-    );
-}
-
-#[test]
-fn booleans_max_num_bool_flags() {
-    let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
-
-    write!(
-        g,
-        "encode 8 bools {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-        false, true, true, false, true, false, true, true
-    );
-    assert_eq!(
-        f.bytes(),
-        &[
-            index,       // "encode 8 bools {=bool} {=bool} [...]",
-            0b0110_1011, // compressed bools (dec value = 107)
-        ]
-    );
-}
-
-#[test]
-fn booleans_less_than_max_num_bool_flags() {
-    let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
-
-    write!(
-        g,
-        "encode 3 bools {=bool} {=bool} {=bool}",
-        false, true, true
-    );
-    assert_eq!(
-        f.bytes(),
-        &[
-            index, // "encode 3 bools {=bool} {=bool} {=bool}",
-            0b011, // compressed bools
-        ]
-    );
-}
-
-#[test]
-fn booleans_more_than_max_num_bool_flags() {
-    let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
-
-    write!(g, "encode 9 bools {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-           false, true, true, false, true, false, true, true, false, true);
-    assert_eq!(
-        f.bytes(),
-        &[
-            index,       // "encode 8 bools {=bool} {=bool} {=bool} [...]",
-            0b0110_1011, // first 8 compressed bools
-            0b01,        // final compressed bools
-        ]
-    );
-}
-
-#[test]
-fn booleans_mixed() {
-    let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
-
-    write!(
-        g,
-        "encode mixed bools {=bool} {=bool} {=u8} {=bool}",
-        true, false, 42, true
-    );
-    assert_eq!(
-        f.bytes(),
-        &[
-            index, // "encode mixed bools {=bool} {=bool} {=u8} {=bool}",
-            42u8,  // intermediate `42`
-            0b101, // all compressed bools
-        ]
-    );
-}
-
-#[test]
-fn booleans_mixed_no_trailing_bool() {
-    let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
-
-    write!(g, "encode mixed bools {=bool} {=u8}", false, 42);
-    assert_eq!(
-        f.bytes(),
-        &[
-            index, // "encode mixed bools {=bool} {=u8}",
-            42u8, 0b0, // bool is put at the end of the args
         ]
     );
 }
@@ -266,37 +170,10 @@ fn boolean_struct() {
         &X { y: false, z: true },
         &[
             index, // "X {{ x: {=bool}, y: {=bool} }}"
-            0b01,  // y and z compressed together
+            0b0,   // y
+            0b1,   // z
         ],
     )
-}
-
-#[test]
-fn boolean_struct_mixed() {
-    #[derive(Format)]
-    struct X {
-        y: bool,
-        z: bool,
-    }
-
-    let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
-
-    write!(
-        g,
-        "mixed formats {=bool} {=?}",
-        true,
-        X { y: false, z: true }
-    );
-    assert_eq!(
-        f.bytes(),
-        &[
-            index,         // "mixed formats {=bool} {=?}",
-            inc(index, 1), // "X {{ x: {=bool}, y: {=bool} }}"
-            0b101,         // compressed struct bools
-        ]
-    );
 }
 
 #[test]
@@ -561,7 +438,9 @@ fn slice_of_bools() {
             index,           // "{=[?]}"
             val.len() as u8, // length
             inc(index, 1),   // "{=bool}"
-            0b110,           // compressed bools: true, true, false
+            0b1,
+            0b1,
+            0b0,
         ],
     )
 }
@@ -931,35 +810,9 @@ fn format_bools() {
         &[
             index,         // "({=?}, {=?})"
             inc(index, 1), // "A({=bool})"
+            0b1,           // A
             inc(index, 2), // "B({=bool})"
-            0b11,          // compressed bools
-        ],
-    );
-}
-
-#[test]
-fn issue_208() {
-    #[derive(Format)]
-    struct DhcpReprMin {
-        pub broadcast: bool,
-        pub a: [u8; 2],
-    }
-
-    let dhcp_repr = DhcpReprMin {
-        broadcast: true,
-        a: [10, 10],
-    };
-
-    let index = fetch_string_index();
-    check_format_implementation(
-        &dhcp_repr,
-        &[
-            index,         // "DhcpReprMin {{ broadcast: {=bool}, a: {=?} }}"
-            inc(index, 1), // "{=[?;2]}"
-            inc(index, 2), // "{=u8}"
-            10,            // a[0]
-            10,            // a[1]
-            1,             // compressed bools
+            0b1,           // B
         ],
     );
 }

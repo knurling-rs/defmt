@@ -2,10 +2,9 @@ use std::{
     convert::{TryFrom, TryInto},
     mem,
     ops::Range,
-    sync::Arc,
 };
 
-use crate::{Arg, Bool, DecodeError, FormatSliceElement, Table};
+use crate::{Arg, DecodeError, FormatSliceElement, Table};
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
@@ -27,10 +26,7 @@ pub(crate) struct Decoder<'t, 'b> {
     format_list: Option<FormatList<'t>>,
     // below an enum tags must be included
     below_enum: bool,
-    pub bools_tbd: Vec<Arc<Bool>>,
 }
-
-const MAX_NUM_BOOL_FLAGS: usize = 8;
 
 impl<'t, 'b> Decoder<'t, 'b> {
     pub fn new(table: &'t Table, bytes: &'b [u8]) -> Self {
@@ -38,29 +34,8 @@ impl<'t, 'b> Decoder<'t, 'b> {
             table,
             bytes,
             format_list: None,
-            bools_tbd: Vec::new(),
             below_enum: false,
         }
-    }
-
-    /// Reads a byte of packed bools and unpacks them into `args` at the given indices.
-    pub fn read_and_unpack_bools(&mut self) -> Result<(), DecodeError> {
-        let bool_flags = self.bytes.read_u8()?;
-        let mut flag_index = self.bools_tbd.len();
-
-        for bool in self.bools_tbd.iter() {
-            flag_index -= 1;
-
-            // read out the leftmost unread bit and turn it into a boolean
-            let flag_mask = 1 << flag_index;
-            let nth_flag = (bool_flags & flag_mask) != 0;
-
-            bool.set(nth_flag);
-        }
-
-        self.bools_tbd.clear();
-
-        Ok(())
     }
 
     /// Sort and deduplicate `params` so that they can be interpreted correctly during decoding
@@ -248,15 +223,11 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::Usize => args.push(Arg::Uxx(read_leb128(&mut self.bytes)? as u128)),
                 Type::F32 => args.push(Arg::F32(f32::from_bits(self.bytes.read_u32::<LE>()?))),
                 Type::F64 => args.push(Arg::F64(f64::from_bits(self.bytes.read_u64::<LE>()?))),
-                Type::Bool => {
-                    let arc = Arc::new(Bool::FALSE);
-                    args.push(Arg::Bool(arc.clone()));
-                    self.bools_tbd.push(arc.clone());
-                    if self.bools_tbd.len() == MAX_NUM_BOOL_FLAGS {
-                        // reached end of compression block: sprinkle values into args
-                        self.read_and_unpack_bools()?;
-                    }
-                }
+                Type::Bool => args.push(Arg::Bool(match self.bytes.read_u8()? {
+                    0 => false,
+                    1 => true,
+                    _ => return Err(DecodeError::Malformed),
+                })),
                 Type::FormatSlice => {
                     let num_elements = read_leb128(&mut self.bytes)? as usize;
                     let elements = self.decode_format_slice(num_elements)?;

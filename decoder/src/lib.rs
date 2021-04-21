@@ -18,15 +18,7 @@ mod elf2table;
 mod frame;
 pub mod log;
 
-use std::{
-    collections::BTreeMap,
-    error::Error,
-    fmt, io,
-    sync::{
-        atomic::{self, AtomicBool},
-        Arc,
-    },
-};
+use std::{collections::BTreeMap, error::Error, fmt, io};
 
 use decoder::{read_leb128, Decoder};
 use defmt_parser::Level;
@@ -205,10 +197,6 @@ impl Table {
             .map_err(|_| DecodeError::Malformed)?;
 
         let args = decoder.decode_format(format)?;
-        if !decoder.bools_tbd.is_empty() {
-            // Flush end of compression block.
-            decoder.read_and_unpack_bools()?;
-        }
 
         let frame = Frame::new(level, index, timestamp_format, timestamp_args, format, args);
 
@@ -217,37 +205,11 @@ impl Table {
     }
 }
 
-#[derive(Debug)]
-struct Bool(AtomicBool);
-
-impl Bool {
-    #[allow(clippy::declare_interior_mutable_const)]
-    const FALSE: Self = Self(AtomicBool::new(false));
-
-    fn set(&self, value: bool) {
-        self.0.store(value, atomic::Ordering::Relaxed);
-    }
-}
-
-impl fmt::Display for Bool {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.0.load(atomic::Ordering::Relaxed))
-    }
-}
-
-impl PartialEq for Bool {
-    fn eq(&self, other: &Self) -> bool {
-        self.0
-            .load(atomic::Ordering::Relaxed)
-            .eq(&other.0.load(atomic::Ordering::Relaxed))
-    }
-}
-
 // NOTE follows `parser::Type`
 #[derive(Debug, PartialEq)]
 enum Arg<'t> {
     /// Bool
-    Bool(Arc<Bool>),
+    Bool(bool),
     F32(f32),
     F64(f64),
     /// U8, U16, U24 and U32
@@ -597,150 +559,6 @@ mod tests {
         ];
 
         decode_and_expect("my bool={=bool}", &bytes, "0.000002 INFO my bool=true");
-    }
-
-    #[test]
-    fn bools_max_capacity() {
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0b0110_0001, // the first 8 logged bool values
-        ];
-
-        decode_and_expect(
-            "bool capacity {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO bool capacity false true true false false false false true",
-        );
-    }
-
-    #[test]
-    fn bools_more_than_fit_in_one_byte() {
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0b0110_0001, // the first 8 logged bool values
-            0b1,         // the final logged bool value
-        ];
-
-        decode_and_expect(
-            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO bool overflow false true true false false false false true true",
-        );
-
-        // Ensure that bools are compressed into the first byte even when there's non-bool values
-        // between them.
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0xff,        // the logged u8
-            0b0110_0001, // the first 8 logged bool values
-            0b1,         // the final logged bool value
-        ];
-
-        decode_and_expect(
-            "bool overflow {=bool} {=u8} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO bool overflow false 255 true true false false false false true true",
-        );
-
-        // Ensure that bools are compressed into the first byte even when there's a non-bool value
-        // right between between the two compression blocks.
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0b0110_0001, // the first 8 logged bool values
-            0xff,        // the logged u8
-            0b1,         // the final logged bool value
-        ];
-
-        decode_and_expect(
-            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=u8} {=bool}",
-            &bytes,
-            "0.000002 INFO bool overflow false true true false false false false true 255 true",
-        );
-    }
-
-    #[test]
-    fn bools_mixed() {
-        let bytes = [
-            0,       // index
-            2,       // timestamp
-            9 as u8, // a uint in between
-            0b101,   // 3 packed bools
-        ];
-
-        decode_and_expect(
-            "hidden bools {=bool} {=u8} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO hidden bools true 9 false true",
-        );
-    }
-
-    #[test]
-    fn bools_mixed_no_trailing_bool() {
-        let bytes = [
-            0,   // index
-            2,   // timestamp
-            9,   // a u8 in between
-            0b0, // 3 packed bools
-        ];
-
-        decode_and_expect(
-            "no trailing bools {=bool} {=u8}",
-            &bytes,
-            "0.000002 INFO no trailing bools false 9",
-        );
-    }
-
-    #[test]
-    fn bools_bool_struct() {
-        /*
-        emulate
-        #[derive(Format)]
-        struct Flags {
-            a: bool,
-            b: bool,
-            c: bool,
-        }
-
-        defmt::info!("{:bool} {:?}", true, Flags {a: true, b: false, c: true });
-        */
-
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            0,
-            TableEntry::new_without_symbol(Tag::Info, "{=bool} {=?}".to_owned()),
-        );
-        entries.insert(
-            1,
-            TableEntry::new_without_symbol(
-                Tag::Derived,
-                "Flags {{ a: {=bool}, b: {=bool}, c: {=bool} }}".to_owned(),
-            ),
-        );
-
-        let table = Table {
-            entries,
-            timestamp: Some(TableEntry::new_without_symbol(
-                Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
-            )),
-        };
-
-        let bytes = [
-            0,      // index
-            2,      // timestamp
-            1,      // index of Flags { a: {:bool}, b: {:bool}, c: {:bool} }
-            0b1101, // 4 packed bools
-        ];
-
-        let frame = table.decode(&bytes).unwrap().0;
-        assert_eq!(
-            frame.display(false).to_string(),
-            "0.000002 INFO true Flags { a: true, b: false, c: true }"
-        );
     }
 
     #[test]
