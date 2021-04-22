@@ -2,24 +2,22 @@ use crate::Str;
 
 #[cfg(feature = "unstable-test")]
 thread_local! {
-    static I: core::sync::atomic::AtomicU8 =
-        core::sync::atomic::AtomicU8::new(0);
-    static T: core::sync::atomic::AtomicU8 =
-        core::sync::atomic::AtomicU8::new(0);
+    static I: core::sync::atomic::AtomicU16 =
+        core::sync::atomic::AtomicU16::new(0);
+    static T: core::sync::atomic::AtomicU16 =
+        core::sync::atomic::AtomicU16::new(0);
 }
 
-// NOTE we limit these values to 7-bit to avoid LEB128 encoding while writing the expected answers
-// in unit tests
 /// For testing purposes
 #[cfg(feature = "unstable-test")]
-pub fn fetch_string_index() -> u8 {
-    I.with(|i| i.load(core::sync::atomic::Ordering::Relaxed)) & 0x7f
+pub fn fetch_string_index() -> u16 {
+    I.with(|i| i.load(core::sync::atomic::Ordering::Relaxed))
 }
 
 /// For testing purposes
 #[cfg(feature = "unstable-test")]
 pub fn fetch_add_string_index() -> usize {
-    (I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed)) & 0x7f) as usize
+    (I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed))) as usize
 }
 
 #[cfg(feature = "unstable-test")]
@@ -186,7 +184,7 @@ mod sealed {
         fn format(&self, fmt: Formatter) {
             if fmt.inner.needs_tag() {
                 let t = internp!("Unwrap of a None option value");
-                fmt.inner.u8(&t);
+                fmt.inner.tag(&t);
             }
         }
     }

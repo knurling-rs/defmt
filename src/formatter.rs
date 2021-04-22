@@ -1,6 +1,6 @@
 use core::fmt::{self, Write as _};
 
-use crate::{export, leb, Format};
+use crate::{export, Format};
 
 /// Handle to a defmt logger.
 pub struct Formatter<'a> {
@@ -72,11 +72,8 @@ impl InternalFormatter {
     }
 
     /// Implementation detail
-    /// leb64-encode `x` and write it to self.bytes
-    pub fn leb64(&mut self, x: usize) {
-        let mut buf: [u8; 10] = [0; 10];
-        let i = leb::leb64(x, &mut buf);
-        self.write(&buf[..i])
+    pub fn tag(&mut self, b: &u16) {
+        self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
@@ -106,13 +103,12 @@ impl InternalFormatter {
 
     /// Implementation detail
     pub fn isize(&mut self, b: &isize) {
-        // Zig-zag encode the signed value.
-        self.leb64(leb::zigzag_encode(*b));
+        self.write(&(*b as i32).to_le_bytes())
     }
 
     /// Implementation detail
     pub fn fmt_slice(&mut self, values: &[impl Format]) {
-        self.leb64(values.len());
+        self.usize(&values.len());
         let mut is_first = true;
         for value in values {
             let omit_tag = !is_first;
@@ -159,7 +155,7 @@ impl InternalFormatter {
 
     /// Implementation detail
     pub fn usize(&mut self, b: &usize) {
-        self.leb64(*b);
+        self.write(&(*b as u32).to_le_bytes())
     }
 
     /// Implementation detail
@@ -173,12 +169,12 @@ impl InternalFormatter {
     }
 
     pub fn str(&mut self, s: &str) {
-        self.leb64(s.len());
+        self.usize(&s.len());
         self.write(s.as_bytes());
     }
 
     pub fn slice(&mut self, s: &[u8]) {
-        self.leb64(s.len());
+        self.usize(&s.len());
         self.write(s);
     }
 
@@ -199,12 +195,7 @@ impl InternalFormatter {
 
     /// Implementation detail
     pub fn istr(&mut self, s: &Str) {
-        // LEB128 encoding
-        if s.address < 128 {
-            self.write(&[s.address as u8])
-        } else {
-            self.write(&[s.address as u8 | (1 << 7), (s.address >> 7) as u8])
-        }
+        self.write(&s.address.to_le_bytes())
     }
 
     /// Implementation detail
