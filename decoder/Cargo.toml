@@ -20,17 +20,17 @@ ryu = "1"
 # logger
 ansi_term = "0.12.1"
 difference = "2.0.0"
-log = { version = "0.4.13", features = ["std"] }
+log = { version = "0.4.14", features = ["std"] }
 
 # elf2table
-anyhow = "1.0.32"
+anyhow = "1.0.40"
 gimli = "0.23.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # elf2table
 [dependencies.object]
-version = "0.22.0"
+version = "0.23.0"
 default-features = false
 features = ["read_core", "elf", "std"]
 
