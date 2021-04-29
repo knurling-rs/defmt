@@ -8,17 +8,46 @@ mod tests {
     use core::u8::MAX;
     use defmt::{assert, assert_eq};
 
+    struct InitStruct {
+        test: u8,
+    }
+
+    #[repr(C)]
+    #[derive(Debug)]
+    struct SomeData {
+        elem1: u8,
+        elem2: f32,
+    }
+
+
     #[init]
-    fn init() {}
+    fn init() -> InitStruct {
+        InitStruct {
+            test: 8,
+        }
+    }
+
+    #[test]
+    fn change_init_struct(init_struct: &mut InitStruct) {
+        assert_eq!(init_struct.test, 8);
+        init_struct.test = 42;
+    }
+
+    #[test]
+    fn test_for_changed_init_struct(init_struct: &mut InitStruct) {
+        assert_eq!(init_struct.test, 42);
+    }
 
     #[test]
     fn assert_true() -> () {
         assert!(true);
     }
 
+    const CUSTOM_MAX: u8 = 255;
+
     #[test]
     fn assert_imported_max() {
-        assert_eq!(255, MAX);
+        assert_eq!(CUSTOM_MAX, MAX);
     }
 
     #[cfg(not(never))]
