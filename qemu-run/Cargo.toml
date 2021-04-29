@@ -7,5 +7,5 @@ publish = false
 version = "0.2.0"
 
 [dependencies]
-anyhow = "1.0.32"
+anyhow = "1.0.40"
 defmt-decoder = { path = "../decoder", features = ["unstable"], version = "=0.2.0" }

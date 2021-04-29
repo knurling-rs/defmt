@@ -22,8 +22,8 @@ unstable-test = ["defmt-macros/unstable-test"]
 defmt-macros = { path = "macros", version = "0.2.0" }
 
 [dev-dependencies]
-rustc_version = "0.3.0"
-trybuild = "1.0.37"
+rustc_version = "0.3.3"
+trybuild = "1.0.42"
 
 [workspace]
 members = [

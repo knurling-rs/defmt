@@ -18,9 +18,9 @@ unstable-test = []
 
 [dependencies]
 defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.2.0" }
-quote = "1.0.7"
-proc-macro2 = "1.0.18"
+quote = "1.0.9"
+proc-macro2 = "1.0.26"
 
 [dependencies.syn]
 features = ["full"]
-version = "1.0.31"
+version = "1.0.71"
