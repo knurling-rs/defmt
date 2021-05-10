@@ -1,11 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::Path,
-    process::Command,
-    str,
-    sync::Mutex,
-};
+use std::{collections::HashSet, fs, path::Path, process::Command, str, sync::Mutex};
 
 use anyhow::{anyhow, Context, Result};
 use console::Style;
@@ -417,12 +410,8 @@ fn test_snapshot() {
         tests.push("alloc");
     }
 
-    let mut features_map = HashMap::new();
-    features_map.insert("alloc", "alloc");
-    let no_features = "";
-
     for test in tests {
-        let features = features_map.get(test).unwrap_or(&no_features);
+        let features = if test == "alloc" { "alloc" } else { "" };
 
         do_test(|| test_single_snapshot(test, features, false), "qemu/snapshot");
         do_test(|| test_single_snapshot(test, features, true), "qemu/snapshot");
