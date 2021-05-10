@@ -1,10 +1,12 @@
-use std::{collections::HashSet, fs, path::Path, process::Command, str, sync::Mutex};
+use std::{fs, path::Path, process::Command, str, sync::Mutex};
 
 use anyhow::{anyhow, Context, Result};
 use console::Style;
 use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
 use structopt::StructOpt;
+
+mod targets;
 
 static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 
@@ -35,7 +37,7 @@ fn main() -> Result<(), Vec<String>> {
     let opt: Options = Options::from_args();
 
     // TODO: one could argue that not all test scenarios require installation of targets
-    let added_targets = install_targets().expect("Error while installing required targets");
+    let added_targets = targets::install().expect("Error while installing required targets");
 
     match opt.cmd {
         TestCommand::TestAll => {
@@ -53,7 +55,7 @@ fn main() -> Result<(), Vec<String>> {
     }
 
     if !opt.keep_targets {
-        uninstall_targets(added_targets);
+        targets::uninstall(added_targets);
     }
 
     let all_errors = ALL_ERRORS.lock().unwrap();
@@ -177,68 +179,6 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Resul
         Ok(())
     } else {
         Err(anyhow!("{}", display_name))
-    }
-}
-
-fn get_installed_targets() -> Result<HashSet<String>> {
-    const INSTALLED_MARKER: &str = " (installed)";
-    let out = run_capturing_stdout(Command::new("rustup").args(&["target", "list"]))?;
-    let mut targets = out.lines().collect::<Vec<_>>();
-    targets.retain(|target| target.contains(INSTALLED_MARKER));
-    let targets: HashSet<String> = targets
-        .iter()
-        .map(|target| target.replace(INSTALLED_MARKER, ""))
-        .collect();
-    Ok(targets)
-}
-
-fn install_targets() -> Result<Vec<String>> {
-    let required_targets = [
-        "thumbv6m-none-eabi",
-        "thumbv7m-none-eabi",
-        "thumbv7em-none-eabi",
-        "thumbv8m.base-none-eabi",
-        "riscv32i-unknown-none-elf",
-    ]
-    .iter()
-    .map(|item| item.to_string())
-    .collect::<HashSet<_>>();
-
-    let installed_targets = get_installed_targets()?;
-    let added_targets = required_targets
-        .difference(&installed_targets)
-        .cloned()
-        .collect::<Vec<_>>();
-
-    if !added_targets.is_empty() {
-        println!("⏳ installing targets");
-
-        let mut args = vec!["target", "add"];
-        args.extend(added_targets.iter().map(|s| s.as_str()));
-        let status = Command::new("rustup").args(&args).status().unwrap();
-        if !status.success() {
-            // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
-            panic!("Error installing targets: {}", added_targets.join(" "));
-        }
-    }
-
-    Ok(added_targets)
-}
-
-fn uninstall_targets(targets: Vec<String>) {
-    if !targets.is_empty() {
-        println!("⏳ uninstalling targets");
-
-        let mut cmd_and_args = vec!["rustup", "target", "remove"];
-        cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
-
-        // only print uninstall errors so the user can fix those manually if needed
-        match run_command(&cmd_and_args, None, &[]) {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("Error uninstalling targets {}: {}", targets.join(" "), e);
-            }
-        }
     }
 }
 
