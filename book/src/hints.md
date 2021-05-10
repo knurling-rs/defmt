@@ -25,7 +25,15 @@ defmt::info!("{=str}", "hello\tworld");   // -> INFO hello    world
 defmt::info!("{=str:?}", "hello\tworld"); // -> INFO "hello\tworld"
 ```
 
-No further customization like padding, leading zeroes is supported (at the moment).
+Leading zeros are supported, for example
+
+``` rust
+# extern crate defmt;
+defmt::info!("{=u8:03}", 42); // -> INFO 042
+defmt::info!("{=u8:08X}", 42); // -> INFO 0x0000002A
+```
+
+No further customization like padding is supported (at the moment).
 
 The ASCII display hint formats byte slices (and arrays) using Rust's byte string syntax.
 
