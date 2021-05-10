@@ -31,6 +31,41 @@ enum TestCommand {
     TestSnapshot,
 }
 
+fn main() -> Result<(), Vec<String>> {
+    let opt: Options = Options::from_args();
+
+    // TODO: one could argue that not all test scenarios require installation of targets
+    let added_targets = install_targets().expect("Error while installing required targets");
+
+    match opt.cmd {
+        TestCommand::TestAll => {
+            test_host(opt.deny_warnings);
+            test_cross();
+            test_snapshot();
+            test_book();
+            test_lint();
+        }
+        TestCommand::TestHost => test_host(opt.deny_warnings),
+        TestCommand::TestCross => test_cross(),
+        TestCommand::TestSnapshot => test_snapshot(),
+        TestCommand::TestBook => test_book(),
+        TestCommand::TestLint => test_lint(),
+    }
+
+    if !opt.keep_targets {
+        uninstall_targets(added_targets);
+    }
+
+    let all_errors = ALL_ERRORS.lock().unwrap();
+    if !all_errors.is_empty() {
+        eprintln!();
+        eprintln!("😔 some tests failed");
+        Err(all_errors.clone())
+    } else {
+        Ok(())
+    }
+}
+
 fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> Result<()> {
     let cmd_and_args = Vec::from(cmd_and_args);
     let mut cmd = &mut Command::new(cmd_and_args[0]);
@@ -415,40 +450,5 @@ fn test_snapshot() {
 
         do_test(|| test_single_snapshot(test, features, false), "qemu/snapshot");
         do_test(|| test_single_snapshot(test, features, true), "qemu/snapshot");
-    }
-}
-
-fn main() -> Result<(), Vec<String>> {
-    let opt: Options = Options::from_args();
-
-    // TODO: one could argue that not all test scenarios require installation of targets
-    let added_targets = install_targets().expect("Error while installing required targets");
-
-    match opt.cmd {
-        TestCommand::TestAll => {
-            test_host(opt.deny_warnings);
-            test_cross();
-            test_snapshot();
-            test_book();
-            test_lint();
-        }
-        TestCommand::TestHost => test_host(opt.deny_warnings),
-        TestCommand::TestCross => test_cross(),
-        TestCommand::TestSnapshot => test_snapshot(),
-        TestCommand::TestBook => test_book(),
-        TestCommand::TestLint => test_lint(),
-    }
-
-    if !opt.keep_targets {
-        uninstall_targets(added_targets);
-    }
-
-    let all_errors = ALL_ERRORS.lock().unwrap();
-    if !all_errors.is_empty() {
-        eprintln!();
-        eprintln!("😔 some tests failed");
-        Err(all_errors.clone())
-    } else {
-        Ok(())
     }
 }
