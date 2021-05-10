@@ -1,7 +1,6 @@
-use crate as defmt;
 use defmt_macros::internp;
 
-use crate::{Format, Formatter, Str};
+use crate::{self as defmt, Format, Formatter, Str};
 
 impl Format for i8 {
     fn format(&self, fmt: Formatter) {
@@ -466,5 +465,26 @@ impl Format for core::time::Duration {
             self.as_secs(),
             self.subsec_nanos(),
         )
+    }
+}
+
+// Format raw pointer as hexadecimal
+//
+// First cast raw pointer to thin pointer, then to usize and finally format as hexadecimal.
+impl<T> Format for *const T
+where
+    T: Format + ?Sized,
+{
+    fn format(&self, fmt: Formatter) {
+        crate::write!(fmt, "{:x}", *self as *const () as usize);
+    }
+}
+
+impl<T> Format for *mut T
+where
+    T: Format + ?Sized,
+{
+    fn format(&self, fmt: Formatter) {
+        Format::format(&(*self as *const T), fmt)
     }
 }
