@@ -17,21 +17,17 @@ static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 
 #[derive(Debug, StructOpt)]
 struct Options {
-    #[structopt(long, short, help = "keep target toolchains that were installed as dependency")]
-    keep_targets: bool,
-
-    #[structopt(
-        long,
-        short,
-        help = "treat compiler warnings as errors (RUSTFLAGS=\"--deny warnings\")"
-    )]
-    deny_warnings: bool,
-
     #[structopt(subcommand)]
     cmd: TestCommand,
+    #[structopt(long, short)]
+    /// Treat compiler warnings as errors (`RUSTFLAGS="--deny warnings"`)
+    deny_warnings: bool,
+    #[structopt(long, short)]
+    /// Keep target toolchains that were installed as dependency
+    keep_targets: bool,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
 #[allow(clippy::enum_variant_names)]
 enum TestCommand {
     TestAll,
