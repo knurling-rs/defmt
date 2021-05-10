@@ -51,14 +51,12 @@ fn get_installed() -> anyhow::Result<HashSet<String>> {
 }
 
 pub fn uninstall(targets: Vec<String>) {
-    if !targets.is_empty() {
-        println!("⏳ uninstalling targets");
+    println!("⏳ uninstalling targets");
 
-        let mut cmd_and_args = vec!["rustup", "target", "remove"];
-        cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
+    let mut cmd_and_args = vec!["rustup", "target", "remove"];
+    cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
 
-        // only print uninstall errors so the user can fix those manually if needed
-        run_command(&cmd_and_args, None, &[])
-            .unwrap_or_else(|e| eprintln!("Error uninstalling targets {}: {}", targets.join(" "), e));
-    }
+    // only print uninstall errors so the user can fix those manually if needed
+    run_command(&cmd_and_args, None, &[])
+        .unwrap_or_else(|e| eprintln!("Error uninstalling targets {}: {}", targets.join(" "), e));
 }

@@ -54,7 +54,7 @@ fn main() -> anyhow::Result<()> {
         TestCommand::TestLint => test_lint(),
     }
 
-    if !opt.keep_targets {
+    if !opt.keep_targets && !added_targets.is_empty() {
         targets::uninstall(added_targets);
     }
 
