@@ -39,12 +39,12 @@ pub fn install() -> anyhow::Result<Vec<String>> {
 }
 
 fn get_installed() -> anyhow::Result<HashSet<String>> {
+    let stdout = run_capturing_stdout(Command::new("rustup").args(&["target", "list"]))?;
+
     const INSTALLED_MARKER: &str = " (installed)";
-    let out = run_capturing_stdout(Command::new("rustup").args(&["target", "list"]))?;
-    let mut targets = out.lines().collect::<Vec<_>>();
-    targets.retain(|target| target.contains(INSTALLED_MARKER));
-    let targets = targets
-        .iter()
+    let targets = stdout
+        .lines()
+        .filter(|target| target.contains(INSTALLED_MARKER))
         .map(|target| target.replace(INSTALLED_MARKER, ""))
         .collect::<HashSet<_>>();
     Ok(targets)
