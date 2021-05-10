@@ -1,6 +1,6 @@
 use std::{fs, path::Path, process::Command, str, sync::Mutex};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context};
 use console::Style;
 use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
@@ -33,7 +33,7 @@ enum TestCommand {
     TestSnapshot,
 }
 
-fn main() -> Result<(), Vec<String>> {
+fn main() -> anyhow::Result<()> {
     let opt: Options = Options::from_args();
 
     // TODO: one could argue that not all test scenarios require installation of targets
@@ -61,14 +61,13 @@ fn main() -> Result<(), Vec<String>> {
     let all_errors = ALL_ERRORS.lock().unwrap();
     if !all_errors.is_empty() {
         eprintln!();
-        eprintln!("😔 some tests failed");
-        Err(all_errors.clone())
+        Err(anyhow!("😔 some tests failed: {:?}", all_errors))
     } else {
         Ok(())
     }
 }
 
-fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> Result<()> {
+fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> anyhow::Result<()> {
     let cmd_and_args = Vec::from(cmd_and_args);
     let mut cmd = &mut Command::new(cmd_and_args[0]);
     if cmd_and_args.len() > 1 {
@@ -99,14 +98,14 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
         })
 }
 
-fn run_capturing_stdout(cmd: &mut Command) -> Result<String> {
+fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
     let o = cmd.output()?.stdout;
     Ok(str::from_utf8(&o)?.to_string())
 }
 
 fn do_test<F>(t: F, context: &str)
 where
-    F: FnOnce() -> Result<()>,
+    F: FnOnce() -> anyhow::Result<()>,
 {
     match t() {
         Ok(_) => {}
@@ -120,7 +119,7 @@ fn rustc_is_nightly() -> bool {
     out.contains("nightly")
 }
 
-fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
+fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<String> {
     let path = Path::new("firmware/qemu/src/bin");
 
     let filename;
@@ -140,7 +139,7 @@ fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
     Ok(content)
 }
 
-fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Result<()> {
+fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyhow::Result<()> {
     let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
     println!("{}", display_name);
 
