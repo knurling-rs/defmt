@@ -113,20 +113,20 @@ fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
 fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Result<()> {
     let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
     println!("{}", display_name);
-    let cwd_name = "firmware/qemu";
+
     let mut args = if release_mode {
         vec!["-q", "rrb", name]
     } else {
         vec!["-q", "rb", name]
     };
+
     if !features.is_empty() {
         args.extend_from_slice(&["--features", features]);
     }
 
-    let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(cwd_name))?;
-
+    const CWD: &str = "firmware/qemu";
+    let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(CWD))?;
     let expected = load_expected_output(name, release_mode)?;
-
     let diff = TextDiff::from_lines(&expected, &actual);
 
     // if anything isn't ChangeTag::Equal, print it and turn on error flag
