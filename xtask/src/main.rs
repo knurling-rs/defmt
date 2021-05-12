@@ -121,23 +121,19 @@ fn rustc_is_nightly() -> bool {
 }
 
 fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<String> {
-    let path = Path::new("firmware/qemu/src/bin");
+    const BASE: &str = "firmware/qemu/src/bin";
+    let file = match release_mode {
+        true => format!("{}/{}.release.out", BASE, name),
+        false => format!("{}/{}.out", BASE, name),
+    };
+    let path = Path::new(&file);
 
-    let filename;
-    if release_mode {
-        filename = format!("{}.release.out", name);
-    } else {
-        filename = format!("{}.out", name);
-    }
-
-    let path = path.join(filename);
-
-    // for error context closure
-    let path_str = path.to_str().unwrap_or("(non-Unicode path)").to_string();
-
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("Failed to load expected output data from {}", path_str))?;
-    Ok(content)
+    fs::read_to_string(path).with_context(|| {
+        format!(
+            "Failed to load expected output data from {}",
+            path.to_str().unwrap_or("(non-Unicode path)")
+        )
+    })
 }
 
 fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyhow::Result<()> {
