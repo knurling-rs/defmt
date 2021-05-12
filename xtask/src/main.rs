@@ -98,9 +98,10 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
         })
 }
 
+/// Execute the [`Command`] and return the text emitted to `stdout`, if valid UTF-8
 fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
-    let o = cmd.output()?.stdout;
-    Ok(str::from_utf8(&o)?.to_string())
+    let stdout = cmd.output()?.stdout;
+    Ok(str::from_utf8(&stdout)?.to_string())
 }
 
 fn do_test<F>(t: F, context: &str)
