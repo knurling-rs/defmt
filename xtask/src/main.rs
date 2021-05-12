@@ -14,11 +14,11 @@ static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 struct Options {
     #[structopt(subcommand)]
     cmd: TestCommand,
-    #[structopt(long, short)]
     /// Treat compiler warnings as errors (`RUSTFLAGS="--deny warnings"`)
-    deny_warnings: bool,
     #[structopt(long, short)]
+    deny_warnings: bool,
     /// Keep target toolchains that were installed as dependency
+    #[structopt(long, short)]
     keep_targets: bool,
 }
 
