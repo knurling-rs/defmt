@@ -1,37 +1,28 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::Path,
-    process::Command,
-    str,
-    sync::Mutex,
-};
+use std::{fs, path::Path, process::Command, str, sync::Mutex};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context};
 use console::Style;
 use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
 use structopt::StructOpt;
 
+mod targets;
+
 static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 
 #[derive(Debug, StructOpt)]
 struct Options {
-    #[structopt(long, short, help = "keep target toolchains that were installed as dependency")]
-    keep_targets: bool,
-
-    #[structopt(
-        long,
-        short,
-        help = "treat compiler warnings as errors (RUSTFLAGS=\"--deny warnings\")"
-    )]
-    deny_warnings: bool,
-
     #[structopt(subcommand)]
     cmd: TestCommand,
+    /// Treat compiler warnings as errors (`RUSTFLAGS="--deny warnings"`)
+    #[structopt(long, short)]
+    deny_warnings: bool,
+    /// Keep target toolchains that were installed as dependency
+    #[structopt(long, short)]
+    keep_targets: bool,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
 #[allow(clippy::enum_variant_names)]
 enum TestCommand {
     TestAll,
@@ -42,7 +33,41 @@ enum TestCommand {
     TestSnapshot,
 }
 
-fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> Result<()> {
+fn main() -> anyhow::Result<()> {
+    let opt: Options = Options::from_args();
+
+    // TODO: one could argue that not all test scenarios require installation of targets
+    let added_targets = targets::install().expect("Error while installing required targets");
+
+    match opt.cmd {
+        TestCommand::TestAll => {
+            test_host(opt.deny_warnings);
+            test_cross();
+            test_snapshot();
+            test_book();
+            test_lint();
+        }
+        TestCommand::TestHost => test_host(opt.deny_warnings),
+        TestCommand::TestCross => test_cross(),
+        TestCommand::TestSnapshot => test_snapshot(),
+        TestCommand::TestBook => test_book(),
+        TestCommand::TestLint => test_lint(),
+    }
+
+    if !opt.keep_targets && !added_targets.is_empty() {
+        targets::uninstall(added_targets);
+    }
+
+    let all_errors = ALL_ERRORS.lock().unwrap();
+    if !all_errors.is_empty() {
+        eprintln!();
+        Err(anyhow!("😔 some tests failed: {:?}", all_errors))
+    } else {
+        Ok(())
+    }
+}
+
+fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> anyhow::Result<()> {
     let cmd_and_args = Vec::from(cmd_and_args);
     let mut cmd = &mut Command::new(cmd_and_args[0]);
     if cmd_and_args.len() > 1 {
@@ -73,14 +98,15 @@ fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -
         })
 }
 
-fn run_capturing_stdout(cmd: &mut Command) -> Result<String> {
-    let o = cmd.output()?.stdout;
-    Ok(str::from_utf8(&o)?.to_string())
+/// Execute the [`Command`] and return the text emitted to `stdout`, if valid UTF-8
+fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
+    let stdout = cmd.output()?.stdout;
+    Ok(str::from_utf8(&stdout)?.to_string())
 }
 
 fn do_test<F>(t: F, context: &str)
 where
-    F: FnOnce() -> Result<()>,
+    F: FnOnce() -> anyhow::Result<()>,
 {
     match t() {
         Ok(_) => {}
@@ -94,43 +120,39 @@ fn rustc_is_nightly() -> bool {
     out.contains("nightly")
 }
 
-fn load_expected_output(name: &str, release_mode: bool) -> Result<String> {
-    let path = Path::new("firmware/qemu/src/bin");
+fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<String> {
+    const BASE: &str = "firmware/qemu/src/bin";
+    let file = match release_mode {
+        true => format!("{}/{}.release.out", BASE, name),
+        false => format!("{}/{}.out", BASE, name),
+    };
+    let path = Path::new(&file);
 
-    let filename;
-    if release_mode {
-        filename = format!("{}.release.out", name);
-    } else {
-        filename = format!("{}.out", name);
-    }
-
-    let path = path.join(filename);
-
-    // for error context closure
-    let path_str = path.to_str().unwrap_or("(non-Unicode path)").to_string();
-
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("Failed to load expected output data from {}", path_str))?;
-    Ok(content)
+    fs::read_to_string(path).with_context(|| {
+        format!(
+            "Failed to load expected output data from {}",
+            path.to_str().unwrap_or("(non-Unicode path)")
+        )
+    })
 }
 
-fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Result<()> {
+fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyhow::Result<()> {
     let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
     println!("{}", display_name);
-    let cwd_name = "firmware/qemu";
+
     let mut args = if release_mode {
         vec!["-q", "rrb", name]
     } else {
         vec!["-q", "rb", name]
     };
+
     if !features.is_empty() {
         args.extend_from_slice(&["--features", features]);
     }
 
-    let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(cwd_name))?;
-
+    const CWD: &str = "firmware/qemu";
+    let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(CWD))?;
     let expected = load_expected_output(name, release_mode)?;
-
     let diff = TextDiff::from_lines(&expected, &actual);
 
     // if anything isn't ChangeTag::Equal, print it and turn on error flag
@@ -153,68 +175,6 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> Resul
         Ok(())
     } else {
         Err(anyhow!("{}", display_name))
-    }
-}
-
-fn get_installed_targets() -> Result<HashSet<String>> {
-    const INSTALLED_MARKER: &str = " (installed)";
-    let out = run_capturing_stdout(Command::new("rustup").args(&["target", "list"]))?;
-    let mut targets = out.lines().collect::<Vec<_>>();
-    targets.retain(|target| target.contains(INSTALLED_MARKER));
-    let targets: HashSet<String> = targets
-        .iter()
-        .map(|target| target.replace(INSTALLED_MARKER, ""))
-        .collect();
-    Ok(targets)
-}
-
-fn install_targets() -> Result<Vec<String>> {
-    let required_targets = [
-        "thumbv6m-none-eabi",
-        "thumbv7m-none-eabi",
-        "thumbv7em-none-eabi",
-        "thumbv8m.base-none-eabi",
-        "riscv32i-unknown-none-elf",
-    ]
-    .iter()
-    .map(|item| item.to_string())
-    .collect::<HashSet<_>>();
-
-    let installed_targets = get_installed_targets()?;
-    let added_targets = required_targets
-        .difference(&installed_targets)
-        .cloned()
-        .collect::<Vec<_>>();
-
-    if !added_targets.is_empty() {
-        println!("⏳ installing targets");
-
-        let mut args = vec!["target", "add"];
-        args.extend(added_targets.iter().map(|s| s.as_str()));
-        let status = Command::new("rustup").args(&args).status().unwrap();
-        if !status.success() {
-            // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
-            panic!("Error installing targets: {}", added_targets.join(" "));
-        }
-    }
-
-    Ok(added_targets)
-}
-
-fn uninstall_targets(targets: Vec<String>) {
-    if !targets.is_empty() {
-        println!("⏳ uninstalling targets");
-
-        let mut cmd_and_args = vec!["rustup", "target", "remove"];
-        cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
-
-        // only print uninstall errors so the user can fix those manually if needed
-        match run_command(&cmd_and_args, None, &[]) {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("Error uninstalling targets {}: {}", targets.join(" "), e);
-            }
-        }
     }
 }
 
@@ -421,49 +381,10 @@ fn test_snapshot() {
         tests.push("alloc");
     }
 
-    let mut features_map = HashMap::new();
-    features_map.insert("alloc", "alloc");
-    let no_features = "";
-
     for test in tests {
-        let features = features_map.get(test).unwrap_or(&no_features);
+        let features = if test == "alloc" { "alloc" } else { "" };
 
         do_test(|| test_single_snapshot(test, features, false), "qemu/snapshot");
         do_test(|| test_single_snapshot(test, features, true), "qemu/snapshot");
-    }
-}
-
-fn main() -> Result<(), Vec<String>> {
-    let opt: Options = Options::from_args();
-
-    // TODO: one could argue that not all test scenarios require installation of targets
-    let added_targets = install_targets().expect("Error while installing required targets");
-
-    match opt.cmd {
-        TestCommand::TestAll => {
-            test_host(opt.deny_warnings);
-            test_cross();
-            test_snapshot();
-            test_book();
-            test_lint();
-        }
-        TestCommand::TestHost => test_host(opt.deny_warnings),
-        TestCommand::TestCross => test_cross(),
-        TestCommand::TestSnapshot => test_snapshot(),
-        TestCommand::TestBook => test_book(),
-        TestCommand::TestLint => test_lint(),
-    }
-
-    if !opt.keep_targets {
-        uninstall_targets(added_targets);
-    }
-
-    let all_errors = ALL_ERRORS.lock().unwrap();
-    if !all_errors.is_empty() {
-        eprintln!();
-        eprintln!("😔 some tests failed");
-        Err(all_errors.clone())
-    } else {
-        Ok(())
     }
 }
