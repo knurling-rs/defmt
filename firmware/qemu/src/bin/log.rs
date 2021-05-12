@@ -597,6 +597,10 @@ fn main() -> ! {
     // #341 - should output `true true`
     defmt::info!("{} {=bool}", True, true);
 
+    // raw pointer
+    defmt::info!("{:?}", 0xAABBCCDD as *const u8);
+    defmt::info!("{:?}", 0xDDCCBBAA as *mut u8);
+
     defmt::info!("QEMU test finished!");
 
     loop {
