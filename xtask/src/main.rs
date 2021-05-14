@@ -1,7 +1,7 @@
 use std::{process::Command, sync::Mutex};
 
 use anyhow::anyhow;
-use console::Style;
+use colored::Colorize;
 use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
 use structopt::StructOpt;
@@ -262,7 +262,7 @@ fn test_snapshot() {
 
 fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyhow::Result<()> {
     let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
-    println!("{}", display_name);
+    println!("{}", display_name.bold());
 
     let mut args = if release_mode {
         vec!["-q", "rrb", name]
@@ -284,13 +284,13 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyho
     for op in diff.ops() {
         for change in diff.iter_changes(op) {
             let styled_change = match change.tag() {
-                ChangeTag::Delete => Some(("-", Style::new().red())),
-                ChangeTag::Insert => Some(("+", Style::new().green())),
+                ChangeTag::Delete => Some(("-".bold().red(), change.to_string().red())),
+                ChangeTag::Insert => Some(("+".bold().green(), change.to_string().green())),
                 ChangeTag::Equal => None,
             };
-            if let Some((sign, style)) = styled_change {
+            if let Some((sign, change)) = styled_change {
                 actual_matches_expected = false;
-                eprint!("{}{}", style.apply_to(sign).bold(), style.apply_to(change),);
+                eprint!("{}{}", sign, change);
             }
         }
     }
