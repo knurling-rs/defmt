@@ -1,6 +1,6 @@
 use std::{collections::HashSet, process::Command};
 
-use crate::{run_capturing_stdout, run_command};
+use crate::run_capturing_stdout;
 
 /// Make sure a fixed set of compilation targets is installed
 ///
@@ -43,10 +43,13 @@ fn get_installed() -> anyhow::Result<HashSet<String>> {
 pub fn uninstall(targets: Vec<String>) {
     println!("⏳ uninstalling targets");
 
-    let mut cmd_and_args = vec!["rustup", "target", "remove"];
-    cmd_and_args.extend(targets.iter().map(|s| s.as_str()));
-
-    // only print uninstall errors so the user can fix those manually if needed
-    run_command(&cmd_and_args, None, &[])
-        .unwrap_or_else(|e| eprintln!("Error uninstalling targets {}: {}", targets.join(" "), e));
+    let status = Command::new("rustup")
+        .args(&["target", "remove"])
+        .args(&targets)
+        .status()
+        .unwrap();
+    if !status.success() {
+        // only print uninstall errors so the user can fix those manually if needed
+        eprintln!("Error uninstalling targets: {}", targets.join(" "));
+    }
 }
