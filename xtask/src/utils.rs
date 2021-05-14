@@ -24,7 +24,12 @@ pub fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
     Ok(str::from_utf8(&stdout)?.to_string())
 }
 
-pub fn run_command(program: &str, args: &[&str], cwd: Option<&str>, envs: &[(&str, &str)]) -> anyhow::Result<()> {
+pub fn run_command(
+    program: &str,
+    args: &[&str],
+    cwd: Option<&str>,
+    envs: &[(&str, &str)],
+) -> anyhow::Result<()> {
     let mut cmd = Command::new(program);
     cmd.args(args).envs(envs.iter().copied());
 
@@ -42,7 +47,11 @@ pub fn run_command(program: &str, args: &[&str], cwd: Option<&str>, envs: &[(&st
         .map_err(|e| anyhow!("could not run '{}': {}", cmdline, e))
         .and_then(|exit_status| match exit_status.success() {
             true => Ok(()),
-            false => Err(anyhow!("'{}' did not finish successfully: {}", cmdline, exit_status)),
+            false => Err(anyhow!(
+                "'{}' did not finish successfully: {}",
+                cmdline,
+                exit_status
+            )),
         })
 }
 

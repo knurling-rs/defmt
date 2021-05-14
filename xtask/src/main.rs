@@ -83,7 +83,10 @@ fn test_host(deny_warnings: bool) {
         vec![]
     };
 
-    do_test(|| run_command("cargo", &["check", "--workspace"], None, &env), "host");
+    do_test(
+        || run_command("cargo", &["check", "--workspace"], None, &env),
+        "host",
+    );
 
     do_test(
         || {
@@ -98,7 +101,14 @@ fn test_host(deny_warnings: bool) {
     );
 
     do_test(
-        || run_command("cargo", &["check", "--workspace", "--features", "alloc"], None, &env),
+        || {
+            run_command(
+                "cargo",
+                &["check", "--workspace", "--features", "alloc"],
+                None,
+                &env,
+            )
+        },
         "host",
     );
 
@@ -190,7 +200,13 @@ fn test_cross() {
         || {
             run_command(
                 "cargo",
-                &["check", "--target", "thumbv6m-none-eabi", "--features", "print-defmt"],
+                &[
+                    "check",
+                    "--target",
+                    "thumbv6m-none-eabi",
+                    "--features",
+                    "print-defmt",
+                ],
                 Some("firmware/panic-probe"),
                 &[],
             )
@@ -202,7 +218,13 @@ fn test_cross() {
         || {
             run_command(
                 "cargo",
-                &["check", "--target", "thumbv6m-none-eabi", "--features", "print-rtt"],
+                &[
+                    "check",
+                    "--target",
+                    "thumbv6m-none-eabi",
+                    "--features",
+                    "print-rtt",
+                ],
                 Some("firmware/panic-probe"),
                 &[],
             )
@@ -309,5 +331,8 @@ fn test_lint() {
         "lint",
     );
 
-    do_test(|| run_command("cargo", &["clippy", "--workspace"], None, &[]), "lint");
+    do_test(
+        || run_command("cargo", &["clippy", "--workspace"], None, &[]),
+        "lint",
+    );
 }
