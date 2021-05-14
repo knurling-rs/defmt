@@ -17,11 +17,8 @@ pub fn install() -> anyhow::Result<Vec<String>> {
     .map(|item| item.to_string())
     .collect::<HashSet<_>>();
 
-    let installed_targets = get_installed()?;
-    let added_targets = required_targets
-        .difference(&installed_targets)
-        .cloned()
-        .collect::<Vec<_>>();
+    // the `added_targets` will potentially get uninstalled later
+    let added_targets = required_targets.difference(&get_installed()?).cloned().collect();
 
     if !added_targets.is_empty() {
         println!("⏳ installing targets");
@@ -38,16 +35,10 @@ pub fn install() -> anyhow::Result<Vec<String>> {
     Ok(added_targets)
 }
 
+/// Get all currently installed compilation targets
 fn get_installed() -> anyhow::Result<HashSet<String>> {
-    let stdout = run_capturing_stdout(Command::new("rustup").args(&["target", "list"]))?;
-
-    const INSTALLED_MARKER: &str = " (installed)";
-    let targets = stdout
-        .lines()
-        .filter(|target| target.contains(INSTALLED_MARKER))
-        .map(|target| target.replace(INSTALLED_MARKER, ""))
-        .collect::<HashSet<_>>();
-    Ok(targets)
+    let stdout = run_capturing_stdout(Command::new("rustup").args(&["target", "list", "--installed"]))?;
+    Ok(stdout.lines().map(|s| s.to_string()).collect())
 }
 
 pub fn uninstall(targets: Vec<String>) {
