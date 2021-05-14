@@ -64,7 +64,7 @@ fn main() -> anyhow::Result<()> {
     let all_errors = ALL_ERRORS.lock().unwrap();
     if !all_errors.is_empty() {
         eprintln!();
-        Err(anyhow!("😔 some tests failed: {:?}", all_errors))
+        Err(anyhow!("😔 some tests failed: {:#?}", all_errors))
     } else {
         Ok(())
     }
