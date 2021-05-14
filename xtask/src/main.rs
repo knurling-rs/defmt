@@ -104,14 +104,8 @@ fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
     Ok(str::from_utf8(&stdout)?.to_string())
 }
 
-fn do_test<F>(t: F, context: &str)
-where
-    F: FnOnce() -> anyhow::Result<()>,
-{
-    match t() {
-        Ok(_) => {}
-        Err(e) => ALL_ERRORS.lock().unwrap().push(format!("{}: {}", context, e)),
-    }
+fn do_test(test: impl FnOnce() -> anyhow::Result<()>, context: &str) {
+    test().unwrap_or_else(|e| ALL_ERRORS.lock().unwrap().push(format!("{}: {}", context, e)));
 }
 
 fn rustc_is_nightly() -> bool {
