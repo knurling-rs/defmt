@@ -1,6 +1,7 @@
 use std::{fs, path::Path, process::Command, str};
 
 use anyhow::{anyhow, Context};
+use colored::Colorize;
 
 pub fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<String> {
     const BASE: &str = "firmware/qemu/src/bin";
@@ -18,10 +19,16 @@ pub fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<St
     })
 }
 
-/// Execute the [`Command`] and return the text emitted to `stdout`, if valid UTF-8
+/// Execute the [`Command`]. If success return `stdout`, if failure print `stderr`
 pub fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
-    let stdout = cmd.output()?.stdout;
-    Ok(str::from_utf8(&stdout)?.to_string())
+    let output = cmd.output()?;
+    match output.status.success() {
+        true => Ok(str::from_utf8(&output.stdout)?.to_string()),
+        false => {
+            eprintln!("{}", str::from_utf8(&output.stderr)?.dimmed());
+            Err(anyhow!(""))
+        }
+    }
 }
 
 pub fn run_command(
