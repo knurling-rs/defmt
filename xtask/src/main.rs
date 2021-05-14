@@ -83,12 +83,13 @@ fn test_host(deny_warnings: bool) {
         vec![]
     };
 
-    do_test(|| run_command(&["cargo", "check", "--workspace"], None, &env), "host");
+    do_test(|| run_command("cargo", &["check", "--workspace"], None, &env), "host");
 
     do_test(
         || {
             run_command(
-                &["cargo", "check", "--workspace", "--features", "unstable-test"],
+                "cargo",
+                &["check", "--workspace", "--features", "unstable-test"],
                 None,
                 &env,
             )
@@ -97,14 +98,15 @@ fn test_host(deny_warnings: bool) {
     );
 
     do_test(
-        || run_command(&["cargo", "check", "--workspace", "--features", "alloc"], None, &env),
+        || run_command("cargo", &["check", "--workspace", "--features", "alloc"], None, &env),
         "host",
     );
 
     do_test(
         || {
             run_command(
-                &["cargo", "test", "--workspace", "--features", "unstable-test"],
+                "cargo",
+                &["test", "--workspace", "--features", "unstable-test"],
                 None,
                 &[],
             )
@@ -115,7 +117,8 @@ fn test_host(deny_warnings: bool) {
     do_test(
         || {
             run_command(
-                &["cargo", "test", "--workspace", "--features", "unstable-test"],
+                "cargo",
+                &["test", "--workspace", "--features", "unstable-test"],
                 None,
                 &[],
             )
@@ -134,22 +137,14 @@ fn test_cross() {
 
     for target in &targets {
         do_test(
-            || run_command(&["cargo", "check", "--target", target, "-p", "defmt"], None, &[]),
+            || run_command("cargo", &["check", "--target", target, "-p", "defmt"], None, &[]),
             "cross",
         );
         do_test(
             || {
                 run_command(
-                    &[
-                        "cargo",
-                        "check",
-                        "--target",
-                        target,
-                        "-p",
-                        "defmt",
-                        "--features",
-                        "alloc",
-                    ],
+                    "cargo",
+                    &["check", "--target", target, "-p", "defmt", "--features", "alloc"],
                     None,
                     &[],
                 )
@@ -161,8 +156,8 @@ fn test_cross() {
     do_test(
         || {
             run_command(
+                "cargo",
                 &[
-                    "cargo",
                     "check",
                     "--target",
                     "thumbv6m-none-eabi",
@@ -182,7 +177,8 @@ fn test_cross() {
     do_test(
         || {
             run_command(
-                &["cargo", "check", "--target", "thumbv7em-none-eabi", "--workspace"],
+                "cargo",
+                &["check", "--target", "thumbv7em-none-eabi", "--workspace"],
                 Some("firmware"),
                 &[],
             )
@@ -193,14 +189,8 @@ fn test_cross() {
     do_test(
         || {
             run_command(
-                &[
-                    "cargo",
-                    "check",
-                    "--target",
-                    "thumbv6m-none-eabi",
-                    "--features",
-                    "print-defmt",
-                ],
+                "cargo",
+                &["check", "--target", "thumbv6m-none-eabi", "--features", "print-defmt"],
                 Some("firmware/panic-probe"),
                 &[],
             )
@@ -211,14 +201,8 @@ fn test_cross() {
     do_test(
         || {
             run_command(
-                &[
-                    "cargo",
-                    "check",
-                    "--target",
-                    "thumbv6m-none-eabi",
-                    "--features",
-                    "print-rtt",
-                ],
+                "cargo",
+                &["check", "--target", "thumbv6m-none-eabi", "--features", "print-rtt"],
                 Some("firmware/panic-probe"),
                 &[],
             )
@@ -297,17 +281,18 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyho
 
 fn test_book() {
     println!("🧪 book");
-    do_test(|| run_command(&["cargo", "clean"], None, &[]), "book");
+    do_test(|| run_command("cargo", &["clean"], None, &[]), "book");
 
     do_test(
-        || run_command(&["cargo", "build", "--features", "unstable-test"], None, &[]),
+        || run_command("cargo", &["build", "--features", "unstable-test"], None, &[]),
         "book",
     );
 
     do_test(
         || {
             run_command(
-                &["mdbook", "test", "-L", "../target/debug", "-L", "../target/debug/deps"],
+                "mdbook",
+                &["test", "-L", "../target/debug", "-L", "../target/debug/deps"],
                 Some("book"),
                 &[],
             )
@@ -318,11 +303,11 @@ fn test_book() {
 
 fn test_lint() {
     println!("🧪 lint");
-    do_test(|| run_command(&["cargo", "clean"], None, &[]), "lint");
+    do_test(|| run_command("cargo", &["clean"], None, &[]), "lint");
     do_test(
-        || run_command(&["cargo", "fmt", "--all", "--", "--check"], None, &[]),
+        || run_command("cargo", &["fmt", "--all", "--", "--check"], None, &[]),
         "lint",
     );
 
-    do_test(|| run_command(&["cargo", "clippy", "--workspace"], None, &[]), "lint");
+    do_test(|| run_command("cargo", &["clippy", "--workspace"], None, &[]), "lint");
 }
