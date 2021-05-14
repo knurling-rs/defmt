@@ -30,10 +30,18 @@ pub struct Parameter {
 /// All display hints
 #[derive(Clone, Debug, PartialEq)]
 pub enum DisplayHint {
+    NoHint {
+        zero_pad: usize,
+    },
     /// `:x` OR `:X`
-    Hexadecimal { uppercase: bool },
+    Hexadecimal {
+        uppercase: bool,
+        zero_pad: usize,
+    },
     /// `:b`
-    Binary,
+    Binary {
+        zero_pad: usize,
+    },
     /// `:a`
     Ascii,
     /// `:?`
@@ -44,20 +52,30 @@ pub enum DisplayHint {
     Unknown(String),
 }
 
-impl FromStr for DisplayHint {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "µs" => DisplayHint::Microseconds,
-            "a" => DisplayHint::Ascii,
-            "b" => DisplayHint::Binary,
-            "x" => DisplayHint::Hexadecimal { uppercase: false },
-            "X" => DisplayHint::Hexadecimal { uppercase: true },
-            "?" => DisplayHint::Debug,
-            _ => return Err(()),
-        })
-    }
+fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
+    let zero_pad = if let Some(rest) = s.strip_prefix("0") {
+        let (rest, columns) = parse_integer::<usize>(rest)?;
+        s = rest;
+        columns
+    } else {
+        0 // default behavior is the same as zero padding.
+    };
+    Some(match s {
+        "" => DisplayHint::NoHint { zero_pad },
+        "µs" => DisplayHint::Microseconds,
+        "a" => DisplayHint::Ascii,
+        "b" => DisplayHint::Binary { zero_pad },
+        "x" => DisplayHint::Hexadecimal {
+            uppercase: false,
+            zero_pad,
+        },
+        "X" => DisplayHint::Hexadecimal {
+            uppercase: true,
+            zero_pad,
+        },
+        "?" => DisplayHint::Debug,
+        _ => return None,
+    })
 }
 
 /// A part of a format string.
@@ -86,7 +104,8 @@ pub enum Fragment<'f> {
 /// byte-array := '[u8;' spaces integer ']'
 /// spaces := ' '*
 ///
-/// format_spec := type
+/// format_spec := [ zero_pad ] type
+/// zero_pad := '0' integer
 /// type := 'a' | 'b' | 'o' | 'x' | 'X' | '?' | 'µs'
 /// ```
 #[derive(Debug, PartialEq)]
@@ -116,6 +135,21 @@ impl Level {
             Level::Error => "error",
         }
     }
+}
+
+/// Parses an integer at the beginning of `s`.
+///
+/// Returns the integer and remaining text, if `s` started with an integer. Any errors parsing the
+/// number (which we already know only contains digits) are silently ignored.
+fn parse_integer<T: FromStr>(s: &str) -> Option<(&str, usize)> {
+    let start_digits = s
+        .as_bytes()
+        .iter()
+        .copied()
+        .take_while(|b| b.is_ascii_digit())
+        .count();
+    let num = s[..start_digits].parse().ok()?;
+    Some((&s[start_digits..], num))
 }
 
 fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
@@ -253,9 +287,9 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         // skip the prefix
         input = &input[HINT_PREFIX.len()..];
 
-        hint = Some(match input.parse() {
-            Ok(a) => a,
-            _ => match mode {
+        hint = Some(match parse_display_hint(input) {
+            Some(a) => a,
+            None => match mode {
                 ParserMode::Strict => {
                     return Err(format!("unknown display hint: {:?}", input).into());
                 }
@@ -482,7 +516,10 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::U8,
-                hint: Some(DisplayHint::Hexadecimal { uppercase: false }),
+                hint: Some(DisplayHint::Hexadecimal {
+                    uppercase: false,
+                    zero_pad: 0
+                }),
             })
         );
 
@@ -510,7 +547,7 @@ mod tests {
             Ok(Param {
                 index: Some(1),
                 ty: Type::U8,
-                hint: Some(DisplayHint::Binary),
+                hint: Some(DisplayHint::Binary { zero_pad: 0 }),
             })
         );
     }
@@ -531,7 +568,7 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Binary),
+                hint: Some(DisplayHint::Binary { zero_pad: 0 }),
             })
         );
 
@@ -540,7 +577,10 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Hexadecimal { uppercase: false }),
+                hint: Some(DisplayHint::Hexadecimal {
+                    uppercase: false,
+                    zero_pad: 0
+                }),
             })
         );
 
@@ -549,7 +589,10 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Hexadecimal { uppercase: true }),
+                hint: Some(DisplayHint::Hexadecimal {
+                    uppercase: true,
+                    zero_pad: 0
+                }),
             })
         );
 
@@ -735,6 +778,18 @@ mod tests {
                 hint: None,
             })
         );
+    }
+
+    #[test]
+    fn zero_pad() {
+        assert_eq!(
+            parse_param(":02", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::NoHint { zero_pad: 2 })
+            })
+        )
     }
 
     #[test]

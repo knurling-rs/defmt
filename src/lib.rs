@@ -369,7 +369,9 @@ impl InternalFormatter {
     }
 
     /// Implementation detail
+    ///
     /// # Safety
+    ///
     /// `writer` is `Copy` but the returned type is a singleton. Calling this function should not
     /// break the singleton invariant (one should not create more than one instance of
     /// `InternalFormatter`)

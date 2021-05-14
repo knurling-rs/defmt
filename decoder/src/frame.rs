@@ -137,9 +137,15 @@ fn format_args_real(
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
         match hint {
-            Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
-            Some(DisplayHint::Hexadecimal { uppercase: false }) => write!(buf, "{:#x}", x)?,
-            Some(DisplayHint::Hexadecimal { uppercase: true }) => write!(buf, "{:#X}", x)?,
+            Some(DisplayHint::NoHint { zero_pad }) => write!(buf, "{:#01$}", x, zero_pad)?,
+            Some(DisplayHint::Binary { zero_pad }) => write!(buf, "{:#01$b}", x, zero_pad)?,
+            Some(DisplayHint::Hexadecimal {
+                uppercase,
+                zero_pad,
+            }) => match uppercase {
+                false => write!(buf, "{:#01$x}", x, zero_pad)?,
+                true => write!(buf, "{:#01$X}", x, zero_pad)?,
+            },
             Some(DisplayHint::Microseconds) => {
                 let seconds = x / 1_000_000;
                 let micros = x % 1_000_000;
@@ -156,9 +162,15 @@ fn format_args_real(
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
         match hint {
-            Some(DisplayHint::Binary) => write!(buf, "{:#b}", x)?,
-            Some(DisplayHint::Hexadecimal { uppercase: false }) => write!(buf, "{:#x}", x)?,
-            Some(DisplayHint::Hexadecimal { uppercase: true }) => write!(buf, "{:#X}", x)?,
+            Some(DisplayHint::NoHint { zero_pad }) => write!(buf, "{:#01$}", x, zero_pad)?,
+            Some(DisplayHint::Binary { zero_pad }) => write!(buf, "{:#01$b}", x, zero_pad)?,
+            Some(DisplayHint::Hexadecimal {
+                uppercase,
+                zero_pad,
+            }) => match uppercase {
+                false => write!(buf, "{:#01$x}", x, zero_pad)?,
+                true => write!(buf, "{:#01$X}", x, zero_pad)?,
+            },
             _ => write!(buf, "{}", x)?,
         }
         Ok(())
