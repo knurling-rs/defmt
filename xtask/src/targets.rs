@@ -20,16 +20,15 @@ pub fn install() -> anyhow::Result<Vec<String>> {
     // the `added_targets` will potentially get uninstalled later
     let added_targets = required_targets.difference(&get_installed()?).cloned().collect();
 
-    if !added_targets.is_empty() {
-        println!("⏳ installing targets");
-
-        let mut args = vec!["target", "add"];
-        args.extend(added_targets.iter().map(|s| s.as_str()));
-        let status = Command::new("rustup").args(&args).status().unwrap();
-        if !status.success() {
-            // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
-            panic!("Error installing targets: {}", added_targets.join(" "));
-        }
+    // install _all_ required targets; previously installed targets will get updated
+    println!("⏳ installing targets");
+    let status = Command::new("rustup")
+        .args(&["target", "add"])
+        .args(&required_targets)
+        .status()?;
+    if !status.success() {
+        // since installing targets is the first thing we do, hard panic is OK enough (user would notice at this point)
+        panic!("Error installing targets (see output above)");
     }
 
     Ok(added_targets)
