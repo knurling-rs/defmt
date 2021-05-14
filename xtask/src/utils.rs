@@ -24,34 +24,25 @@ pub fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
     Ok(str::from_utf8(&stdout)?.to_string())
 }
 
-pub fn run_command(cmd_and_args: &[&str], cwd: Option<&str>, env: &[(&str, &str)]) -> anyhow::Result<()> {
-    let cmd_and_args = Vec::from(cmd_and_args);
-    let mut cmd = &mut Command::new(cmd_and_args[0]);
-    if cmd_and_args.len() > 1 {
-        cmd.args(&cmd_and_args[1..]);
-    }
+pub fn run_command(program: &str, args: &[&str], cwd: Option<&str>, envs: &[(&str, &str)]) -> anyhow::Result<()> {
+    let mut cmd = Command::new(program);
+    cmd.args(args).envs(envs.iter().copied());
 
-    for (k, v) in env {
-        cmd.env(k, v);
-    }
-
-    let cwd_s = if let Some(path_ref) = cwd {
-        cmd = cmd.current_dir(path_ref);
-        format!("CWD:{} ", path_ref)
+    let cwd = if let Some(path) = cwd {
+        cmd.current_dir(path);
+        format!("{}$ ", path)
     } else {
         "".to_string()
     };
 
-    let cmdline = cmd_and_args.join(" ");
-    println!("🏃 {}{}", cwd_s, cmdline);
+    let cmdline = format!("{}{} {}", cwd, program, args.join(" "));
+    println!("🏃 {}", cmdline);
+
     cmd.status()
-        .map_err(|e| anyhow!("could not run '{}{}': {}", cwd_s, cmdline, e))
-        .and_then(|exit_status| {
-            if exit_status.success() {
-                Ok(())
-            } else {
-                Err(anyhow!("'{}' did not finish successfully: {}", cmdline, exit_status))
-            }
+        .map_err(|e| anyhow!("could not run '{}': {}", cmdline, e))
+        .and_then(|exit_status| match exit_status.success() {
+            true => Ok(()),
+            false => Err(anyhow!("'{}' did not finish successfully: {}", cmdline, exit_status)),
         })
 }
 
