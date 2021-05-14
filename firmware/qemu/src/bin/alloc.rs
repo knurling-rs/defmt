@@ -4,6 +4,7 @@
 
 extern crate alloc;
 
+use alloc::borrow::Cow;
 use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -37,6 +38,10 @@ fn main() -> ! {
         "String: {=?}",
         String::from("Hello! I'm a heap-allocated String")
     );
+    defmt::info!("Cow<[u32]>: {=?}", Cow::from(&[1u32, 2, 3, 4][..]));
+    defmt::info!("Cow<Vec<u32>>: {=?}", Cow::from(vec![1u32, 2, 3, 4]));
+    defmt::info!("Cow<str>: {=?}", Cow::from("moo"));
+    defmt::info!("Cow<String>: {=?}", String::from("moo, but allocated"));
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)

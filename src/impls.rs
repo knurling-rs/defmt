@@ -447,6 +447,22 @@ mod if_alloc {
             self.as_str().format(f)
         }
     }
+
+    impl<'a, T> Format for alloc::borrow::Cow<'a, [T]>
+    where
+        T: 'a + Format,
+        [T]: alloc::borrow::ToOwned<Owned = alloc::vec::Vec<T>>,
+    {
+        fn format(&self, f: Formatter) {
+            self.as_ref().format(f)
+        }
+    }
+
+    impl<'a> Format for alloc::borrow::Cow<'a, str> {
+        fn format(&self, f: Formatter) {
+            self.as_ref().format(f)
+        }
+    }
 }
 
 impl Format for core::convert::Infallible {
