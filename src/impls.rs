@@ -488,3 +488,107 @@ where
         Format::format(&(*self as *const T), fmt)
     }
 }
+
+// core::ops
+
+impl<Idx> Format for core::ops::Range<Idx>
+where
+    Idx: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "{}..{}", self.start, self.end)
+    }
+}
+
+impl<Idx> Format for core::ops::RangeFrom<Idx>
+where
+    Idx: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "{}..", self.start)
+    }
+}
+
+impl Format for core::ops::RangeFull {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "..",)
+    }
+}
+
+impl<Idx> Format for core::ops::RangeInclusive<Idx>
+where
+    Idx: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "{}..={}", self.start(), self.end())
+    }
+}
+
+impl<Idx> Format for core::ops::RangeTo<Idx>
+where
+    Idx: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "..{}", self.end)
+    }
+}
+
+impl<Idx> Format for core::ops::RangeToInclusive<Idx>
+where
+    Idx: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "..={}", self.end)
+    }
+}
+
+// core::iter
+
+// Some of these objects don't expose enough to accurately report their debug state. In this case
+// we show as much state as we can. Users can always use `Debug2Format` to get more information, at
+// the cost of bringing core::fmt into the firmware and doing the layout work on device.
+
+// keep the type parameter trait bounds in case it becomes possible use this later, without making
+// a backwards-incompatible change.
+impl<A, B> Format for core::iter::Zip<A, B>
+where
+    A: Format,
+    B: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "Zip(..)")
+    }
+}
+
+// core::slice
+
+impl<'a, T: 'a> Format for core::slice::ChunksExact<'a, T>
+where
+    T: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "ChunksExact(..)")
+    }
+}
+
+impl<'a, T: 'a> Format for core::slice::Iter<'a, T>
+where
+    T: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(
+            fmt,
+            "Iter {{ slice: {=[?]}, position: ? }}",
+            self.as_slice()
+        )
+    }
+}
+
+impl<'a, T: 'a> Format for core::slice::Windows<'a, T>
+where
+    T: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "Windows(..)")
+    }
+}
