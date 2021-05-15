@@ -522,6 +522,15 @@ where
     }
 }
 
+impl<Idx> Format for core::ops::RangeTo<Idx>
+where
+    Idx: Format,
+{
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "..{}", self.end)
+    }
+}
+
 impl<Idx> Format for core::ops::RangeToInclusive<Idx>
 where
     Idx: Format,
