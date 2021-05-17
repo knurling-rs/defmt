@@ -475,13 +475,17 @@ fn as_native_type(ty: &Type) -> Option<String> {
     }
 }
 
-fn is_logging_enabled(level: Level) -> TokenStream2 {
+fn cfg_if_logging_enabled(level: Level) -> TokenStream2 {
     let features_dev = necessary_features_for_level(level, true);
     let features_release = necessary_features_for_level(level, false);
 
     quote!(
-        cfg!(debug_assertions) && cfg!(any(#( feature = #features_dev ),*))
-            || !cfg!(debug_assertions) && cfg!(any(#( feature = #features_release ),*))
+        cfg(
+            any(
+                all(debug_assertions, any(#( feature = #features_dev ),*)),
+                all(not(debug_assertions), any(#( feature = #features_release ),*))
+            )
+        )
     )
 }
 
@@ -507,9 +511,9 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     };
 
     let sym = mksym(&ls, level.as_str(), true);
-    let logging_enabled = is_logging_enabled(level);
+    let logging_enabled = cfg_if_logging_enabled(level);
     quote!({
-        if #logging_enabled {
+        #[#logging_enabled] {
             match (#(&(#args)),*) {
                 (#(#pats),*) => {
                     if let Some(mut _fmt_) = defmt::export::acquire() {
