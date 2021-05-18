@@ -219,7 +219,7 @@ pub use defmt_macros::trace;
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::warn;
 
-/// Just like the [`std::dbg!`] macro but `defmt` is used to log the message at TRACE level
+/// Just like the [`std::dbg!`] macro but `defmt` is used to log the message at `TRACE` level.
 ///
 /// [`std::dbg!`]: https://doc.rust-lang.org/std/macro.dbg.html
 pub use defmt_macros::dbg;
