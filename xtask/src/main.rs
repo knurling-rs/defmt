@@ -245,6 +245,7 @@ fn test_snapshot() {
         "unwrap",
         "defmt-test",
         "hints",
+        "dbg",
     ];
 
     if rustc_is_nightly() {
