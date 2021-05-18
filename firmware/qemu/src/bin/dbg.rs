@@ -16,6 +16,12 @@ fn main() -> ! {
     // dbg! in log statement
     defmt::info!("the answer is {}", dbg!(x - 1));
 
+    // dbg! with multiple arguments
+    let _: (i32, i32) = dbg!(x - 2, x + 2);
+
+    // dbg! with zero arguments
+    let _: () = dbg!();
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

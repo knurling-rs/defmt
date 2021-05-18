@@ -528,18 +528,43 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     })
 }
 
-#[proc_macro]
-pub fn dbg(ts: TokenStream) -> TokenStream {
-    let expr = parse_macro_input!(ts as Expr);
-    let escaped_expr = escape_expr(&expr);
-    let format_string = format!("{} = {{}}", escaped_expr);
+struct DbgArgs {
+    exprs: Punctuated<Expr, Token![,]>,
+}
 
-    quote!(match #expr {
-        tmp => {
-            defmt::trace!(#format_string, tmp);
-            tmp
-        }
-    })
+impl Parse for DbgArgs {
+    fn parse(input: ParseStream) -> Result<Self, syn::Error> {
+        Ok(Self {
+            exprs: Punctuated::parse_terminated(input)?,
+        })
+    }
+}
+
+#[proc_macro]
+pub fn dbg(input: TokenStream) -> TokenStream {
+    let inputs = parse_macro_input!(input as DbgArgs).exprs;
+
+    let outputs = inputs
+        .into_iter()
+        .map(|expr| {
+            let escaped_expr = escape_expr(&expr);
+            let format_string = format!("{} = {{}}", escaped_expr);
+
+            quote!(match #expr {
+            tmp => {
+                defmt::trace!(#format_string, tmp);
+                tmp
+            }
+            })
+        })
+        .collect::<Vec<_>>();
+
+    if outputs.is_empty() {
+        // for compatibility with `std::dbg!` we also emit a TRACE log in this case
+        quote!(defmt::trace!(""))
+    } else {
+        quote!((#(#outputs),*))
+    }
     .into()
 }
 
