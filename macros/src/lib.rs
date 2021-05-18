@@ -529,6 +529,21 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
 }
 
 #[proc_macro]
+pub fn dbg(ts: TokenStream) -> TokenStream {
+    let expr = parse_macro_input!(ts as Expr);
+    let escaped_expr = escape_expr(&expr);
+    let format_string = format!("{} = {{}}", escaped_expr);
+
+    quote!(match #expr {
+        tmp => {
+            defmt::trace!(#format_string, tmp);
+            tmp
+        }
+    })
+    .into()
+}
+
+#[proc_macro]
 pub fn trace(ts: TokenStream) -> TokenStream {
     log_ts(Level::Trace, ts)
 }
