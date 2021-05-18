@@ -4,3 +4,4 @@ INFO the answer is 41
 TRACE x - 2 = 40
 TRACE x + 2 = 44
 TRACE 
+TRACE x = 42

@@ -22,6 +22,9 @@ fn main() -> ! {
     // dbg! with zero arguments
     let _: () = dbg!();
 
+    // dbg! with trailing comma
+    foo(dbg!(x,));
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
