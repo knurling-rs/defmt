@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.2.2] - 2021-05-20
+
+- [#446] Add usage examples for `Debug2Format`, `Display2Format`
+- [#464] `impl<T> Format for {*const, *mut} T where T: Format + ?Sized`
+- [#472] `impl Format for` the core::{iter, ops, slice} structs
+- [#473] `impl Format for` all the `Cow`s
+- [#477] Disable logging calls via conditional compilation when all defmt features are disabled
+- [#478] add `dbg!` macro
+
+[#446]: https://github.com/knurling-rs/defmt/pull/446
+[#464]: https://github.com/knurling-rs/defmt/pull/464
+[#472]: https://github.com/knurling-rs/defmt/pull/472
+[#473]: https://github.com/knurling-rs/defmt/pull/473
+[#477]: https://github.com/knurling-rs/defmt/pull/477
+[#478]: https://github.com/knurling-rs/defmt/pull/478
+
 ## [v0.2.1] - 2021-03-08
 
 ### Added
@@ -223,7 +239,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.2...main
+[v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.1...defmt-v0.2.2
 [v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...defmt-v0.2.1
 [v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...defmt-v0.2.0
 [v0.1.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...defmt-v0.1.3
