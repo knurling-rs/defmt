@@ -2,6 +2,12 @@
 
 (no changes)
 
+# [v0.2.3]
+
+- [#441] Support more items in `#[tests]` modules
+
+[#441]: https://github.com/knurling-rs/defmt/pull/441
+
 # [v0.2.2]
 
 - [#436] `README.md`: Remove outdated setup steps
@@ -36,7 +42,8 @@
 
 Initial release.
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.1...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.3...main
+[v0.2.3]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.2...defmt-test-v0.2.3
 [v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.1...defmt-test-v0.2.2
 [v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.0...defmt-test-v0.2.1
 [v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.1.1...defmt-test-v0.2.0
