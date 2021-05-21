@@ -113,4 +113,14 @@
 0.000112 INFO true true
 0.000113 INFO 0xaabbccdd
 0.000114 INFO 0xddccbbaa
-0.000115 INFO QEMU test finished!
+0.000115 INFO 1..2
+0.000116 INFO 1..
+0.000117 INFO ..2
+0.000118 INFO ..
+0.000119 INFO 1..=2
+0.000120 INFO ..=2
+0.000121 INFO Zip(..)
+0.000122 INFO ChunksExact(..)
+0.000123 INFO Iter { slice: [0, 1, 2], position: ? }
+0.000124 INFO Windows(..)
+0.000125 INFO QEMU test finished!
