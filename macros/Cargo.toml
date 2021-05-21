@@ -17,7 +17,7 @@ proc-macro = true
 unstable-test = []
 
 [dependencies]
-defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.2.0" }
+defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.2.1" }
 proc-macro2 = "1.0.27"
 quote = "1.0.9"
 syn = { version = "1.0.72", features = ["full"] }
