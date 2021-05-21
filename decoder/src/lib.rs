@@ -14,7 +14,7 @@
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 mod decoder;
-mod elf2table;
+pub mod elf2table;
 mod frame;
 pub mod log;
 
