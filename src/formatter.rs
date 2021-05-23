@@ -21,40 +21,19 @@ pub struct InternalFormatter {
     writer: NonNull<dyn Write>,
     #[cfg(feature = "unstable-test")]
     bytes: Vec<u8>,
-    bool_flags: u8, // the current group of consecutive bools
-    bools_left: u8, // the number of bits that we can still set in bool_flag
-    // whether to omit the tag of a `Format` value
-    // this is disabled while formatting a `{:[?]}` value (second element on-wards)
-    // this is force-enable while formatting enums
+    /// The current group of consecutive bools
+    bool_flags: u8,
+    /// The number of bits that we can still set in bool_flag
+    bools_left: u8,
+    /// Whether to omit the tag of a `Format` value
+    ///
+    /// * this is disabled while formatting a `{:[?]}` value (second element on-wards)
+    /// * this is force-enabled while formatting enums
     omit_tag: bool,
 }
 
 #[doc(hidden)]
 impl InternalFormatter {
-    /// Only for testing
-    #[cfg(feature = "unstable-test")]
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self {
-            bytes: vec![],
-            bool_flags: 0,
-            bools_left: MAX_NUM_BOOL_FLAGS,
-            omit_tag: false,
-        }
-    }
-
-    /// Only for testing
-    #[cfg(feature = "unstable-test")]
-    pub fn bytes(&mut self) -> &[u8] {
-        self.finalize();
-        &self.bytes
-    }
-
-    #[cfg(feature = "unstable-test")]
-    pub fn write(&mut self, bytes: &[u8]) {
-        self.bytes.extend_from_slice(bytes)
-    }
-
     #[cfg(not(feature = "unstable-test"))]
     pub fn write(&mut self, bytes: &[u8]) {
         unsafe { self.writer.as_mut().write(bytes) }
@@ -319,31 +298,43 @@ impl fmt::Write for FmtWrite<'_> {
     }
 }
 
-// these need to be in a separate module or `unreachable!` will end up calling `defmt::panic` and
-// this will not compile
-// (using `core::unreachable!` instead of `unreachable!` doesn't help)
+#[doc(hidden)]
 #[cfg(feature = "unstable-test")]
-mod test_only {
-    use super::{NonNull, Write};
-
-    #[doc(hidden)]
-    impl super::InternalFormatter {
-        /// Implementation detail
-        ///
-        /// # Safety
-        ///
-        /// This is always safe to call and will panic. It only exists to match the non-test API.
-        pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
-            unreachable!()
+impl super::InternalFormatter {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self {
+            bytes: vec![],
+            bool_flags: 0,
+            bools_left: MAX_NUM_BOOL_FLAGS,
+            omit_tag: false,
         }
+    }
 
-        /// Implementation detail
-        ///
-        /// # Safety
-        ///
-        /// This is always safe to call and will panic. It only exists to match the non-test API.
-        pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
-            unreachable!()
-        }
+    pub fn bytes(&mut self) -> &[u8] {
+        self.finalize();
+        &self.bytes
+    }
+
+    pub fn write(&mut self, bytes: &[u8]) {
+        self.bytes.extend_from_slice(bytes)
+    }
+
+    /// Implementation detail
+    ///
+    /// # Safety
+    ///
+    /// This is always safe to call and will panic. It only exists to match the non-test API.
+    pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
+        core::unreachable!()
+    }
+
+    /// Implementation detail
+    ///
+    /// # Safety
+    ///
+    /// This is always safe to call and will panic. It only exists to match the non-test API.
+    pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
+        core::unreachable!()
     }
 }
