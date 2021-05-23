@@ -10,7 +10,6 @@ rustflags = [
   # LLD (shipped with the Rust toolchain) is used as the default linker
   "-C", "link-arg=-Tlink.x",
   "-C", "link-arg=-Tdefmt.x",
-  "-C", "link-arg=--gc-sections",
 
   # CI cannot set this, so we do it here
   "-Dwarnings",
