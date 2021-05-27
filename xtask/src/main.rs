@@ -1,6 +1,6 @@
 use std::{process::Command, sync::Mutex};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use colored::Colorize;
 use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
@@ -275,7 +275,8 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyho
     }
 
     const CWD: &str = "firmware/qemu";
-    let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(CWD))?;
+    let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(CWD))
+        .with_context(|| display_name.clone())?;
     let expected = load_expected_output(name, release_mode)?;
     let diff = TextDiff::from_lines(&expected, &actual);
 
