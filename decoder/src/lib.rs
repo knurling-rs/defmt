@@ -714,6 +714,56 @@ mod tests {
     }
 
     #[test]
+    fn display_u8_vec() {
+        let mut entries = BTreeMap::new();
+
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Prim, "{=u8}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Prim, "{=[?]}".to_owned()),
+        );
+        entries.insert(
+            2,
+            TableEntry::new_without_symbol(Tag::Derived, "Data {{ name: {=?:?} }}".to_owned()),
+        );
+        entries.insert(
+            3,
+            TableEntry::new_without_symbol(Tag::Info, "{=[?]:a}".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u32:µs}".to_owned(),
+            )),
+        };
+
+        let bytes = [
+            3,  // frame index
+            2,  // timestamp value of type `u32`
+            0,  //
+            0,  //
+            0,  //
+            1,  // number of elements in `FormatSlice`
+            2,  // index to `Data` struct
+            1,
+            2,
+            0,
+            72, // "H"
+            105 // "i"
+        ];
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO [Data { name: \"Hi\" }]",
+        );
+    }
+
+    #[test]
     fn bools_simple() {
         let bytes = [
             0, 0,          // index
