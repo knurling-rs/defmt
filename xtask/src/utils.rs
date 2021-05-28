@@ -19,7 +19,7 @@ pub fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<St
     })
 }
 
-/// Execute the [`Command`]. If success return `stdout`, if failure print `stderr`
+/// Execute the [`Command`]. If success return `stdout`, if failure print to `stderr`
 pub fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
     let output = cmd.output()?;
     match output.status.success() {
