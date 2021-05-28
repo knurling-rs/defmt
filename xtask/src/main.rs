@@ -33,7 +33,10 @@ enum TestCommand {
     TestCross,
     TestHost,
     TestLint,
-    TestSnapshot,
+    TestSnapshot {
+        #[structopt(short, help = "Name of the snapshot")]
+        name: Option<String>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -52,7 +55,8 @@ fn main() -> anyhow::Result<()> {
         }
         TestCommand::TestHost => test_host(opt.deny_warnings),
         TestCommand::TestCross => test_cross(),
-        TestCommand::TestSnapshot => test_snapshot(),
+        TestCommand::TestSnapshot { name: None } => test_snapshot(),
+        TestCommand::TestSnapshot { name: Some(name) } => test_single_snapshot(&name, "", false)?,
         TestCommand::TestBook => test_book(),
         TestCommand::TestLint => test_lint(),
     }
