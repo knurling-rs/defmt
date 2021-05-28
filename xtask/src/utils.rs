@@ -25,7 +25,7 @@ pub fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
     match output.status.success() {
         true => Ok(str::from_utf8(&output.stdout)?.to_string()),
         false => {
-            // #[shoud_error]-tests return non-zero code
+            // #[should_error]-tests return non-zero code
             if output.status.code() == Some(1) {
                 let stdout = str::from_utf8(&output.stdout)?;
                 if stdout.contains(
