@@ -513,15 +513,21 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let sym = mksym(&ls, level.as_str(), true);
     let logging_enabled = cfg_if_logging_enabled(level);
     quote!({
-        #[#logging_enabled] {
-            match (#(&(#args)),*) {
-                (#(#pats),*) => {
-                    if let Some(mut _fmt_) = defmt::export::acquire() {
-                        _fmt_.header(&defmt::export::istr(#sym));
-                        #(#exprs;)*
-                        _fmt_.finalize();
-                        defmt::export::release(_fmt_)
+        cfg_if::cfg_if! {
+            if #[#logging_enabled] {
+                match (#(&(#args)),*) {
+                    (#(#pats),*) => {
+                        if let Some(mut _fmt_) = defmt::export::acquire() {
+                            _fmt_.header(&defmt::export::istr(#sym));
+                            #(#exprs;)*
+                            _fmt_.finalize();
+                            defmt::export::release(_fmt_)
+                        }
                     }
+                }
+            } else {
+                match (#(&(#args)),*) {
+                    _ => {}
                 }
             }
         }

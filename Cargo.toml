@@ -19,6 +19,7 @@ alloc = []
 unstable-test = ["defmt-macros/unstable-test"]
 
 [dependencies]
+cfg-if = "1.0"
 defmt-macros = { path = "macros", version = "0.2.1" }
 
 [dev-dependencies]
