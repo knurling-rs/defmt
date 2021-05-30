@@ -513,7 +513,7 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     let sym = mksym(&ls, level.as_str(), true);
     let logging_enabled = cfg_if_logging_enabled(level);
     quote!({
-        cfg_if::cfg_if! {
+        defmt::cfg_if::cfg_if! {
             if #[#logging_enabled] {
                 match (#(&(#args)),*) {
                     (#(#pats),*) => {

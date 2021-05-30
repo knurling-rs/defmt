@@ -24,6 +24,9 @@ use crate as defmt;
 use core::fmt::Write as _;
 use core::{fmt, ptr::NonNull};
 
+// re-export in order to call `cfg_if!` in the `defmt-macros`
+pub use cfg_if;
+
 #[doc(hidden)]
 pub mod export;
 mod impls;
