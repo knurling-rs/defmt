@@ -113,7 +113,7 @@
 0.000112 INFO b"Hi"
 0.000113 INFO b"Hi"
 0.000114 INFO [45054, 49406]
-0.000115 INFO [Data { name: [72, 105], value: true }]
+0.000115 INFO [Data { name: b"Hi", value: true }]
 0.000116 INFO true true
 0.000117 INFO aabbccdd
 0.000118 INFO ddccbbaa

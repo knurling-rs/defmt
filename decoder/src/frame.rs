@@ -298,7 +298,12 @@ fn format_args_real(
                     Arg::Ixx(x) => format_i128(*x as i128, hint, &mut buf)?,
                     Arg::Str(x) | Arg::Preformatted(x) => format_str(x, hint, &mut buf)?,
                     Arg::IStr(x) => format_str(x, hint, &mut buf)?,
-                    Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
+                    Arg::Format { format, args } => match parent_hint {
+                        Some(DisplayHint::Ascii) => {
+                            buf.push_str(&format_args(format, args, parent_hint));
+                        }
+                        _ => buf.push_str(&format_args(format, args, hint)),
+                    },
                     Arg::FormatSequence { args } => {
                         for arg in args {
                             buf.push_str(&format_args("{=?}", &[arg.clone()], hint))

@@ -738,28 +738,26 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u32:µs}".to_owned(),
+                "{=u8:µs}".to_owned(),
             )),
         };
 
         let bytes = [
-            3,  // frame index
-            2,  // timestamp value of type `u32`
-            0,  //
-            0,  //
-            0,  //
-            1,  // number of elements in `FormatSlice`
-            2,  // index to `Data` struct
-            1,
-            2,
-            0,
-            72, // "H"
-            105 // "i"
+            3,   // frame index
+            2,   // timestamp value of type `u8`
+            1,   // number of elements in `FormatSlice`
+            2,   // index to `Data` struct
+            1,   // Format index to table entry: `{=[?]}`
+            2,   // inner FormatSlice, number of elements in `name` field
+            0,   // Format index to table entry: `{=u8}`
+            72,  // "H"
+            105, // "i"
         ];
         let frame = table.decode(&bytes).unwrap().0;
+        dbg!(&frame);
         assert_eq!(
             frame.display(false).to_string(),
-            "0.000002 INFO [Data { name: \"Hi\" }]",
+            "0.000002 INFO [Data { name: b\"Hi\" }]",
         );
     }
 
