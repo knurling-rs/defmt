@@ -5,7 +5,7 @@ Each macro logs at the logging level indicated in its name.
 The syntax of these macros is roughly the same as the `println` macro.
 Positional parameters are supported but named parameters are not.
 Escaping rules are the same: the characters `{` and `}` are escaped as `{{` and `}}`.
-The biggest different is in the supported formatting parameters (`:?`, `:>4`, `:04`).
+The biggest difference is in the supported formatting parameters (`:?`, `:>4`, `:04`).
 
 ``` rust
 # extern crate defmt;

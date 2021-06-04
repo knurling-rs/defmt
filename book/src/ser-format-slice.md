@@ -24,10 +24,10 @@ fn serialize() {
     let xs = [X { y: Y { z: 42 }}, X { y: Y { z: 24 }}];
     defmt::info!("{=[?]}", &xs[..]);
     // on-the-wire: [
-    //     1,  // "{:[?]}"
+    //     1,  // "{=[?]}"
     //     2,  // `leb(xs.len())`
-    //     2,  // "X {{ y: {:?} }}"  / outer tag
-    //     3,  // "Y {{ z: {:u8} }}" / inner tag
+    //     2,  // "X {{ y: {=?} }}"  / outer tag with format nesting through `=?`
+    //     3,  // "Y {{ z: {=u8} }}" / inner tag
     //     42, // xs[0].y.z
     //     (no tags for the second element)
     //     24, // xs[1].y.z
