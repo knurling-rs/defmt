@@ -751,23 +751,23 @@ mod tests {
             0b1110_0101, // u8
         ];
         decode_and_expect(
-            "x: {0=0..4:b}, y: {0=3..8:b}",
+            "x: {0=0..4:b}, y: {0=3..8:#b}",
             &bytes,
-            "0.000002 INFO x: 0b101, y: 0b11100",
+            "0.000002 INFO x: 101, y: 0b11100",
         );
     }
 
     #[test]
     fn bitfields_reverse_order() {
         let bytes = [
-            0,           // index
-            2,           // timestamp
-            0b1101_0010, // u8
+            0,         // index
+            2,         // timestamp
+            1101_0010, // u8
         ];
         decode_and_expect(
             "x: {0=0..7:b}, y: {0=3..5:b}",
             &bytes,
-            "0.000002 INFO x: 0b1010010, y: 0b10",
+            "0.000002 INFO x: 1010010, y: 10",
         );
     }
 
@@ -782,7 +782,7 @@ mod tests {
         decode_and_expect(
             "#0: {0=0..5:b}, #1: {1=3..8:b}",
             &bytes,
-            "0.000002 INFO #0: 0b10000, #1: 0b11100",
+            "0.000002 INFO #0: 10000, #1: 11100",
         );
     }
 
@@ -794,7 +794,7 @@ mod tests {
             0b1111_0000,
             0b1110_0101, // u16
         ];
-        decode_and_expect("x: {0=7..12:b}", &bytes, "0.000002 INFO x: 0b1011");
+        decode_and_expect("x: {0=7..12:b}", &bytes, "0.000002 INFO x: 1011");
     }
 
     #[test]
@@ -809,7 +809,7 @@ mod tests {
         decode_and_expect(
             "#0: {0=7..12:b}, #1: {1=0..5:b}",
             &bytes,
-            "0.000002 INFO #0: 0b1011, #1: 0b10001",
+            "0.000002 INFO #0: 1011, #1: 10001",
         );
     }
 
@@ -826,7 +826,7 @@ mod tests {
         decode_and_expect(
             "#0: {0=7..12:b}, #1: {1=u8}, #2: {2=0..5:b}",
             &bytes,
-            "0.000002 INFO #0: 0b1011, #1: 42, #2: 0b10001",
+            "0.000002 INFO #0: 1011, #1: 42, #2: 10001",
         );
     }
 
@@ -841,7 +841,7 @@ mod tests {
         decode_and_expect(
             "bitfields {0=0..7:b} {0=9..14:b}",
             &bytes,
-            "0.000002 INFO bitfields 0b1010010 0b10001",
+            "0.000002 INFO bitfields 1010010 10001",
         );
     }
 
@@ -857,7 +857,7 @@ mod tests {
         decode_and_expect(
             "bitfields {0=0..7:b} {0=9..14:b} {1=8..10:b}",
             &bytes,
-            "0.000002 INFO bitfields 0b1010010 0b10001 0b11",
+            "0.000002 INFO bitfields 1010010 10001 11",
         );
     }
 
@@ -871,7 +871,7 @@ mod tests {
         decode_and_expect(
             "bitfields {0=9..14:b}",
             &bytes,
-            "0.000002 INFO bitfields 0b10001",
+            "0.000002 INFO bitfields 10001",
         );
     }
 
@@ -888,7 +888,7 @@ mod tests {
         decode_and_expect(
             "bitfields {0=0..2:b} {0=28..31:b}",
             &bytes,
-            "0.000002 INFO bitfields 0b11 0b100",
+            "0.000002 INFO bitfields 11 100",
         );
     }
 
@@ -914,7 +914,7 @@ mod tests {
             0b0000_0000, // 8..15
             0b0000_0000, // 0..7
         ];
-        decode_and_expect("x: {0=119..124:b}", &bytes, "0.000002 INFO x: 0b1011");
+        decode_and_expect("x: {0=119..124:b}", &bytes, "0.000002 INFO x: 1011");
     }
 
     #[test]

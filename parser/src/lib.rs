@@ -536,6 +536,7 @@ mod tests {
                 ty: Type::U8,
                 hint: Some(DisplayHint::Hexadecimal {
                     uppercase: false,
+                    alternate: false,
                     zero_pad: 0
                 }),
             })
@@ -565,7 +566,10 @@ mod tests {
             Ok(Param {
                 index: Some(1),
                 ty: Type::U8,
-                hint: Some(DisplayHint::Binary { zero_pad: 0 }),
+                hint: Some(DisplayHint::Binary {
+                    zero_pad: 0,
+                    alternate: false
+                }),
             })
         );
     }
@@ -586,7 +590,22 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Binary { zero_pad: 0 }),
+                hint: Some(DisplayHint::Binary {
+                    zero_pad: 0,
+                    alternate: false
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":#b", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Binary {
+                    zero_pad: 0,
+                    alternate: true
+                }),
             })
         );
 
@@ -597,6 +616,20 @@ mod tests {
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
                     uppercase: false,
+                    alternate: false,
+                    zero_pad: 0
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":#x", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal {
+                    uppercase: false,
+                    alternate: true,
                     zero_pad: 0
                 }),
             })
@@ -609,6 +642,20 @@ mod tests {
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
                     uppercase: true,
+                    alternate: false,
+                    zero_pad: 0
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":#X", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal {
+                    uppercase: true,
+                    alternate: true,
                     zero_pad: 0
                 }),
             })
