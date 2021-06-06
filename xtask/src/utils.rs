@@ -4,11 +4,7 @@ use anyhow::{anyhow, Context};
 use colored::Colorize;
 
 pub fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<String> {
-    const BASE: &str = "firmware/qemu/src/bin";
-    let file = match release_mode {
-        true => format!("{}/{}.release.out", BASE, name),
-        false => format!("{}/{}.out", BASE, name),
-    };
+    let file = expected_output_path(name, release_mode);
     let path = Path::new(&file);
 
     fs::read_to_string(path).with_context(|| {
@@ -17,6 +13,26 @@ pub fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<St
             path.to_str().unwrap_or("(non-Unicode path)")
         )
     })
+}
+
+pub fn overwrite_expected_output(name: &str, release_mode: bool, contents: &[u8]) -> anyhow::Result<()> {
+    let file = expected_output_path(name, release_mode);
+    let path = Path::new(&file);
+
+    fs::write(path, contents).with_context(|| {
+        format!(
+            "Failed to overwrite expected output data to {}",
+            path.to_str().unwrap_or("(non-Unicode path)")
+        )
+    })
+}
+
+fn expected_output_path(name: &str, release_mode: bool) -> String {
+    const BASE: &str = "firmware/qemu/src/bin";
+    match release_mode {
+        true => format!("{}/{}.release.out", BASE, name),
+        false => format!("{}/{}.out", BASE, name),
+    }
 }
 
 /// Execute the [`Command`]. If success return `stdout`, if failure print to `stderr`
