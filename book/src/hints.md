@@ -17,9 +17,10 @@ The first 4 display hints resemble what's supported in `core::fmt`. Examples bel
 
 ``` rust
 # extern crate defmt;
-defmt::info!("{=u8:x}", 42); // -> INFO 0x2a
-defmt::info!("{=u8:X}", 42); // -> INFO 0x2A
-defmt::info!("{=u8:b}", 42); // -> INFO 0b101010
+defmt::info!("{=u8:x}", 42); // -> INFO 2a
+defmt::info!("{=u8:X}", 42); // -> INFO 2A
+defmt::info!("{=u8:#x}", 42); // -> INFO 0x2a
+defmt::info!("{=u8:b}", 42); // -> INFO 101010
 
 defmt::info!("{=str}", "hello\tworld");   // -> INFO hello    world
 defmt::info!("{=str:?}", "hello\tworld"); // -> INFO "hello\tworld"
@@ -30,7 +31,7 @@ Leading zeros are supported, for example
 ``` rust
 # extern crate defmt;
 defmt::info!("{=u8:03}", 42); // -> INFO 042
-defmt::info!("{=u8:08X}", 42); // -> INFO 0x0000002A
+defmt::info!("{=u8:08X}", 42); // -> INFO 0000002A
 ```
 
 No further customization like padding is supported (at the moment).
@@ -58,11 +59,11 @@ let x = S { x: 42 };
 defmt::info!("{}", x);
 // -> INFO S { x: 42 }
 
-defmt::info!("{:x}", x);
+defmt::info!("{:#x}", x);
 // -> INFO S { x: 0x2a }
 ```
 
-``` rust
+```rust
 # extern crate defmt;
 struct S { x: u8, y: u8 }
 
@@ -75,8 +76,8 @@ impl defmt::Format for S {
 
 let x = S { x: 42, y: 42 };
 defmt::info!("{}", x);
-// -> INFO S { x: 42, y: 0x2a }
+// -> INFO S { x: 42, y: 2a }
 
-defmt::info!("{:x}", x);
-// -> INFO S { x: 0b101010, y: 0x2a }
+defmt::info!("{:b}", x);
+// -> INFO S { x: 101010, y: 2a }
 ```

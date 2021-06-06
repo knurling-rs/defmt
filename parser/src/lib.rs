@@ -36,10 +36,12 @@ pub enum DisplayHint {
     /// `:x` OR `:X`
     Hexadecimal {
         uppercase: bool,
+        alternate: bool,
         zero_pad: usize,
     },
     /// `:b`
     Binary {
+        alternate: bool,
         zero_pad: usize,
     },
     /// `:a`
@@ -52,25 +54,41 @@ pub enum DisplayHint {
     Unknown(String),
 }
 
+/// Parses the display hint (e.g. the `#x` in `{=u8:#x}`)
 fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
+    // The `#` comes before any padding hints (I think this matches core::fmt).
+    // It is ignored for types that don't have an alternate representation.
+    let alternate = if matches!(s.chars().next(), Some('#')) {
+        s = &s[1..]; // '#' is always 1 byte
+        true
+    } else {
+        false
+    };
+
     let zero_pad = if let Some(rest) = s.strip_prefix("0") {
         let (rest, columns) = parse_integer::<usize>(rest)?;
         s = rest;
         columns
     } else {
-        0 // default behavior is the same as zero padding.
+        0 // default behavior is the same as no zero-padding.
     };
+
     Some(match s {
         "" => DisplayHint::NoHint { zero_pad },
         "µs" => DisplayHint::Microseconds,
         "a" => DisplayHint::Ascii,
-        "b" => DisplayHint::Binary { zero_pad },
+        "b" => DisplayHint::Binary {
+            zero_pad,
+            alternate,
+        },
         "x" => DisplayHint::Hexadecimal {
             uppercase: false,
+            alternate,
             zero_pad,
         },
         "X" => DisplayHint::Hexadecimal {
             uppercase: true,
+            alternate,
             zero_pad,
         },
         "?" => DisplayHint::Debug,
