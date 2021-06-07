@@ -66,7 +66,7 @@ defmt::info!("{:#x}", x);
 // -> INFO S { x: 0x2a }
 ```
 
-```rust
+``` rust
 # extern crate defmt;
 struct S { x: u8, y: u8 }
 
