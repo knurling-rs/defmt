@@ -9,7 +9,9 @@ use structopt::StructOpt;
 mod targets;
 mod utils;
 
-use crate::utils::{load_expected_output, run_capturing_stdout, run_command, rustc_is_nightly};
+use crate::utils::{
+    load_expected_output, overwrite_expected_output, run_capturing_stdout, run_command, rustc_is_nightly,
+};
 
 static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 
@@ -33,7 +35,11 @@ enum TestCommand {
     TestCross,
     TestHost,
     TestLint,
-    TestSnapshot,
+    TestSnapshot {
+        /// Overwrite the expected output instead of comparing it.
+        #[structopt(long)]
+        overwrite: bool,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -46,13 +52,13 @@ fn main() -> anyhow::Result<()> {
         TestCommand::TestAll => {
             test_host(opt.deny_warnings);
             test_cross();
-            test_snapshot();
+            test_snapshot(false);
             test_book();
             test_lint();
         }
         TestCommand::TestHost => test_host(opt.deny_warnings),
         TestCommand::TestCross => test_cross(),
-        TestCommand::TestSnapshot => test_snapshot(),
+        TestCommand::TestSnapshot { overwrite } => test_snapshot(overwrite),
         TestCommand::TestBook => test_book(),
         TestCommand::TestLint => test_lint(),
     }
@@ -233,7 +239,7 @@ fn test_cross() {
     )
 }
 
-fn test_snapshot() {
+fn test_snapshot(overwrite: bool) {
     println!("🧪 qemu/snapshot");
     let mut tests = vec![
         "log",
@@ -255,12 +261,23 @@ fn test_snapshot() {
     for test in tests {
         let features = if test == "alloc" { "alloc" } else { "" };
 
-        do_test(|| test_single_snapshot(test, features, false), "qemu/snapshot");
-        do_test(|| test_single_snapshot(test, features, true), "qemu/snapshot");
+        do_test(
+            || test_single_snapshot(test, features, false, overwrite),
+            "qemu/snapshot",
+        );
+        do_test(
+            || test_single_snapshot(test, features, true, overwrite),
+            "qemu/snapshot",
+        );
     }
 }
 
-fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyhow::Result<()> {
+fn test_single_snapshot(
+    name: &str,
+    features: &str,
+    release_mode: bool,
+    overwrite: bool,
+) -> anyhow::Result<()> {
     let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
     println!("{}", display_name.bold());
 
@@ -277,6 +294,12 @@ fn test_single_snapshot(name: &str, features: &str, release_mode: bool) -> anyho
     const CWD: &str = "firmware/qemu";
     let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(CWD))
         .with_context(|| display_name.clone())?;
+
+    if overwrite {
+        overwrite_expected_output(name, release_mode, actual.as_bytes())?;
+        return Ok(());
+    }
+
     let expected = load_expected_output(name, release_mode)?;
     let diff = TextDiff::from_lines(&expected, &actual);
 

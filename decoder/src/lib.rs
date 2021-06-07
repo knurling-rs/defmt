@@ -760,9 +760,9 @@ mod tests {
     #[test]
     fn bitfields_reverse_order() {
         let bytes = [
-            0,         // index
-            2,         // timestamp
-            1101_0010, // u8
+            0,           // index
+            2,           // timestamp
+            0b1101_0010, // u8
         ];
         decode_and_expect(
             "x: {0=0..7:b}, y: {0=3..5:b}",

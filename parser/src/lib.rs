@@ -35,8 +35,8 @@ pub enum DisplayHint {
     },
     /// `:x` OR `:X`
     Hexadecimal {
-        uppercase: bool,
         alternate: bool,
+        uppercase: bool,
         zero_pad: usize,
     },
     /// `:b`
@@ -78,17 +78,17 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
         "µs" => DisplayHint::Microseconds,
         "a" => DisplayHint::Ascii,
         "b" => DisplayHint::Binary {
-            zero_pad,
             alternate,
+            zero_pad,
         },
         "x" => DisplayHint::Hexadecimal {
-            uppercase: false,
             alternate,
+            uppercase: false,
             zero_pad,
         },
         "X" => DisplayHint::Hexadecimal {
-            uppercase: true,
             alternate,
+            uppercase: true,
             zero_pad,
         },
         "?" => DisplayHint::Debug,
@@ -535,8 +535,8 @@ mod tests {
                 index: None,
                 ty: Type::U8,
                 hint: Some(DisplayHint::Hexadecimal {
-                    uppercase: false,
                     alternate: false,
+                    uppercase: false,
                     zero_pad: 0
                 }),
             })
@@ -567,8 +567,8 @@ mod tests {
                 index: Some(1),
                 ty: Type::U8,
                 hint: Some(DisplayHint::Binary {
+                    alternate: false,
                     zero_pad: 0,
-                    alternate: false
                 }),
             })
         );
@@ -591,8 +591,8 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Binary {
+                    alternate: false,
                     zero_pad: 0,
-                    alternate: false
                 }),
             })
         );
@@ -603,8 +603,8 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Binary {
+                    alternate: true,
                     zero_pad: 0,
-                    alternate: true
                 }),
             })
         );
@@ -615,8 +615,8 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
-                    uppercase: false,
                     alternate: false,
+                    uppercase: false,
                     zero_pad: 0
                 }),
             })
@@ -628,8 +628,8 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
-                    uppercase: false,
                     alternate: true,
+                    uppercase: false,
                     zero_pad: 0
                 }),
             })
@@ -641,8 +641,8 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
-                    uppercase: true,
                     alternate: false,
+                    uppercase: true,
                     zero_pad: 0
                 }),
             })
@@ -654,8 +654,8 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
-                    uppercase: true,
                     alternate: true,
+                    uppercase: true,
                     zero_pad: 0
                 }),
             })

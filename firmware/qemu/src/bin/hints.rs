@@ -14,8 +14,11 @@ fn main() -> ! {
     let x = 42;
     defmt::info!("no hint {=u8}", x);
     defmt::info!("hex     {=u8:x}", x);
+    defmt::info!("hex alt {=u8:#x}", x);
     defmt::info!("HEX     {=u8:X}", x);
+    defmt::info!("HEX alt {=u8:#X}", x);
     defmt::info!("binary  {=u8:b}", x);
+    defmt::info!("binary alt {=u8:#b}", x);
     defmt::info!("ASCII   {=u8:a}", x);
     defmt::info!("Debug   {=u8:?}", x);
 
@@ -24,8 +27,11 @@ fn main() -> ! {
     let x = 42;
     defmt::info!("no-hint {=i8}", x);
     defmt::info!("hex     {=i8:x}", x);
+    defmt::info!("hex alt {=i8:#x}", x);
     defmt::info!("HEX     {=i8:X}", x);
+    defmt::info!("HEX alt {=i8:#X}", x);
     defmt::info!("binary  {=i8:b}", x);
+    defmt::info!("binary alt {=i8:#b}", x);
     defmt::info!("ASCII   {=i8:a}", x);
     defmt::info!("Debug   {=i8:?}", x);
 
@@ -36,8 +42,11 @@ fn main() -> ! {
     // the `Format` implementation of `i8` uses `{=i8}` as its format string
     defmt::info!("no hint {}", x);
     defmt::info!("hex     {:x}", x);
+    defmt::info!("hex alt {:#x}", x);
     defmt::info!("HEX     {:X}", x);
+    defmt::info!("HEX alt {:#X}", x);
     defmt::info!("binary  {:b}", x);
+    defmt::info!("binary alt {:#b}", x);
     defmt::info!("ASCII   {:a}", x);
     defmt::info!("Debug   {:?}", x);
 
@@ -71,8 +80,11 @@ fn main() -> ! {
     let x = b"He\x7Fllo";
     defmt::info!("no hint {=[u8]}", *x);
     defmt::info!("hex     {=[u8]:x}", *x);
+    defmt::info!("hex alt {=[u8]:#x}", *x);
     defmt::info!("HEX     {=[u8]:X}", *x);
+    defmt::info!("HEX alt {=[u8]:#X}", *x);
     defmt::info!("binary  {=[u8]:b}", *x);
+    defmt::info!("binary alt {=[u8]:#b}", *x);
     defmt::info!("ASCII   {=[u8]:a}", *x);
     defmt::info!("Debug   {=[u8]:?}", *x);
 

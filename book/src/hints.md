@@ -32,9 +32,12 @@ Leading zeros are supported, for example
 # extern crate defmt;
 defmt::info!("{=u8:03}", 42); // -> INFO 042
 defmt::info!("{=u8:08X}", 42); // -> INFO 0000002A
+defmt::info!("{=u8:#010X}", 42); // -> INFO 0x0000002A
 ```
 
-No further customization like padding is supported (at the moment).
+When the alternate form is used for hex and binary, the `0x`/`0b` length is subtracted from the
+leading zeros.  This matches [`core::fmt` behavior](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b11809759f975e266251f7968e542756). No further
+customization like padding is supported (at the moment).
 
 The ASCII display hint formats byte slices (and arrays) using Rust's byte string syntax.
 
