@@ -77,13 +77,18 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
         #vis struct #ident;
 
         #[no_mangle]
-        unsafe fn _defmt_acquire() -> Option<defmt::InternalFormatter> {
-            <#ident as defmt::Logger>::acquire().map(|nn| defmt::InternalFormatter::from_raw(nn))
+        unsafe fn _defmt_acquire()  {
+            <#ident as defmt::Logger>::acquire()
         }
 
         #[no_mangle]
-        unsafe fn _defmt_release(f: defmt::InternalFormatter)  {
-            <#ident as defmt::Logger>::release(f.into_raw())
+        unsafe fn _defmt_release()  {
+            <#ident as defmt::Logger>::release()
+        }
+
+        #[no_mangle]
+        unsafe fn _defmt_write(bytes: &[u8])  {
+            <#ident as defmt::Logger>::write(bytes)
         }
     )
     .into()
@@ -514,12 +519,12 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
         #[cfg(#logging_enabled)] {
             match (#(&(#args)),*) {
                 (#(#pats),*) => {
-                    if let Some(mut _fmt_) = defmt::export::acquire() {
-                        _fmt_.header(&defmt::export::istr(#sym));
-                        #(#exprs;)*
-                        _fmt_.finalize();
-                        defmt::export::release(_fmt_)
-                    }
+                    defmt::export::acquire();
+                    let mut _fmt_ = defmt::InternalFormatter::new();
+                    _fmt_.header(&defmt::export::istr(#sym));
+                    #(#exprs;)*
+                    _fmt_.finalize();
+                    defmt::export::release()
                 }
             }
         }

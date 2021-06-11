@@ -1,9 +1,6 @@
-use core::{
-    fmt::{self, Write as _},
-    ptr::NonNull,
-};
+use core::fmt::{self, Write as _};
 
-use crate::{export, leb, Format, Write};
+use crate::{export, leb, Format};
 
 /// The maximum number of booleans that can be compressed together
 const MAX_NUM_BOOL_FLAGS: u8 = 8;
@@ -17,8 +14,6 @@ pub struct Formatter<'a> {
 
 #[doc(hidden)]
 pub struct InternalFormatter {
-    #[cfg(not(feature = "unstable-test"))]
-    writer: NonNull<dyn Write>,
     #[cfg(feature = "unstable-test")]
     bytes: Vec<u8>,
     /// The current group of consecutive bools
@@ -36,30 +31,22 @@ pub struct InternalFormatter {
 impl InternalFormatter {
     #[cfg(not(feature = "unstable-test"))]
     pub fn write(&mut self, bytes: &[u8]) {
-        unsafe { self.writer.as_mut().write(bytes) }
+        export::write(bytes)
     }
 
     /// Implementation detail
     ///
     /// # Safety
     ///
-    /// `writer` is `Copy` but the returned type is a singleton. Calling this function should not
-    /// break the singleton invariant (one should not create more than one instance of
-    /// `InternalFormatter`)
+    /// Must only be called when the current execution context has acquired the logger with [Logger::acquire]
     #[cfg(not(feature = "unstable-test"))]
-    pub unsafe fn from_raw(writer: NonNull<dyn Write>) -> Self {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
         Self {
-            writer,
             bool_flags: 0,
             bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
         }
-    }
-
-    /// Implementation detail
-    #[cfg(not(feature = "unstable-test"))]
-    pub fn into_raw(self) -> NonNull<dyn Write> {
-        self.writer
     }
 
     // TODO turn these public methods in `export` free functions
@@ -318,23 +305,5 @@ impl super::InternalFormatter {
 
     pub fn write(&mut self, bytes: &[u8]) {
         self.bytes.extend_from_slice(bytes)
-    }
-
-    /// Implementation detail
-    ///
-    /// # Safety
-    ///
-    /// This is always safe to call and will panic. It only exists to match the non-test API.
-    pub unsafe fn from_raw(_: NonNull<dyn Write>) -> Self {
-        core::unreachable!()
-    }
-
-    /// Implementation detail
-    ///
-    /// # Safety
-    ///
-    /// This is always safe to call and will panic. It only exists to match the non-test API.
-    pub unsafe fn into_raw(self) -> NonNull<dyn Write> {
-        core::unreachable!()
     }
 }
