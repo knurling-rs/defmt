@@ -104,15 +104,15 @@
 0.000103 INFO EnumLarge::A269
 0.000104 INFO S { x: "hi" }
 0.000105 INFO S { x: PhantomData, y: 42 }
-0.000106 INFO bitfields 0x97 0b10000100 12 b"42" b"hello"
+0.000106 INFO bitfields 97 10000100 12 b"42" b"hello"
 0.000107 INFO b"Hi"
 0.000108 INFO b"Hi"
 0.000109 INFO b"Hi"
 0.000110 INFO [45054, 49406]
 0.000111 INFO [Data { name: b"Hi", value: true }]
 0.000112 INFO true true
-0.000113 INFO 0xaabbccdd
-0.000114 INFO 0xddccbbaa
+0.000113 INFO aabbccdd
+0.000114 INFO ddccbbaa
 0.000115 INFO 1..2
 0.000116 INFO 1..
 0.000117 INFO ..2

@@ -124,8 +124,7 @@ jobs:
       - name: Run QEMU snapshot tests
         run: cargo xtask test-snapshot
       - name: install decoder v0.2.0
-        working-directory: firmware/qemu
-        run: cargo install --debug --git https://github.com/knurling-rs/defmt --rev v0.2.0-with-qemu-run-ignore-version qemu-run
+        run: cargo install --debug --path qemu-run
       - name: Backward compatibility check against decoder v0.2.0
         env:
           CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER: qemu-run

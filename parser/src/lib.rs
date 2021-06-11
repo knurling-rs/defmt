@@ -35,11 +35,13 @@ pub enum DisplayHint {
     },
     /// `:x` OR `:X`
     Hexadecimal {
+        alternate: bool,
         uppercase: bool,
         zero_pad: usize,
     },
     /// `:b`
     Binary {
+        alternate: bool,
         zero_pad: usize,
     },
     /// `:a`
@@ -52,24 +54,40 @@ pub enum DisplayHint {
     Unknown(String),
 }
 
+/// Parses the display hint (e.g. the `#x` in `{=u8:#x}`)
 fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
+    // The `#` comes before any padding hints (I think this matches core::fmt).
+    // It is ignored for types that don't have an alternate representation.
+    let alternate = if matches!(s.chars().next(), Some('#')) {
+        s = &s[1..]; // '#' is always 1 byte
+        true
+    } else {
+        false
+    };
+
     let zero_pad = if let Some(rest) = s.strip_prefix("0") {
         let (rest, columns) = parse_integer::<usize>(rest)?;
         s = rest;
         columns
     } else {
-        0 // default behavior is the same as zero padding.
+        0 // default behavior is the same as no zero-padding.
     };
+
     Some(match s {
         "" => DisplayHint::NoHint { zero_pad },
         "µs" => DisplayHint::Microseconds,
         "a" => DisplayHint::Ascii,
-        "b" => DisplayHint::Binary { zero_pad },
+        "b" => DisplayHint::Binary {
+            alternate,
+            zero_pad,
+        },
         "x" => DisplayHint::Hexadecimal {
+            alternate,
             uppercase: false,
             zero_pad,
         },
         "X" => DisplayHint::Hexadecimal {
+            alternate,
             uppercase: true,
             zero_pad,
         },
@@ -517,6 +535,7 @@ mod tests {
                 index: None,
                 ty: Type::U8,
                 hint: Some(DisplayHint::Hexadecimal {
+                    alternate: false,
                     uppercase: false,
                     zero_pad: 0
                 }),
@@ -547,7 +566,10 @@ mod tests {
             Ok(Param {
                 index: Some(1),
                 ty: Type::U8,
-                hint: Some(DisplayHint::Binary { zero_pad: 0 }),
+                hint: Some(DisplayHint::Binary {
+                    alternate: false,
+                    zero_pad: 0,
+                }),
             })
         );
     }
@@ -568,7 +590,22 @@ mod tests {
             Ok(Param {
                 index: None,
                 ty: Type::Format,
-                hint: Some(DisplayHint::Binary { zero_pad: 0 }),
+                hint: Some(DisplayHint::Binary {
+                    alternate: false,
+                    zero_pad: 0,
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":#b", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Binary {
+                    alternate: true,
+                    zero_pad: 0,
+                }),
             })
         );
 
@@ -578,6 +615,20 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
+                    alternate: false,
+                    uppercase: false,
+                    zero_pad: 0
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":#x", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal {
+                    alternate: true,
                     uppercase: false,
                     zero_pad: 0
                 }),
@@ -590,6 +641,20 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::Hexadecimal {
+                    alternate: false,
+                    uppercase: true,
+                    zero_pad: 0
+                }),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":#X", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Hexadecimal {
+                    alternate: true,
                     uppercase: true,
                     zero_pad: 0
                 }),
