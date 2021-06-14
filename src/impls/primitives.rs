@@ -52,11 +52,7 @@ where
 
     #[inline]
     fn _format_data(&self) {
-        export::usize(&self.len());
-        for value in self {
-            export::istr(&T::_format_tag());
-            value._format_data();
-        }
+        export::fmt_slice(self);
     }
 }
 

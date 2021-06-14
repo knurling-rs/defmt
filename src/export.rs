@@ -292,10 +292,11 @@ pub fn isize(b: &isize) {
 }
 
 /// Implementation detail
-pub fn fmt_slice(values: &[impl Format]) {
+pub fn fmt_slice<T: Format>(values: &[T]) {
     usize(&values.len());
+    istr(&T::_format_tag());
     for value in values {
-        fmt(value);
+        value._format_data();
     }
 }
 
@@ -360,9 +361,10 @@ pub fn u8_array(a: &[u8]) {
 }
 
 // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
-pub fn fmt_array(a: &[impl Format]) {
+pub fn fmt_array<T: Format>(a: &[T]) {
+    istr(&T::_format_tag());
     for value in a {
-        fmt(value);
+        value._format_data();
     }
 }
 

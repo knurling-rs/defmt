@@ -73,14 +73,11 @@ impl<'t, 'b> Decoder<'t, 'b> {
         &mut self,
         num_elements: usize,
     ) -> Result<Vec<FormatSliceElement<'t>>, DecodeError> {
-        if num_elements == 0 {
-            return Ok(vec![]);
-        }
+        let format = self.get_format()?;
+        let is_enum = format.contains('|');
 
         let mut elements = Vec::with_capacity(num_elements);
         for i in 0..num_elements {
-            let format = self.get_format()?;
-            let is_enum = format.contains('|');
             let format = if is_enum {
                 self.get_variant(format)?
             } else {
