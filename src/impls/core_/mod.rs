@@ -24,13 +24,13 @@ where
     }
 
     #[inline]
-    fn _format_data(&self, fmt: Formatter) {
+    fn _format_data(&self) {
         match self {
             None => export::u8(&0),
             Some(x) => {
                 export::u8(&1);
                 export::istr(&T::_format_tag());
-                x._format_data(fmt)
+                x._format_data()
             }
         }
     }
@@ -49,17 +49,17 @@ where
     }
 
     #[inline]
-    fn _format_data(&self, fmt: Formatter) {
+    fn _format_data(&self) {
         match self {
             Err(e) => {
                 export::u8(&0);
                 export::istr(&E::_format_tag());
-                e._format_data(fmt)
+                e._format_data()
             }
             Ok(x) => {
                 export::u8(&1);
                 export::istr(&T::_format_tag());
-                x._format_data(fmt)
+                x._format_data()
             }
         }
     }
@@ -74,7 +74,7 @@ impl<T> Format for core::marker::PhantomData<T> {
     }
 
     #[inline]
-    fn _format_data(&self, _fmt: Formatter) {}
+    fn _format_data(&self) {}
 }
 
 impl Format for core::convert::Infallible {
@@ -86,7 +86,7 @@ impl Format for core::convert::Infallible {
     }
 
     #[inline]
-    fn _format_data(&self, _fmt: Formatter) {
+    fn _format_data(&self) {
         unreachable!();
     }
 }

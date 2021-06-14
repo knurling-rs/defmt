@@ -203,7 +203,7 @@ mod sealed {
             defmt_macros::internp!("Unwrap of a None option value")
         }
 
-        fn _format_data(&self, _fmt: Formatter) {}
+        fn _format_data(&self) {}
     }
 
     pub trait IntoResult {
@@ -258,8 +258,7 @@ pub fn panic() -> ! {
 /// Implementation detail
 pub fn fmt<T: Format + ?Sized>(f: &T) {
     istr(&T::_format_tag());
-    let formatter = make_formatter();
-    f._format_data(formatter);
+    f._format_data();
 }
 
 /// Implementation detail

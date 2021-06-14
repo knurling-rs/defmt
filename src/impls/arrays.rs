@@ -15,7 +15,7 @@ macro_rules! arrays {
             }
 
             #[inline]
-            fn _format_data(&self, _fmt: Formatter) {
+            fn _format_data(&self) {
                 export::fmt_array(self);
             }
         }

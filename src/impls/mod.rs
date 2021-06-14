@@ -1,9 +1,9 @@
 macro_rules! default_format {
     () => {
         #[inline]
-        fn format(&self, fmt: Formatter) {
+        fn format(&self, _fmt: Formatter) {
             crate::export::istr(&Self::_format_tag());
-            self._format_data(fmt);
+            self._format_data();
         }
     };
 }
@@ -21,8 +21,8 @@ macro_rules! delegate_format {
         }
 
         #[inline]
-        fn _format_data(&$self_, fmt: Formatter) {
-            <$ty as Format>::_format_data($val, fmt)
+        fn _format_data(&$self_) {
+            <$ty as Format>::_format_data($val)
         }
     };
 }

@@ -345,7 +345,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
             fn _format_tag() -> defmt::Str {
                 #sym
             }
-            fn _format_data(&self, f: defmt::Formatter) {
+            fn _format_data(&self) {
                 #(#exprs)*
             }
         }

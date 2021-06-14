@@ -10,7 +10,7 @@ impl Format for () {
     }
 
     #[inline]
-    fn _format_data(&self, _fmt: Formatter) {}
+    fn _format_data(&self) {}
 }
 
 macro_rules! tuple {
@@ -25,12 +25,11 @@ macro_rules! tuple {
 
             #[inline]
             #[allow(non_snake_case, unused_assignments)]
-            fn _format_data(&self, _fmt: Formatter) {
+            fn _format_data(&self) {
                 let ($(ref $name,)+) = *self;
                 $(
                     export::istr(&$name::_format_tag());
-                    let formatter = export::make_formatter();
-                    $name._format_data(formatter);
+                    $name._format_data();
                 )+
             }
         }

@@ -13,7 +13,7 @@ macro_rules! prim {
             }
 
             #[inline]
-            fn _format_data(&$self_, _fmt: Formatter) {
+            fn _format_data(&$self_) {
                 $write
             }
         }
@@ -51,11 +51,11 @@ where
     }
 
     #[inline]
-    fn _format_data(&self, _fmt: Formatter) {
+    fn _format_data(&self) {
         export::usize(&self.len());
         for value in self {
             export::istr(&T::_format_tag());
-            value._format_data(export::make_formatter());
+            value._format_data();
         }
     }
 }

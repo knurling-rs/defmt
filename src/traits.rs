@@ -54,7 +54,7 @@ pub trait Format {
     }
 
     #[doc(hidden)]
-    fn _format_data(&self, _fmt: Formatter) {
+    fn _format_data(&self) {
         self.format(export::make_formatter());
         export::u16(&0); // terminator
     }
