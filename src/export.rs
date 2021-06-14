@@ -86,7 +86,6 @@ mod sealed {
     #[allow(unused_imports)]
     use crate as defmt;
     use crate::{Format, Formatter};
-    use defmt_macros::internp;
 
     pub trait Truncate<U> {
         fn truncate(self) -> U;
@@ -190,12 +189,15 @@ mod sealed {
     pub struct NoneError;
 
     impl Format for NoneError {
-        fn format(&self, fmt: Formatter) {
-            if fmt.inner.needs_tag() {
-                let t = internp!("Unwrap of a None option value");
-                fmt.inner.tag(&t);
-            }
+        fn format(&self, _fmt: Formatter) {
+            unreachable!();
         }
+
+        fn _format_tag() -> u16 {
+            defmt_macros::internp!("Unwrap of a None option value")
+        }
+
+        fn _format_data(&self, _fmt: Formatter) {}
     }
 
     pub trait IntoResult {

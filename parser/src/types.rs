@@ -9,6 +9,7 @@ pub enum Type {
 
     Debug,
     Display,
+    FormatSequence,
 
     F32,
     F64,
@@ -67,6 +68,7 @@ impl FromStr for Type {
             "istr" => Type::IStr,
             "__internal_Debug" => Type::Debug,
             "__internal_Display" => Type::Display,
+            "__internal_FormatSequence" => Type::FormatSequence,
             "[u8]" => Type::U8Slice,
             "?" => Type::Format,
             "[?]" => Type::FormatSlice,

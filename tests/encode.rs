@@ -46,10 +46,11 @@ fn inc(index: u16, n: u16) -> u16 {
     index.wrapping_add(n)
 }
 
-fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: &[u8]) {
+fn check_format_implementation<T: Format + ?Sized>(val: &T, expected_encoding: &[u8]) {
     let mut f = InternalFormatter::new();
+    f.tag(T::_format_tag());
     let g = Formatter { inner: &mut f };
-    val.format(g);
+    val._format_data(g);
     assert_eq!(defmt::export::fetch_bytes(), expected_encoding);
 }
 

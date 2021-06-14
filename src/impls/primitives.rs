@@ -1,175 +1,51 @@
 use super::*;
 
-impl Format for i8 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=i8}");
-            fmt.inner.tag(&t);
+macro_rules! prim {
+    ($ty:ty, $method:ident, $fmt: literal) => {
+        impl Format for $ty {
+            default_format!();
+
+            #[inline]
+            fn _format_tag() -> u16 {
+                internp!($fmt)
+            }
+
+            #[inline]
+            fn _format_data(&self, fmt: Formatter) {
+                fmt.inner.$method(self);
+            }
         }
-        fmt.inner.u8(&(*self as u8));
-    }
+    };
 }
 
-impl Format for i16 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=i16}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.u16(&(*self as u16))
-    }
-}
-
-impl Format for i32 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=i32}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.i32(self);
-    }
-}
-
-impl Format for i64 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=i64}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.i64(self);
-    }
-}
-
-impl Format for i128 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=i128}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.i128(self);
-    }
-}
-
-impl Format for isize {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=isize}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.isize(self);
-    }
-}
-
-impl Format for u8 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=u8}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.u8(self)
-    }
-}
-
-impl Format for u16 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=u16}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.u16(self);
-    }
-}
-
-impl Format for u32 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=u32}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.u32(self);
-    }
-}
-
-impl Format for u64 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=u64}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.u64(self);
-    }
-}
-
-impl Format for u128 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=u128}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.u128(self);
-    }
-}
-
-impl Format for usize {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=usize}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.usize(self);
-    }
-}
-
-impl Format for f32 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=f32}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.f32(self);
-    }
-}
-
-impl Format for f64 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=f64}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.f64(self);
-    }
-}
-
-impl Format for str {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = str_tag();
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.str(self);
-    }
-}
-
-pub(crate) fn str_tag() -> u16 {
-    internp!("{=str}")
-}
-
-impl Format for Str {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=istr}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.istr(self);
-    }
-}
+prim!(i8, i8, "{=i8}");
+prim!(i16, i16, "{=i16}");
+prim!(i32, i32, "{=i32}");
+prim!(i64, i64, "{=i64}");
+prim!(i128, i128, "{=i128}");
+prim!(isize, isize, "{=isize}");
+prim!(u8, u8, "{=u8}");
+prim!(u16, u16, "{=u16}");
+prim!(u32, u32, "{=u32}");
+prim!(u64, u64, "{=u64}");
+prim!(u128, u128, "{=u128}");
+prim!(usize, usize, "{=usize}");
+prim!(f32, f32, "{=f32}");
+prim!(f64, f64, "{=f64}");
+prim!(str, str, "{=str}");
+prim!(bool, bool, "{=bool}");
+prim!(Str, istr, "{=istr}");
 
 impl Format for char {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=char}");
-            fmt.inner.tag(&t);
-        }
+    default_format!();
+
+    #[inline]
+    fn _format_tag() -> u16 {
+        internp!("{=char}")
+    }
+
+    #[inline]
+    fn _format_data(&self, fmt: Formatter) {
         fmt.inner.u32(&(*self as u32));
     }
 }
@@ -178,12 +54,20 @@ impl<T> Format for [T]
 where
     T: Format,
 {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=[?]}");
-            fmt.inner.tag(&t);
+    default_format!();
+
+    #[inline]
+    fn _format_tag() -> u16 {
+        internp!("{=[?]}")
+    }
+
+    #[inline]
+    fn _format_data(&self, fmt: Formatter) {
+        fmt.inner.usize(&self.len());
+        for value in self {
+            fmt.inner.tag(T::_format_tag());
+            value._format_data(Formatter { inner: fmt.inner });
         }
-        fmt.inner.fmt_slice(self)
     }
 }
 
@@ -191,37 +75,14 @@ impl<T> Format for &'_ T
 where
     T: Format + ?Sized,
 {
-    fn format(&self, fmt: Formatter) {
-        T::format(self, fmt)
-    }
+    delegate_format!(T, self, self);
 }
 
 impl<T> Format for &'_ mut T
 where
     T: Format + ?Sized,
 {
-    fn format(&self, fmt: Formatter) {
-        T::format(self, fmt)
-    }
-}
-
-impl Format for bool {
-    fn format(&self, fmt: Formatter) {
-        if fmt.inner.needs_tag() {
-            let t = internp!("{=bool}");
-            fmt.inner.tag(&t);
-        }
-        fmt.inner.bool(self);
-    }
-}
-
-impl Format for () {
-    fn format(&self, f: Formatter) {
-        if f.inner.needs_tag() {
-            let t = internp!("()");
-            f.inner.tag(&t);
-        }
-    }
+    delegate_format!(T, self, self);
 }
 
 // Format raw pointer as hexadecimal

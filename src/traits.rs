@@ -1,3 +1,7 @@
+use defmt_macros::internp;
+
+#[allow(unused_imports)]
+use crate as defmt;
 use crate::Formatter;
 
 /// Trait for types that can be formatted via defmt.
@@ -43,6 +47,17 @@ use crate::Formatter;
 pub trait Format {
     /// Writes the defmt representation of `self` to `fmt`.
     fn format(&self, fmt: Formatter);
+
+    #[doc(hidden)]
+    fn _format_tag() -> u16 {
+        internp!("{=__internal_FormatSequence}")
+    }
+
+    #[doc(hidden)]
+    fn _format_data(&self, fmt: Formatter) {
+        self.format(Formatter { inner: fmt.inner });
+        fmt.inner.tag(0); // terminator
+    }
 }
 
 /// Global logger acquire-release mechanism

@@ -8,9 +8,14 @@ PROVIDE(_defmt_panic = __defmt_default_panic);
 
 SECTIONS
 {
-  /* `0` specifies the start address of this virtual (`(INFO)`) section */
-  .defmt 0 (INFO) :
+
+  /* `1` specifies the start address of this virtual (`(INFO)`) section */
+  /* Tag number 0 is reserved for special uses, like as a format sequence terminator. */
+  .defmt 1 (INFO) :
   {
+    /* For some reason the `1` above has no effect, but this does */
+    . = 1;
+
     /* Format implementations for primitives like u8 */
     *(.defmt.prim.*);
 
@@ -26,4 +31,4 @@ SECTIONS
   }
 }
 
-ASSERT(SIZEOF(.defmt) < 16384, ".defmt section cannot contain more than (1<<14) interned strings");
+ASSERT(SIZEOF(.defmt) < 65534, ".defmt section cannot contain more than 65534 interned strings");

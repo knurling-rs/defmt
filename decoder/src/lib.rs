@@ -516,6 +516,60 @@ mod tests {
     }
 
     #[test]
+    fn format_sequence() {
+        let mut entries = BTreeMap::new();
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "{=__internal_FormatSequence}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Derived, "Foo".to_owned()),
+        );
+        entries.insert(
+            2,
+            TableEntry::new_without_symbol(Tag::Derived, "Bar({=u8})".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: None,
+        };
+
+        let bytes = [
+            0, 0, // index
+            1, 0, // index of Foo
+            2, 0,  // index of Bar
+            42, // bar.x
+            0, 0, // terminator
+        ];
+
+        assert_eq!(
+            table.decode(&bytes),
+            Ok((
+                Frame::new(
+                    Level::Info,
+                    0,
+                    None,
+                    vec![],
+                    "{=__internal_FormatSequence}",
+                    vec![
+                        Arg::Format {
+                            format: "Foo",
+                            args: vec![]
+                        },
+                        Arg::Format {
+                            format: "Bar({=u8})",
+                            args: vec![Arg::Uxx(42)]
+                        }
+                    ],
+                ),
+                bytes.len(),
+            ))
+        );
+    }
+
+    #[test]
     fn display() {
         let mut entries = BTreeMap::new();
         entries.insert(

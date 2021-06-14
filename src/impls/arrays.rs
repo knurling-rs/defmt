@@ -6,11 +6,15 @@ macro_rules! arrays {
         where
             T: Format
         {
-            fn format(&self, fmt: Formatter) {
-                if fmt.inner.needs_tag() {
-                    let t = internp!($fmt);
-                    fmt.inner.tag(&t);
-                }
+            default_format!();
+
+            #[inline]
+            fn _format_tag() -> u16 {
+                internp!($fmt)
+            }
+
+            #[inline]
+            fn _format_data(&self, fmt: Formatter) {
                 fmt.inner.fmt_array(self);
             }
         }

@@ -234,10 +234,12 @@ pub fn format(ts: TokenStream) -> TokenStream {
     let mut fs = String::new();
     let mut field_types = vec![];
     let mut exprs = vec![];
+    let sym: TokenStream2;
     match input.data {
         Data::Enum(de) => {
             if de.variants.is_empty() {
                 // For zero-variant enums, this is unreachable code.
+                sym = quote!(0);
                 exprs.push(quote!(match *self {}));
             } else {
                 let mut arms = vec![];
@@ -289,24 +291,12 @@ pub fn format(ts: TokenStream) -> TokenStream {
                     arms.push(quote!(
                         #ident::#vident #pats => {
                             #encode_discriminant
-
-                            // When descending into an enum variant, force all discriminants to be
-                            // encoded. This is required when encoding arrays like `[None, Some(x)]`
-                            // with `{:?}`, since the format string of `x` won't appear for the
-                            // first element.
-                            f.inner.with_tag(|f| {
-                                #(#exprs;)*
-                            });
+                            #(#exprs;)*
                         }
                     ))
                 }
 
-                let sym = mksym(&fs, "derived", false);
-                exprs.push(quote!(
-                    if f.inner.needs_tag() {
-                        f.inner.istr(&defmt::export::istr(#sym));
-                    }
-                ));
+                sym = mksym(&fs, "derived", false);
                 exprs.push(quote!(match self {
                     #(#arms)*
                 }));
@@ -318,12 +308,7 @@ pub fn format(ts: TokenStream) -> TokenStream {
             let mut pats = vec![];
             let args = fields(&ds.fields, &mut fs, &mut field_types, &mut pats);
 
-            let sym = mksym(&fs, "derived", false);
-            exprs.push(quote!(
-                if f.inner.needs_tag() {
-                    f.inner.istr(&defmt::export::istr(#sym));
-                }
-            ));
+            sym = mksym(&fs, "derived", false);
             exprs.push(quote!(match self {
                 Self { #(#pats),* } => {
                     #(#args;)*
@@ -355,6 +340,12 @@ pub fn format(ts: TokenStream) -> TokenStream {
     quote!(
         impl #impl_generics defmt::Format for #ident #type_generics #where_clause {
             fn format(&self, f: defmt::Formatter) {
+                unreachable!()
+            }
+            fn _format_tag() -> u16 {
+                (#sym) as u16
+            }
+            fn _format_data(&self, f: defmt::Formatter) {
                 #(#exprs)*
             }
         }
@@ -400,7 +391,7 @@ fn fields(
                         core::write!(format, "{}: {{={}}}", ident, ty).ok();
 
                         if ty == "?" {
-                            list.push(quote!(f.inner.fmt(#ident, false)));
+                            list.push(quote!(f.inner.fmt(#ident)));
                         } else {
                             let method = format_ident!("{}", ty);
                             list.push(quote!(f.inner.#method(#ident)));
@@ -413,7 +404,7 @@ fn fields(
 
                         let ident = format_ident!("arg{}", i);
                         if ty == "?" {
-                            list.push(quote!(f.inner.fmt(#ident, false)));
+                            list.push(quote!(f.inner.fmt(#ident)));
                         } else {
                             let method = format_ident!("{}", ty);
                             list.push(quote!(f.inner.#method(#ident)));
@@ -1017,10 +1008,7 @@ pub fn write(ts: TokenStream) -> TokenStream {
         let fmt: defmt::Formatter<'_> = #fmt;
         match (fmt.inner, #(&(#args)),*) {
             (_fmt_, #(#pats),*) => {
-                // HACK conditional should not be here; see FIXME in `format`
-                if _fmt_.needs_tag() {
-                    _fmt_.istr(&defmt::export::istr(#sym));
-                }
+                _fmt_.istr(&defmt::export::istr(#sym));
                 #(#exprs;)*
             }
         }
@@ -1151,7 +1139,7 @@ impl Codegen {
                 defmt_parser::Type::IStr => exprs.push(quote!(_fmt_.istr(#arg))),
                 defmt_parser::Type::Char => exprs.push(quote!(_fmt_.u32(&(*#arg as u32)))),
 
-                defmt_parser::Type::Format => exprs.push(quote!(_fmt_.fmt(#arg, false))),
+                defmt_parser::Type::Format => exprs.push(quote!(_fmt_.fmt(#arg))),
                 defmt_parser::Type::FormatSlice => exprs.push(quote!(_fmt_.fmt_slice(#arg))),
                 defmt_parser::Type::FormatArray(len) => exprs.push(quote!(_fmt_.fmt_array({
                     let tmp: &[_; #len] = #arg;
@@ -1160,6 +1148,7 @@ impl Codegen {
 
                 defmt_parser::Type::Debug => exprs.push(quote!(_fmt_.debug(#arg))),
                 defmt_parser::Type::Display => exprs.push(quote!(_fmt_.display(#arg))),
+                defmt_parser::Type::FormatSequence => unreachable!(),
 
                 defmt_parser::Type::U8Slice => exprs.push(quote!(_fmt_.slice(#arg))),
                 // We cast to the expected array type (which should be a no-op cast) to provoke

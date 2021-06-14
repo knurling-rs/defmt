@@ -1,19 +1,35 @@
 use super::*;
 
+impl Format for () {
+    default_format!();
+
+    #[inline]
+    fn _format_tag() -> u16 {
+        internp!("()")
+    }
+
+    #[inline]
+    fn _format_data(&self, _fmt: Formatter) {}
+}
+
 macro_rules! tuple {
     ( $format:expr, ($($name:ident),+) ) => (
         impl<$($name:Format),+> Format for ($($name,)+) where last_type!($($name,)+): ?Sized {
-            #[allow(non_snake_case, unused_assignments)]
-            fn format(&self, f: Formatter) {
-                if f.inner.needs_tag() {
-                    let t = internp!($format);
-                    f.inner.tag(&t);
-                }
+            default_format!();
 
+            #[inline]
+            fn _format_tag() -> u16 {
+                internp!($format)
+            }
+
+            #[inline]
+            #[allow(non_snake_case, unused_assignments)]
+            fn _format_data(&self, fmt: Formatter) {
                 let ($(ref $name,)+) = *self;
                 $(
-                    let formatter = Formatter { inner: f.inner };
-                    $name.format(formatter);
+                    fmt.inner.tag($name::_format_tag());
+                    let formatter = Formatter { inner: fmt.inner };
+                    $name._format_data(formatter);
                 )+
             }
         }

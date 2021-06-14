@@ -15,16 +15,21 @@ impl<T> Format for Option<T>
 where
     T: Format,
 {
-    fn format(&self, f: Formatter) {
-        if f.inner.needs_tag() {
-            let t = internp!("None|Some({=?})");
-            f.inner.tag(&t);
-        }
+    default_format!();
+
+    #[inline]
+    fn _format_tag() -> u16 {
+        internp!("None|Some({=?})")
+    }
+
+    #[inline]
+    fn _format_data(&self, fmt: Formatter) {
         match self {
-            None => f.inner.u8(&0),
+            None => fmt.inner.u8(&0),
             Some(x) => {
-                f.inner.u8(&1);
-                f.inner.with_tag(|f| x.format(f))
+                fmt.inner.u8(&1);
+                fmt.inner.tag(T::_format_tag());
+                x._format_data(fmt)
             }
         }
     }
@@ -35,38 +40,53 @@ where
     T: Format,
     E: Format,
 {
-    fn format(&self, f: Formatter) {
-        if f.inner.needs_tag() {
-            let t = internp!("Err({=?})|Ok({=?})");
-            f.inner.tag(&t);
-        }
+    default_format!();
+
+    #[inline]
+    fn _format_tag() -> u16 {
+        internp!("Err({=?})|Ok({=?})")
+    }
+
+    #[inline]
+    fn _format_data(&self, fmt: Formatter) {
         match self {
             Err(e) => {
-                f.inner.u8(&0);
-                f.inner.with_tag(|f| e.format(f))
+                fmt.inner.u8(&0);
+                fmt.inner.tag(E::_format_tag());
+                e._format_data(fmt)
             }
             Ok(x) => {
-                f.inner.u8(&1);
-                f.inner.with_tag(|f| x.format(f))
+                fmt.inner.u8(&1);
+                fmt.inner.tag(T::_format_tag());
+                x._format_data(fmt)
             }
         }
     }
 }
 
 impl<T> Format for core::marker::PhantomData<T> {
-    fn format(&self, f: Formatter) {
-        if f.inner.needs_tag() {
-            let t = internp!("PhantomData");
-            f.inner.tag(&t);
-        }
+    default_format!();
+
+    #[inline]
+    fn _format_tag() -> u16 {
+        internp!("PhantomData")
     }
+
+    #[inline]
+    fn _format_data(&self, _fmt: Formatter) {}
 }
 
 impl Format for core::convert::Infallible {
+    default_format!();
+
     #[inline]
-    fn format(&self, _: Formatter) {
-        // type cannot be instantiated so nothing to do here
-        match *self {}
+    fn _format_tag() -> u16 {
+        unreachable!();
+    }
+
+    #[inline]
+    fn _format_data(&self, _fmt: Formatter) {
+        unreachable!();
     }
 }
 
