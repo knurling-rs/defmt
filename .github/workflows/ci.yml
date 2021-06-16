@@ -11,7 +11,7 @@ on:
       - "!book/src/**"
   schedule:
     # runs 1 min after 2 or 1 AM (summer/winter) berlin time
-    - cron: '1 0 * * *'
+    - cron: "1 0 * * *"
 
 env:
   CARGO_TERM_COLOR: always
@@ -42,9 +42,6 @@ jobs:
       - name: Install C libraries for tooling on ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
-      - name: Install C libraries for tooling on macOS
-        if: matrix.os == 'macOS-latest'
-        run: brew install libusb
       - name: Check that all crates that can be compiled for the host build, check that defmt compiles with different features, run all unit tests on the host
         run: cargo xtask -d test-host
 
