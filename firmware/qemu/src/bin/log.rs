@@ -3,6 +3,7 @@
 
 use core::{
     marker::PhantomData,
+    num,
     sync::atomic::{AtomicU32, Ordering},
 };
 use cortex_m_rt::entry;
@@ -616,6 +617,20 @@ fn main() -> ! {
     defmt::info!("{:?}", [0, 1, 2].chunks_exact(1)); // ChunksExact
     defmt::info!("{:?}", [0, 1, 2].iter()); // ChunksExact
     defmt::info!("{:?}", [0, 1, 2].windows(1)); // Windows
+
+    // core::num::NonZero*
+    defmt::info!("{}", num::NonZeroI8::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroI16::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroI32::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroI64::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroI128::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroIsize::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroU8::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroU16::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroU32::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroU64::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroU128::new(1).unwrap());
+    defmt::info!("{}", num::NonZeroUsize::new(1).unwrap());
 
     defmt::info!("QEMU test finished!");
 
