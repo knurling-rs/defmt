@@ -12,7 +12,7 @@ impl Format for u8 {
     fn format(&self, fmt: defmt::Formatter) {
         if fmt.inner.needs_tag() {
             let t = internp!("{=u8}");
-            fmt.inner.u8(&t);
+            fmt.inner.tag(&t);
         }
         fmt.inner.u8(self)
         // on the wire: [1, 42]

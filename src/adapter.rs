@@ -29,7 +29,7 @@ impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
     fn format(&self, fmt: Formatter) {
         if fmt.inner.needs_tag() {
             let t = defmt_macros::internp!("{=__internal_Debug}");
-            fmt.inner.u8(&t);
+            fmt.inner.tag(&t);
         }
         fmt.inner.debug(&self.0);
     }
@@ -65,7 +65,7 @@ impl<T: fmt::Display + ?Sized> Format for Display2Format<'_, T> {
     fn format(&self, fmt: Formatter) {
         if fmt.inner.needs_tag() {
             let t = defmt_macros::internp!("{=__internal_Display}");
-            fmt.inner.u8(&t);
+            fmt.inner.tag(&t);
         }
         fmt.inner.display(&self.0);
     }

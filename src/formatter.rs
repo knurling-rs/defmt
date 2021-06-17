@@ -1,9 +1,6 @@
 use core::fmt::{self, Write as _};
 
-use crate::{export, leb, Format};
-
-/// The maximum number of booleans that can be compressed together
-const MAX_NUM_BOOL_FLAGS: u8 = 8;
+use crate::{export, Format};
 
 /// Handle to a defmt logger.
 pub struct Formatter<'a> {
@@ -16,10 +13,6 @@ pub struct Formatter<'a> {
 pub struct InternalFormatter {
     #[cfg(feature = "unstable-test")]
     bytes: Vec<u8>,
-    /// The current group of consecutive bools
-    bool_flags: u8,
-    /// The number of bits that we can still set in bool_flag
-    bools_left: u8,
     /// Whether to omit the tag of a `Format` value
     ///
     /// * this is disabled while formatting a `{:[?]}` value (second element on-wards)
@@ -42,11 +35,7 @@ impl InternalFormatter {
     #[cfg(not(feature = "unstable-test"))]
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        Self {
-            bool_flags: 0,
-            bools_left: MAX_NUM_BOOL_FLAGS,
-            omit_tag: false,
-        }
+        Self { omit_tag: false }
     }
 
     // TODO turn these public methods in `export` free functions
@@ -83,11 +72,8 @@ impl InternalFormatter {
     }
 
     /// Implementation detail
-    /// leb64-encode `x` and write it to self.bytes
-    pub fn leb64(&mut self, x: usize) {
-        let mut buf: [u8; 10] = [0; 10];
-        let i = leb::leb64(x, &mut buf);
-        self.write(&buf[..i])
+    pub fn tag(&mut self, b: &u16) {
+        self.write(&b.to_le_bytes())
     }
 
     /// Implementation detail
@@ -117,13 +103,12 @@ impl InternalFormatter {
 
     /// Implementation detail
     pub fn isize(&mut self, b: &isize) {
-        // Zig-zag encode the signed value.
-        self.leb64(leb::zigzag_encode(*b));
+        self.write(&(*b as i32).to_le_bytes())
     }
 
     /// Implementation detail
     pub fn fmt_slice(&mut self, values: &[impl Format]) {
-        self.leb64(values.len());
+        self.usize(&values.len());
         let mut is_first = true;
         for value in values {
             let omit_tag = !is_first;
@@ -170,7 +155,7 @@ impl InternalFormatter {
 
     /// Implementation detail
     pub fn usize(&mut self, b: &usize) {
-        self.leb64(*b);
+        self.write(&(*b as u32).to_le_bytes())
     }
 
     /// Implementation detail
@@ -184,12 +169,12 @@ impl InternalFormatter {
     }
 
     pub fn str(&mut self, s: &str) {
-        self.leb64(s.len());
+        self.usize(&s.len());
         self.write(s.as_bytes());
     }
 
     pub fn slice(&mut self, s: &[u8]) {
-        self.leb64(s.len());
+        self.usize(&s.len());
         self.write(s);
     }
 
@@ -210,25 +195,12 @@ impl InternalFormatter {
 
     /// Implementation detail
     pub fn istr(&mut self, s: &Str) {
-        // LEB128 encoding
-        if s.address < 128 {
-            self.write(&[s.address as u8])
-        } else {
-            self.write(&[s.address as u8 | (1 << 7), (s.address >> 7) as u8])
-        }
+        self.write(&s.address.to_le_bytes())
     }
 
     /// Implementation detail
     pub fn bool(&mut self, b: &bool) {
-        let b_u8 = *b as u8;
-        // set n'th bool flag
-        self.bool_flags = (self.bool_flags << 1) | b_u8;
-        self.bools_left -= 1;
-
-        // if we've filled max compression space, flush and begin anew
-        if self.bools_left == 0 {
-            self.flush_and_reset_bools();
-        }
+        self.u8(&(*b as u8));
     }
 
     /// Implementation detail
@@ -241,21 +213,6 @@ impl InternalFormatter {
     pub fn display(&mut self, val: &dyn core::fmt::Display) {
         core::write!(FmtWrite { fmt: self }, "{}", val).ok();
         self.write(&[0xff]);
-    }
-
-    /// The last pass in a formatting run: clean up & flush leftovers
-    pub fn finalize(&mut self) {
-        if self.bools_left < MAX_NUM_BOOL_FLAGS {
-            // there are bools in compression that haven't been flushed yet
-            self.flush_and_reset_bools();
-        }
-    }
-
-    fn flush_and_reset_bools(&mut self) {
-        let flags = self.bool_flags;
-        self.u8(&flags);
-        self.bools_left = MAX_NUM_BOOL_FLAGS;
-        self.bool_flags = 0;
     }
 
     #[inline(never)]
@@ -292,14 +249,11 @@ impl super::InternalFormatter {
     pub fn new() -> Self {
         Self {
             bytes: vec![],
-            bool_flags: 0,
-            bools_left: MAX_NUM_BOOL_FLAGS,
             omit_tag: false,
         }
     }
 
     pub fn bytes(&mut self) -> &[u8] {
-        self.finalize();
         &self.bytes
     }
 

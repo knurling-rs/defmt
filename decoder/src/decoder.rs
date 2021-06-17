@@ -2,10 +2,9 @@ use std::{
     convert::{TryFrom, TryInto},
     mem,
     ops::Range,
-    sync::Arc,
 };
 
-use crate::{Arg, Bool, DecodeError, FormatSliceElement, Table};
+use crate::{Arg, DecodeError, FormatSliceElement, Table};
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
@@ -27,10 +26,7 @@ pub(crate) struct Decoder<'t, 'b> {
     format_list: Option<FormatList<'t>>,
     // below an enum tags must be included
     below_enum: bool,
-    pub bools_tbd: Vec<Arc<Bool>>,
 }
-
-const MAX_NUM_BOOL_FLAGS: usize = 8;
 
 impl<'t, 'b> Decoder<'t, 'b> {
     pub fn new(table: &'t Table, bytes: &'b [u8]) -> Self {
@@ -38,29 +34,8 @@ impl<'t, 'b> Decoder<'t, 'b> {
             table,
             bytes,
             format_list: None,
-            bools_tbd: Vec::new(),
             below_enum: false,
         }
-    }
-
-    /// Reads a byte of packed bools and unpacks them into `args` at the given indices.
-    pub fn read_and_unpack_bools(&mut self) -> Result<(), DecodeError> {
-        let bool_flags = self.bytes.read_u8()?;
-        let mut flag_index = self.bools_tbd.len();
-
-        for bool in self.bools_tbd.iter() {
-            flag_index -= 1;
-
-            // read out the leftmost unread bit and turn it into a boolean
-            let flag_mask = 1 << flag_index;
-            let nth_flag = (bool_flags & flag_mask) != 0;
-
-            bool.set(nth_flag);
-        }
-
-        self.bools_tbd.clear();
-
-        Ok(())
     }
 
     /// Sort and deduplicate `params` so that they can be interpreted correctly during decoding
@@ -84,7 +59,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
             }
         }
 
-        let index = read_leb128(&mut self.bytes)?;
+        let index = self.bytes.read_u16::<LE>()? as usize;
         let format = self
             .table
             .get_without_level(index as usize)
@@ -230,10 +205,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::I32 => args.push(Arg::Ixx(self.bytes.read_i32::<LE>()? as i128)),
                 Type::I64 => args.push(Arg::Ixx(self.bytes.read_i64::<LE>()? as i128)),
                 Type::I128 => args.push(Arg::Ixx(self.bytes.read_i128::<LE>()?)),
-                // Signed isize is encoded in zigzag-encoding.
-                Type::Isize => args.push(Arg::Ixx(
-                    zigzag_decode(read_leb128(&mut self.bytes)?) as i128
-                )),
+                Type::Isize => args.push(Arg::Ixx(self.bytes.read_i32::<LE>()? as i128)),
                 Type::U8 => args.push(Arg::Uxx(self.bytes.read_u8()? as u128)),
                 Type::U16 => args.push(Arg::Uxx(self.bytes.read_u16::<LE>()? as u128)),
                 Type::U24 => {
@@ -245,20 +217,16 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::U32 => args.push(Arg::Uxx(self.bytes.read_u32::<LE>()? as u128)),
                 Type::U64 => args.push(Arg::Uxx(self.bytes.read_u64::<LE>()? as u128)),
                 Type::U128 => args.push(Arg::Uxx(self.bytes.read_u128::<LE>()? as u128)),
-                Type::Usize => args.push(Arg::Uxx(read_leb128(&mut self.bytes)? as u128)),
+                Type::Usize => args.push(Arg::Uxx(self.bytes.read_u32::<LE>()? as u128)),
                 Type::F32 => args.push(Arg::F32(f32::from_bits(self.bytes.read_u32::<LE>()?))),
                 Type::F64 => args.push(Arg::F64(f64::from_bits(self.bytes.read_u64::<LE>()?))),
-                Type::Bool => {
-                    let arc = Arc::new(Bool::FALSE);
-                    args.push(Arg::Bool(arc.clone()));
-                    self.bools_tbd.push(arc.clone());
-                    if self.bools_tbd.len() == MAX_NUM_BOOL_FLAGS {
-                        // reached end of compression block: sprinkle values into args
-                        self.read_and_unpack_bools()?;
-                    }
-                }
+                Type::Bool => args.push(Arg::Bool(match self.bytes.read_u8()? {
+                    0 => false,
+                    1 => true,
+                    _ => return Err(DecodeError::Malformed),
+                })),
                 Type::FormatSlice => {
-                    let num_elements = read_leb128(&mut self.bytes)? as usize;
+                    let num_elements = self.bytes.read_u32::<LE>()? as usize;
                     let elements = self.decode_format_slice(num_elements)?;
                     args.push(Arg::FormatSlice { elements });
                 }
@@ -305,7 +273,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Uxx(data));
                 }
                 Type::Str => {
-                    let str_len = read_leb128(&mut self.bytes)? as usize;
+                    let str_len = self.bytes.read_u32::<LE>()? as usize;
                     let mut arg_str_bytes = vec![];
 
                     // note: went for the suboptimal but simple solution; optimize if necessary
@@ -320,7 +288,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Str(arg_str));
                 }
                 Type::IStr => {
-                    let str_index = read_leb128(&mut self.bytes)? as usize;
+                    let str_index = self.bytes.read_u16::<LE>()? as usize;
 
                     let string = self
                         .table
@@ -331,7 +299,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 }
                 Type::U8Slice => {
                     // only supports byte slices
-                    let num_elements = read_leb128(&mut self.bytes)? as usize;
+                    let num_elements = self.bytes.read_u32::<LE>()? as usize;
                     let mut arg_slice = vec![];
 
                     // note: went for the suboptimal but simple solution; optimize if necessary
@@ -432,18 +400,6 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 
     // add merged bitfields to unsorted params
     params.append(&mut merged_bitfields);
-}
-
-pub fn read_leb128(bytes: &mut &[u8]) -> Result<u64, DecodeError> {
-    match leb128::read::unsigned(bytes) {
-        Ok(val) => Ok(val),
-        Err(leb128::read::Error::Overflow) => Err(DecodeError::Malformed),
-        Err(leb128::read::Error::IoError(io)) => Err(io.into()),
-    }
-}
-
-fn zigzag_decode(unsigned: u64) -> i64 {
-    (unsigned >> 1) as i64 ^ -((unsigned & 1) as i64)
 }
 
 #[cfg(test)]

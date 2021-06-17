@@ -523,7 +523,6 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
                     let mut _fmt_ = defmt::InternalFormatter::new();
                     _fmt_.header(&defmt::export::istr(#sym));
                     #(#exprs;)*
-                    _fmt_.finalize();
                     defmt::export::release()
                 }
             }
@@ -994,14 +993,14 @@ pub fn internp(ts: TokenStream) -> TokenStream {
     let section_macos = mksection(true, "prim.", &sym);
 
     if cfg!(feature = "unstable-test") {
-        quote!({ defmt::export::fetch_add_string_index() as u8 })
+        quote!({ defmt::export::fetch_add_string_index() as u16 })
     } else {
         quote!({
             #[cfg_attr(target_os = "macos", link_section = #section_macos)]
             #[cfg_attr(not(target_os = "macos"), link_section = #section)]
             #[export_name = #sym]
             static S: u8 = 0;
-            &S as *const u8 as u8
+            &S as *const u8 as u16
         })
     }
     .into()

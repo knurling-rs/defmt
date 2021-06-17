@@ -23,7 +23,6 @@ mod adapter;
 pub mod export;
 mod formatter;
 mod impls;
-mod leb;
 #[cfg(all(test, feature = "unstable-test"))]
 mod tests;
 mod traits;

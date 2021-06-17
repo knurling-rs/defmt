@@ -7,7 +7,7 @@ macro_rules! tuple {
             fn format(&self, f: Formatter) {
                 if f.inner.needs_tag() {
                     let t = internp!($format);
-                    f.inner.u8(&t);
+                    f.inner.tag(&t);
                 }
 
                 let ($(ref $name,)+) = *self;

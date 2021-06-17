@@ -18,7 +18,7 @@ where
     fn format(&self, f: Formatter) {
         if f.inner.needs_tag() {
             let t = internp!("None|Some({=?})");
-            f.inner.u8(&t);
+            f.inner.tag(&t);
         }
         match self {
             None => f.inner.u8(&0),
@@ -38,7 +38,7 @@ where
     fn format(&self, f: Formatter) {
         if f.inner.needs_tag() {
             let t = internp!("Err({=?})|Ok({=?})");
-            f.inner.u8(&t);
+            f.inner.tag(&t);
         }
         match self {
             Err(e) => {
@@ -57,7 +57,7 @@ impl<T> Format for core::marker::PhantomData<T> {
     fn format(&self, f: Formatter) {
         if f.inner.needs_tag() {
             let t = internp!("PhantomData");
-            f.inner.u8(&t);
+            f.inner.tag(&t);
         }
     }
 }

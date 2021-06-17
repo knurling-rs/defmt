@@ -18,17 +18,10 @@ mod elf2table;
 mod frame;
 pub mod log;
 
-use std::{
-    collections::BTreeMap,
-    error::Error,
-    fmt, io,
-    sync::{
-        atomic::{self, AtomicBool},
-        Arc,
-    },
-};
+use std::{collections::BTreeMap, error::Error, fmt, io};
 
-use decoder::{read_leb128, Decoder};
+use byteorder::{ReadBytesExt, LE};
+use decoder::Decoder;
 use defmt_parser::Level;
 use elf2table::parse_impl;
 
@@ -188,7 +181,7 @@ impl Table {
         mut bytes: &[u8],
     ) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
         let len = bytes.len();
-        let index = read_leb128(&mut bytes)?;
+        let index = bytes.read_u16::<LE>()? as u64;
 
         let mut decoder = Decoder::new(self, bytes);
 
@@ -205,10 +198,6 @@ impl Table {
             .map_err(|_| DecodeError::Malformed)?;
 
         let args = decoder.decode_format(format)?;
-        if !decoder.bools_tbd.is_empty() {
-            // Flush end of compression block.
-            decoder.read_and_unpack_bools()?;
-        }
 
         let frame = Frame::new(level, index, timestamp_format, timestamp_args, format, args);
 
@@ -217,37 +206,11 @@ impl Table {
     }
 }
 
-#[derive(Debug)]
-struct Bool(AtomicBool);
-
-impl Bool {
-    #[allow(clippy::declare_interior_mutable_const)]
-    const FALSE: Self = Self(AtomicBool::new(false));
-
-    fn set(&self, value: bool) {
-        self.0.store(value, atomic::Ordering::Relaxed);
-    }
-}
-
-impl fmt::Display for Bool {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.0.load(atomic::Ordering::Relaxed))
-    }
-}
-
-impl PartialEq for Bool {
-    fn eq(&self, other: &Self) -> bool {
-        self.0
-            .load(atomic::Ordering::Relaxed)
-            .eq(&other.0.load(atomic::Ordering::Relaxed))
-    }
-}
-
 // NOTE follows `parser::Type`
 #[derive(Debug, PartialEq)]
 enum Arg<'t> {
     /// Bool
-    Bool(Arc<Bool>),
+    Bool(bool),
     F32(f32),
     F64(f64),
     /// U8, U16, U24 and U32
@@ -360,7 +323,7 @@ mod tests {
             timestamp: None,
         };
 
-        let bytes = [0];
+        let bytes = [0, 0];
         //     index ^
 
         assert_eq!(
@@ -372,7 +335,7 @@ mod tests {
         );
 
         let bytes = [
-            1,  // index
+            1, 0,  // index
             42, // argument
         ];
 
@@ -407,7 +370,7 @@ mod tests {
         };
 
         let bytes = [
-            0,  // index
+            0, 0,  // index
             42, // u8
             0xff, 0xff, // u16
             0, 0, 1, // u24
@@ -471,7 +434,7 @@ mod tests {
             timestamp: None,
         };
         let bytes = [
-            0,  // index
+            0, 0,  // index
             42, // argument
         ];
 
@@ -491,7 +454,7 @@ mod tests {
         );
 
         let bytes = [
-            1,  // index
+            1, 0,  // index
             42, // u8
             0xff, 0xff, // u16
         ];
@@ -530,8 +493,8 @@ mod tests {
         };
 
         let bytes = [
-            0,  // index
-            1,  // index of the struct
+            0, 0, // index
+            1, 0,  // index of the struct
             42, // Foo.x
         ];
 
@@ -575,9 +538,9 @@ mod tests {
         };
 
         let bytes = [
-            0,  // index
-            2,  // timestamp
-            1,  // index of the struct
+            0, 0, // index
+            2, // timestamp
+            1, 0,  // index of the struct
             42, // Foo.x
         ];
 
@@ -591,7 +554,7 @@ mod tests {
     #[test]
     fn bools_simple() {
         let bytes = [
-            0,          // index
+            0, 0,          // index
             2,          // timestamp
             true as u8, // the logged bool value
         ];
@@ -600,152 +563,9 @@ mod tests {
     }
 
     #[test]
-    fn bools_max_capacity() {
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0b0110_0001, // the first 8 logged bool values
-        ];
-
-        decode_and_expect(
-            "bool capacity {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO bool capacity false true true false false false false true",
-        );
-    }
-
-    #[test]
-    fn bools_more_than_fit_in_one_byte() {
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0b0110_0001, // the first 8 logged bool values
-            0b1,         // the final logged bool value
-        ];
-
-        decode_and_expect(
-            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO bool overflow false true true false false false false true true",
-        );
-
-        // Ensure that bools are compressed into the first byte even when there's non-bool values
-        // between them.
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0xff,        // the logged u8
-            0b0110_0001, // the first 8 logged bool values
-            0b1,         // the final logged bool value
-        ];
-
-        decode_and_expect(
-            "bool overflow {=bool} {=u8} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO bool overflow false 255 true true false false false false true true",
-        );
-
-        // Ensure that bools are compressed into the first byte even when there's a non-bool value
-        // right between between the two compression blocks.
-        let bytes = [
-            0,           // index
-            2,           // timestamp
-            0b0110_0001, // the first 8 logged bool values
-            0xff,        // the logged u8
-            0b1,         // the final logged bool value
-        ];
-
-        decode_and_expect(
-            "bool overflow {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=bool} {=u8} {=bool}",
-            &bytes,
-            "0.000002 INFO bool overflow false true true false false false false true 255 true",
-        );
-    }
-
-    #[test]
-    fn bools_mixed() {
-        let bytes = [
-            0,       // index
-            2,       // timestamp
-            9 as u8, // a uint in between
-            0b101,   // 3 packed bools
-        ];
-
-        decode_and_expect(
-            "hidden bools {=bool} {=u8} {=bool} {=bool}",
-            &bytes,
-            "0.000002 INFO hidden bools true 9 false true",
-        );
-    }
-
-    #[test]
-    fn bools_mixed_no_trailing_bool() {
-        let bytes = [
-            0,   // index
-            2,   // timestamp
-            9,   // a u8 in between
-            0b0, // 3 packed bools
-        ];
-
-        decode_and_expect(
-            "no trailing bools {=bool} {=u8}",
-            &bytes,
-            "0.000002 INFO no trailing bools false 9",
-        );
-    }
-
-    #[test]
-    fn bools_bool_struct() {
-        /*
-        emulate
-        #[derive(Format)]
-        struct Flags {
-            a: bool,
-            b: bool,
-            c: bool,
-        }
-
-        defmt::info!("{:bool} {:?}", true, Flags {a: true, b: false, c: true });
-        */
-
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            0,
-            TableEntry::new_without_symbol(Tag::Info, "{=bool} {=?}".to_owned()),
-        );
-        entries.insert(
-            1,
-            TableEntry::new_without_symbol(
-                Tag::Derived,
-                "Flags {{ a: {=bool}, b: {=bool}, c: {=bool} }}".to_owned(),
-            ),
-        );
-
-        let table = Table {
-            entries,
-            timestamp: Some(TableEntry::new_without_symbol(
-                Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
-            )),
-        };
-
-        let bytes = [
-            0,      // index
-            2,      // timestamp
-            1,      // index of Flags { a: {:bool}, b: {:bool}, c: {:bool} }
-            0b1101, // 4 packed bools
-        ];
-
-        let frame = table.decode(&bytes).unwrap().0;
-        assert_eq!(
-            frame.display(false).to_string(),
-            "0.000002 INFO true Flags { a: true, b: false, c: true }"
-        );
-    }
-
-    #[test]
     fn bitfields() {
         let bytes = [
+            0,
             0,           // index
             2,           // timestamp
             0b1110_0101, // u8
@@ -760,6 +580,7 @@ mod tests {
     #[test]
     fn bitfields_reverse_order() {
         let bytes = [
+            0,
             0,           // index
             2,           // timestamp
             0b1101_0010, // u8
@@ -774,6 +595,7 @@ mod tests {
     #[test]
     fn bitfields_different_indices() {
         let bytes = [
+            0,
             0,           // index
             2,           // timestamp
             0b1111_0000, // u8
@@ -789,6 +611,7 @@ mod tests {
     #[test]
     fn bitfields_u16() {
         let bytes = [
+            0,
             0, // index
             2, // timestamp
             0b1111_0000,
@@ -800,6 +623,7 @@ mod tests {
     #[test]
     fn bitfields_mixed_types() {
         let bytes = [
+            0,
             0, // index
             2, // timestamp
             0b1111_0000,
@@ -816,6 +640,7 @@ mod tests {
     #[test]
     fn bitfields_mixed() {
         let bytes = [
+            0,
             0, // index
             2, // timestamp
             0b1111_0000,
@@ -833,6 +658,7 @@ mod tests {
     #[test]
     fn bitfields_across_boundaries() {
         let bytes = [
+            0,
             0, // index
             2, // timestamp
             0b1101_0010,
@@ -848,6 +674,7 @@ mod tests {
     #[test]
     fn bitfields_across_boundaries_diff_indices() {
         let bytes = [
+            0,
             0, // index
             2, // timestamp
             0b1101_0010,
@@ -864,6 +691,7 @@ mod tests {
     #[test]
     fn bitfields_truncated_front() {
         let bytes = [
+            0,
             0,           // index
             2,           // timestamp
             0b0110_0011, // truncated(!) u16
@@ -878,6 +706,7 @@ mod tests {
     #[test]
     fn bitfields_non_truncated_u32() {
         let bytes = [
+            0,
             0,           // index
             2,           // timestamp
             0b0110_0011, // -
@@ -895,6 +724,7 @@ mod tests {
     #[test]
     fn bitfields_u128() {
         let bytes = [
+            0,
             0,           // index
             2,           // timestamp
             0b1110_0101, // 120..127
@@ -920,9 +750,9 @@ mod tests {
     #[test]
     fn slice() {
         let bytes = [
-            0, // index
+            0, 0, // index
             2, // timestamp
-            2, // length of the slice
+            2, 0, 0, 0, // length of the slice
             23, 42, // slice content
         ];
         decode_and_expect("x={=[u8]}", &bytes, "0.000002 INFO x=[23, 42]");
@@ -931,9 +761,9 @@ mod tests {
     #[test]
     fn slice_with_trailing_args() {
         let bytes = [
-            0, // index
+            0, 0, // index
             2, // timestamp
-            2, // length of the slice
+            2, 0, 0, 0, // length of the slice
             23, 42, // slice content
             1,  // trailing arg
         ];
@@ -948,9 +778,9 @@ mod tests {
     #[test]
     fn string_hello_world() {
         let bytes = [
-            0, // index
+            0, 0, // index
             2, // timestamp
-            5, // length of the string
+            5, 0, 0, 0, // length of the string
             b'W', b'o', b'r', b'l', b'd',
         ];
 
@@ -960,9 +790,9 @@ mod tests {
     #[test]
     fn string_with_trailing_data() {
         let bytes = [
-            0, // index
+            0, 0, // index
             2, // timestamp
-            5, // length of the string
+            5, 0, 0, 0, // length of the string
             b'W', b'o', b'r', b'l', b'd', 125, // trailing data
         ];
 
@@ -976,7 +806,7 @@ mod tests {
     #[test]
     fn char_data() {
         let bytes = [
-            0, // index
+            0, 0, // index
             2, // timestamp
             0x61, 0x00, 0x00, 0x00, // char 'a'
             0x9C, 0xF4, 0x01, 0x00, // Purple heart emoji
@@ -1014,11 +844,11 @@ mod tests {
         };
 
         let bytes = [
-            4,  // string index (INFO)
-            0,  // timestamp
-            3,  // string index (enum)
-            1,  // Some discriminant
-            2,  // string index (u8)
+            4, 0, // string index (INFO)
+            0, // timestamp
+            3, 0, // string index (enum)
+            1, // Some discriminant
+            2, 0,  // string index (u8)
             42, // Some.0
         ];
 
@@ -1026,9 +856,9 @@ mod tests {
         assert_eq!(frame.display(false).to_string(), "0.000000 INFO x=Some(42)");
 
         let bytes = [
-            4, // string index (INFO)
+            4, 0, // string index (INFO)
             1, // timestamp
-            3, // string index (enum)
+            3, 0, // string index (enum)
             0, // None discriminant
         ];
 

@@ -9,7 +9,7 @@ macro_rules! arrays {
             fn format(&self, fmt: Formatter) {
                 if fmt.inner.needs_tag() {
                     let t = internp!($fmt);
-                    fmt.inner.u8(&t);
+                    fmt.inner.tag(&t);
                 }
                 fmt.inner.fmt_array(self);
             }
