@@ -10,7 +10,7 @@ name = "defmt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
 homepage = "https://knurling.ferrous-systems.com/"
-version = "0.2.2"
+version = "0.2.3"
 
 [features]
 alloc = []
@@ -19,10 +19,10 @@ alloc = []
 unstable-test = ["defmt-macros/unstable-test"]
 
 [dependencies]
-defmt-macros = { path = "macros", version = "0.2.1" }
+defmt-macros = { path = "macros", version = "0.2.2" }
 
 [dev-dependencies]
-rustc_version = "0.3.3"
+rustc_version = "0.4"
 trybuild = "1.0.42"
 
 [workspace]

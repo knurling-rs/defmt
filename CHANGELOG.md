@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.2.3] - 2021-06-17
+
+- [#488] Structure `impl Format`s into multiple files
+- [#496] Bump build-dep `semver` to  `1.0`
+- [#497] `macros`: match unused vars if logging is disabled
+- [#489] Structure lib
+- [#499] Illustrate structure of the defmt crates
+- [#500] book: fix leftover old formatting syntax; typos
+- [#503] Add alternate hint ('#')
+- [#509] `impl Format for NonZero*`
+- [#510] `CI`: Don't install MacOS dependency which is included by default
+
+[#488]: https://github.com/knurling-rs/defmt/pull/488
+[#496]: https://github.com/knurling-rs/defmt/pull/496
+[#497]: https://github.com/knurling-rs/defmt/pull/497
+[#489]: https://github.com/knurling-rs/defmt/pull/489
+[#499]: https://github.com/knurling-rs/defmt/pull/499
+[#500]: https://github.com/knurling-rs/defmt/pull/500
+[#503]: https://github.com/knurling-rs/defmt/pull/503
+[#509]: https://github.com/knurling-rs/defmt/pull/509
+[#510]: https://github.com/knurling-rs/defmt/pull/510
+
 ## [v0.2.2] - 2021-05-20
 
 - [#446] Add usage examples for `Debug2Format`, `Display2Format`
@@ -239,7 +261,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.2...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...main
+[v0.2.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.2...defmt-v0.2.3
 [v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.1...defmt-v0.2.2
 [v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...defmt-v0.2.1
 [v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...defmt-v0.2.0
