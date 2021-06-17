@@ -1,5 +1,3 @@
-use core::ptr::NonNull;
-
 use crate::Formatter;
 
 /// Trait for types that can be formatted via defmt.
@@ -49,34 +47,34 @@ pub trait Format {
 
 /// Global logger acquire-release mechanism
 ///
+/// The global logger can be acquired once for each "execution context". The definition
+/// of execution context is up to the implementation. For example, it can be:
+///
+/// - the entire process.
+/// - one thread in std environments.
+/// - one interrupt priority level in embedded devices.
+///
 /// # Safety contract
 ///
-/// - `acquire` returns a handle that temporarily *owns* the global logger
-/// - `acquire` must return `Some` only once, until the handle is `release`-d
-/// - `acquire` is allowed to return a handle per thread or interrupt level
-/// - `acquire` is a safe function therefore it must be thread-safe and interrupt-safe
-/// - The value returned by `acquire` is not `Send` so it cannot be moved between threads or
-/// interrupt handlers
+/// - `acquire` logically acquires the global logger in the current execution context.
+///   The acquiring is tracked internally, no Rust object is returned representing ownership.
+/// - `acquire` is a safe function, therefore it must be thread-safe and interrupt-safe
 ///
-/// And, not safety related, `acquire` should never be invoked from user code. The easiest way to
+/// And, not safety related, the methods should never be invoked from user code. The easiest way to
 /// ensure this is to implement `Logger` on a *private* `struct` and mark that `struct` as the
 /// `#[global_logger]`.
 pub unsafe trait Logger {
-    /// Returns a handle to the global logger
+    /// Acquire the global logger in the current execution context.
     ///
-    /// For the requirements of the method see the documentation of the `Logger` trait
-    fn acquire() -> Option<NonNull<dyn Write>>;
+    /// Panics if already acquired in the current execution context. Otherwise it must never fail.
+    fn acquire();
 
-    /// Releases the global logger
+    /// Releases the global logger in the current execution context.
     ///
     /// # Safety
-    /// `writer` argument must be a value previously returned by `Self::acquire` and not, say,
-    /// `NonNull::dangling()`
-    unsafe fn release(writer: NonNull<dyn Write>);
-}
+    /// Must be called exactly once for each acquire(), in the same execution context.
+    unsafe fn release();
 
-/// Trait for defmt logging targets.
-pub trait Write {
     /// Writes `bytes` to the destination.
     ///
     /// This will be called by the defmt logging macros to transmit encoded data. The write
@@ -84,5 +82,9 @@ pub trait Write {
     ///
     /// Note that a call to `write` does *not* correspond to a defmt logging macro invocation. A
     /// single `defmt::info!` call can result in an arbitrary number of `write` calls.
-    fn write(&mut self, bytes: &[u8]);
+    ///
+    /// # Safety
+    /// Must only be called when the global logger is acquired in the current execution context.
+    /// (i.e. between acquire() and release())
+    unsafe fn write(bytes: &[u8]);
 }

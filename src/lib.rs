@@ -31,7 +31,7 @@ mod traits;
 pub use crate::{
     adapter::{Debug2Format, Display2Format},
     formatter::{Formatter, InternalFormatter, Str},
-    traits::{Format, Logger, Write},
+    traits::{Format, Logger},
 };
 
 #[cfg(all(test, not(feature = "unstable-test")))]
@@ -241,18 +241,21 @@ pub use defmt_macros::write;
 /// # Example
 ///
 /// ```
-/// use defmt::{Logger, Write, global_logger};
-/// use core::ptr::NonNull;
+/// use defmt::{Logger, global_logger};
 ///
 /// #[global_logger]
 /// struct MyLogger;
 ///
 /// unsafe impl Logger for MyLogger {
-///     fn acquire() -> Option<NonNull<dyn Write>> {
+///     fn acquire() {
 /// # todo!()
 ///         // ...
 ///     }
-///     unsafe fn release(writer: NonNull<dyn Write>) {
+///     unsafe fn release() {
+/// # todo!()
+///         // ...
+///     }
+///     unsafe fn write(bytes: &[u8]) {
 /// # todo!()
 ///         // ...
 ///     }
