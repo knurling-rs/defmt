@@ -42,14 +42,14 @@ static SYM: u8 = 0;
 
 which results in a collision.
 
-To avoid this issue we store each interned string as a JSON object with 3 fields: the message itself, the name of the crate that invoked the macro, and a 64-bit integer "discriminator".
-The discriminator is a hash of the source code location of the log statement so it should be unique per crate.
+To avoid this issue we store each interned string as a JSON object with 3 fields: the message itself, the name of the crate that invoked the macro, and a 64-bit integer "disambiguator".
+The disambiguator is a hash of the source code location of the log statement so it should be unique per crate.
 Now these two macro invocations will produce something like this:
 
 ``` rust,no_run,noplayground
 // first info! invocation
 {
-    #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"discriminator\": \"1379186119\" }"]
+    #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"disambiguator\": \"1379186119\" }"]
     #[link_section = ".."]
     static SYM: u8 = 0;
 }
@@ -58,13 +58,13 @@ Now these two macro invocations will produce something like this:
 
 // second info! invocation
 {
-    #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"discriminator\": \"346188945\" }"]
+    #[export_name = "{ \"package\": \"my-app\", \"data\": \".. DONE\", \"disambiguator\": \"346188945\" }"]
     #[link_section = ".."]
     static SYM: u8 = 0;
 }
 ```
 
-These symbols do not collide because their discriminator fields are different so the program will link correctly.
+These symbols do not collide because their disambiguator fields are different so the program will link correctly.
 
 Because duplicate strings are kept in the final binary this linker-based interner is not really an interner.
 A proper interner returns the same index when the same string is interned several times.
