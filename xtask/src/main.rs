@@ -45,27 +45,35 @@ enum TestCommand {
 
 fn main() -> anyhow::Result<()> {
     let opt: Options = Options::from_args();
-
-    // TODO: one could argue that not all test scenarios require installation of targets
-    let added_targets = targets::install().expect("Error while installing required targets");
+    let mut added_targets = None;
 
     match opt.cmd {
-        TestCommand::TestAll => {
-            test_host(opt.deny_warnings);
-            test_cross();
-            test_snapshot(false);
-            test_book();
-            test_lint();
-        }
-        TestCommand::TestHost => test_host(opt.deny_warnings),
-        TestCommand::TestCross => test_cross(),
-        TestCommand::TestSnapshot { overwrite } => test_snapshot(overwrite),
         TestCommand::TestBook => test_book(),
+        TestCommand::TestHost => test_host(opt.deny_warnings),
         TestCommand::TestLint => test_lint(),
+
+        // following tests need to install additional targets
+        cmd => {
+            added_targets = Some(targets::install().expect("Error while installing required targets"));
+            match cmd {
+                TestCommand::TestCross => test_cross(),
+                TestCommand::TestSnapshot { overwrite } => test_snapshot(overwrite),
+                TestCommand::TestAll => {
+                    test_host(opt.deny_warnings);
+                    test_cross();
+                    test_snapshot(false);
+                    test_book();
+                    test_lint();
+                }
+                _ => unreachable!("get handled in outer `match`"),
+            }
+        }
     }
 
-    if !opt.keep_targets && !added_targets.is_empty() {
-        targets::uninstall(added_targets);
+    if let Some(added_targets) = added_targets {
+        if !opt.keep_targets && !added_targets.is_empty() {
+            targets::uninstall(added_targets)
+        }
     }
 
     let all_errors = ALL_ERRORS.lock().unwrap();
