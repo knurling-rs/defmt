@@ -632,6 +632,9 @@ fn main() -> ! {
     defmt::info!("{}", num::NonZeroU128::new(1).unwrap());
     defmt::info!("{}", num::NonZeroUsize::new(1).unwrap());
 
+    struct NotFormatType;
+    defmt::info!("{:?}", 0xCCBBAADD as *mut NotFormatType);
+
     defmt::info!("QEMU test finished!");
 
     loop {
