@@ -229,7 +229,7 @@ impl Format for () {
 // First cast raw pointer to thin pointer, then to usize and finally format as hexadecimal.
 impl<T> Format for *const T
 where
-    T: Format + ?Sized,
+    T: ?Sized,
 {
     fn format(&self, fmt: Formatter) {
         crate::write!(fmt, "{:x}", *self as *const () as usize);
@@ -238,7 +238,7 @@ where
 
 impl<T> Format for *mut T
 where
-    T: Format + ?Sized,
+    T: ?Sized,
 {
     fn format(&self, fmt: Formatter) {
         Format::format(&(*self as *const T), fmt)
