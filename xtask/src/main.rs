@@ -35,6 +35,7 @@ enum TestCommand {
     TestCross,
     TestHost,
     TestLint,
+    /// Run snapshot tests or optionally overwrite the expected output
     TestSnapshot {
         /// Overwrite the expected output instead of comparing it.
         #[structopt(long)]
