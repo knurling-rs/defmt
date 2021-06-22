@@ -15,7 +15,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  NO_STD_CHECK_TARGETS: thumbv6m-none-eabi thumbv8m.base-none-eabi riscv32i-unknown-none-elf
   NO_STD_TARGET: thumbv7em-none-eabi # firmware uses atomics
   QEMU_TARGET: thumbv7m-none-eabi
 
@@ -59,10 +58,6 @@ jobs:
         run: cargo xtask test-cross
 
   lint:
-    strategy:
-      matrix:
-        rust:
-          - stable
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -70,16 +65,15 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           override: true
+          components: rustfmt, clippy
       - name: Run rustfmt & clippy
         run: cargo xtask test-lint
 
   mdbook:
     strategy:
       matrix:
-        rust:
-          - stable
         os:
           - ubuntu-latest
           # as of 2021-04 github SIGKILLs us on macos for unknown reasons (possible OOM)
@@ -91,14 +85,13 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           override: true
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: latest
       - name: Run book tests
-        timeout-minutes: 10
         run: cargo xtask test-book
 
   qemu-snapshot:
@@ -127,6 +120,7 @@ jobs:
           CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER: qemu-run
           QEMU_RUN_IGNORE_VERSION: 1
         run: cargo xtask test-snapshot
+
   # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
   # bors.tech integration
   ci-success:
