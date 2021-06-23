@@ -27,6 +27,7 @@ rustc_version = "0.4"
 trybuild = "1.0.42"
 
 [build-dependencies]
+git-version = "0.3"
 semver = "1.0"
 
 [workspace]
