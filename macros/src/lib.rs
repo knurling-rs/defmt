@@ -1155,7 +1155,6 @@ impl Codegen {
 
                 defmt_parser::Type::U8 => exprs.push(quote!(_fmt_.u8(#arg))),
                 defmt_parser::Type::U16 => exprs.push(quote!(_fmt_.u16(#arg))),
-                defmt_parser::Type::U24 => exprs.push(quote!(_fmt_.u24(#arg))),
                 defmt_parser::Type::U32 => exprs.push(quote!(_fmt_.u32(#arg))),
                 defmt_parser::Type::U64 => exprs.push(quote!(_fmt_.u64(#arg))),
                 defmt_parser::Type::U128 => exprs.push(quote!(_fmt_.u128(#arg))),
@@ -1212,8 +1211,7 @@ impl Codegen {
                     match truncated_sz {
                         1 => exprs.push(quote!(_fmt_.u8(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
                         2 => exprs.push(quote!(_fmt_.u16(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
-                        3 => exprs.push(quote!(_fmt_.u24(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
-                        4 => exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
+                        3..=4 => exprs.push(quote!(_fmt_.u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
                         5..=8 => exprs.push(quote!(_fmt_.u64(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
                         9..=16 => exprs.push(quote!(_fmt_.u128(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
                         _ => unreachable!(),
