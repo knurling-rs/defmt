@@ -295,7 +295,7 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
+                "{=u8:us}".to_owned(),
             )),
         };
 
@@ -531,7 +531,7 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
+                "{=u8:us}".to_owned(),
             )),
         };
 
@@ -837,7 +837,7 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
+                "{=u8:us}".to_owned(),
             )),
         };
 

@@ -23,7 +23,7 @@ defmt::timestamp!("{=usize}", COUNT.fetch_add(1, Ordering::Relaxed));
 A `timestamp` function that uses a device-specific monotonic timer can directly read a MMIO register.
 It's OK if the function returns `0` while the timer is disabled.
 
-The `µs` display hint can be used to format an integer value as a time in microseconds (eg. `1_000_000` may be displayed as `1.000000`).
+The `us` display hint can be used to format an integer value as a time in microseconds (eg. `1_000_000` may be displayed as `1.000000`).
 
 ``` rust
 # extern crate defmt;
@@ -32,7 +32,7 @@ The `µs` display hint can be used to format an integer value as a time in micro
 #     unsafe { &mut X as *mut u32 }
 # }
 // WARNING may overflow and wrap-around in long lived apps
-defmt::timestamp!("{=u32:µs}", {
+defmt::timestamp!("{=u32:us}", {
     // NOTE(interrupt-safe) single instruction volatile read operation
     unsafe { monotonic_timer_counter_register().read_volatile() }
 });
