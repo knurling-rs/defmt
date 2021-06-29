@@ -212,8 +212,8 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
     };
     let load_section_sup = |_| Ok(Cow::Borrowed(&[][..]));
 
-    let dwarf_cow =
-        gimli::Dwarf::<Cow<[u8]>>::load::<_, _, anyhow::Error>(&load_section, &load_section_sup)?;
+    let mut dwarf_cow = gimli::Dwarf::<Cow<[u8]>>::load::<_, anyhow::Error>(&load_section)?;
+    dwarf_cow.load_sup::<_, anyhow::Error>(&load_section_sup)?;
 
     let borrow_section: &dyn for<'a> Fn(
         &'a Cow<[u8]>,
