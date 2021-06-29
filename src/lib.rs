@@ -280,7 +280,7 @@ pub use defmt_macros::global_logger;
 /// # use core::sync::atomic::{AtomicU32, Ordering};
 ///
 /// static COUNT: AtomicU32 = AtomicU32::new(0);
-/// defmt::timestamp!("{=u32:µs}", COUNT.fetch_add(1, Ordering::Relaxed));
+/// defmt::timestamp!("{=u32:us}", COUNT.fetch_add(1, Ordering::Relaxed));
 /// ```
 pub use defmt_macros::timestamp;
 

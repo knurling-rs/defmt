@@ -48,7 +48,7 @@ pub enum DisplayHint {
     Ascii,
     /// `:?`
     Debug,
-    /// `:µs`, formats integers as timestamps in microseconds
+    /// `:us`, formats integers as timestamps in microseconds
     Microseconds,
     /// Display hints currently not supported / understood
     Unknown(String),
@@ -75,7 +75,7 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
 
     Some(match s {
         "" => DisplayHint::NoHint { zero_pad },
-        "µs" => DisplayHint::Microseconds,
+        "us" => DisplayHint::Microseconds,
         "a" => DisplayHint::Ascii,
         "b" => DisplayHint::Binary {
             alternate,
@@ -124,7 +124,7 @@ pub enum Fragment<'f> {
 ///
 /// format_spec := [ zero_pad ] type
 /// zero_pad := '0' integer
-/// type := 'a' | 'b' | 'o' | 'x' | 'X' | '?' | 'µs'
+/// type := 'a' | 'b' | 'o' | 'x' | 'X' | '?' | 'us'
 /// ```
 #[derive(Debug, PartialEq)]
 struct Param {

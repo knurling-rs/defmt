@@ -11,7 +11,7 @@ The following display hints are currently supported:
 - `?`, `core::fmt::Debug`-like
 - `b`, binary
 - `a`, ASCII
-- `µs`, microseconds (formats integers as time stamps)
+- `us`, microseconds (formats integers as time stamps)
 
 The first 4 display hints resemble what's supported in `core::fmt`. Examples below:
 
