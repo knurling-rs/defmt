@@ -625,7 +625,7 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
+                "{=u8:us}".to_owned(),
             )),
         };
 
@@ -660,7 +660,7 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
+                "{=u8:us}".to_owned(),
             )),
         };
 
@@ -695,7 +695,7 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
+                "{=u8:us}".to_owned(),
             )),
         };
 
@@ -738,7 +738,7 @@ mod tests {
             entries,
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
-                "{=u8:µs}".to_owned(),
+                "{=u8:us}".to_owned(),
             )),
         };
 
@@ -754,7 +754,6 @@ mod tests {
             105, // "i"
         ];
         let frame = table.decode(&bytes).unwrap().0;
-        dbg!(&frame);
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO [Data { name: b\"Hi\" }]",
