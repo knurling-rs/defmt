@@ -208,12 +208,6 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::Isize => args.push(Arg::Ixx(self.bytes.read_i32::<LE>()? as i128)),
                 Type::U8 => args.push(Arg::Uxx(self.bytes.read_u8()? as u128)),
                 Type::U16 => args.push(Arg::Uxx(self.bytes.read_u16::<LE>()? as u128)),
-                Type::U24 => {
-                    let data_low = self.bytes.read_u8()?;
-                    let data_high = self.bytes.read_u16::<LE>()?;
-                    let data = data_low as u128 | (data_high as u128) << 8;
-                    args.push(Arg::Uxx(data as u128));
-                }
                 Type::U32 => args.push(Arg::Uxx(self.bytes.read_u32::<LE>()? as u128)),
                 Type::U64 => args.push(Arg::Uxx(self.bytes.read_u64::<LE>()? as u128)),
                 Type::U128 => args.push(Arg::Uxx(self.bytes.read_u128::<LE>()? as u128)),
@@ -261,8 +255,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     data = match size_after_truncation {
                         1 => self.bytes.read_u8()? as u128,
                         2 => self.bytes.read_u16::<LE>()? as u128,
-                        3 => self.bytes.read_u24::<LE>()? as u128,
-                        4 => self.bytes.read_u32::<LE>()? as u128,
+                        3..=4 => self.bytes.read_u32::<LE>()? as u128,
                         5..=8 => self.bytes.read_u64::<LE>()? as u128,
                         9..=16 => self.bytes.read_u128::<LE>()? as u128,
                         _ => unreachable!(),

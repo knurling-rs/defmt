@@ -33,7 +33,6 @@ pub enum Type {
 
     U8,
     U16,
-    U24,
     U32,
     U64,
     U128,
@@ -51,7 +50,6 @@ impl FromStr for Type {
         Ok(match s {
             "u8" => Type::U8,
             "u16" => Type::U16,
-            "u24" => Type::U24,
             "u32" => Type::U32,
             "u64" => Type::U64,
             "u128" => Type::U128,

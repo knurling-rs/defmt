@@ -764,15 +764,6 @@ mod tests {
         );
 
         assert_eq!(
-            parse_param("=u24", ParserMode::Strict),
-            Ok(Param {
-                index: None,
-                ty: Type::U24,
-                hint: None,
-            })
-        );
-
-        assert_eq!(
             parse_param("=u32", ParserMode::Strict),
             Ok(Param {
                 index: None,

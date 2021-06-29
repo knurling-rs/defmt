@@ -213,9 +213,9 @@ enum Arg<'t> {
     Bool(bool),
     F32(f32),
     F64(f64),
-    /// U8, U16, U24 and U32
+    /// U8, U16, U32, U64, U128
     Uxx(u128),
-    /// I8, I16, I24 and I32
+    /// I8, I16, I32, I64, I128
     Ixx(i128),
     /// Str
     Str(String),
@@ -360,7 +360,7 @@ mod tests {
     #[test]
     fn all_integers() {
         const FMT: &str =
-            "Hello, {=u8} {=u16} {=u24} {=u32} {=u64} {=u128} {=i8} {=i16} {=i32} {=i64} {=i128}!";
+            "Hello, {=u8} {=u16} {=u32} {=u64} {=u128} {=i8} {=i16} {=i32} {=i64} {=i128}!";
         let mut entries = BTreeMap::new();
         entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
 
@@ -373,7 +373,6 @@ mod tests {
             0, 0,  // index
             42, // u8
             0xff, 0xff, // u16
-            0, 0, 1, // u24
             0xff, 0xff, 0xff, 0xff, // u32
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // u64
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -398,7 +397,6 @@ mod tests {
                     vec![
                         Arg::Uxx(42),                      // u8
                         Arg::Uxx(u16::max_value().into()), // u16
-                        Arg::Uxx(0x10000),                 // u24
                         Arg::Uxx(u32::max_value().into()), // u32
                         Arg::Uxx(u64::max_value().into()), // u64
                         Arg::Uxx(u128::max_value()),       // u128
