@@ -1,9 +1,0 @@
-error[E0382]: use of moved value: `f`
- --> $DIR/fmt-twice.rs:6:21
-  |
-4 |     fn format(&self, f: defmt::Formatter) {
-  |                      - move occurs because `f` has type `defmt::Formatter<'_>`, which does not implement the `Copy` trait
-5 |         0u8.format(f);
-  |                    - value moved here
-6 |         0u16.format(f);
-  |                     ^ value used here after move
