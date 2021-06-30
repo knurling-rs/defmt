@@ -630,16 +630,16 @@ mod tests {
         };
 
         let bytes = [
-            0,  // index
-            2,  // timestamp
-            1,  // index of the struct
+            0, 0, // index
+            2, // timestamp
+            1, 0,  // index of the struct
             42, // value
         ];
 
         let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(
             frame.display(false).to_string(),
-            "0.000002 INFO x=S { x: 0x2a }",
+            "0.000002 INFO x=S { x: 2a }",
         );
     }
 
@@ -665,16 +665,16 @@ mod tests {
         };
 
         let bytes = [
-            0,  // index
-            2,  // timestamp
-            1,  // index of the struct
+            0, 0, // index
+            2, // timestamp
+            1, 0,  // index of the struct
             42, // value
         ];
 
         let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(
             frame.display(false).to_string(),
-            "0.000002 INFO x=S { x: 0b101010 }",
+            "0.000002 INFO x=S { x: 101010 }",
         );
     }
 
@@ -700,10 +700,10 @@ mod tests {
         };
 
         let bytes = [
-            0, // index
+            0, 0, // index
             2, // timestamp
-            1, // index into the struct
-            5, // length of the string
+            1, 0, // index into the struct
+            5, 0, 0, 0, // length of the string
             b'H', b'e', b'l', b'l', b'o', // string "Hello"
         ];
         let frame = table.decode(&bytes).unwrap().0;
@@ -743,13 +743,13 @@ mod tests {
         };
 
         let bytes = [
-            3,   // frame index
-            2,   // timestamp value of type `u8`
-            1,   // number of elements in `FormatSlice`
-            2,   // index to `Data` struct
-            1,   // Format index to table entry: `{=[?]}`
-            2,   // inner FormatSlice, number of elements in `name` field
-            0,   // Format index to table entry: `{=u8}`
+            3, 0, // frame index
+            2, // timestamp value of type `u8`
+            1, 0, 0, 0, // number of elements in `FormatSlice`
+            2, 0, // index to `Data` struct
+            1, 0, // Format index to table entry: `{=[?]}`
+            2, 0, 0, 0, // inner FormatSlice, number of elements in `name` field
+            0, 0,   // Format index to table entry: `{=u8}`
             72,  // "H"
             105, // "i"
         ];
