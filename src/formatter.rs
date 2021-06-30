@@ -11,8 +11,6 @@ pub struct Formatter<'a> {
 
 #[doc(hidden)]
 pub struct InternalFormatter {
-    #[cfg(feature = "unstable-test")]
-    bytes: Vec<u8>,
     /// Whether to omit the tag of a `Format` value
     ///
     /// * this is disabled while formatting a `{:[?]}` value (second element on-wards)
@@ -22,7 +20,6 @@ pub struct InternalFormatter {
 
 #[doc(hidden)]
 impl InternalFormatter {
-    #[cfg(not(feature = "unstable-test"))]
     pub fn write(&mut self, bytes: &[u8]) {
         export::write(bytes)
     }
@@ -32,7 +29,6 @@ impl InternalFormatter {
     /// # Safety
     ///
     /// Must only be called when the current execution context has acquired the logger with [Logger::acquire]
-    #[cfg(not(feature = "unstable-test"))]
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self { omit_tag: false }
@@ -239,25 +235,5 @@ impl fmt::Write for FmtWrite<'_> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.fmt.write(s.as_bytes());
         Ok(())
-    }
-}
-
-#[doc(hidden)]
-#[cfg(feature = "unstable-test")]
-impl super::InternalFormatter {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self {
-            bytes: vec![],
-            omit_tag: false,
-        }
-    }
-
-    pub fn bytes(&mut self) -> &[u8] {
-        &self.bytes
-    }
-
-    pub fn write(&mut self, bytes: &[u8]) {
-        self.bytes.extend_from_slice(bytes)
     }
 }

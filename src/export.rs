@@ -2,10 +2,8 @@ use crate::Str;
 
 #[cfg(feature = "unstable-test")]
 thread_local! {
-    static I: core::sync::atomic::AtomicU16 =
-        core::sync::atomic::AtomicU16::new(0);
-    static T: core::sync::atomic::AtomicU16 =
-        core::sync::atomic::AtomicU16::new(0);
+    static I: core::sync::atomic::AtomicU16 = core::sync::atomic::AtomicU16::new(0);
+    static BYTES: core::cell::RefCell<Vec<u8>> = core::cell::RefCell::new(Vec::new());
 }
 
 /// For testing purposes
@@ -18,6 +16,12 @@ pub fn fetch_string_index() -> u16 {
 #[cfg(feature = "unstable-test")]
 pub fn fetch_add_string_index() -> usize {
     (I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed))) as usize
+}
+
+/// Get and clear the logged bytes
+#[cfg(feature = "unstable-test")]
+pub fn fetch_bytes() -> Vec<u8> {
+    BYTES.with(|b| core::mem::replace(&mut *b.borrow_mut(), Vec::new()))
 }
 
 #[cfg(feature = "unstable-test")]
@@ -42,6 +46,11 @@ pub fn release() {
         fn _defmt_release();
     }
     unsafe { _defmt_release() }
+}
+
+#[cfg(feature = "unstable-test")]
+pub fn write(bytes: &[u8]) {
+    BYTES.with(|b| b.borrow_mut().extend(bytes))
 }
 
 #[cfg(not(feature = "unstable-test"))]

@@ -21,11 +21,11 @@
 // let mut f = InternalFormatter::new();
 // let index = defmt::export::fetch_string_index();
 // foo(&mut f); // NOTE increases the interner index
-// assert_eq!(f.bytes(), [index]);
+// assert_eq!(fetch_bytes(), [index]);
 //
 // let mut f = InternalFormatter::new();
 // foo(&mut f);
-// assert_eq!(f.bytes(), [index.wrapping_add(1)]);
+// assert_eq!(fetch_bytes(), [index.wrapping_add(1)]);
 //                               ^^^^^^^^^^^^^^^ account for the previous `foo` call
 // ```
 //
@@ -50,17 +50,17 @@ fn check_format_implementation(val: &(impl Format + ?Sized), expected_encoding: 
     let mut f = InternalFormatter::new();
     let g = Formatter { inner: &mut f };
     val.format(g);
-    assert_eq!(f.bytes(), expected_encoding);
+    assert_eq!(defmt::export::fetch_bytes(), expected_encoding);
 }
 
 macro_rules! check {
-    ($got:expr, [$($x:expr),* $(,)?]) => {
+    ([$($x:expr),* $(,)?]) => {
         {
             let mut v = Vec::<u8>::new();
             $(
                 v.extend(&($x).to_le_bytes());
             )*
-            assert_eq!($got, &v);
+            assert_eq!(defmt::export::fetch_bytes(), v);
         }
     };
 }
@@ -84,25 +84,19 @@ fn write() {
     let g = Formatter { inner: f };
 
     write!(g, "The answer is {=u8}", 42);
-    check!(
-        f.bytes(),
-        [
-            index, // "The answer is {=u8}",
-            42u8,  // u8 value
-        ]
-    );
+    check!([
+        index, // "The answer is {=u8}",
+        42u8,  // u8 value
+    ]);
 
     let f2 = &mut InternalFormatter::new();
     let g2 = Formatter { inner: f2 };
     write!(g2, "The answer is {=?}", 42u8);
-    check!(
-        f2.bytes(),
-        [
-            inc(index, 1), // "The answer is {=?}"
-            inc(index, 2), // "{=u8}" / impl Format for u8
-            42u8,          // u8 value
-        ]
-    );
+    check!([
+        inc(index, 1), // "The answer is {=?}"
+        inc(index, 2), // "{=u8}" / impl Format for u8
+        42u8,          // u8 value
+    ]);
 }
 
 #[test]
@@ -116,15 +110,12 @@ fn bitfields_mixed() {
         "bitfields {0=7..12}, {1=0..5}",
         0b1110_0101_1111_0000u16, 0b1111_0000u8
     );
-    check!(
-        f.bytes(),
-        [
-            index, // bitfields {0=7..12}, {1=0..5}",
-            0b1111_0000u8,
-            0b1110_0101u8, // u16
-            0b1111_0000u8, // u8
-        ]
-    );
+    check!([
+        index, // bitfields {0=7..12}, {1=0..5}",
+        0b1111_0000u8,
+        0b1110_0101u8, // u16
+        0b1111_0000u8, // u8
+    ]);
 }
 
 #[test]
@@ -134,14 +125,11 @@ fn bitfields_across_octets() {
     let g = Formatter { inner: f };
 
     write!(g, "bitfields {0=0..7} {0=9..14}", 0b0110_0011_1101_0010u16);
-    check!(
-        f.bytes(),
-        [
-            index, // bitfields {0=0..7} {0=9..14}",
-            0b1101_0010u8,
-            0b0110_0011u8, // u16
-        ]
-    );
+    check!([
+        index, // bitfields {0=0..7} {0=9..14}",
+        0b1101_0010u8,
+        0b0110_0011u8, // u16
+    ]);
 }
 
 #[test]
@@ -155,13 +143,10 @@ fn bitfields_truncate_lower() {
         "bitfields {0=9..14}",
         0b0000_0000_0000_1111_0110_0011_1101_0010u32
     );
-    check!(
-        f.bytes(),
-        [
-            index,         // bitfields {0=9..14}",
-            0b0110_0011u8, // the first octet should have been truncated away
-        ]
-    );
+    check!([
+        index,         // bitfields {0=9..14}",
+        0b0110_0011u8, // the first octet should have been truncated away
+    ]);
 }
 
 #[test]
@@ -171,13 +156,10 @@ fn bitfields_assert_range_exclusive() {
     let g = Formatter { inner: f };
 
     write!(g, "bitfields {0=6..8}", 0b1010_0101u8,);
-    check!(
-        f.bytes(),
-        [
-            index, // "bitfields {0=6..8}"
-            0b1010_0101u8
-        ]
-    );
+    check!([
+        index, // "bitfields {0=6..8}"
+        0b1010_0101u8
+    ]);
 }
 
 #[test]

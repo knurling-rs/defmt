@@ -169,47 +169,29 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
         Err(e) => return e.to_compile_error().into(),
     };
 
-    if cfg!(feature = "unstable-test") {
-        // Only check that the formatting arguments compile.
-        quote!(
-            const _: () = {
-                #[allow(unused)]
-                fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
-                    match (fmt.inner, #(&(#args)),*) {
-                        (_fmt_, #(#pats),*) => {
-                            // NOTE: No format string index, and no finalize call.
-                            #(#exprs;)*
-                        }
+    quote!(
+        const _: () = {
+            #[export_name = "_defmt_timestamp"]
+            fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
+                match (fmt.inner, #(&(#args)),*) {
+                    (_fmt_, #(#pats),*) => {
+                        // NOTE: No format string index, and no finalize call.
+                        #(#exprs;)*
                     }
                 }
-            };
-        )
-        .into()
-    } else {
-        quote!(
-            const _: () = {
-                #[export_name = "_defmt_timestamp"]
-                fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
-                    match (fmt.inner, #(&(#args)),*) {
-                        (_fmt_, #(#pats),*) => {
-                            // NOTE: No format string index, and no finalize call.
-                            #(#exprs;)*
-                        }
-                    }
-                }
+            }
 
-                #sym;
+            #sym;
 
-                // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
-                // Uses `#symname` to ensure it is not discarded by the linker.
-                #[no_mangle]
-                #[cfg_attr(target_os = "macos", link_section = ".defmt,end.timestamp")]
-                #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end.timestamp")]
-                static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#symname;
-            };
-        )
-        .into()
-    }
+            // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
+            // Uses `#symname` to ensure it is not discarded by the linker.
+            #[no_mangle]
+            #[cfg_attr(target_os = "macos", link_section = ".defmt,end.timestamp")]
+            #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end.timestamp")]
+            static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#symname;
+        };
+    )
+    .into()
 }
 
 /// Returns a list of features of which one has to be enabled for `level` to be active
