@@ -23,7 +23,7 @@ fn main() -> ! {
         }
 
         // outputs: "S { x: "hi", y: 0x2a }"
-        defmt::info!("{:x}", S1 { x: "hi", y: 42 });
+        defmt::info!("{:#x}", S1 { x: "hi", y: 42 });
     }
 
     {
@@ -32,12 +32,12 @@ fn main() -> ! {
         }
         impl defmt::Format for S2 {
             fn format(&self, f: defmt::Formatter) {
-                write!(f, "S2 {{ x: {=u8:x} }}", self.x)
+                write!(f, "S2 {{ x: {=u8:#x} }}", self.x)
             }
         }
 
         // ignores outer :b hint, should output: "S { x: 0x2a }"
-        defmt::info!("{:b}", S2 { x: 42 });
+        defmt::info!("{:#b}", S2 { x: 42 });
     }
 
     {
@@ -67,7 +67,7 @@ fn main() -> ! {
         }
         impl defmt::Format for S1 {
             fn format(&self, f: defmt::Formatter) {
-                write!(f, "S1 {{ x: {=u16:b}, y: {} }}", self.x, self.y);
+                write!(f, "S1 {{ x: {=u16:#b}, y: {} }}", self.x, self.y);
             }
         }
 
@@ -96,14 +96,14 @@ fn main() -> ! {
             }
         );
         defmt::info!(
-            "{:x}",
+            "{:#x}",
             S2 {
                 s: S1 { x: 4, y: 12 },
                 z: 20
             }
         );
         defmt::info!(
-            "{:b}",
+            "{:#b}",
             S2 {
                 s: S1 { x: 4, y: 12 },
                 z: 20
@@ -121,7 +121,7 @@ fn main() -> ! {
         // outputs: "S { x: "hi", y: 42 }"
         defmt::info!("{}", S1 { x: "hi", y: 42 });
         // outputs: "S { x: "hi", y: 0x2a }"
-        defmt::info!("{:x}", S1 { x: "hi", y: 42 });
+        defmt::info!("{:#x}", S1 { x: "hi", y: 42 });
     }
 
     loop {
@@ -130,7 +130,7 @@ fn main() -> ! {
 }
 
 static COUNT: AtomicU32 = AtomicU32::new(0);
-defmt::timestamp!("{=u32:µs}", COUNT.fetch_add(1, Ordering::Relaxed));
+defmt::timestamp!("{=u32:us}", COUNT.fetch_add(1, Ordering::Relaxed));
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
 #[cfg(target_os = "none")]
