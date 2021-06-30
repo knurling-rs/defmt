@@ -449,6 +449,28 @@ fn main() -> ! {
             "nested `Format` impls using `write!`: {=?}",
             MyStruct(Inner(42)),
         );
+
+        struct MyMultiStruct(u32);
+
+        impl Format for MyMultiStruct {
+            fn format(&self, f: Formatter) {
+                defmt::write!(f, "MyMultiStruct@{=u32} ", self.0);
+                if self.0 == 0 {
+                    defmt::write!(f, "IS ZERO")
+                } else {
+                    defmt::write!(f, "IS NOT ZERO, division result: {=u32}", 100 / self.0)
+                }
+            }
+        }
+
+        defmt::info!(
+            "manual `Format` impl with multiple `write!`: {=?}",
+            MyMultiStruct(0)
+        );
+        defmt::info!(
+            "manual `Format` impl with multiple `write!`: {=?}",
+            MyMultiStruct(20)
+        );
     }
 
     // Debug adapter

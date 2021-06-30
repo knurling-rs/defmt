@@ -1,8 +1,0 @@
-error[E0382]: use of moved value: `f`
- --> $DIR/write-for-loop.rs:6:27
-  |
-4 |     fn format(&self, f: defmt::Formatter) {
-  |                      - move occurs because `f` has type `defmt::Formatter<'_>`, which does not implement the `Copy` trait
-5 |         for _ in 0..3 {
-6 |             defmt::write!(f, "hello");
-  |                           ^ value moved here, in previous iteration of loop

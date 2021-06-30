@@ -207,7 +207,7 @@ impl Table {
 }
 
 // NOTE follows `parser::Type`
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum Arg<'t> {
     /// Bool
     Bool(bool),
@@ -229,6 +229,9 @@ enum Arg<'t> {
     FormatSlice {
         elements: Vec<FormatSliceElement<'t>>,
     },
+    FormatSequence {
+        args: Vec<Arg<'t>>,
+    },
     /// Slice or Array of bytes.
     Slice(Vec<u8>),
     /// Char
@@ -238,7 +241,7 @@ enum Arg<'t> {
     Preformatted(String),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 struct FormatSliceElement<'t> {
     // this will usually be the same format string for all elements; except when the format string
     // is an enum -- in that case `format` will be the variant
@@ -508,6 +511,62 @@ mod tests {
                     vec![Arg::Format {
                         format: "Foo {{ x: {=u8} }}",
                         args: vec![Arg::Uxx(42)]
+                    }],
+                ),
+                bytes.len(),
+            ))
+        );
+    }
+
+    #[test]
+    fn format_sequence() {
+        let mut entries = BTreeMap::new();
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "{=__internal_FormatSequence}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Derived, "Foo".to_owned()),
+        );
+        entries.insert(
+            2,
+            TableEntry::new_without_symbol(Tag::Derived, "Bar({=u8})".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: None,
+        };
+
+        let bytes = [
+            0, 0, // index
+            1, 0, // index of Foo
+            2, 0,  // index of Bar
+            42, // bar.x
+            0, 0, // terminator
+        ];
+
+        assert_eq!(
+            table.decode(&bytes),
+            Ok((
+                Frame::new(
+                    Level::Info,
+                    0,
+                    None,
+                    vec![],
+                    "{=__internal_FormatSequence}",
+                    vec![Arg::FormatSequence {
+                        args: vec![
+                            Arg::Format {
+                                format: "Foo",
+                                args: vec![]
+                            },
+                            Arg::Format {
+                                format: "Bar({=u8})",
+                                args: vec![Arg::Uxx(42)]
+                            }
+                        ]
                     }],
                 ),
                 bytes.len(),

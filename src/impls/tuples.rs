@@ -1,19 +1,35 @@
 use super::*;
+use crate::export;
+
+impl Format for () {
+    default_format!();
+
+    #[inline]
+    fn _format_tag() -> Str {
+        internp!("()")
+    }
+
+    #[inline]
+    fn _format_data(&self) {}
+}
 
 macro_rules! tuple {
     ( $format:expr, ($($name:ident),+) ) => (
         impl<$($name:Format),+> Format for ($($name,)+) where last_type!($($name,)+): ?Sized {
-            #[allow(non_snake_case, unused_assignments)]
-            fn format(&self, f: Formatter) {
-                if f.inner.needs_tag() {
-                    let t = internp!($format);
-                    f.inner.tag(&t);
-                }
+            default_format!();
 
+            #[inline]
+            fn _format_tag() -> Str {
+                internp!($format)
+            }
+
+            #[inline]
+            #[allow(non_snake_case, unused_assignments)]
+            fn _format_data(&self) {
                 let ($(ref $name,)+) = *self;
                 $(
-                    let formatter = Formatter { inner: f.inner };
-                    $name.format(formatter);
+                    export::istr(&$name::_format_tag());
+                    $name._format_data();
                 )+
             }
         }

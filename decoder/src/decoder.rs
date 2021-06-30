@@ -1,6 +1,5 @@
 use std::{
     convert::{TryFrom, TryInto},
-    mem,
     ops::Range,
 };
 
@@ -8,34 +7,14 @@ use crate::{Arg, DecodeError, FormatSliceElement, Table};
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
-/// List of format strings; used when decoding a `FormatSlice` (`{:[?]}`) argument
-#[derive(Debug)]
-enum FormatList<'t> {
-    /// Build the list; used when decoding the first element
-    Build { formats: Vec<&'t str> },
-    /// Use the list; used when decoding the rest of elements
-    Use {
-        formats: Vec<&'t str>,
-        cursor: usize,
-    },
-}
-
 pub(crate) struct Decoder<'t, 'b> {
     table: &'t Table,
     pub bytes: &'b [u8],
-    format_list: Option<FormatList<'t>>,
-    // below an enum tags must be included
-    below_enum: bool,
 }
 
 impl<'t, 'b> Decoder<'t, 'b> {
     pub fn new(table: &'t Table, bytes: &'b [u8]) -> Self {
-        Self {
-            table,
-            bytes,
-            format_list: None,
-            below_enum: false,
-        }
+        Self { table, bytes }
     }
 
     /// Sort and deduplicate `params` so that they can be interpreted correctly during decoding
@@ -48,28 +27,14 @@ impl<'t, 'b> Decoder<'t, 'b> {
         params.dedup_by(|a, b| a.index == b.index);
     }
 
-    /// Gets a format string from
-    /// - the `FormatList`, if it's in `Use` mode, or
-    /// - from `bytes` and `table` if the `FormatList` is in `Build` mode or was not provided
+    /// Gets a format string from `bytes` and `table`
     fn get_format(&mut self) -> Result<&'t str, DecodeError> {
-        if let Some(FormatList::Use { formats, cursor }) = self.format_list.as_mut() {
-            if let Some(format) = formats.get(*cursor) {
-                *cursor += 1;
-                return Ok(format);
-            }
-        }
-
         let index = self.bytes.read_u16::<LE>()? as usize;
         let format = self
             .table
             .get_without_level(index as usize)
             .map_err(|_| DecodeError::Malformed)?;
 
-        if let Some(FormatList::Build { formats }) = self.format_list.as_mut() {
-            if !self.below_enum {
-                formats.push(format)
-            }
-        }
         Ok(format)
     }
 
@@ -107,78 +72,18 @@ impl<'t, 'b> Decoder<'t, 'b> {
         &mut self,
         num_elements: usize,
     ) -> Result<Vec<FormatSliceElement<'t>>, DecodeError> {
-        if num_elements == 0 {
-            return Ok(vec![]);
-        }
-
         let format = self.get_format()?;
-
-        // let variant_format = if
         let is_enum = format.contains('|');
-        let below_enum = self.below_enum;
-
-        if is_enum {
-            self.below_enum = true;
-        }
 
         let mut elements = Vec::with_capacity(num_elements);
-        let mut formats = vec![];
-        let mut cursor = 0;
-        for i in 0..num_elements {
-            let is_first = i == 0;
-
+        for _i in 0..num_elements {
             let format = if is_enum {
                 self.get_variant(format)?
             } else {
                 format
             };
-
-            let args = if let Some(list) = &mut self.format_list {
-                match list {
-                    FormatList::Use { .. } => self.decode_format(format)?,
-
-                    FormatList::Build { formats } => {
-                        if is_first {
-                            cursor = formats.len();
-                            self.decode_format(format)?
-                        } else {
-                            let formats = formats.clone();
-                            let old = mem::replace(
-                                &mut self.format_list,
-                                Some(FormatList::Use { formats, cursor }),
-                            );
-                            let args = self.decode_format(format)?;
-                            self.format_list = old;
-                            args
-                        }
-                    }
-                }
-            } else if is_first {
-                let mut old =
-                    mem::replace(&mut self.format_list, Some(FormatList::Build { formats }));
-                let args = self.decode_format(format)?;
-                mem::swap(&mut self.format_list, &mut old);
-                formats = match old {
-                    Some(FormatList::Build { formats, .. }) => formats,
-                    _ => unreachable!(),
-                };
-                args
-            } else {
-                let formats = formats.clone();
-                let old = mem::replace(
-                    &mut self.format_list,
-                    Some(FormatList::Use { formats, cursor: 0 }),
-                );
-                let args = self.decode_format(format)?;
-                self.format_list = old;
-                args
-            };
-
+            let args = self.decode_format(format)?;
             elements.push(FormatSliceElement { format, args });
-        }
-
-        if is_enum {
-            self.below_enum = below_enum;
         }
 
         Ok(elements)
@@ -230,10 +135,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     if format.contains('|') {
                         // enum
                         let variant = self.get_variant(format)?;
-                        let below_enum = self.below_enum;
-                        self.below_enum = true;
                         let inner_args = self.decode_format(variant)?;
-                        self.below_enum = below_enum;
                         args.push(Arg::Format {
                             format: variant,
                             args: inner_args,
@@ -331,6 +233,37 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     self.bytes = &self.bytes[end + 1..];
 
                     args.push(Arg::Preformatted(data.into()));
+                }
+                Type::FormatSequence => {
+                    let mut seq_args = Vec::new();
+                    loop {
+                        let index = self.bytes.read_u16::<LE>()? as usize;
+                        if index == 0 {
+                            break;
+                        }
+
+                        let format = self
+                            .table
+                            .get_without_level(index as usize)
+                            .map_err(|_| DecodeError::Malformed)?;
+
+                        if format.contains('|') {
+                            // enum
+                            let variant = self.get_variant(format)?;
+                            let inner_args = self.decode_format(variant)?;
+                            seq_args.push(Arg::Format {
+                                format: variant,
+                                args: inner_args,
+                            });
+                        } else {
+                            let inner_args = self.decode_format(format)?;
+                            seq_args.push(Arg::Format {
+                                format,
+                                args: inner_args,
+                            });
+                        }
+                    }
+                    args.push(Arg::FormatSequence { args: seq_args })
                 }
             }
         }

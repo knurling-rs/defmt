@@ -294,6 +294,11 @@ fn format_args_real(
                     Arg::Str(x) | Arg::Preformatted(x) => format_str(x, hint, &mut buf)?,
                     Arg::IStr(x) => format_str(x, hint, &mut buf)?,
                     Arg::Format { format, args } => buf.push_str(&format_args(format, args, hint)),
+                    Arg::FormatSequence { args } => {
+                        for arg in args {
+                            buf.push_str(&format_args("{=?}", &[arg.clone()], hint))
+                        }
+                    }
                     Arg::FormatSlice { elements } => {
                         match hint {
                             // Filter Ascii Hints, which contains u8 byte slices

@@ -18,7 +18,6 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-mod adapter;
 #[doc(hidden)]
 pub mod export;
 mod formatter;
@@ -28,8 +27,8 @@ mod tests;
 mod traits;
 
 pub use crate::{
-    adapter::{Debug2Format, Display2Format},
-    formatter::{Formatter, InternalFormatter, Str},
+    formatter::{Formatter, Str},
+    impls::adapter::{Debug2Format, Display2Format},
     traits::{Format, Logger},
 };
 
