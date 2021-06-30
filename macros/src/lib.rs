@@ -4,6 +4,7 @@
 
 mod symbol;
 
+use std::mem;
 use std::{
     collections::hash_map::DefaultHasher,
     convert::TryFrom,
@@ -164,10 +165,13 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
         .rest
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or_default();
-    let (pats, exprs) = match Codegen::new(&fragments, args.len(), f.litstr.span()) {
-        Ok(cg) => (cg.pats, cg.exprs),
+
+    let mut pack = Packer::new(None);
+    let pats = match codegen(&mut pack, &fragments, args.len(), f.litstr.span()) {
+        Ok(x) => x,
         Err(e) => return e.to_compile_error().into(),
     };
+    let tokens = pack.into_tokens();
 
     quote!(
         const _: () = {
@@ -175,8 +179,8 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
             fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
                 match (#(&(#args)),*) {
                     (#(#pats),*) => {
-                    // NOTE: No format string index, and no finalize call.
-                        #(#exprs;)*
+                        // NOTE: No format string index, and no finalize call.
+                        #tokens
                     }
                 }
             }
@@ -481,21 +485,21 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or_else(Vec::new);
 
-    let (pats, exprs) = match Codegen::new(&fragments, args.len(), log.litstr.span()) {
-        Ok(cg) => (cg.pats, cg.exprs),
-        Err(e) => return e.to_compile_error(),
-    };
-
     let sym = mksym(&ls, level.as_str(), true);
+
+    let mut pack = Packer::new(Some(sym));
+    let pats = match codegen(&mut pack, &fragments, args.len(), log.litstr.span()) {
+        Ok(x) => x,
+        Err(e) => return e.to_compile_error().into(),
+    };
+    let tokens = pack.into_tokens();
+
     let logging_enabled = cfg_if_logging_enabled(level);
     quote!({
         #[cfg(#logging_enabled)] {
             match (#(&(#args)),*) {
                 (#(#pats),*) => {
-                    defmt::export::acquire();
-                    defmt::export::header(&#sym);
-                    #(#exprs;)*
-                    defmt::export::release()
+                    #tokens
                 }
             }
         }
@@ -996,19 +1000,27 @@ pub fn write(ts: TokenStream) -> TokenStream {
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or_default();
 
-    let (pats, exprs) = match Codegen::new(&fragments, args.len(), write.litstr.span()) {
-        Ok(cg) => (cg.pats, cg.exprs),
+    let sym = mksym(&ls, "write", false);
+
+    let mut pack = Packer::new(None);
+    pack.array(
+        2,
+        quote!({
+            defmt::export::istr_address(#sym).to_le_bytes()
+        }),
+    );
+    let pats = match codegen(&mut pack, &fragments, args.len(), write.litstr.span()) {
+        Ok(x) => x,
         Err(e) => return e.to_compile_error().into(),
     };
+    let tokens = pack.into_tokens();
 
     let fmt = &write.fmt;
-    let sym = mksym(&ls, "write", false);
     quote!({
         let fmt: defmt::Formatter<'_> = #fmt;
         match (#(&(#args)),*) {
             (#(#pats),*) => {
-                defmt::export::istr(&#sym);
-                #(#exprs;)*
+                #tokens
             }
         }
     })
@@ -1090,128 +1102,297 @@ impl Parse for Write {
     }
 }
 
-struct Codegen {
-    pats: Vec<Ident2>,
-    exprs: Vec<TokenStream2>,
-}
+fn codegen(
+    pack: &mut Packer,
+    fragments: &[Fragment<'_>],
+    num_args: usize,
+    span: Span2,
+) -> parse::Result<Vec<TokenStream2>> {
+    let parsed_params = fragments
+        .iter()
+        .filter_map(|frag| match frag {
+            Fragment::Parameter(param) => Some(param.clone()),
+            Fragment::Literal(_) => None,
+        })
+        .collect::<Vec<_>>();
 
-impl Codegen {
-    fn new(fragments: &[Fragment<'_>], num_args: usize, span: Span2) -> parse::Result<Self> {
-        let parsed_params = fragments
-            .iter()
-            .filter_map(|frag| match frag {
-                Fragment::Parameter(param) => Some(param.clone()),
-                Fragment::Literal(_) => None,
-            })
-            .collect::<Vec<_>>();
+    let actual_argument_count = parsed_params
+        .iter()
+        .map(|param| param.index + 1)
+        .max()
+        .unwrap_or(0);
 
-        let actual_argument_count = parsed_params
-            .iter()
-            .map(|param| param.index + 1)
-            .max()
-            .unwrap_or(0);
+    let mut pats = vec![];
 
-        let mut exprs = vec![];
-        let mut pats = vec![];
+    let uxx = |ty: TokenStream2, arg: &Ident2| {
+        quote!({
+            let tmp: &#ty = #arg;
+            tmp.to_le_bytes()
+        })
+    };
 
-        for i in 0..actual_argument_count {
-            let arg = format_ident!("arg{}", i);
-            // find first use of this argument and return its type
-            let param = parsed_params.iter().find(|param| param.index == i).unwrap();
-            match param.ty {
-                defmt_parser::Type::I8 => exprs.push(quote!(defmt::export::i8(#arg))),
-                defmt_parser::Type::I16 => exprs.push(quote!(defmt::export::i16(#arg))),
-                defmt_parser::Type::I32 => exprs.push(quote!(defmt::export::i32(#arg))),
-                defmt_parser::Type::I64 => exprs.push(quote!(defmt::export::i64(#arg))),
-                defmt_parser::Type::I128 => exprs.push(quote!(defmt::export::i128(#arg))),
-                defmt_parser::Type::Isize => exprs.push(quote!(defmt::export::isize(#arg))),
+    for i in 0..actual_argument_count {
+        let arg = format_ident!("arg{}", i);
+        // find first use of this argument and return its type
+        let param = parsed_params.iter().find(|param| param.index == i).unwrap();
+        match param.ty {
+            defmt_parser::Type::I8 => pack.array(1, uxx(quote!(i8), &arg)),
+            defmt_parser::Type::I16 => pack.array(2, uxx(quote!(i16), &arg)),
+            defmt_parser::Type::I32 => pack.array(4, uxx(quote!(i32), &arg)),
+            defmt_parser::Type::I64 => pack.array(8, uxx(quote!(i64), &arg)),
+            defmt_parser::Type::I128 => pack.array(16, uxx(quote!(i128), &arg)),
+            defmt_parser::Type::Isize => pack.array(4, uxx(quote!(isize), &arg)),
+            defmt_parser::Type::U8 => pack.array(1, uxx(quote!(u8), &arg)),
+            defmt_parser::Type::U16 => pack.array(2, uxx(quote!(u16), &arg)),
+            defmt_parser::Type::U32 => pack.array(4, uxx(quote!(u32), &arg)),
+            defmt_parser::Type::U64 => pack.array(8, uxx(quote!(u64), &arg)),
+            defmt_parser::Type::U128 => pack.array(16, uxx(quote!(u128), &arg)),
+            defmt_parser::Type::Usize => pack.array(4, uxx(quote!(usize), &arg)),
+            defmt_parser::Type::F32 => pack.array(4, uxx(quote!(f32), &arg)),
+            defmt_parser::Type::F64 => pack.array(8, uxx(quote!(f64), &arg)),
+            defmt_parser::Type::Bool => pack.array(
+                1,
+                quote!({
+                    let tmp: &bool = #arg;
+                    (*tmp as u8).to_le_bytes()
+                }),
+            ),
+            defmt_parser::Type::Str => {
+                pack.array(4, quote!(#arg.len().to_le_bytes()));
+                pack.slice(quote!(#arg.as_bytes()));
+            }
+            defmt_parser::Type::IStr => pack.array(
+                2,
+                quote!({
+                    let tmp: u16 = defmt::export::istr_address(*#arg);
+                    tmp.to_le_bytes()
+                }),
+            ),
+            defmt_parser::Type::Char => pack.array(
+                4,
+                quote!({
+                    let tmp: &char = #arg;
+                    (*tmp as u32).to_le_bytes()
+                }),
+            ),
 
-                defmt_parser::Type::U8 => exprs.push(quote!(defmt::export::u8(#arg))),
-                defmt_parser::Type::U16 => exprs.push(quote!(defmt::export::u16(#arg))),
-                defmt_parser::Type::U32 => exprs.push(quote!(defmt::export::u32(#arg))),
-                defmt_parser::Type::U64 => exprs.push(quote!(defmt::export::u64(#arg))),
-                defmt_parser::Type::U128 => exprs.push(quote!(defmt::export::u128(#arg))),
-                defmt_parser::Type::Usize => exprs.push(quote!(defmt::export::usize(#arg))),
-
-                defmt_parser::Type::F32 => exprs.push(quote!(defmt::export::f32(#arg))),
-                defmt_parser::Type::F64 => exprs.push(quote!(defmt::export::f64(#arg))),
-
-                defmt_parser::Type::Bool => exprs.push(quote!(defmt::export::bool(#arg))),
-
-                defmt_parser::Type::Str => exprs.push(quote!(defmt::export::str(#arg))),
-                defmt_parser::Type::IStr => exprs.push(quote!(defmt::export::istr(#arg))),
-                defmt_parser::Type::Char => exprs.push(quote!(defmt::export::char(#arg))),
-
-                defmt_parser::Type::Format => exprs.push(quote!(defmt::export::fmt(#arg))),
-                defmt_parser::Type::FormatSlice => {
-                    exprs.push(quote!(defmt::export::fmt_slice(#arg)))
-                }
-                defmt_parser::Type::FormatArray(len) => {
-                    exprs.push(quote!(defmt::export::fmt_array({
+            defmt_parser::Type::Format => pack.code(quote!(defmt::export::fmt(#arg))),
+            defmt_parser::Type::FormatSlice => {
+                pack.array(4, quote!(#arg.len().to_le_bytes()));
+                pack.code(quote!(defmt::export::fmt_array(#arg)))
+            }
+            defmt_parser::Type::FormatArray(len) => pack.code(quote!(defmt::export::fmt_array({
                         let tmp: &[_; #len] = #arg;
                         tmp
-                    })))
-                }
+            }))),
 
-                defmt_parser::Type::Debug => exprs.push(quote!(defmt::export::debug(#arg))),
-                defmt_parser::Type::Display => exprs.push(quote!(defmt::export::display(#arg))),
-                defmt_parser::Type::FormatSequence => unreachable!(),
+            defmt_parser::Type::Debug => pack.code(quote!(defmt::export::debug(#arg))),
+            defmt_parser::Type::Display => pack.code(quote!(defmt::export::display(#arg))),
+            defmt_parser::Type::FormatSequence => unreachable!(),
 
-                defmt_parser::Type::U8Slice => exprs.push(quote!(defmt::export::slice(#arg))),
-                // We cast to the expected array type (which should be a no-op cast) to provoke
-                // a type mismatch error on mismatched lengths:
-                // ```
-                // error[E0308]: mismatched types
-                //   --> src/bin/log.rs:20:5
-                //    |
-                // 20 |     defmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
-                //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                //    |     |
-                //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
-                //    |     expected due to this
-                // ```
-                defmt_parser::Type::U8Array(len) => exprs.push(quote!(defmt::export::u8_array({
+            defmt_parser::Type::U8Slice => {
+                pack.array(4, quote!(#arg.len().to_le_bytes()));
+                pack.slice(quote!(#arg));
+            }
+            // We cast to the expected array type (which should be a no-op cast) to provoke
+            // a type mismatch error on mismatched lengths:
+            // ```
+            // error[E0308]: mismatched types
+            //   --> src/bin/log.rs:20:5
+            //    |
+            // 20 |     defmt::info!("🍕 array {:[u8; 3]}", [3, 14]);
+            //    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            //    |     |
+            //    |     expected an array with a fixed size of 3 elements, found one with 2 elements
+            //    |     expected due to this
+            // ```
+            defmt_parser::Type::U8Array(len) => pack.array(
+                len,
+                quote!({
                     let tmp: &[u8; #len] = #arg;
-                    tmp
-                }))),
-                defmt_parser::Type::BitField(_) => {
-                    let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
-                    let (smallest_bit_index, largest_bit_index) =
-                        defmt_parser::get_max_bitfield_range(all_bitfields).unwrap();
+                    *tmp
+                }),
+            ),
+            defmt_parser::Type::BitField(_) => {
+                let all_bitfields = parsed_params.iter().filter(|param| param.index == i);
+                let (smallest_bit_index, largest_bit_index) =
+                    defmt_parser::get_max_bitfield_range(all_bitfields).unwrap();
 
-                    // indices of the lowest and the highest octet which contains bitfield-relevant data
-                    let lowest_byte = smallest_bit_index / 8;
-                    let highest_byte = (largest_bit_index - 1) / 8;
-                    let truncated_sz = highest_byte - lowest_byte + 1; // in bytes
+                // indices of the lowest and the highest octet which contains bitfield-relevant data
+                let lowest_byte = smallest_bit_index / 8;
+                let highest_byte = (largest_bit_index - 1) / 8;
+                let truncated_sz = highest_byte - lowest_byte + 1; // in bytes
 
+                // Choose type to use
+                let (s, ty) = match truncated_sz {
+                    1 => (1, quote!(u8)),
+                    2 => (2, quote!(u16)),
+                    3..=4 => (4, quote!(u32)),
+                    5..=8 => (8, quote!(u64)),
+                    9..=16 => (16, quote!(u128)),
+                    _ => unreachable!(),
+                };
+
+                pack.array(
+                    s,
+                    quote!({
                     // shift away unneeded lower octet
-                    // TODO: create helper for shifting because readability
-                    match truncated_sz {
-                        1 => exprs.push(quote!(defmt::export::u8(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
-                        2 => exprs.push(quote!(defmt::export::u16(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
-                        3..=4 => exprs.push(quote!(defmt::export::u32(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
-                        5..=8 => exprs.push(quote!(defmt::export::u64(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
-                        9..=16 => exprs.push(quote!(defmt::export::u128(&defmt::export::truncate((*#arg) >> (#lowest_byte * 8))))),
-                        _ => unreachable!(),
+                            let tmp: #ty = defmt::export::truncate((*#arg) >> (#lowest_byte * 8));
+                            tmp.to_le_bytes()
+                        }),
+                );
+            }
+        }
+        pats.push(quote!(#arg));
+    }
+
+    if num_args != actual_argument_count {
+        let mut only = "";
+        if num_args < actual_argument_count {
+            only = "only ";
+        }
+
+        let message = format!(
+            "format string requires {} arguments but {}{} were provided",
+            actual_argument_count, only, num_args
+        );
+        return Err(parse::Error::new(span, message));
+    }
+
+    Ok(pats)
+}
+
+enum PackerItem {
+    Data(TokenStream2),
+    Code(TokenStream2),
+}
+
+struct Packer {
+    items: Vec<PackerItem>,
+    arrays: Vec<(usize, TokenStream2)>,
+    frame_tag: Option<TokenStream2>,
+}
+
+impl Packer {
+    fn new(frame_tag: Option<TokenStream2>) -> Self {
+        Self {
+            items: Vec::new(),
+            arrays: Vec::new(),
+            frame_tag,
+        }
+    }
+
+    fn into_tokens(mut self) -> TokenStream2 {
+        self.flush_arrays();
+        if self.frame_tag.is_some() {
+            return self.into_tokens_frame();
+        }
+
+        let mut tokens = TokenStream2::new();
+        for item in self.items {
+            match item {
+                PackerItem::Code(e) => tokens.extend(e),
+                PackerItem::Data(e) => {
+                    tokens.extend(quote!(
+                        {
+                            #e
+                            defmt::export::write(buf);
+                        };
+                    ));
+                }
+            }
+        }
+
+        tokens
+    }
+
+    fn into_tokens_frame(self) -> TokenStream2 {
+        let mut tokens = TokenStream2::new();
+        let len = self.items.len();
+        let frame_tag = &self.frame_tag.unwrap();
+
+        if self.items.is_empty() {
+            return quote!(defmt::export::start_release(#frame_tag););
+        }
+
+        for (i, item) in self.items.into_iter().enumerate() {
+            let first = i == 0;
+            let last = i == len - 1;
+
+            match item {
+                PackerItem::Code(e) => {
+                    if first {
+                        tokens.extend(quote!(defmt::export::start(#frame_tag);));
+                    }
+                    tokens.extend(e);
+                    if last {
+                        tokens.extend(quote!(defmt::export::release();));
                     }
                 }
+                PackerItem::Data(e) => {
+                    let write = match (first, last) {
+                        (false, false) => quote!(defmt::export::write(buf);),
+                        (true, false) => quote!(defmt::export::start_write(#frame_tag, buf);),
+                        (false, true) => quote!(defmt::export::write_release(buf);),
+                        (true, true) => {
+                            quote!(defmt::export::start_write_release(#frame_tag, buf);)
+                        }
+                    };
+                    tokens.extend(quote!(
+                        {
+                            #e
+                            #write
+                        };
+                    ));
+                }
             }
-            pats.push(arg);
+        }
+        tokens
+    }
+
+    fn flush_arrays(&mut self) {
+        let items = mem::replace(&mut self.arrays, Vec::new());
+
+        if items.len() == 0 {
+            return;
         }
 
-        if num_args != actual_argument_count {
-            let mut only = "";
-            if num_args < actual_argument_count {
-                only = "only ";
-            }
+        let len: usize = items.iter().map(|(s, _)| s).sum();
+        let mut fields = vec![];
+        let mut inits = vec![];
 
-            let message = format!(
-                "format string requires {} arguments but {}{} were provided",
-                actual_argument_count, only, num_args
-            );
-            return Err(parse::Error::new(span, message));
+        for (i, (s, e)) in items.into_iter().enumerate() {
+            let name = format_ident!("f{}", i);
+            fields.push(quote!(#name: [u8; #s]));
+            inits.push(quote!(#name: #e));
         }
 
-        Ok(Codegen { pats, exprs })
+        self.items.push(PackerItem::Data(quote!(
+            #[repr(C)]
+            struct Buf {
+                #(#fields,)*
+            }
+            let buf: [u8; #len] = unsafe {
+                core::mem::transmute(Buf{
+                    #(#inits,)*
+                })
+            };
+            let buf = &buf;
+        )));
+    }
+
+    fn array(&mut self, size: usize, tokens: TokenStream2) {
+        self.arrays.push((size, tokens));
+    }
+
+    fn slice(&mut self, tokens: TokenStream2) {
+        self.flush_arrays();
+        self.items
+            .push(PackerItem::Data(quote!(let mut buf = #tokens;)));
+    }
+
+    fn code(&mut self, tokens: TokenStream2) {
+        self.flush_arrays();
+        self.items.push(PackerItem::Code(quote!(#tokens;)));
     }
 }

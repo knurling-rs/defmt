@@ -64,11 +64,6 @@ pub fn write(bytes: &[u8]) {
     unsafe { _defmt_write(bytes) }
 }
 
-/// For testing purposes
-#[cfg(feature = "unstable-test")]
-pub fn timestamp(_fmt: crate::Formatter<'_>) {}
-
-#[cfg(not(feature = "unstable-test"))]
 pub fn timestamp(fmt: crate::Formatter<'_>) {
     extern "Rust" {
         fn _defmt_timestamp(_: crate::Formatter<'_>);
@@ -79,6 +74,11 @@ pub fn timestamp(fmt: crate::Formatter<'_>) {
 /// Returns the interned string at `address`.
 pub fn make_istr(address: u16) -> Str {
     Str { address }
+}
+
+/// Returns the address of the interned string
+pub fn istr_address(s: Str) -> u16 {
+    s.address
 }
 
 /// Create a Formatter.
@@ -390,11 +390,7 @@ pub fn display(val: &dyn core::fmt::Display) {
     write(&[0xff]);
 }
 
-#[inline(never)]
-pub fn header(s: &Str) {
-    istr(s);
-    timestamp(make_formatter());
-}
+// =============
 
 struct FmtWrite;
 
@@ -403,4 +399,38 @@ impl core::fmt::Write for FmtWrite {
         write(s.as_bytes());
         Ok(())
     }
+}
+
+// =============
+
+#[inline(never)]
+pub fn start(tag: Str) {
+    acquire();
+    istr(&tag);
+    timestamp(make_formatter());
+}
+
+#[inline(never)]
+pub fn start_release(tag: Str) {
+    start(tag);
+    release();
+}
+
+#[inline(never)]
+pub fn start_write(tag: Str, bytes: &[u8]) {
+    start(tag);
+    write(bytes);
+}
+
+#[inline(never)]
+pub fn start_write_release(tag: Str, bytes: &[u8]) {
+    start(tag);
+    write(bytes);
+    release();
+}
+
+#[inline(never)]
+pub fn write_release(bytes: &[u8]) {
+    write(bytes);
+    release();
 }
