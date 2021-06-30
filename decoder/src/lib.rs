@@ -609,6 +609,158 @@ mod tests {
     }
 
     #[test]
+    fn display_use_inner_type_hint() {
+        let mut entries = BTreeMap::new();
+
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "x={:b}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=u8:x} }}".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:us}".to_owned(),
+            )),
+        };
+
+        let bytes = [
+            0, 0, // index
+            2, // timestamp
+            1, 0,  // index of the struct
+            42, // value
+        ];
+
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO x=S { x: 2a }",
+        );
+    }
+
+    #[test]
+    fn display_use_outer_type_hint() {
+        let mut entries = BTreeMap::new();
+
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "x={:b}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=u8:?} }}".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:us}".to_owned(),
+            )),
+        };
+
+        let bytes = [
+            0, 0, // index
+            2, // timestamp
+            1, 0,  // index of the struct
+            42, // value
+        ];
+
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO x=S { x: 101010 }",
+        );
+    }
+
+    #[test]
+    fn display_inner_str_in_struct() {
+        let mut entries = BTreeMap::new();
+
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Info, "{}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=str:?} }}".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:us}".to_owned(),
+            )),
+        };
+
+        let bytes = [
+            0, 0, // index
+            2, // timestamp
+            1, 0, // index into the struct
+            5, 0, 0, 0, // length of the string
+            b'H', b'e', b'l', b'l', b'o', // string "Hello"
+        ];
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO S { x: \"Hello\" }",
+        );
+    }
+
+    #[test]
+    fn display_u8_vec() {
+        let mut entries = BTreeMap::new();
+
+        entries.insert(
+            0,
+            TableEntry::new_without_symbol(Tag::Prim, "{=u8}".to_owned()),
+        );
+        entries.insert(
+            1,
+            TableEntry::new_without_symbol(Tag::Prim, "{=[?]}".to_owned()),
+        );
+        entries.insert(
+            2,
+            TableEntry::new_without_symbol(Tag::Derived, "Data {{ name: {=?:?} }}".to_owned()),
+        );
+        entries.insert(
+            3,
+            TableEntry::new_without_symbol(Tag::Info, "{=[?]:a}".to_owned()),
+        );
+
+        let table = Table {
+            entries,
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                "{=u8:us}".to_owned(),
+            )),
+        };
+
+        let bytes = [
+            3, 0, // frame index
+            2, // timestamp value of type `u8`
+            1, 0, 0, 0, // number of elements in `FormatSlice`
+            2, 0, // index to `Data` struct
+            1, 0, // Format index to table entry: `{=[?]}`
+            2, 0, 0, 0, // inner FormatSlice, number of elements in `name` field
+            0, 0,   // Format index to table entry: `{=u8}`
+            72,  // "H"
+            105, // "i"
+        ];
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO [Data { name: b\"Hi\" }]",
+        );
+    }
+
+    #[test]
     fn bools_simple() {
         let bytes = [
             0, 0,          // index

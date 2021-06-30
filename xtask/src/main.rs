@@ -260,6 +260,7 @@ fn test_snapshot(overwrite: bool) {
         "unwrap",
         "defmt-test",
         "hints",
+        "hints_inner",
         "dbg",
     ];
 

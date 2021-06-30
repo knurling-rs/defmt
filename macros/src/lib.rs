@@ -388,7 +388,7 @@ fn fields(
                         "?".to_string()
                     });
                     if let Some(ident) = f.ident.as_ref() {
-                        core::write!(format, "{}: {{={}}}", ident, ty).ok();
+                        core::write!(format, "{}: {{={}:?}}", ident, ty).ok();
 
                         if ty == "?" {
                             list.push(quote!(defmt::export::fmt(#ident)));
