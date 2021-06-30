@@ -101,6 +101,8 @@ jobs:
           - stable
           - nightly
     runs-on: ubuntu-latest
+    env:
+      QEMU_RUN_IGNORE_VERSION: 1
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
