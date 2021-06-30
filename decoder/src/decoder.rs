@@ -236,6 +236,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Preformatted(data.into()));
                 }
                 Type::FormatSequence => {
+                    let mut seq_args = Vec::new();
                     loop {
                         let index = self.bytes.read_u16::<LE>()? as usize;
                         if index == 0 {
@@ -251,18 +252,19 @@ impl<'t, 'b> Decoder<'t, 'b> {
                             // enum
                             let variant = self.get_variant(format)?;
                             let inner_args = self.decode_format(variant)?;
-                            args.push(Arg::Format {
+                            seq_args.push(Arg::Format {
                                 format: variant,
                                 args: inner_args,
                             });
                         } else {
                             let inner_args = self.decode_format(format)?;
-                            args.push(Arg::Format {
+                            seq_args.push(Arg::Format {
                                 format,
                                 args: inner_args,
                             });
                         }
                     }
+                    args.push(Arg::FormatSequence { args: seq_args })
                 }
             }
         }

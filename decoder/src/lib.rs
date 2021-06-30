@@ -207,7 +207,7 @@ impl Table {
 }
 
 // NOTE follows `parser::Type`
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 enum Arg<'t> {
     /// Bool
     Bool(bool),
@@ -229,6 +229,9 @@ enum Arg<'t> {
     FormatSlice {
         elements: Vec<FormatSliceElement<'t>>,
     },
+    FormatSequence {
+        args: Vec<Arg<'t>>,
+    },
     /// Slice or Array of bytes.
     Slice(Vec<u8>),
     /// Char
@@ -238,7 +241,7 @@ enum Arg<'t> {
     Preformatted(String),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 struct FormatSliceElement<'t> {
     // this will usually be the same format string for all elements; except when the format string
     // is an enum -- in that case `format` will be the variant
@@ -553,16 +556,18 @@ mod tests {
                     None,
                     vec![],
                     "{=__internal_FormatSequence}",
-                    vec![
-                        Arg::Format {
-                            format: "Foo",
-                            args: vec![]
-                        },
-                        Arg::Format {
-                            format: "Bar({=u8})",
-                            args: vec![Arg::Uxx(42)]
-                        }
-                    ],
+                    vec![Arg::FormatSequence {
+                        args: vec![
+                            Arg::Format {
+                                format: "Foo",
+                                args: vec![]
+                            },
+                            Arg::Format {
+                                format: "Bar({=u8})",
+                                args: vec![Arg::Uxx(42)]
+                            }
+                        ]
+                    }],
                 ),
                 bytes.len(),
             ))
