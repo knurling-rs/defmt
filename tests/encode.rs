@@ -43,11 +43,9 @@ fn inc(index: u16, n: u16) -> u16 {
     index.wrapping_add(n)
 }
 
-fn check_format_implementation<T: Format + ?Sized>(val: &T, expected_encoding: &[u8]) {
+fn write_format<T: Format + ?Sized>(val: &T) {
     defmt::export::istr(&T::_format_tag());
-    let g = defmt::export::make_formatter();
-    val._format_data(g);
-    assert_eq!(defmt::export::fetch_bytes(), expected_encoding);
+    val._format_data();
 }
 
 macro_rules! check {
@@ -69,7 +67,8 @@ macro_rules! check_format {
             $(
                 v.extend(&($x).to_le_bytes());
             )*
-            check_format_implementation($format, &v);
+            write_format($format);
+            assert_eq!(defmt::export::fetch_bytes(), v);
         }
     }
 }
@@ -201,7 +200,7 @@ fn single_struct_manual() {
 
     impl Format for X {
         fn format(&self, f: Formatter) {
-            defmt::write!(f, "X {{ x: {=u8}, y: {=u16} }}", self.y, self.z)
+            defmt::write!(f, "X {{ y: {=u8}, z: {=u16} }}", self.y, self.z)
         }
     }
 
@@ -209,10 +208,78 @@ fn single_struct_manual() {
     check_format!(
         &X { y: 1, z: 2 },
         [
-            index, // "X {{ x: {=u8}, y: {=u16} }}"
-            1u8,   // x
-            2u8,   // y.low
-            0u8,   // y.high
+            index,         // "{=__internal_FormatSequence}"
+            inc(index, 1), // "X {{ y: {=u8}, z: {=u16} }}"
+            1u8,           // y
+            2u16,          // z
+            0u16,          // terminator
+        ],
+    )
+}
+
+#[test]
+fn single_struct_manual_multiwrite() {
+    // Above `#[derive]`d impl should be equivalent to this:
+    struct X {
+        y: u8,
+        z: u16,
+    }
+
+    impl Format for X {
+        fn format(&self, f: Formatter) {
+            defmt::write!(f, "y={=u8}", self.y);
+            defmt::write!(f, "z={=u16}", self.z);
+        }
+    }
+
+    let index = fetch_string_index();
+    check_format!(
+        &X { y: 1, z: 2 },
+        [
+            index,         // "{=__internal_FormatSequence}"
+            inc(index, 1), // "y={=u8}"
+            1u8,           // y
+            inc(index, 2), // "z={=u16}"
+            2u16,          // z
+            0u16,          // terminator
+        ],
+    )
+}
+
+#[test]
+fn slice_struct_manual_multiwrite() {
+    // Above `#[derive]`d impl should be equivalent to this:
+    struct X {
+        y: u8,
+        z: u16,
+    }
+
+    impl Format for X {
+        fn format(&self, f: Formatter) {
+            defmt::write!(f, "y={=u8}", self.y);
+            defmt::write!(f, "z={=u16}", self.z);
+        }
+    }
+
+    let index = fetch_string_index();
+    check_format!(
+        &[X { y: 1, z: 2 }, X { y: 3, z: 4 }][..],
+        [
+            index,         // "{=[?]}"
+            2u32,          // len
+            inc(index, 1), // "{=__internal_FormatSequence}"
+            // first element
+            inc(index, 2), // "y={=u8}"
+            1u8,           // y
+            inc(index, 3), // "z={=u16}"
+            2u16,          // z
+            0u16,          // terminator
+            // second element
+            inc(index, 4), // "y={=u8}"
+            3u8,           // y
+            inc(index, 5), // "z={=u16}"
+            4u16,          // z
+            0u16,          // terminator
         ],
     )
 }
@@ -580,7 +647,13 @@ fn istr() {
 fn format_arrays() {
     let index = fetch_string_index();
     let array: [u16; 0] = [];
-    check_format!(&array, [index]);
+    check_format!(
+        &array,
+        [
+            index,         // "{=[?;0]}"
+            inc(index, 1), // "{=u16}"
+        ]
+    );
 
     let index = fetch_string_index();
     let array: [u16; 3] = [1, 256, 257];
@@ -636,8 +709,9 @@ fn format_slice_of_structs() {
             inc(index, 1), // "X {{ y: {=?} }}"
             inc(index, 2), // "Y {{ z: {=u8} }}"
             42u8,          // [0].y.z
-            // second element: no tags
-            24u8, // [1].y.z
+            // second element: no outer tag
+            inc(index, 3), // "Y {{ z: {=u8} }}"
+            24u8,          // [1].y.z
         ],
     );
 }
@@ -651,19 +725,18 @@ fn format_slice_of_slices() {
         [
             index,              // "{=[?]}"
             slice.len() as u32, //
+            inc(index, 1),      // "{=[?]}"
             // first slice
-            inc(index, 1), // "{=[?]}"
             slice[0].len() as u32,
-            // its first element
             inc(index, 2), // "{=u16}"
             256u16,        // [0][0]
-            // its second element: no tag
-            257u16, // [0][1]
-            // second slice: no tags
+            257u16,        // [0][1]
+            // second slice
             slice[1].len() as u32,
-            258u16, // [1][0]
-            259u16, // [1][1]
-            260u16, // [1][2]
+            inc(index, 3), // "{=u16}"
+            258u16,        // [1][0]
+            259u16,        // [1][1]
+            260u16,        // [1][2]
         ],
     );
 }
