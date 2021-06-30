@@ -1,6 +1,5 @@
 use std::{
     convert::{TryFrom, TryInto},
-    mem,
     ops::Range,
 };
 
@@ -77,7 +76,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
         let is_enum = format.contains('|');
 
         let mut elements = Vec::with_capacity(num_elements);
-        for i in 0..num_elements {
+        for _i in 0..num_elements {
             let format = if is_enum {
                 self.get_variant(format)?
             } else {
