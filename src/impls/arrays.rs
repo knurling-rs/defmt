@@ -1,4 +1,5 @@
 use super::*;
+use crate::export;
 
 macro_rules! arrays {
     ( $($len:literal $fmt:literal,)+ ) => { $(
@@ -9,13 +10,13 @@ macro_rules! arrays {
             default_format!();
 
             #[inline]
-            fn _format_tag() -> u16 {
+            fn _format_tag() -> Str {
                 internp!($fmt)
             }
 
             #[inline]
-            fn _format_data(&self, fmt: Formatter) {
-                fmt.inner.fmt_array(self);
+            fn _format_data(&self, _fmt: Formatter) {
+                export::fmt_array(self);
             }
         }
     )+ };

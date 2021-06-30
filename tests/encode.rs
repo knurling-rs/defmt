@@ -18,12 +18,12 @@
 // when writing the expected output of a unit test.
 //
 // ```
-// let mut f = InternalFormatter::new();
+// let mut f = Internalexport::make_formatter();
 // let index = defmt::export::fetch_string_index();
 // foo(&mut f); // NOTE increases the interner index
 // assert_eq!(fetch_bytes(), [index]);
 //
-// let mut f = InternalFormatter::new();
+// let mut f = Internalexport::make_formatter();
 // foo(&mut f);
 // assert_eq!(fetch_bytes(), [index.wrapping_add(1)]);
 //                               ^^^^^^^^^^^^^^^ account for the previous `foo` call
@@ -36,10 +36,7 @@
 //
 // - the mocked index is 7 bits so its LEB128 encoding is the input byte
 
-use defmt::{
-    export::fetch_string_index, write, Debug2Format, Display2Format, Format, Formatter,
-    InternalFormatter,
-};
+use defmt::{export::fetch_string_index, write, Debug2Format, Display2Format, Format, Formatter};
 
 // Increase the 7-bit mocked interned index
 fn inc(index: u16, n: u16) -> u16 {
@@ -47,9 +44,8 @@ fn inc(index: u16, n: u16) -> u16 {
 }
 
 fn check_format_implementation<T: Format + ?Sized>(val: &T, expected_encoding: &[u8]) {
-    let mut f = InternalFormatter::new();
-    f.tag(T::_format_tag());
-    let g = Formatter { inner: &mut f };
+    defmt::export::istr(&T::_format_tag());
+    let g = defmt::export::make_formatter();
     val._format_data(g);
     assert_eq!(defmt::export::fetch_bytes(), expected_encoding);
 }
@@ -81,18 +77,15 @@ macro_rules! check_format {
 #[test]
 fn write() {
     let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
-
+    let g = defmt::export::make_formatter();
     write!(g, "The answer is {=u8}", 42);
     check!([
         index, // "The answer is {=u8}",
         42u8,  // u8 value
     ]);
 
-    let f2 = &mut InternalFormatter::new();
-    let g2 = Formatter { inner: f2 };
-    write!(g2, "The answer is {=?}", 42u8);
+    let g = defmt::export::make_formatter();
+    write!(g, "The answer is {=?}", 42u8);
     check!([
         inc(index, 1), // "The answer is {=?}"
         inc(index, 2), // "{=u8}" / impl Format for u8
@@ -103,8 +96,7 @@ fn write() {
 #[test]
 fn bitfields_mixed() {
     let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
+    let g = defmt::export::make_formatter();
 
     write!(
         g,
@@ -122,8 +114,7 @@ fn bitfields_mixed() {
 #[test]
 fn bitfields_across_octets() {
     let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
+    let g = defmt::export::make_formatter();
 
     write!(g, "bitfields {0=0..7} {0=9..14}", 0b0110_0011_1101_0010u16);
     check!([
@@ -136,8 +127,7 @@ fn bitfields_across_octets() {
 #[test]
 fn bitfields_truncate_lower() {
     let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
+    let g = defmt::export::make_formatter();
 
     write!(
         g,
@@ -153,8 +143,7 @@ fn bitfields_truncate_lower() {
 #[test]
 fn bitfields_assert_range_exclusive() {
     let index = fetch_string_index();
-    let f = &mut InternalFormatter::new();
-    let g = Formatter { inner: f };
+    let g = defmt::export::make_formatter();
 
     write!(g, "bitfields {0=6..8}", 0b1010_0101u8,);
     check!([

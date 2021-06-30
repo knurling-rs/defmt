@@ -1,4 +1,6 @@
-use crate::Str;
+use core::fmt::Write as _;
+
+use crate::{Format, Formatter, Str};
 
 #[cfg(feature = "unstable-test")]
 thread_local! {
@@ -14,8 +16,8 @@ pub fn fetch_string_index() -> u16 {
 
 /// For testing purposes
 #[cfg(feature = "unstable-test")]
-pub fn fetch_add_string_index() -> usize {
-    (I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed))) as usize
+pub fn fetch_add_string_index() -> u16 {
+    I.with(|i| i.fetch_add(1, core::sync::atomic::Ordering::Relaxed))
 }
 
 /// Get and clear the logged bytes
@@ -75,17 +77,21 @@ pub fn timestamp(fmt: crate::Formatter<'_>) {
 }
 
 /// Returns the interned string at `address`.
-pub fn istr(address: usize) -> Str {
-    Str {
-        // NOTE address is limited to 14 bits in the linker script
-        address: address as *const u8 as u16,
+pub fn make_istr(address: u16) -> Str {
+    Str { address }
+}
+
+/// Create a Formatter.
+pub fn make_formatter<'a>() -> Formatter<'a> {
+    Formatter {
+        _phantom: core::marker::PhantomData,
     }
 }
 
 mod sealed {
     #[allow(unused_imports)]
     use crate as defmt;
-    use crate::{Format, Formatter};
+    use crate::{Format, Formatter, Str};
 
     pub trait Truncate<U> {
         fn truncate(self) -> U;
@@ -193,7 +199,7 @@ mod sealed {
             unreachable!();
         }
 
-        fn _format_tag() -> u16 {
+        fn _format_tag() -> Str {
             defmt_macros::internp!("Unwrap of a None option value")
         }
 
@@ -247,4 +253,153 @@ pub fn panic() -> ! {
         fn _defmt_panic() -> !;
     }
     unsafe { _defmt_panic() }
+}
+
+/// Implementation detail
+pub fn fmt<T: Format + ?Sized>(f: &T) {
+    istr(&T::_format_tag());
+    let formatter = make_formatter();
+    f._format_data(formatter);
+}
+
+/// Implementation detail
+pub fn i8(b: &i8) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn i16(b: &i16) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn i32(b: &i32) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn i64(b: &i64) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn i128(b: &i128) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn isize(b: &isize) {
+    write(&(*b as i32).to_le_bytes())
+}
+
+/// Implementation detail
+pub fn fmt_slice(values: &[impl Format]) {
+    usize(&values.len());
+    for value in values {
+        fmt(value);
+    }
+}
+
+/// Implementation detail
+pub fn u8(b: &u8) {
+    write(&[*b])
+}
+
+/// Implementation detail
+pub fn u16(b: &u16) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn u32(b: &u32) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn u64(b: &u64) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn u128(b: &u128) {
+    write(&b.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn usize(b: &usize) {
+    write(&(*b as u32).to_le_bytes())
+}
+
+/// Implementation detail
+pub fn f32(b: &f32) {
+    write(&f32::to_bits(*b).to_le_bytes())
+}
+
+/// Implementation detail
+pub fn f64(b: &f64) {
+    write(&f64::to_bits(*b).to_le_bytes())
+}
+
+/// Implementation detail
+pub fn char(b: &char) {
+    write(&(*b as u32).to_le_bytes())
+}
+
+pub fn str(s: &str) {
+    usize(&s.len());
+    write(s.as_bytes());
+}
+
+pub fn slice(s: &[u8]) {
+    usize(&s.len());
+    write(s);
+}
+
+// NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
+pub fn u8_array(a: &[u8]) {
+    write(a);
+}
+
+// NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
+pub fn fmt_array(a: &[impl Format]) {
+    for value in a {
+        fmt(value);
+    }
+}
+
+/// Implementation detail
+pub fn istr(s: &Str) {
+    write(&s.address.to_le_bytes())
+}
+
+/// Implementation detail
+pub fn bool(b: &bool) {
+    u8(&(*b as u8));
+}
+
+/// Implementation detail
+pub fn debug(val: &dyn core::fmt::Debug) {
+    core::write!(FmtWrite, "{:?}", val).ok();
+    write(&[0xff]);
+}
+
+/// Implementation detail
+pub fn display(val: &dyn core::fmt::Display) {
+    core::write!(FmtWrite, "{}", val).ok();
+    write(&[0xff]);
+}
+
+#[inline(never)]
+pub fn header(s: &Str) {
+    istr(s);
+    timestamp(make_formatter());
+}
+
+struct FmtWrite;
+
+impl core::fmt::Write for FmtWrite {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        write(s.as_bytes());
+        Ok(())
+    }
 }

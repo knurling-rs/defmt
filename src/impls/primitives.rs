@@ -1,54 +1,43 @@
+use crate::export;
+
 use super::*;
 
 macro_rules! prim {
-    ($ty:ty, $method:ident, $fmt: literal) => {
+    ($ty:ty, $fmt: literal, $self_:ident, $write:expr) => {
         impl Format for $ty {
             default_format!();
 
             #[inline]
-            fn _format_tag() -> u16 {
+            fn _format_tag() -> Str {
                 internp!($fmt)
             }
 
             #[inline]
-            fn _format_data(&self, fmt: Formatter) {
-                fmt.inner.$method(self);
+            fn _format_data(&$self_, _fmt: Formatter) {
+                $write
             }
         }
     };
 }
 
-prim!(i8, i8, "{=i8}");
-prim!(i16, i16, "{=i16}");
-prim!(i32, i32, "{=i32}");
-prim!(i64, i64, "{=i64}");
-prim!(i128, i128, "{=i128}");
-prim!(isize, isize, "{=isize}");
-prim!(u8, u8, "{=u8}");
-prim!(u16, u16, "{=u16}");
-prim!(u32, u32, "{=u32}");
-prim!(u64, u64, "{=u64}");
-prim!(u128, u128, "{=u128}");
-prim!(usize, usize, "{=usize}");
-prim!(f32, f32, "{=f32}");
-prim!(f64, f64, "{=f64}");
-prim!(str, str, "{=str}");
-prim!(bool, bool, "{=bool}");
-prim!(Str, istr, "{=istr}");
-
-impl Format for char {
-    default_format!();
-
-    #[inline]
-    fn _format_tag() -> u16 {
-        internp!("{=char}")
-    }
-
-    #[inline]
-    fn _format_data(&self, fmt: Formatter) {
-        fmt.inner.u32(&(*self as u32));
-    }
-}
+prim!(i8, "{=i8}", self, export::i8(self));
+prim!(i16, "{=i16}", self, export::i16(self));
+prim!(i32, "{=i32}", self, export::i32(self));
+prim!(i64, "{=i64}", self, export::i64(self));
+prim!(i128, "{=i128}", self, export::i128(self));
+prim!(isize, "{=isize}", self, export::isize(self));
+prim!(u8, "{=u8}", self, export::u8(self));
+prim!(u16, "{=u16}", self, export::u16(self));
+prim!(u32, "{=u32}", self, export::u32(self));
+prim!(u64, "{=u64}", self, export::u64(self));
+prim!(u128, "{=u128}", self, export::u128(self));
+prim!(usize, "{=usize}", self, export::usize(self));
+prim!(f32, "{=f32}", self, export::f32(self));
+prim!(f64, "{=f64}", self, export::f64(self));
+prim!(str, "{=str}", self, export::str(self));
+prim!(bool, "{=bool}", self, export::bool(self));
+prim!(Str, "{=istr}", self, export::istr(self));
+prim!(char, "{=char}", self, export::char(self));
 
 impl<T> Format for [T]
 where
@@ -57,16 +46,16 @@ where
     default_format!();
 
     #[inline]
-    fn _format_tag() -> u16 {
+    fn _format_tag() -> Str {
         internp!("{=[?]}")
     }
 
     #[inline]
-    fn _format_data(&self, fmt: Formatter) {
-        fmt.inner.usize(&self.len());
+    fn _format_data(&self, _fmt: Formatter) {
+        export::usize(&self.len());
         for value in self {
-            fmt.inner.tag(T::_format_tag());
-            value._format_data(Formatter { inner: fmt.inner });
+            export::istr(&T::_format_tag());
+            value._format_data(export::make_formatter());
         }
     }
 }

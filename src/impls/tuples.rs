@@ -1,10 +1,11 @@
 use super::*;
+use crate::export;
 
 impl Format for () {
     default_format!();
 
     #[inline]
-    fn _format_tag() -> u16 {
+    fn _format_tag() -> Str {
         internp!("()")
     }
 
@@ -18,17 +19,17 @@ macro_rules! tuple {
             default_format!();
 
             #[inline]
-            fn _format_tag() -> u16 {
+            fn _format_tag() -> Str {
                 internp!($format)
             }
 
             #[inline]
             #[allow(non_snake_case, unused_assignments)]
-            fn _format_data(&self, fmt: Formatter) {
+            fn _format_data(&self, _fmt: Formatter) {
                 let ($(ref $name,)+) = *self;
                 $(
-                    fmt.inner.tag($name::_format_tag());
-                    let formatter = Formatter { inner: fmt.inner };
+                    export::istr(&$name::_format_tag());
+                    let formatter = export::make_formatter();
                     $name._format_data(formatter);
                 )+
             }

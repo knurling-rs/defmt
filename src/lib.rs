@@ -27,7 +27,7 @@ mod tests;
 mod traits;
 
 pub use crate::{
-    formatter::{Formatter, InternalFormatter, Str},
+    formatter::{Formatter, Str},
     impls::adapter::{Debug2Format, Display2Format},
     traits::{Format, Logger},
 };

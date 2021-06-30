@@ -10,6 +10,7 @@ mod ops;
 mod slice;
 
 use super::*;
+use crate::export;
 
 impl<T> Format for Option<T>
 where
@@ -18,17 +19,17 @@ where
     default_format!();
 
     #[inline]
-    fn _format_tag() -> u16 {
+    fn _format_tag() -> Str {
         internp!("None|Some({=?})")
     }
 
     #[inline]
     fn _format_data(&self, fmt: Formatter) {
         match self {
-            None => fmt.inner.u8(&0),
+            None => export::u8(&0),
             Some(x) => {
-                fmt.inner.u8(&1);
-                fmt.inner.tag(T::_format_tag());
+                export::u8(&1);
+                export::istr(&T::_format_tag());
                 x._format_data(fmt)
             }
         }
@@ -43,7 +44,7 @@ where
     default_format!();
 
     #[inline]
-    fn _format_tag() -> u16 {
+    fn _format_tag() -> Str {
         internp!("Err({=?})|Ok({=?})")
     }
 
@@ -51,13 +52,13 @@ where
     fn _format_data(&self, fmt: Formatter) {
         match self {
             Err(e) => {
-                fmt.inner.u8(&0);
-                fmt.inner.tag(E::_format_tag());
+                export::u8(&0);
+                export::istr(&E::_format_tag());
                 e._format_data(fmt)
             }
             Ok(x) => {
-                fmt.inner.u8(&1);
-                fmt.inner.tag(T::_format_tag());
+                export::u8(&1);
+                export::istr(&T::_format_tag());
                 x._format_data(fmt)
             }
         }
@@ -68,7 +69,7 @@ impl<T> Format for core::marker::PhantomData<T> {
     default_format!();
 
     #[inline]
-    fn _format_tag() -> u16 {
+    fn _format_tag() -> Str {
         internp!("PhantomData")
     }
 
@@ -80,7 +81,7 @@ impl Format for core::convert::Infallible {
     default_format!();
 
     #[inline]
-    fn _format_tag() -> u16 {
+    fn _format_tag() -> Str {
         unreachable!();
     }
 

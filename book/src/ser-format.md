@@ -4,15 +4,15 @@ The untyped argument (`=?`) requires one level of indirection during serializati
 
 First let's see how a primitive implements the `Format` trait:
 
-``` rust
+```rust
 # extern crate defmt;
-# macro_rules! internp { ($l:literal) => { 0 } }
+# macro_rules! internp { ($l:literal) => { defmt::export::make_istr(0) } }
 # trait Format { fn format(&self, fmt: defmt::Formatter); }
 impl Format for u8 {
     fn format(&self, fmt: defmt::Formatter) {
         let t = internp!("{=u8}");
-        fmt.inner.tag(&t);
-        fmt.inner.u8(self)
+        defmt::export::istr(&t);
+        defmt::export::u8(self)
         // on the wire: [1, 42]
         //  string index ^  ^^ `self`
     }
@@ -25,7 +25,7 @@ In general, `write!` can use `{=?}` so `Format` nesting is possible.
 
 Now let's look into a log invocation:
 
-``` rust
+```rust
 # extern crate defmt;
 defmt::error!("The answer is {=?}!", 42u8);
 // on the wire: [2, 1, 42]

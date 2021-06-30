@@ -2,7 +2,7 @@ use defmt_macros::internp;
 
 #[allow(unused_imports)]
 use crate as defmt;
-use crate::Formatter;
+use crate::{export, Formatter, Str};
 
 /// Trait for types that can be formatted via defmt.
 ///
@@ -49,14 +49,14 @@ pub trait Format {
     fn format(&self, fmt: Formatter);
 
     #[doc(hidden)]
-    fn _format_tag() -> u16 {
+    fn _format_tag() -> Str {
         internp!("{=__internal_FormatSequence}")
     }
 
     #[doc(hidden)]
-    fn _format_data(&self, fmt: Formatter) {
-        self.format(Formatter { inner: fmt.inner });
-        fmt.inner.tag(0); // terminator
+    fn _format_data(&self, _fmt: Formatter) {
+        self.format(export::make_formatter());
+        export::u16(&0); // terminator
     }
 }
 
