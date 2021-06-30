@@ -308,21 +308,13 @@ mod tests {
 
     #[test]
     fn decode() {
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "Hello, world!".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Debug, "The answer is {=u8}!".to_owned()),
-        );
-        // [IDX, TS, 42]
-        //           ^^
-        //entries.insert(2, "The answer is {0:u8} {1:u16}!".to_owned());
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: None,
         };
 
@@ -364,11 +356,11 @@ mod tests {
     fn all_integers() {
         const FMT: &str =
             "Hello, {=u8} {=u16} {=u32} {=u64} {=u128} {=i8} {=i16} {=i32} {=i64} {=i128}!";
-        let mut entries = BTreeMap::new();
-        entries.insert(0, TableEntry::new_without_symbol(Tag::Info, FMT.to_owned()));
+
+        let entries = vec![TableEntry::new_without_symbol(Tag::Info, FMT.to_owned())];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: None,
         };
 
@@ -417,21 +409,16 @@ mod tests {
 
     #[test]
     fn indices() {
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "The answer is {0=u8} {0=u8}!".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(
                 Tag::Info,
                 "The answer is {1=u16} {0=u8} {1=u16}!".to_owned(),
             ),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: None,
         };
         let bytes = [
@@ -478,18 +465,13 @@ mod tests {
 
     #[test]
     fn format() {
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: None,
         };
 
@@ -520,22 +502,14 @@ mod tests {
 
     #[test]
     fn format_sequence() {
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "{=__internal_FormatSequence}".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Derived, "Foo".to_owned()),
-        );
-        entries.insert(
-            2,
             TableEntry::new_without_symbol(Tag::Derived, "Bar({=u8})".to_owned()),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: None,
         };
 
@@ -576,18 +550,13 @@ mod tests {
 
     #[test]
     fn display() {
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
@@ -610,19 +579,13 @@ mod tests {
 
     #[test]
     fn display_use_inner_type_hint() {
-        let mut entries = BTreeMap::new();
-
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "x={:b}".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=u8:x} }}".to_owned()),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
@@ -645,19 +608,13 @@ mod tests {
 
     #[test]
     fn display_use_outer_type_hint() {
-        let mut entries = BTreeMap::new();
-
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "x={:b}".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=u8:?} }}".to_owned()),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
@@ -680,19 +637,13 @@ mod tests {
 
     #[test]
     fn display_inner_str_in_struct() {
-        let mut entries = BTreeMap::new();
-
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "{}".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=str:?} }}".to_owned()),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
@@ -715,27 +666,15 @@ mod tests {
 
     #[test]
     fn display_u8_vec() {
-        let mut entries = BTreeMap::new();
-
-        entries.insert(
-            0,
+        let entries = vec![
             TableEntry::new_without_symbol(Tag::Prim, "{=u8}".to_owned()),
-        );
-        entries.insert(
-            1,
             TableEntry::new_without_symbol(Tag::Prim, "{=[?]}".to_owned()),
-        );
-        entries.insert(
-            2,
             TableEntry::new_without_symbol(Tag::Derived, "Data {{ name: {=?:?} }}".to_owned()),
-        );
-        entries.insert(
-            3,
             TableEntry::new_without_symbol(Tag::Info, "{=[?]:a}".to_owned()),
-        );
+        ];
 
         let table = Table {
-            entries,
+            entries: entries.into_iter().enumerate().collect(),
             timestamp: Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
