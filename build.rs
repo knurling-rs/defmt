@@ -1,11 +1,12 @@
 use std::{env, error::Error, fs, path::PathBuf};
 
 use git_version::git_version;
-use semver::Version;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // `--match v*` matches defmt tags, e.g. `v0.2.3`, but ignores related crates, e.g. `defmt-decoder-v0.2.2`
     const GIT_DESCRIBE: &str = git_version!(args = ["--long", "--match", "v*"], cargo_prefix = "");
-    let version = match Version::parse(GIT_DESCRIBE) {
+
+    let version = match semver::Version::parse(GIT_DESCRIBE) {
         // if parsing fails it is a git version
         Err(_) => extract_git_hash(GIT_DESCRIBE).to_string(),
         // if success it is semver
