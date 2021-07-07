@@ -42,6 +42,8 @@ improving tooling used to develop for embedded systems.
 If you think that our work is useful, consider sponsoring it via [GitHub
 Sponsors].
 
+<iframe src="https://github.com/sponsors/knurling-rs/card" height=250em width=100%; title="Sponsor knurling-rs" style="border: 0; display:block; margin:auto" id="iframe"></iframe>
+
 [Knurling]: https://knurling.ferrous-systems.com/
 [Ferrous Systems]: https://ferrous-systems.com/
 [GitHub Sponsors]: https://github.com/sponsors/knurling-rs
