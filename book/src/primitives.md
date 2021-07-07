@@ -1,8 +1,17 @@
 # Primitives
 
-In addition to `{}` there are formatting parameters for several primitive types.
-These parameters follow the syntax `{=Type}`, for example: `{=u8}`, `{=bool}`.
-This type information lets the framework further compress the logs resulting in higher throughput.
+Following **primitive types** are available:
+
+| type hint            | name                                |
+| :------------------- | :---------------------------------- |
+| `=bool`              | boolean                             |
+| `={i,u}{8,16,32,64}` | standard integer types              |
+| `=f{32, 64}`         | 32-bit / 64-bit floating point type |
+| `=[u8; N]`           | byte array                          |
+| `=[u8]`              | byte slice                          |
+| `=str`               | string slice                        |
+
+They can be used like this:
 
 ``` rust
 # extern crate defmt;
@@ -21,13 +30,15 @@ defmt::trace!("{=u16}", x);
 //                      ^ must have type `u16`
 ```
 
-The available types are:
+---
 
-- `=bool`, boolean
-- `={i,u}{8,16,32,64}`, standard integer types
-- `={i,u}24`, 32-bit integer truncated to 24 bits
-- `=f32`, 32-bit floating point type
-- `=f64`, 64-bit floating point type
-- `=[u8; N]`, byte array
-- `=[u8]`, byte slice
-- `=str`, string slice
+Additionally there are some **special types**:
+
+| type hint | name             |
+| :-------- | :--------------- |
+| `=M..N`   | Bitfields        |
+| `=istr`   | Interned Strings |
+| `=[?]`    | Format slices    |
+| `=[?; N]` | Format arrays    |
+
+Read more about them in the following chapters.

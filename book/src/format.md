@@ -1,8 +1,13 @@
 # Implementing `Format`
 
+- [`#[derive(Format)]`](#deriveformat)
+- [Manual implementation with `write!`](#manual-implementation-with-write)
+- [Newtypes](#newtypes)
+- [Uncompressed adapters](#uncompressed-adapters)
+
 ## `#[derive(Format)]`
 
-The easiest way to implement the `Format` trait for a struct or enum is to use the `derive` attribute.
+The easiest way to implement the `Format` trait for a `struct` or `enum` is to use the `derive` attribute.
 
 ``` rust
 # extern crate defmt;
@@ -17,6 +22,7 @@ struct Header {
 
 # #[derive(Format)]
 # struct Descriptor;
+#
 #[derive(Format)]
 enum Request {
     GetDescriptor { descriptor: Descriptor, length: u16 },
@@ -24,13 +30,11 @@ enum Request {
 }
 ```
 
-NOTE: Like built-in derives like `#[derive(Debug)]`, `#[derive(Format)]` will add `Format` bounds to the generic type parameters of the struct.
+Like built-in derives (e.g. `#[derive(Debug)]`), `#[derive(Format)]` will add `Format` bounds to the generic type parameters of the struct.
 
-NOTE: Do *not* use the API used by the expansion of the `derive(Format)` macro; it is *unstable*.
+> ⚠️ Do *not* use the API used by the expansion of the `derive(Format)` macro; it is *unstable*.
 
-## `write!`
-
-> NOTE `write!` is available in `defmt` v0.1.**2**+
+## Manual implementation with `write!`
 
 It is also possible to implement the `Format` trait manually.
 This trait has a single required method: `format`.
@@ -76,7 +80,7 @@ impl defmt::Format for MyU8 {
 
 If you quickly want to get some code running and do not care about it being efficient you can use the two adapter types [`Display2Format`] and [`Debug2Format`].
 
-These adapters disable compression and use the `core::fmt` code on-device! You should always prefer `defmt::Format` over `Debug` whenever possible.
+> ⚠️ These adapters disable compression and use the `core::fmt` code on-device! You should always prefer `defmt::Format` over `Debug` whenever possible!
 
 Note that this always uses `{:?}` to format the contained value, meaning that any provided defmt display hints will be ignored.
 

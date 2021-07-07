@@ -2,21 +2,21 @@
 
 `defmt` supports 5 different logging levels listed below from lowest severity to highest severity:
 
-- TRACE
-- DEBUG
-- INFO
-- WARN
-- ERROR
+- `TRACE`
+- `DEBUG`
+- `INFO`
+- `WARN`
+- `ERROR`
 
 By default all logging is *disabled*.
 The amount of logging to perform can be controlled at the *crate* level using the following Cargo features:
 
-- `defmt-default`, log at INFO, or TRACE, level and up
-- `defmt-trace`, log at TRACE level and up
-- `defmt-debug`, log at DEBUG level and up
-- `defmt-info`, log at INFO level and up
-- `defmt-warn`, log at WARN level and up
-- `defmt-error`, log at ERROR level
+- `defmt-trace`, log at `TRACE` level and up
+- `defmt-debug`, log at `DEBUG` level and up
+- `defmt-info`, log at `INFO` level and up
+- `defmt-warn`, log at `WARN` level and up
+- `defmt-error`, log at `ERROR` level
+- `defmt-default`, log at `INFO`, or `TRACE`, level and up
 
 These features must only be enabled by the top level *application* crate as shown below.
 

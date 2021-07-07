@@ -1,6 +1,7 @@
 # #[global_logger]
 
-*Applications* that, directly or transitively, use any of `defmt` logging macros need to define a `#[global_logger]` or include one in their dependency graph.
+> *Applications* that, directly or transitively, use any of `defmt` logging macros need to define a `#[global_logger]` or include one in their dependency graph.
+
 This is similar to how the `alloc` crate depends on a `#[global_allocator]`.
 
 The `global_logger` defines how data is moved from the *device*, where the application runs, to the host, where logs will be formatted and displayed.
@@ -20,6 +21,26 @@ Finally, `#[global_logger]` specifies which `Logger` implementation will be used
 `#[global_logger]` must be used on a *unit* struct, a struct with no fields.
 This struct must implement the `Logger` trait.
 It's recommended that this struct is kept private.
+
+```rust
+# extern crate defmt;
+#
+#[defmt::global_logger]
+struct Logger;
+
+unsafe impl defmt::Logger for Logger {
+    fn acquire() {
+        // ...
+    }
+    unsafe fn release() {
+        // ...
+    }
+    unsafe fn write(bytes: &[u8]) {
+        // ...
+    }
+}
+```
+
 Only a single `#[global_logger]` struct can appear in the dependency graph of an application.
 The `global_logger` should be selected *at the top* of the dependency graph, that is in the application crate.
 
