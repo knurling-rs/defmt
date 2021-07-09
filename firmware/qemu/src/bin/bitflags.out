@@ -1,0 +1,10 @@
+INFO Flags::empty(): FLAG_0
+INFO Flags::empty(): FLAG_0 (fmt::Debug)
+INFO Flags::all(): FLAG_1 | FLAG_2
+INFO Flags::all(): FLAG_1 | FLAG_2 (fmt::Debug)
+INFO Flags::FLAG_1: FLAG_1
+INFO Flags::FLAG_1: FLAG_1 (fmt::Debug)
+INFO LargeFlags::ALL: ALL | MSB | NON_LITERAL
+INFO LargeFlags::ALL: MSB | ALL | NON_LITERAL (fmt::Debug)
+INFO LargeFlags::empty(): (empty)
+INFO LargeFlags::empty(): (empty) (fmt::Debug)

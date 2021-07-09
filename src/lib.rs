@@ -283,6 +283,9 @@ pub use defmt_macros::global_logger;
 /// ```
 pub use defmt_macros::timestamp;
 
+/// TODO docs
+pub use defmt_macros::bitflags;
+
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use defmt_macros::Format;
 

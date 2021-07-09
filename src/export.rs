@@ -2,6 +2,15 @@ use core::fmt::Write as _;
 
 use crate::{Format, Formatter, Str};
 
+pub use bitflags::bitflags;
+
+pub trait UnsignedInt {}
+impl UnsignedInt for u8 {}
+impl UnsignedInt for u16 {}
+impl UnsignedInt for u32 {}
+impl UnsignedInt for u64 {}
+impl UnsignedInt for u128 {}
+
 #[cfg(feature = "unstable-test")]
 thread_local! {
     static I: core::sync::atomic::AtomicU16 = core::sync::atomic::AtomicU16::new(0);

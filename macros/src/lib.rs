@@ -2,6 +2,7 @@
 
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
+mod bitflags;
 mod symbol;
 
 use std::{
@@ -185,6 +186,7 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
 
             // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
             // Uses `#symname` to ensure it is not discarded by the linker.
+            // This symbol itself is retained via a `EXTERN` directive in the linker script.
             #[no_mangle]
             #[cfg_attr(target_os = "macos", link_section = ".defmt,end.timestamp")]
             #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end.timestamp")]
@@ -192,6 +194,11 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
         };
     )
     .into()
+}
+
+#[proc_macro]
+pub fn bitflags(ts: TokenStream) -> TokenStream {
+    bitflags::expand(ts)
 }
 
 /// Returns a list of features of which one has to be enabled for `level` to be active

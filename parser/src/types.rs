@@ -44,6 +44,7 @@ pub enum Type {
     U8Array(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
 }
 
+// FIXME: either all or none of the type parsing should be done in here
 impl FromStr for Type {
     type Err = ();
 

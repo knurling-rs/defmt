@@ -50,12 +50,21 @@ pub enum DisplayHint {
     Debug,
     /// `:us`, formats integers as timestamps in microseconds
     Microseconds,
+    /// `__internal_bitflags_NAME` instructs the decoder to print the flags that are set, instead of
+    /// the raw value.
+    Bitflags {
+        name: String,
+        package: String,
+        disambiguator: String,
+    },
     /// Display hints currently not supported / understood
     Unknown(String),
 }
 
 /// Parses the display hint (e.g. the `#x` in `{=u8:#x}`)
 fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
+    const BITFLAGS_HINT_START: &str = "__internal_bitflags_";
+
     // The `#` comes before any padding hints (I think this matches core::fmt).
     // It is ignored for types that don't have an alternate representation.
     let alternate = if matches!(s.chars().next(), Some('#')) {
@@ -72,6 +81,24 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
     } else {
         0 // default behavior is the same as no zero-padding.
     };
+
+    if s.starts_with(BITFLAGS_HINT_START) {
+        let parts = s[BITFLAGS_HINT_START.len()..]
+            .split('@')
+            .collect::<Vec<_>>();
+        match *parts {
+            [bitflags_name, package, disambiguator] => {
+                return Some(DisplayHint::Bitflags {
+                    name: bitflags_name.into(),
+                    package: package.into(),
+                    disambiguator: disambiguator.into(),
+                });
+            }
+            _ => {
+                return Some(DisplayHint::Unknown(s.into()));
+            }
+        }
+    }
 
     Some(match s {
         "" => DisplayHint::NoHint { zero_pad },
