@@ -11,6 +11,7 @@ use std::{
     convert::TryInto,
     fmt,
     path::{Path, PathBuf},
+    error::Error,
 };
 
 use crate::{BitflagsKey, Encoding, StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
@@ -49,6 +50,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             Ok(name) => name,
             Err(_) => continue,
         };
+        // format!("name: {}", name);
 
         // Not in the `.defmt` section because it's not tied to the address of any symbol
         // in `.defmt`.
@@ -191,16 +193,17 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         }
     }
 
-    Ok(Some(Table {
+    return Ok(Some(Table {
         entries: map,
         timestamp,
         bitflags: bitflags_map,
         encoding,
-    }))
+    }));
 }
 
 /// Checks if the version encoded in the symbol table is compatible with this version of the `decoder` crate
-fn check_version(version: &str) -> Result<(), String> {
+fn check_version(version: &str) -> Result<(), VersionError> {
+    format!("version: {}", version);
     enum Kind {
         /// `1` or `0.1`
         Semver,
@@ -217,21 +220,31 @@ fn check_version(version: &str) -> Result<(), String> {
             }
         }
     }
-
+    // We can probably solve this by using a strongly-typed error type in defmt_decoder 
+    // that has a variant that indicates a version mismatch. 
+    // Then the calling binary can print its own message.
     if version != DEFMT_VERSION {
+        let bla = format!("version: {}", version);
+        let blub = format!("DEFMT_VERSION: {}", DEFMT_VERSION);
+        // Error:
         let mut msg = format!(
             "defmt version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: ",
+            // "es passiert doch??? {}, {}",
             version, DEFMT_VERSION
         );
 
-        let git_sem = "migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR `cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`";
-        let sem_git = "`cargo install` a non-git version of `probe-run`: `cargo install probe-run`";
+        msg.push_str(&bla);
+        msg.push_str(&blub);
+
+        let git_sem = "git_sem: migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR `cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`";
+        // jetzt diese version:
+        let sem_git = "sem_git: `cargo install` a non-git version of `probe-run`: `cargo install probe-run`";
         let sem_sem = &*format!(
-            "`cargo install` a different non-git version of `probe-run` that supports defmt {}",
+            "sem_sem: `cargo install` a different non-git version of `probe-run` that supports defmt {}",
             version,
         );
         let git_git = &*format!(
-            "pin _all_ `defmt` related dependencies to revision {0}; modify Cargo.toml files as shown below\n
+            "git_git: pin _all_ `defmt` related dependencies to revision {0}; modify Cargo.toml files as shown below\n
 [dependencies]
 defmt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
 defmt-rtt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
@@ -240,18 +253,41 @@ panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"p
             DEFMT_VERSION
         );
 
-        match (Kind::of(version), Kind::of(DEFMT_VERSION)) {
-            (Kind::Git, Kind::Git) => msg.push_str(git_git),
-            (Kind::Git, Kind::Semver) => msg.push_str(git_sem),
-            (Kind::Semver, Kind::Git) => msg.push_str(sem_git),
-            (Kind::Semver, Kind::Semver) => msg.push_str(sem_sem),
-        }
+        let mismatch = match (Kind::of(version), Kind::of(DEFMT_VERSION)) {
+            (Kind::Git, Kind::Git) => VersionError::GitToGit,
+            (Kind::Git, Kind::Semver) => VersionError::GitToSemver,
+            (Kind::Semver, Kind::Git) => VersionError::SemverToGit,
+            (Kind::Semver, Kind::Semver) => VersionError::SemverToSemver,
+        };
 
-        return Err(msg);
+        return Err(mismatch);
     }
 
     Ok(())
 }
+
+////////
+#[derive(Debug, Eq, PartialEq)]
+pub enum VersionError {
+    GitToGit,
+    GitToSemver,
+    SemverToSemver,
+    SemverToGit,
+}
+
+impl fmt::Display for VersionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VersionError::GitToGit => f.write_str(""),
+            VersionError::GitToSemver => f.write_str(""),
+            VersionError::SemverToSemver => f.write_str(""),
+            VersionError::SemverToGit => f.write_str(""),
+        }
+    }
+}
+
+impl Error for VersionError {}
+
 
 /// Location of a defmt log statement in the elf-file
 #[derive(Clone)]
