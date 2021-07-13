@@ -2,11 +2,11 @@
 
 Unstructured, braindump-ish notes about the design and implementation of `defmt`
 
-**WARNING** the notes here may not accurately reflect the current implementation. This document is synchronized with the implementation at a *best effort* basis.
+> ⚠️ These notes here may not accurately reflect the current implementation. This document is synchronized with the implementation at a *best effort* basis.
 
 ## Optimization goals
 
-`defmt` optimizes for data throughput first and then for runtime cost.
+`defmt` optimizes for data throughput first and then for runtime cost and binary size.
 
 ## Constraints
 
