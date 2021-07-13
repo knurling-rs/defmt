@@ -3,7 +3,7 @@
 > Logging is done using the `error!`, `warn!`, `info!`, `debug!` and `trace!` macros.
 
 Each macro logs at the logging level indicated by its name.
-The syntax of these macros is roughly the same as the `println`-macro.
+The syntax of these macros is roughly the same as the `println!`-macro.
 
 ``` rust
 # extern crate defmt;

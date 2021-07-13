@@ -1,10 +1,5 @@
 # Implementing `Format`
 
-- [`#[derive(Format)]`](#deriveformat)
-- [Manual implementation with `write!`](#manual-implementation-with-write)
-- [Newtypes](#newtypes)
-- [Uncompressed adapters](#uncompressed-adapters)
-
 ## `#[derive(Format)]`
 
 The easiest way to implement the `Format` trait for a `struct` or `enum` is to use the `derive` attribute.

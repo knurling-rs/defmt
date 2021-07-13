@@ -2,12 +2,12 @@
 
 # `defmt`
 
-`defmt` is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
+> `defmt` ("de format", short for "deferred formatting") is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
 ## Features
 
 - `println!`-like formatting
-- Multiple logging levels: error, info, warn, debug, trace
+- Multiple logging levels: `error`, `info`, `warn`, `debug`, `trace`
 - Crate-level logging level filters
 - Timestamped logs
 

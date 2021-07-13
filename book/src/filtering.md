@@ -11,12 +11,14 @@
 By default all logging is *disabled*.
 The amount of logging to perform can be controlled at the *crate* level using the following Cargo features:
 
-- `defmt-trace`, log at `TRACE` level and up
-- `defmt-debug`, log at `DEBUG` level and up
-- `defmt-info`, log at `INFO` level and up
-- `defmt-warn`, log at `WARN` level and up
-- `defmt-error`, log at `ERROR` level
-- `defmt-default`, log at `INFO`, or `TRACE`, level and up
+| Feature         | Log at ...                           |
+| :-------------- | :----------------------------------- |
+| `defmt-trace`   | ... `TRACE` level and up             |
+| `defmt-debug`   | ... `DEBUG` level and up             |
+| `defmt-info`    | ... `INFO` level and up              |
+| `defmt-warn`    | ... `WARN` level and up              |
+| `defmt-error`   | ... `ERROR` level                    |
+| `defmt-default` | ... `INFO`, or `TRACE`, level and up |
 
 These features must only be enabled by the top level *application* crate as shown below.
 

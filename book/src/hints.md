@@ -47,8 +47,10 @@ Adding `#` in front of a binary and hexadecimal display hints, precedes these nu
 # extern crate defmt;
 defmt::info!("{=u8:b}", 42);  // -> INFO 101010
 defmt::info!("{=u8:#b}", 42); // -> INFO 0b101010
+
 defmt::info!("{=u8:x}", 42);  // -> INFO 2a
 defmt::info!("{=u8:#x}", 42); // -> INFO 0x2a
+
 defmt::info!("{=u8:X}", 42);  // -> INFO 2A
 defmt::info!("{=u8:#X}", 42); // -> INFO 0x2A
 ```
@@ -59,9 +61,11 @@ Padding numbers with leading zeros is supported, for example:
 
 ``` rust
 # extern crate defmt;
-defmt::info!("{=u8:03}", 42);    // -> INFO 042
-defmt::info!("{=u8:08X}", 42);   // -> INFO 0000002A
-defmt::info!("{=u8:#010X}", 42); // -> INFO 0x0000002A
+defmt::info!("{=u8}", 42);    // -> INFO 42
+defmt::info!("{=u8:04}", 42); // -> INFO 0042
+
+defmt::info!("{=u8:08X}", 42);  // -> INFO 0000002A
+defmt::info!("{=u8:#08X}", 42); // -> INFO 0x00002A
 ```
 
 When the alternate form is used for hex and binary, the `0x`/`0b` length is subtracted from the leading zeros.  This matches [`core::fmt` behavior](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b11809759f975e266251f7968e542756).

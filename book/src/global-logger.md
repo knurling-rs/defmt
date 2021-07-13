@@ -7,7 +7,7 @@ This is similar to how the `alloc` crate depends on a `#[global_allocator]`.
 The `global_logger` defines how data is moved from the *device*, where the application runs, to the host, where logs will be formatted and displayed.
 `global_logger` is transport agnostic: you can use a serial interface, serial over USB, RTT, semihosting, Ethernet, 6LoWPAN, etc. to transfer the data.
 
-The `global_logger` interface comprises the trait `Logger` and the attribute, `#[global_logger]`.
+The `global_logger` interface comprises the trait `Logger` and the `#[global_logger]` attribute.
 
 ## The `Logger` trait
 
@@ -79,6 +79,7 @@ The other approach uses multiple logging channels: e.g. one for each priority le
 With this approach logging can be made lock-free: interrupts are not disabled while logging data.
 This approach requires channel multiplexing in the transport layer.
 RTT, for example, natively supports multiple channels so this is not an issue, but other transports, like ITM, will require that each log frame to be tagged with the channel it belongs to (e.g. one logging channel = ITM channel).
+
 The trade-offs of using more channels are:
 - Lock-freedom
 - higher memory usage on the target, for buffering

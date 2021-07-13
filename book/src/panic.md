@@ -35,7 +35,7 @@ fn defmt_panic() -> ! {
 
 If you are using the `panic-probe` crate then you should "abort" (call `cortex_m::asm::udf`) from `#[defmt::panic_handler]` to match its behavior.
 
-Even if you don't run into the "double panic message printed" issue you may still want to use `#[defmt::panic_handler]` because this way `defmt::panic` and `defmt::assert` will *not* go through the `core::panic` machinery and that *may* reduce code size (we recommend you measure the effect of the change).
+> 💡 Even if you don't run into the "double panic message printed" issue you may still want to use `#[defmt::panic_handler]` because this way `defmt::panic` and `defmt::assert` will *not* go through the `core::panic` machinery and that *may* reduce code size (we recommend you measure the effect of the change).
 
 > ⚠️ The `#[panic_handler]` attribute cannot be used together with the `export_name` or `no_mangle` attributes
 
