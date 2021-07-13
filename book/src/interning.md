@@ -1,15 +1,15 @@
 # Interning
 
 All string literals are interned in a custom ELF section.
-This has proven to be the way that requires the less post-processing and implementation work.
+This has proven to be the way that requires the least amount of post-processing and implementation work.
 It is not without downsides as we'll see.
 
 The basic pattern for interning a string is this:
 
-``` rust,no_run,noplayground
+```rust,no_run,noplayground
 #[export_name = "the string that will be interned"]
 #[link_section = ".my_custom_section.some_unique_identifier"]
-//             ^ this is the INPUT linker section
+//                 ^^^^^^^^^^^^^^^^^ this is the INPUT linker section
 static SYM: u8 = 0;
 
 // index of the interned string
