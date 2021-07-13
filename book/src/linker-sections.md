@@ -1,5 +1,7 @@
 # Logging levels
 
+> 🚨 Out of date! See [https://github.com/knurling-rs/defmt/pull/195](https://github.com/knurling-rs/defmt/pull/195).
+
 `defmt` supports several logging levels.
 To avoid serializing the logging level at runtime (that would reduce throughput), interned strings are clustered by logging level.
 
