@@ -1,5 +1,7 @@
 # Application setup
 
+> ⚠️ Remember to also do the base setup from the previous chapter!
+
 ## Linker script
 
 The application must be linked using a custom linking process that includes the `defmt.x` linker script.
