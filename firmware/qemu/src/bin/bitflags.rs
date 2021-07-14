@@ -9,9 +9,14 @@ use defmt_semihosting as _; // global logger
 
 bitflags! {
     struct Flags: u8 {
+        #[cfg(not(never))]
         const FLAG_0 = 0b00;
         const FLAG_1 = 0b01;
         const FLAG_2 = 0b10;
+        const FLAG_7 = 1 << 7;
+
+        #[cfg(never)]
+        const CFGD_OUT = 1;
     }
 }
 
@@ -40,6 +45,11 @@ fn main() -> ! {
     defmt::info!(
         "Flags::FLAG_1: {} (fmt::Debug)",
         Debug2Format(&Flags::FLAG_1)
+    );
+    defmt::info!("Flags::FLAG_7: {}", Flags::FLAG_7);
+    defmt::info!(
+        "Flags::FLAG_7: {} (fmt::Debug)",
+        Debug2Format(&Flags::FLAG_7)
     );
 
     defmt::info!("LargeFlags::ALL: {}", LargeFlags::ALL);

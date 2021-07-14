@@ -72,6 +72,7 @@ impl Codegen {
             .flags
             .iter()
             .map(|flag| {
+                let cfg_attrs = &flag.cfg_attrs;
                 let name = &flag.ident;
                 let value = &flag.value;
                 let repr_ty = &input.ty;
@@ -83,6 +84,7 @@ impl Codegen {
                 .mangle();
 
                 let def = quote! {
+                    #(#cfg_attrs)*
                     #[cfg_attr(target_os = "macos", link_section = ".defmt,end")]
                     #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
                     #[export_name = #sym]
@@ -133,6 +135,7 @@ impl Parse for Input {
 
 #[allow(dead_code)]
 struct Flag {
+    cfg_attrs: Vec<Attribute>,
     const_attrs: Vec<Attribute>,
     const_token: Token![const],
     ident: Ident,
@@ -142,12 +145,26 @@ struct Flag {
 
 impl Parse for Flag {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let const_attrs = Attribute::parse_outer(input)?;
         Ok(Self {
-            const_attrs: Attribute::parse_outer(input)?,
+            cfg_attrs: extract_cfgs(&const_attrs),
+            const_attrs,
             const_token: input.parse()?,
             ident: input.parse()?,
             eq_token: input.parse()?,
             value: input.parse()?,
         })
     }
+}
+
+fn extract_cfgs(attrs: &[Attribute]) -> Vec<Attribute> {
+    let mut cfgs = vec![];
+
+    for attr in attrs {
+        if attr.path.is_ident("cfg") {
+            cfgs.push(attr.clone());
+        }
+    }
+
+    cfgs
 }
