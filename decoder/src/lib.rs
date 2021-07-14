@@ -18,7 +18,11 @@ mod elf2table;
 mod frame;
 pub mod log;
 
-use std::{collections::BTreeMap, error::Error, fmt, io};
+use std::{
+    collections::{BTreeMap, HashMap},
+    error::Error,
+    fmt, io,
+};
 
 use byteorder::{ReadBytesExt, LE};
 use decoder::Decoder;
@@ -102,7 +106,7 @@ impl StringEntry {
 }
 
 /// Data that uniquely identifies a `defmt::bitflags!` invocation.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 struct BitflagsKey {
     /// Name of the bitflags struct (this is really redundant with `disambig`).
     ident: String,
@@ -115,7 +119,7 @@ struct BitflagsKey {
 pub struct Table {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
-    bitflags: BTreeMap<BitflagsKey, Vec<(String, u128)>>,
+    bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
 }
 
 impl Table {
@@ -124,7 +128,7 @@ impl Table {
         Self {
             entries,
             timestamp: None,
-            bitflags: BTreeMap::new(),
+            bitflags: Default::default(),
         }
     }
 

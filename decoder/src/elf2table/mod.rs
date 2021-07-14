@@ -7,7 +7,7 @@ mod symbol;
 
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fmt,
     path::{Path, PathBuf},
 };
@@ -73,7 +73,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
-    let mut bitflags_map = BTreeMap::new();
+    let mut bitflags_map = HashMap::new();
     let mut timestamp = None;
     for entry in elf.symbols() {
         // Skipping symbols with empty string names, as they may be added by
