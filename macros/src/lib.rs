@@ -75,6 +75,18 @@ pub fn dbg(input: TokenStream) -> TokenStream {
     functions::dbg::expand(input)
 }
 
+#[proc_macro_error]
+#[proc_macro]
+pub fn intern(input: TokenStream) -> TokenStream {
+    functions::intern::expand(input)
+}
+
+#[proc_macro_error]
+#[proc_macro]
+pub fn internp(input: TokenStream) -> TokenStream {
+    functions::internp::expand(input)
+}
+
 // not naming this `panic` to avoid shadowing `core::panic` in this scope
 #[proc_macro_error]
 #[proc_macro]
@@ -406,42 +418,6 @@ impl Parse for FormatArgs {
             },
         })
     }
-}
-
-#[proc_macro]
-pub fn intern(ts: TokenStream) -> TokenStream {
-    let lit = parse_macro_input!(ts as LitStr);
-    let ls = lit.value();
-
-    mksym(&ls, "str", false).into()
-}
-
-#[proc_macro]
-pub fn internp(ts: TokenStream) -> TokenStream {
-    let lit = parse_macro_input!(ts as LitStr);
-    let ls = lit.value();
-
-    let sym = symbol::Symbol::new("prim", &ls).mangle();
-
-    let section = mksection(false, "prim.", &sym);
-    let section_macos = mksection(true, "prim.", &sym);
-
-    let sym = if cfg!(feature = "unstable-test") {
-        quote!({ defmt::export::fetch_add_string_index() as u16 })
-    } else {
-        quote!({
-            #[cfg_attr(target_os = "macos", link_section = #section_macos)]
-            #[cfg_attr(not(target_os = "macos"), link_section = #section)]
-            #[export_name = #sym]
-            static S: u8 = 0;
-            &S as *const u8 as u16
-        })
-    };
-
-    quote!({
-        defmt::export::make_istr(#sym)
-    })
-    .into()
 }
 
 #[proc_macro]
