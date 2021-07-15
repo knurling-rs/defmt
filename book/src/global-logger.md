@@ -11,7 +11,7 @@ The `global_logger` interface comprises the trait `Logger` and the `#[global_log
 
 ## The `Logger` trait
 
-Firstly `Logger` specifies how to acquire and release a handle to a global logger, as well as how the data is put on the wire.
+`Logger` specifies how to acquire and release a handle to a global logger, as well as how the data is put on the wire.
 
 ```rust
 # extern crate defmt;
@@ -39,7 +39,7 @@ See the API documentation for more details about the safety requirements of the 
 
 ## The `#[global_logger]` attribute
 
-Secondly, `#[global_logger]` specifies which `Logger` implementation will be used by the application.
+`#[global_logger]` specifies which `Logger` implementation will be used by the application.
 
 `#[global_logger]` must be used on a *unit* struct, a struct with no fields, which must implement the `Logger` trait.
 It's recommended that this struct is kept private.

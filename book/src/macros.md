@@ -32,15 +32,15 @@ defmt::trace!("{}", x);
 
 ## Type and display hints
 
-The `defmt` grammer is similar to `core::fmt`, but not the same. It works like following:
+The `defmt` grammar is similar to `core::fmt`, but not the same. The syntax of a formatting parameter is shown below:
 
 > `{[pos][=Type][:Display]}`
 
 ### Type hint
 
 The `Type` hint always starts with a `=`.
-For once it enables the framework to further compress the logs resulting in higher throughput.
-Secondly it also typechecks the supplied value to fit the specified type.
+For one it enables the framework to further compress the logs resulting in higher throughput.
+Secondly it also typechecks the supplied value to fit the specified type and possibly coerces the value into the specified type.
 
 The type hint can be a [primitive](./primitives.md) or [one](./format-slices.md), [of](./istr.md), [the](./bitfields.md) special types.
 Read on to learn more about the type hints.

@@ -33,4 +33,4 @@ defmt-error = []
 ---
 
 That is already it for setting up `defmt` for your library!
-See the next chapter for additional steps for applications.
+Continue to the [next page](setup-app.md) for additional steps for applications.

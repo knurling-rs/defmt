@@ -1,6 +1,6 @@
 # Primitives
 
-Following **primitive types** are available:
+The following **primitive types** are available:
 
 | type hint            | name                                |
 | :------------------- | :---------------------------------- |

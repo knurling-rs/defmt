@@ -15,12 +15,10 @@ To pass `defmt.x` to the linker add the `-C link-arg=-Tdefmt.x` flag to the rust
 rustflags = [
   # --- KEEP existing `link-arg` flags ---
   "-C", "link-arg=-Tlink.x",
-
-  # --- ADD following new flags ---
-  "-C", "link-arg=-Tdefmt.x",
-  # This is needed if your flash or ram addresses are not aligned to 0x10000 in memory.x
-  # See https://github.com/rust-embedded/cortex-m-quickstart/pull/95
   "-C", "link-arg=--nmagic",
+
+  # --- ADD following new flag ---
+  "-C", "link-arg=-Tdefmt.x",
 ]
 ```
 
@@ -37,7 +35,7 @@ The following `global_logger`s are provided as part of the project:
 - [`defmt-semihosting`], logs over semihosting. Meant only for testing `defmt` on a virtual Cortex-M device (QEMU).
 
 [`defmt-rtt`]: https://docs.rs/defmt-rtt/
-[`defmt-itm`]: https://docs.rs/defmt-rtt/
+[`defmt-itm`]: https://docs.rs/defmt-itm/
 [`defmt-semihosting`]: https://github.com/knurling-rs/defmt/tree/6cfd947384debb18a4df761cbe454f8d86cf3441/firmware/defmt-semihosting
 
 Information about how to write a `global_logger` can be found in the [`#[global_logger]` section](./global-logger.md).
