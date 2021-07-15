@@ -52,6 +52,42 @@ pub fn dbg(input: TokenStream) -> TokenStream {
     functions::dbg::expand(input)
 }
 
+// not naming this `panic` to avoid shadowing `core::panic` in this scope
+#[proc_macro_error]
+#[proc_macro]
+pub fn panic_(input: TokenStream) -> TokenStream {
+    functions::panic_like::expand(input, "panicked at 'explicit panic'", |format_string| {
+        format!("panicked at '{}'", format_string)
+    })
+}
+
+// not naming this `todo` to avoid shadowing `core::todo` in this scope
+#[proc_macro_error]
+#[proc_macro]
+pub fn todo_(input: TokenStream) -> TokenStream {
+    functions::panic_like::expand(
+        input,
+        "panicked at 'not yet implemented'",
+        |format_string| format!("panicked at 'not yet implemented: {}'", format_string),
+    )
+}
+
+// not naming this `unreachable` to avoid shadowing `core::unreachable` in this scope
+#[proc_macro_error]
+#[proc_macro]
+pub fn unreachable_(input: TokenStream) -> TokenStream {
+    functions::panic_like::expand(
+        input,
+        "panicked at 'internal error: entered unreachable code'",
+        |format_string| {
+            format!(
+                "panicked at 'internal error: entered unreachable code: {}'",
+                format_string
+            )
+        },
+    )
+}
+
 #[proc_macro_error]
 #[proc_macro]
 pub fn timestamp(input: TokenStream) -> TokenStream {
@@ -270,63 +306,6 @@ pub fn warn(ts: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn error(ts: TokenStream) -> TokenStream {
     log_ts(Level::Error, ts)
-}
-
-fn panic(
-    ts: TokenStream,
-    zero_args_string: &str,
-    string_transform: impl FnOnce(&str) -> String,
-) -> TokenStream {
-    let log_stmt = if ts.is_empty() {
-        // panic!() -> error!("panicked at 'explicit panic'")
-        let litstr = LitStr::new(zero_args_string, Span2::call_site());
-        log(Level::Error, FormatArgs { litstr, rest: None })
-    } else {
-        // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
-        let args = parse_macro_input!(ts as FormatArgs);
-        let litstr = LitStr::new(&string_transform(&args.litstr.value()), Span2::call_site());
-        let rest = args.rest;
-        log(Level::Error, FormatArgs { litstr, rest })
-    };
-
-    quote!(
-        {
-            #log_stmt;
-            defmt::export::panic()
-        }
-    )
-    .into()
-}
-
-// not naming this `panic` to avoid shadowing `core::panic` in this scope
-#[proc_macro]
-pub fn panic_(ts: TokenStream) -> TokenStream {
-    panic(ts, "panicked at 'explicit panic'", |format_string| {
-        format!("panicked at '{}'", format_string)
-    })
-}
-
-// not naming this `todo` to avoid shadowing `core::todo` in this scope
-#[proc_macro]
-pub fn todo_(ts: TokenStream) -> TokenStream {
-    panic(ts, "panicked at 'not yet implemented'", |format_string| {
-        format!("panicked at 'not yet implemented: {}'", format_string)
-    })
-}
-
-// not naming this `unreachable` to avoid shadowing `core::unreachable` in this scope
-#[proc_macro]
-pub fn unreachable_(ts: TokenStream) -> TokenStream {
-    panic(
-        ts,
-        "panicked at 'internal error: entered unreachable code'",
-        |format_string| {
-            format!(
-                "panicked at 'internal error: entered unreachable code: {}'",
-                format_string
-            )
-        },
-    )
 }
 
 // not naming this `assert` to avoid shadowing `core::assert` in this scope
