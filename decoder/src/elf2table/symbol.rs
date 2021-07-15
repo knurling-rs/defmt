@@ -33,16 +33,19 @@ pub enum SymbolTag<'a> {
 }
 
 impl Symbol {
-    pub fn demangle(raw: &str) -> Result<Self, serde_json::Error> {
+    pub fn demangle(raw: &str) -> anyhow::Result<Self> {
         serde_json::from_str(raw)
+            .map_err(|j| anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", raw, j))
     }
 
     pub fn tag(&self) -> SymbolTag<'_> {
         match &*self.tag {
             "defmt_prim" => SymbolTag::Defmt(Tag::Prim),
             "defmt_derived" => SymbolTag::Defmt(Tag::Derived),
+            "defmt_bitflags" => SymbolTag::Defmt(Tag::Bitflags),
             "defmt_write" => SymbolTag::Defmt(Tag::Write),
             "defmt_timestamp" => SymbolTag::Defmt(Tag::Timestamp),
+            "defmt_bitflags_value" => SymbolTag::Defmt(Tag::BitflagsValue),
             "defmt_str" => SymbolTag::Defmt(Tag::Str),
             "defmt_trace" => SymbolTag::Defmt(Tag::Trace),
             "defmt_debug" => SymbolTag::Defmt(Tag::Debug),
@@ -55,5 +58,13 @@ impl Symbol {
 
     pub fn data(&self) -> &str {
         &self.data
+    }
+
+    pub fn package(&self) -> &str {
+        &self.package
+    }
+
+    pub fn disambiguator(&self) -> &str {
+        &self.disambiguator
     }
 }

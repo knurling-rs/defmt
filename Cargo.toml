@@ -20,6 +20,7 @@ unstable-test = ["defmt-macros/unstable-test"]
 
 [dependencies]
 defmt-macros = { path = "macros", version = "0.2.2" }
+bitflags = "1"
 
 [dev-dependencies]
 rustc_version = "0.4"

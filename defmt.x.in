@@ -22,8 +22,11 @@ SECTIONS
     /* Everything user-defined */
     *(.defmt.*);
 
-    /* Symbols that should be placed at the end of the section */
-    *(.defmt.end.*);
+    __DEFMT_MARKER_END = .;
+
+    /* Symbols that aren't referenced by the program and */
+    /* should be placed at the end of the section */
+    KEEP(*(.defmt.end .defmt.end.*));
 
     /* $DEFMT_VERSION may contain special chars, so we quote the symbol name */
     /* Note that the quotes actually become part of the symbol name though! */
@@ -31,4 +34,4 @@ SECTIONS
   }
 }
 
-ASSERT(SIZEOF(.defmt) < 65534, ".defmt section cannot contain more than 65534 interned strings");
+ASSERT(__DEFMT_MARKER_END < 65534, ".defmt section cannot contain more than 65534 interned strings");

@@ -7,12 +7,13 @@ mod symbol;
 
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
+    convert::TryInto,
     fmt,
     path::{Path, PathBuf},
 };
 
-use crate::{StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
+use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection, ObjectSymbol};
 
@@ -52,11 +53,11 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
     // Otherwise probe-run won't work with apps that don't use defmt.
 
-    let defmt_shndx = elf.section_by_name(".defmt").map(|s| s.index());
+    let defmt_section = elf.section_by_name(".defmt");
 
-    let (defmt_shndx, version) = match (defmt_shndx, version) {
+    let (defmt_section, version) = match (defmt_section, version) {
         (None, None) => return Ok(None), // defmt is not used
-        (Some(defmt_shndx), Some(version)) => (defmt_shndx, version),
+        (Some(defmt_section), Some(version)) => (defmt_section, version),
         (None, Some(_)) => {
             bail!("defmt version found, but no `.defmt` section - check your linker configuration");
         }
@@ -73,6 +74,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
+    let mut bitflags_map = HashMap::new();
     let mut timestamp = None;
     for entry in elf.symbols() {
         // Skipping symbols with empty string names, as they may be added by
@@ -89,28 +91,66 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             continue;
         }
 
-        if entry.section_index() == Some(defmt_shndx) {
+        if entry.section_index() == Some(defmt_section.index()) {
             let sym = symbol::Symbol::demangle(name)?;
             match sym.tag() {
-                symbol::SymbolTag::Defmt(tag) => {
-                    if tag == Tag::Timestamp {
-                        if timestamp.is_some() {
-                            bail!("multiple timestamp format specifications found");
-                        }
+                symbol::SymbolTag::Defmt(Tag::Timestamp) => {
+                    if timestamp.is_some() {
+                        bail!("multiple timestamp format specifications found");
+                    }
 
-                        timestamp = Some(TableEntry::new(
-                            StringEntry::new(tag, sym.data().to_string()),
-                            name.to_string(),
-                        ));
-                    } else {
-                        map.insert(
-                            entry.address() as usize,
-                            TableEntry::new(
-                                StringEntry::new(tag, sym.data().to_string()),
-                                name.to_string(),
-                            ),
+                    timestamp = Some(TableEntry::new(
+                        StringEntry::new(Tag::Timestamp, sym.data().to_string()),
+                        name.to_string(),
+                    ));
+                }
+                symbol::SymbolTag::Defmt(Tag::BitflagsValue) => {
+                    // Bitflags values always occupy 128 bits / 16 bytes.
+                    const BITFLAGS_VALUE_SIZE: u64 = 16;
+
+                    if entry.size() != BITFLAGS_VALUE_SIZE {
+                        bail!(
+                            "bitflags value does not occupy 16 bytes (symbol `{}`)",
+                            name
                         );
                     }
+
+                    let defmt_data = defmt_section.data()?;
+                    let addr = entry.address() as usize;
+                    let value = match defmt_data.get(addr..addr + 16) {
+                        Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
+                        None => bail!(
+                            "bitflags value at {:#x} outside of defmt section",
+                            entry.address()
+                        ),
+                    };
+                    log::debug!("bitflags value `{}` has value {:#x}", sym.data(), value);
+
+                    let segments = sym.data().split("::").collect::<Vec<_>>();
+                    let (bitflags_name, value_name) = match &*segments {
+                        [bitflags_name, value_name] => (*bitflags_name, *value_name),
+                        _ => bail!("malformed bitflags value string '{}'", sym.data()),
+                    };
+
+                    let key = BitflagsKey {
+                        ident: bitflags_name.into(),
+                        package: sym.package().into(),
+                        disambig: sym.disambiguator().into(),
+                    };
+
+                    bitflags_map
+                        .entry(key)
+                        .or_insert_with(Vec::new)
+                        .push((value_name.into(), value));
+                }
+                symbol::SymbolTag::Defmt(tag) => {
+                    map.insert(
+                        entry.address() as usize,
+                        TableEntry::new(
+                            StringEntry::new(tag, sym.data().to_string()),
+                            name.to_string(),
+                        ),
+                    );
                 }
                 symbol::SymbolTag::Custom(_) => {}
             }
@@ -121,6 +161,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     if let Some(ts) = timestamp {
         table.set_timestamp_entry(ts);
     }
+    table.bitflags = bitflags_map;
     Ok(Some(table))
 }
 

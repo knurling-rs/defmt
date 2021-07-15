@@ -283,6 +283,43 @@ pub use defmt_macros::global_logger;
 /// ```
 pub use defmt_macros::timestamp;
 
+/// Generates a bitflags structure that can be formatted with defmt.
+///
+/// This macro is a wrapper around the [`bitflags`] crate, and provides an (almost) identical
+/// interface. Refer to [its documentation] for an explanation of the syntax.
+///
+/// [its documentation]: https://docs.rs/bitflags/1/bitflags/
+///
+/// # Limitations
+///
+/// To integrate with defmt, this macro imposes a few minor limitations on the input that do not
+/// apply when using the `bitflags` crate directly:
+///
+/// - The macro only supports Rust's built-in unsigned types. Custom types are not supported.
+///
+/// - When defining bitflags constants, you cannot refer to the `Self` type. Instead, spell out the
+///   name of the bitflags struct.
+///
+/// # Examples
+///
+/// The example from the bitflags crate works with a minor modification:
+///
+/// ```
+/// defmt::bitflags! {
+///     struct Flags: u32 {
+///         const A = 0b00000001;
+///         const B = 0b00000010;
+///         const C = 0b00000100;
+///         // Uses `Flags` instead of `Self`
+///         const ABC = Flags::A.bits | Flags::B.bits | Flags::C.bits;
+///     }
+/// }
+///
+/// defmt::info!("Flags::ABC: {}", Flags::ABC);
+/// defmt::info!("Flags::empty(): {}", Flags::empty());
+/// ```
+pub use defmt_macros::bitflags;
+
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use defmt_macros::Format;
 

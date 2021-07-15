@@ -4,13 +4,14 @@ use std::{
     mem,
 };
 
-use crate::Arg;
+use crate::{Arg, BitflagsKey, Table};
 use colored::Colorize;
 use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, Type};
 
 /// A log frame
 #[derive(Debug, PartialEq)]
 pub struct Frame<'t> {
+    table: &'t Table,
     level: Level,
     index: u64,
     timestamp_format: Option<&'t str>,
@@ -22,6 +23,7 @@ pub struct Frame<'t> {
 
 impl<'t> Frame<'t> {
     pub(crate) fn new(
+        table: &'t Table,
         level: Level,
         index: u64,
         timestamp_format: Option<&'t str>,
@@ -30,6 +32,7 @@ impl<'t> Frame<'t> {
         args: Vec<Arg<'t>>,
     ) -> Self {
         Self {
+            table,
             level,
             index,
             timestamp_format,
@@ -48,19 +51,14 @@ impl<'t> Frame<'t> {
         }
     }
 
-    pub fn display_timestamp(&'t self) -> Option<DisplayMessage<'t>> {
-        self.timestamp_format.map(|fmt| DisplayMessage {
-            format: fmt,
-            args: &self.timestamp_args,
-        })
+    pub fn display_timestamp(&'t self) -> Option<DisplayTimestamp<'t>> {
+        self.timestamp_format
+            .map(|_| DisplayTimestamp { frame: self })
     }
 
     /// Returns a struct that will format the message contained in this log frame.
     pub fn display_message(&'t self) -> DisplayMessage<'t> {
-        DisplayMessage {
-            format: self.format,
-            args: &self.args,
-        }
+        DisplayMessage { frame: self }
     }
 
     pub fn level(&self) -> Level {
@@ -70,68 +68,122 @@ impl<'t> Frame<'t> {
     pub fn index(&self) -> u64 {
         self.index
     }
-}
 
-pub struct DisplayMessage<'t> {
-    format: &'t str,
-    args: &'t [Arg<'t>],
-}
-
-impl fmt::Display for DisplayMessage<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let args = format_args(self.format, self.args, None);
-        f.write_str(&args)
+    fn format_args(&self, format: &str, args: &[Arg], parent_hint: Option<&DisplayHint>) -> String {
+        self.format_args_real(format, args, parent_hint).unwrap() // cannot fail, we only write to a `String`
     }
-}
 
-/// Prints a `Frame` when formatted via `fmt::Display`, including all included metadata (level,
-/// timestamp, ...).
-pub struct DisplayFrame<'t> {
-    frame: &'t Frame<'t>,
-    colored: bool,
-}
+    fn format_args_real(
+        &self,
+        format: &str,
+        args: &[Arg],
+        parent_hint: Option<&DisplayHint>,
+    ) -> Result<String, fmt::Error> {
+        let params = defmt_parser::parse(format, ParserMode::ForwardsCompatible).unwrap();
+        let mut buf = String::new();
+        for param in params {
+            match param {
+                Fragment::Literal(lit) => {
+                    buf.push_str(&lit);
+                }
+                Fragment::Parameter(param) => {
+                    let hint = param.hint.as_ref().or(parent_hint);
 
-impl fmt::Display for DisplayFrame<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let level = if self.colored {
-            match self.frame.level {
-                Level::Trace => "TRACE".dimmed().to_string(),
-                Level::Debug => "DEBUG".normal().to_string(),
-                Level::Info => "INFO".green().to_string(),
-                Level::Warn => "WARN".yellow().to_string(),
-                Level::Error => "ERROR".red().to_string(),
+                    match &args[param.index] {
+                        Arg::Bool(x) => write!(buf, "{}", x)?,
+                        Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
+                        Arg::F64(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
+                        Arg::Uxx(x) => {
+                            match param.ty {
+                                Type::BitField(range) => {
+                                    let left_zeroes =
+                                        mem::size_of::<u128>() * 8 - range.end as usize;
+                                    let right_zeroes = left_zeroes + range.start as usize;
+                                    // isolate the desired bitfields
+                                    let bitfields = (*x << left_zeroes) >> right_zeroes;
+
+                                    if let Some(DisplayHint::Ascii) = hint {
+                                        let bstr = bitfields
+                                            .to_be_bytes()
+                                            .iter()
+                                            .skip(right_zeroes / 8)
+                                            .copied()
+                                            .collect::<Vec<u8>>();
+                                        self.format_bytes(&bstr, hint, &mut buf)?
+                                    } else {
+                                        self.format_u128(bitfields as u128, hint, &mut buf)?;
+                                    }
+                                }
+                                _ => match hint {
+                                    Some(DisplayHint::Debug) => {
+                                        self.format_u128(*x as u128, parent_hint, &mut buf)?
+                                    }
+                                    _ => self.format_u128(*x as u128, hint, &mut buf)?,
+                                },
+                            }
+                        }
+                        Arg::Ixx(x) => self.format_i128(*x as i128, hint, &mut buf)?,
+                        Arg::Str(x) | Arg::Preformatted(x) => self.format_str(x, hint, &mut buf)?,
+                        Arg::IStr(x) => self.format_str(x, hint, &mut buf)?,
+                        Arg::Format { format, args } => match parent_hint {
+                            Some(DisplayHint::Ascii) => {
+                                buf.push_str(&self.format_args(format, args, parent_hint));
+                            }
+                            _ => buf.push_str(&self.format_args(format, args, hint)),
+                        },
+                        Arg::FormatSequence { args } => {
+                            for arg in args {
+                                buf.push_str(&self.format_args("{=?}", &[arg.clone()], hint))
+                            }
+                        }
+                        Arg::FormatSlice { elements } => {
+                            match hint {
+                                // Filter Ascii Hints, which contains u8 byte slices
+                                Some(DisplayHint::Ascii)
+                                    if elements.iter().filter(|e| e.format == "{=u8}").count()
+                                        != 0 =>
+                                {
+                                    let vals = elements
+                                        .iter()
+                                        .map(|e| match e.args.as_slice() {
+                                            [Arg::Uxx(v)] => u8::try_from(*v)
+                                                .expect("the value must be in u8 range"),
+                                            _ => panic!(
+                                                "FormatSlice should only contain one argument"
+                                            ),
+                                        })
+                                        .collect::<Vec<u8>>();
+                                    self.format_bytes(&vals, hint, &mut buf)?
+                                }
+                                _ => {
+                                    buf.write_str("[")?;
+                                    let mut is_first = true;
+                                    for element in elements {
+                                        if !is_first {
+                                            buf.write_str(", ")?;
+                                        }
+                                        is_first = false;
+                                        buf.write_str(&self.format_args(
+                                            element.format,
+                                            &element.args,
+                                            hint,
+                                        ))?;
+                                    }
+                                    buf.write_str("]")?;
+                                }
+                            }
+                        }
+                        Arg::Slice(x) => self.format_bytes(x, hint, &mut buf)?,
+                        Arg::Char(c) => write!(buf, "{}", c)?,
+                    }
+                }
             }
-        } else {
-            match self.frame.level {
-                Level::Trace => "TRACE".to_string(),
-                Level::Debug => "DEBUG".to_string(),
-                Level::Info => "INFO".to_string(),
-                Level::Warn => "WARN".to_string(),
-                Level::Error => "ERROR".to_string(),
-            }
-        };
-
-        let timestamp = self
-            .frame
-            .timestamp_format
-            .map(|fmt| format!("{} ", format_args(&fmt, &self.frame.timestamp_args, None,)))
-            .unwrap_or_default();
-        let args = format_args(&self.frame.format, &self.frame.args, None);
-
-        write!(f, "{}{} {}", timestamp, level, args)
+        }
+        Ok(buf)
     }
-}
 
-fn format_args(format: &str, args: &[Arg], parent_hint: Option<&DisplayHint>) -> String {
-    format_args_real(format, args, parent_hint).unwrap() // cannot fail, we only write to a `String`
-}
-
-fn format_args_real(
-    format: &str,
-    args: &[Arg],
-    parent_hint: Option<&DisplayHint>,
-) -> Result<String, fmt::Error> {
     fn format_u128(
+        &self,
         x: u128,
         hint: Option<&DisplayHint>,
         buf: &mut String,
@@ -160,12 +212,52 @@ fn format_args_real(
                 let micros = x % 1_000_000;
                 write!(buf, "{}.{:06}", seconds, micros)?;
             }
+            Some(DisplayHint::Bitflags {
+                name,
+                package,
+                disambiguator,
+            }) => {
+                // The bitflags hint is only used internally, in `Format` impls generated by
+                // `defmt::bitflags!`.
+                let key = BitflagsKey {
+                    ident: name.clone(),
+                    package: package.clone(),
+                    disambig: disambiguator.clone(),
+                };
+                match self.table.bitflags.get(&key) {
+                    Some(flags) => {
+                        // FIXME flag print order does not match definition order
+                        // (does some part of the toolchain alphabetically sort them?)
+                        let set_flags = flags
+                            .iter()
+                            .filter(|(_, value)| {
+                                if *value == 0 && x != 0 {
+                                    false
+                                } else {
+                                    x & value == *value
+                                }
+                            })
+                            .map(|(name, _)| name.clone())
+                            .collect::<Vec<_>>();
+                        if set_flags.is_empty() {
+                            write!(buf, "(empty)")?;
+                        } else {
+                            write!(buf, "{}", set_flags.join(" | "))?;
+                        }
+                    }
+                    None => {
+                        // FIXME return an internal error here
+                        write!(buf, "{}", x)?;
+                    }
+                }
+            }
             _ => write!(buf, "{}", x)?,
         }
         Ok(())
     }
 
     fn format_i128(
+        &self,
         x: i128,
         hint: Option<&DisplayHint>,
         buf: &mut String,
@@ -195,6 +287,7 @@ fn format_args_real(
     }
 
     fn format_bytes(
+        &self,
         bytes: &[u8],
         hint: Option<&DisplayHint>,
         buf: &mut String,
@@ -235,7 +328,7 @@ fn format_args_real(
                         buf.push_str(", ");
                     }
                     is_first = false;
-                    format_u128(*byte as u128, hint, buf)?;
+                    self.format_u128(*byte as u128, hint, buf)?;
                 }
                 buf.push(']');
             }
@@ -244,7 +337,12 @@ fn format_args_real(
         Ok(())
     }
 
-    fn format_str(s: &str, hint: Option<&DisplayHint>, buf: &mut String) -> Result<(), fmt::Error> {
+    fn format_str(
+        &self,
+        s: &str,
+        hint: Option<&DisplayHint>,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
         if hint == Some(&DisplayHint::Debug) {
             write!(buf, "{:?}", s)?;
         } else {
@@ -252,103 +350,78 @@ fn format_args_real(
         }
         Ok(())
     }
+}
 
-    let params = defmt_parser::parse(format, ParserMode::ForwardsCompatible).unwrap();
-    let mut buf = String::new();
-    for param in params {
-        match param {
-            Fragment::Literal(lit) => {
-                buf.push_str(&lit);
-            }
-            Fragment::Parameter(param) => {
-                let hint = param.hint.as_ref().or(parent_hint);
+pub struct DisplayTimestamp<'t> {
+    frame: &'t Frame<'t>,
+}
 
-                match &args[param.index] {
-                    Arg::Bool(x) => write!(buf, "{}", x)?,
-                    Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
-                    Arg::F64(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
-                    Arg::Uxx(x) => {
-                        match param.ty {
-                            Type::BitField(range) => {
-                                let left_zeroes = mem::size_of::<u128>() * 8 - range.end as usize;
-                                let right_zeroes = left_zeroes + range.start as usize;
-                                // isolate the desired bitfields
-                                let bitfields = (*x << left_zeroes) >> right_zeroes;
-
-                                if let Some(DisplayHint::Ascii) = hint {
-                                    let bstr = bitfields
-                                        .to_be_bytes()
-                                        .iter()
-                                        .skip(right_zeroes / 8)
-                                        .copied()
-                                        .collect::<Vec<u8>>();
-                                    format_bytes(&bstr, hint, &mut buf)?
-                                } else {
-                                    format_u128(bitfields as u128, hint, &mut buf)?;
-                                }
-                            }
-                            _ => match hint {
-                                Some(DisplayHint::Debug) => {
-                                    format_u128(*x as u128, parent_hint, &mut buf)?
-                                }
-                                _ => format_u128(*x as u128, hint, &mut buf)?,
-                            },
-                        }
-                    }
-                    Arg::Ixx(x) => format_i128(*x as i128, hint, &mut buf)?,
-                    Arg::Str(x) | Arg::Preformatted(x) => format_str(x, hint, &mut buf)?,
-                    Arg::IStr(x) => format_str(x, hint, &mut buf)?,
-                    Arg::Format { format, args } => match parent_hint {
-                        Some(DisplayHint::Ascii) => {
-                            buf.push_str(&format_args(format, args, parent_hint));
-                        }
-                        _ => buf.push_str(&format_args(format, args, hint)),
-                    },
-                    Arg::FormatSequence { args } => {
-                        for arg in args {
-                            buf.push_str(&format_args("{=?}", &[arg.clone()], hint))
-                        }
-                    }
-                    Arg::FormatSlice { elements } => {
-                        match hint {
-                            // Filter Ascii Hints, which contains u8 byte slices
-                            Some(DisplayHint::Ascii)
-                                if elements.iter().filter(|e| e.format == "{=u8}").count() != 0 =>
-                            {
-                                let vals = elements
-                                    .iter()
-                                    .map(|e| match e.args.as_slice() {
-                                        [Arg::Uxx(v)] => {
-                                            u8::try_from(*v).expect("the value must be in u8 range")
-                                        }
-                                        _ => panic!("FormatSlice should only contain one argument"),
-                                    })
-                                    .collect::<Vec<u8>>();
-                                format_bytes(&vals, hint, &mut buf)?
-                            }
-                            _ => {
-                                buf.write_str("[")?;
-                                let mut is_first = true;
-                                for element in elements {
-                                    if !is_first {
-                                        buf.write_str(", ")?;
-                                    }
-                                    is_first = false;
-                                    buf.write_str(&format_args(
-                                        element.format,
-                                        &element.args,
-                                        hint,
-                                    ))?;
-                                }
-                                buf.write_str("]")?;
-                            }
-                        }
-                    }
-                    Arg::Slice(x) => format_bytes(x, hint, &mut buf)?,
-                    Arg::Char(c) => write!(buf, "{}", c)?,
-                }
-            }
-        }
+impl fmt::Display for DisplayTimestamp<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let args = self.frame.format_args(
+            self.frame.timestamp_format.unwrap(),
+            &self.frame.timestamp_args,
+            None,
+        );
+        f.write_str(&args)
     }
-    Ok(buf)
+}
+
+pub struct DisplayMessage<'t> {
+    frame: &'t Frame<'t>,
+}
+
+impl fmt::Display for DisplayMessage<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let args = self
+            .frame
+            .format_args(self.frame.format, &self.frame.args, None);
+        f.write_str(&args)
+    }
+}
+
+/// Prints a `Frame` when formatted via `fmt::Display`, including all included metadata (level,
+/// timestamp, ...).
+pub struct DisplayFrame<'t> {
+    frame: &'t Frame<'t>,
+    colored: bool,
+}
+
+impl fmt::Display for DisplayFrame<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let level = if self.colored {
+            match self.frame.level {
+                Level::Trace => "TRACE".dimmed().to_string(),
+                Level::Debug => "DEBUG".normal().to_string(),
+                Level::Info => "INFO".green().to_string(),
+                Level::Warn => "WARN".yellow().to_string(),
+                Level::Error => "ERROR".red().to_string(),
+            }
+        } else {
+            match self.frame.level {
+                Level::Trace => "TRACE".to_string(),
+                Level::Debug => "DEBUG".to_string(),
+                Level::Info => "INFO".to_string(),
+                Level::Warn => "WARN".to_string(),
+                Level::Error => "ERROR".to_string(),
+            }
+        };
+
+        let timestamp = self
+            .frame
+            .timestamp_format
+            .map(|fmt| {
+                format!(
+                    "{} ",
+                    self.frame
+                        .format_args(&fmt, &self.frame.timestamp_args, None,)
+                )
+            })
+            .unwrap_or_default();
+        let args = self
+            .frame
+            .format_args(&self.frame.format, &self.frame.args, None);
+
+        write!(f, "{}{} {}", timestamp, level, args)
+    }
 }

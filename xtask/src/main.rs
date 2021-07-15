@@ -252,6 +252,7 @@ fn test_snapshot(overwrite: bool) {
     println!("🧪 qemu/snapshot");
     let mut tests = vec![
         "log",
+        "bitflags",
         "timestamp",
         "panic",
         "assert",

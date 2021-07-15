@@ -18,7 +18,11 @@ mod elf2table;
 mod frame;
 pub mod log;
 
-use std::{collections::BTreeMap, error::Error, fmt, io};
+use std::{
+    collections::{BTreeMap, HashMap},
+    error::Error,
+    fmt, io,
+};
 
 use byteorder::{ReadBytesExt, LE};
 use decoder::Decoder;
@@ -35,12 +39,17 @@ pub enum Tag {
     Prim,
     /// Format string created by `#[derive(Format)]`.
     Derived,
+    /// Format string created by `defmt::bitflags!`.
+    Bitflags,
     /// A user-defined format string from a `write!` invocation.
     Write,
     /// An interned string, for use with `{=istr}`.
     Str,
     /// Defines the global timestamp format.
     Timestamp,
+
+    /// `static` containing a possible value of a bitflags type.
+    BitflagsValue,
 
     Trace,
     Debug,
@@ -62,8 +71,8 @@ impl Tag {
     }
 }
 
-/// Entry in [`Table`] combining a format string with it's raw symbol
-#[derive(Debug)]
+/// Entry in [`Table`] combining a format string with its raw symbol
+#[derive(Debug, PartialEq)]
 pub struct TableEntry {
     string: StringEntry,
     raw_symbol: String,
@@ -84,7 +93,7 @@ impl TableEntry {
 }
 
 /// A format string and it's [`Tag`]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct StringEntry {
     tag: Tag,
     string: String,
@@ -96,11 +105,21 @@ impl StringEntry {
     }
 }
 
+/// Data that uniquely identifies a `defmt::bitflags!` invocation.
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct BitflagsKey {
+    /// Name of the bitflags struct (this is really redundant with `disambig`).
+    ident: String,
+    package: String,
+    disambig: String,
+}
+
 /// Internal table that holds log levels and maps format strings to indices
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Table {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
+    bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
 }
 
 impl Table {
@@ -109,6 +128,7 @@ impl Table {
         Self {
             entries,
             timestamp: None,
+            bitflags: Default::default(),
         }
     }
 
@@ -199,7 +219,15 @@ impl Table {
 
         let args = decoder.decode_format(format)?;
 
-        let frame = Frame::new(level, index, timestamp_format, timestamp_args, format, args);
+        let frame = Frame::new(
+            self,
+            level,
+            index,
+            timestamp_format,
+            timestamp_args,
+            format,
+            args,
+        );
 
         let consumed = len - decoder.bytes.len();
         Ok((frame, consumed))
@@ -282,6 +310,28 @@ impl Error for DecodeError {}
 mod tests {
     use super::*;
 
+    fn test_table(entries: impl IntoIterator<Item = TableEntry>) -> Table {
+        Table {
+            timestamp: None,
+            entries: entries.into_iter().enumerate().collect(),
+            bitflags: Default::default(),
+        }
+    }
+
+    fn test_table_with_timestamp(
+        entries: impl IntoIterator<Item = TableEntry>,
+        timestamp: &str,
+    ) -> Table {
+        Table {
+            timestamp: Some(TableEntry::new_without_symbol(
+                Tag::Timestamp,
+                timestamp.into(),
+            )),
+            entries: entries.into_iter().enumerate().collect(),
+            bitflags: Default::default(),
+        }
+    }
+
     // helper function to initiate decoding and assert that the result is as expected.
     //
     // format:       format string to be expanded
@@ -300,6 +350,7 @@ mod tests {
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
             )),
+            bitflags: Default::default(),
         };
 
         let frame = table.decode(&bytes).unwrap().0;
@@ -313,10 +364,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Debug, "The answer is {=u8}!".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: None,
-        };
+        let table = test_table(entries);
 
         let bytes = [0, 0];
         //     index ^
@@ -324,7 +372,15 @@ mod tests {
         assert_eq!(
             table.decode(&bytes),
             Ok((
-                Frame::new(Level::Info, 0, None, vec![], "Hello, world!", vec![],),
+                Frame::new(
+                    &table,
+                    Level::Info,
+                    0,
+                    None,
+                    vec![],
+                    "Hello, world!",
+                    vec![],
+                ),
                 bytes.len(),
             ))
         );
@@ -338,6 +394,7 @@ mod tests {
             table.decode(&bytes),
             Ok((
                 Frame::new(
+                    &table,
                     Level::Debug,
                     1,
                     None,
@@ -359,10 +416,7 @@ mod tests {
 
         let entries = vec![TableEntry::new_without_symbol(Tag::Info, FMT.to_owned())];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: None,
-        };
+        let table = test_table(entries);
 
         let bytes = [
             0, 0,  // index
@@ -384,6 +438,7 @@ mod tests {
             table.decode(&bytes),
             Ok((
                 Frame::new(
+                    &table,
                     Level::Info,
                     0,
                     None,
@@ -417,10 +472,7 @@ mod tests {
             ),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: None,
-        };
+        let table = test_table(entries);
         let bytes = [
             0, 0,  // index
             42, // argument
@@ -430,6 +482,7 @@ mod tests {
             table.decode(&bytes),
             Ok((
                 Frame::new(
+                    &table,
                     Level::Info,
                     0,
                     None,
@@ -451,6 +504,7 @@ mod tests {
             table.decode(&bytes),
             Ok((
                 Frame::new(
+                    &table,
                     Level::Info,
                     1,
                     None,
@@ -470,10 +524,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: None,
-        };
+        let table = test_table(entries);
 
         let bytes = [
             0, 0, // index
@@ -485,6 +536,7 @@ mod tests {
             table.decode(&bytes),
             Ok((
                 Frame::new(
+                    &table,
                     Level::Info,
                     0,
                     None,
@@ -508,10 +560,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Derived, "Bar({=u8})".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: None,
-        };
+        let table = test_table(entries);
 
         let bytes = [
             0, 0, // index
@@ -525,6 +574,7 @@ mod tests {
             table.decode(&bytes),
             Ok((
                 Frame::new(
+                    &table,
                     Level::Info,
                     0,
                     None,
@@ -555,13 +605,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: Some(TableEntry::new_without_symbol(
-                Tag::Timestamp,
-                "{=u8:us}".to_owned(),
-            )),
-        };
+        let table = test_table_with_timestamp(entries, "{=u8:us}");
 
         let bytes = [
             0, 0, // index
@@ -584,13 +628,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=u8:x} }}".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: Some(TableEntry::new_without_symbol(
-                Tag::Timestamp,
-                "{=u8:us}".to_owned(),
-            )),
-        };
+        let table = test_table_with_timestamp(entries, "{=u8:us}");
 
         let bytes = [
             0, 0, // index
@@ -613,13 +651,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=u8:?} }}".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: Some(TableEntry::new_without_symbol(
-                Tag::Timestamp,
-                "{=u8:us}".to_owned(),
-            )),
-        };
+        let table = test_table_with_timestamp(entries, "{=u8:us}");
 
         let bytes = [
             0, 0, // index
@@ -642,13 +674,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Derived, "S {{ x: {=str:?} }}".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: Some(TableEntry::new_without_symbol(
-                Tag::Timestamp,
-                "{=u8:us}".to_owned(),
-            )),
-        };
+        let table = test_table_with_timestamp(entries, "{=u8:us}");
 
         let bytes = [
             0, 0, // index
@@ -673,13 +699,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Info, "{=[?]:a}".to_owned()),
         ];
 
-        let table = Table {
-            entries: entries.into_iter().enumerate().collect(),
-            timestamp: Some(TableEntry::new_without_symbol(
-                Tag::Timestamp,
-                "{=u8:us}".to_owned(),
-            )),
-        };
+        let table = test_table_with_timestamp(entries, "{=u8:us}");
 
         let bytes = [
             3, 0, // frame index
@@ -989,6 +1009,7 @@ mod tests {
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
             )),
+            bitflags: Default::default(),
         };
 
         let bytes = [
