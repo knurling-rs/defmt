@@ -25,6 +25,7 @@ use syn::{
 
 mod attributes;
 mod bitflags;
+mod functions;
 mod symbol;
 
 #[proc_macro_error]
@@ -37,6 +38,12 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     attributes::panic_handler::expand(args, input)
+}
+
+#[proc_macro_error]
+#[proc_macro]
+pub fn dbg(input: TokenStream) -> TokenStream {
+    functions::dbg::expand(input)
 }
 
 #[proc_macro]
@@ -407,46 +414,6 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
             _ => {}
         }
     })
-}
-
-struct DbgArgs {
-    exprs: Punctuated<Expr, Token![,]>,
-}
-
-impl Parse for DbgArgs {
-    fn parse(input: ParseStream) -> Result<Self, syn::Error> {
-        Ok(Self {
-            exprs: Punctuated::parse_terminated(input)?,
-        })
-    }
-}
-
-#[proc_macro]
-pub fn dbg(input: TokenStream) -> TokenStream {
-    let inputs = parse_macro_input!(input as DbgArgs).exprs;
-
-    let outputs = inputs
-        .into_iter()
-        .map(|expr| {
-            let escaped_expr = escape_expr(&expr);
-            let format_string = format!("{} = {{}}", escaped_expr);
-
-            quote!(match #expr {
-            tmp => {
-                defmt::trace!(#format_string, tmp);
-                tmp
-            }
-            })
-        })
-        .collect::<Vec<_>>();
-
-    if outputs.is_empty() {
-        // for compatibility with `std::dbg!` we also emit a TRACE log in this case
-        quote!(defmt::trace!(""))
-    } else {
-        quote!((#(#outputs),*))
-    }
-    .into()
 }
 
 #[proc_macro]
