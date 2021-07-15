@@ -2,6 +2,7 @@
 
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
+mod env_filter;
 mod symbol;
 
 use std::{
@@ -24,6 +25,8 @@ use syn::{
     ItemFn, ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type,
     WhereClause, WherePredicate,
 };
+
+use crate::env_filter::EnvFilter;
 
 /// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
 ///
@@ -192,36 +195,6 @@ pub fn timestamp(ts: TokenStream) -> TokenStream {
         };
     )
     .into()
-}
-
-/// Returns a list of features of which one has to be enabled for `level` to be active
-///
-/// * `debug_assertions == true` means that dev profile is enabled
-/// * `"defmt-default"` is enabled for dev & release profile so debug_assertions does not matter
-fn necessary_features_for_level(level: Level, debug_assertions: bool) -> &'static [&'static str] {
-    match level {
-        Level::Trace if debug_assertions => &["defmt-trace", "defmt-default"],
-        Level::Debug if debug_assertions => &["defmt-debug", "defmt-trace", "defmt-default"],
-
-        Level::Trace => &["defmt-trace"],
-        Level::Debug => &["defmt-debug", "defmt-trace"],
-        Level::Info => &["defmt-info", "defmt-debug", "defmt-trace", "defmt-default"],
-        Level::Warn => &[
-            "defmt-warn",
-            "defmt-info",
-            "defmt-debug",
-            "defmt-trace",
-            "defmt-default",
-        ],
-        Level::Error => &[
-            "defmt-error",
-            "defmt-warn",
-            "defmt-info",
-            "defmt-debug",
-            "defmt-trace",
-            "defmt-default",
-        ],
-    }
 }
 
 // `#[derive(Format)]`
@@ -453,18 +426,6 @@ fn as_native_type(ty: &Type) -> Option<String> {
     }
 }
 
-fn cfg_if_logging_enabled(level: Level) -> TokenStream2 {
-    let features_dev = necessary_features_for_level(level, true);
-    let features_release = necessary_features_for_level(level, false);
-
-    quote!(
-        any(
-            all(    debug_assertions,  any(#( feature = #features_dev     ),*)),
-            all(not(debug_assertions), any(#( feature = #features_release ),*))
-        )
-    )
-}
-
 fn log_ts(level: Level, ts: TokenStream) -> TokenStream {
     log(level, parse_macro_input!(ts as FormatArgs)).into()
 }
@@ -487,24 +448,29 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
     };
 
     let sym = mksym(&ls, level.as_str(), true);
-    let logging_enabled = cfg_if_logging_enabled(level);
-    quote!({
-        #[cfg(#logging_enabled)] {
+    let env_filter = EnvFilter::from_env_var();
+
+    if let Some(filter_check) = env_filter.path_check(level) {
+        quote!(
             match (#(&(#args)),*) {
                 (#(#pats),*) => {
-                    defmt::export::acquire();
-                    defmt::export::header(&#sym);
-                    #(#exprs;)*
-                    defmt::export::release()
+                    if #filter_check {
+                        defmt::export::acquire();
+                        defmt::export::header(&#sym);
+                        #(#exprs;)*
+                        defmt::export::release()
+                    }
                 }
             }
-        }
+        )
+    } else {
         // if logging is disabled match args, so they are not unused
-        #[cfg(not(#logging_enabled))]
-        match (#(&(#args)),*) {
-            _ => {}
-        }
-    })
+        quote!({
+            match (#(&(#args)),*) {
+                _ => {}
+            }
+        })
+    }
 }
 
 struct DbgArgs {
