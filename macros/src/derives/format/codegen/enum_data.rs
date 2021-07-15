@@ -30,7 +30,8 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> EncodeData {
         format_string.push_str(&variant_ident.to_string());
 
         let mut pats = vec![];
-        let encode_fields_stmts = crate::fields(&variant.fields, &mut format_string, &mut pats);
+        let encode_fields_stmts =
+            super::fields::codegen(&variant.fields, &mut format_string, &mut pats);
         let pats = quote!( { #(#pats),* } );
 
         let encode_discriminant_stmt = discriminant_encoder.encode(index);

@@ -4,7 +4,6 @@
 
 use std::{
     collections::hash_map::DefaultHasher,
-    fmt::Write as _,
     hash::{Hash, Hasher},
 };
 
@@ -18,13 +17,13 @@ use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, LitStr, Path, PathArguments, PathSegment,
-    Token, Type,
+    Expr, ExprPath, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
 mod attributes;
 mod bitflags;
 mod construct;
+mod consts;
 mod derives;
 mod functions;
 mod items;
@@ -207,97 +206,6 @@ fn necessary_features_for_level(level: Level, debug_assertions: bool) -> &'stati
             "defmt-trace",
             "defmt-default",
         ],
-    }
-}
-
-fn fields(fields: &Fields, format: &mut String, pats: &mut Vec<TokenStream2>) -> Vec<TokenStream2> {
-    let mut list = vec![];
-    match fields {
-        Fields::Named(FieldsNamed { named: fs, .. })
-        | Fields::Unnamed(FieldsUnnamed { unnamed: fs, .. }) => {
-            let named = match fields {
-                Fields::Named(..) => true,
-                Fields::Unnamed(..) => false,
-                _ => unreachable!(),
-            };
-
-            if !fs.is_empty() {
-                if named {
-                    format.push_str(" {{ ");
-                } else {
-                    format.push('(');
-                }
-                let mut first = true;
-                for (i, f) in fs.iter().enumerate() {
-                    if first {
-                        first = false;
-                    } else {
-                        format.push_str(", ");
-                    }
-                    let ty = as_native_type(&f.ty).unwrap_or_else(|| "?".to_string());
-                    if let Some(ident) = f.ident.as_ref() {
-                        core::write!(format, "{}: {{={}:?}}", ident, ty).ok();
-
-                        if ty == "?" {
-                            list.push(quote!(defmt::export::fmt(#ident)));
-                        } else {
-                            let method = format_ident!("{}", ty);
-                            list.push(quote!(defmt::export::#method(#ident)));
-                        }
-                        pats.push(quote!( #ident ));
-                    } else {
-                        // Unnamed (tuple) field.
-
-                        core::write!(format, "{{={}}}", ty).ok();
-
-                        let ident = format_ident!("arg{}", i);
-                        if ty == "?" {
-                            list.push(quote!(defmt::export::fmt(#ident)));
-                        } else {
-                            let method = format_ident!("{}", ty);
-                            list.push(quote!(defmt::export::#method(#ident)));
-                        }
-
-                        let i = syn::Index::from(i);
-                        pats.push(quote!( #i: #ident ));
-                    }
-                }
-                if named {
-                    format.push_str(" }}");
-                } else {
-                    format.push(')');
-                }
-            }
-        }
-
-        Fields::Unit => {}
-    }
-
-    list
-}
-
-/// Returns `true` if `ty_name` refers to a builtin Rust type that has native support from defmt
-/// and does not have to go through the `Format` trait.
-///
-/// This should return `true` for all types that can be used as `{:type}`.
-///
-/// Note: This is technically incorrect, since builtin types can be shadowed. However the efficiency
-/// gains are too big to pass up, so we expect user code to not do that.
-fn as_native_type(ty: &Type) -> Option<String> {
-    match ty {
-        Type::Path(p) => match p.path.get_ident() {
-            Some(ident) => {
-                let s = ident.to_string();
-                match &*s {
-                    "u8" | "u16" | "u32" | "usize" | "i8" | "i16" | "i32" | "isize" | "f32"
-                    | "f64" | "bool" | "str" => Some(s),
-                    _ => None,
-                }
-            }
-            None => None,
-        },
-        Type::Reference(tref) => as_native_type(&*tref.elem),
-        _ => None,
     }
 }
 

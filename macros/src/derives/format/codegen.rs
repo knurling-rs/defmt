@@ -5,6 +5,7 @@ use syn::{parse_quote, DataStruct, GenericParam, Ident, ImplGenerics, TypeGeneri
 pub(crate) use enum_data::encode as encode_enum_data;
 
 mod enum_data;
+mod fields;
 
 pub(crate) struct EncodeData {
     pub(crate) format_tag: TokenStream2,
@@ -16,7 +17,7 @@ pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> EncodeData
     let mut stmts = vec![];
     let mut patterns = vec![];
 
-    let encode_field_stmts = crate::fields(&data.fields, &mut format_string, &mut patterns);
+    let encode_field_stmts = fields::codegen(&data.fields, &mut format_string, &mut patterns);
 
     stmts.push(quote!(match self {
         Self { #(#patterns),* } => {
