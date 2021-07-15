@@ -75,6 +75,40 @@ pub fn dbg(input: TokenStream) -> TokenStream {
     functions::dbg::expand(input)
 }
 
+// NOTE these `debug_*` macros can be written using `macro_rules!` (that'd be simpler) but that
+// results in an incorrect source code location being reported: the location of the `macro_rules!`
+// statement is reported. Using a proc-macro results in the call site being reported, which is what
+// we want
+#[proc_macro_error]
+#[proc_macro]
+pub fn debug_assert_(input: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_(input));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
+#[proc_macro]
+#[proc_macro_error]
+pub fn debug_assert_eq_(input: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_eq_(input));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
+#[proc_macro]
+#[proc_macro_error]
+pub fn debug_assert_ne_(input: TokenStream) -> TokenStream {
+    let assert = TokenStream2::from(assert_ne_(input));
+    quote!(if cfg!(debug_assertions) {
+        #assert
+    })
+    .into()
+}
+
 #[proc_macro_error]
 #[proc_macro]
 pub fn intern(input: TokenStream) -> TokenStream {
@@ -353,37 +387,6 @@ pub fn warn(ts: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn error(ts: TokenStream) -> TokenStream {
     log_ts(Level::Error, ts)
-}
-
-// NOTE these `debug_*` macros can be written using `macro_rules!` (that'd be simpler) but that
-// results in an incorrect source code location being reported: the location of the `macro_rules!`
-// statement is reported. Using a proc-macro results in the call site being reported, which is what
-// we want
-#[proc_macro]
-pub fn debug_assert_(ts: TokenStream) -> TokenStream {
-    let assert = TokenStream2::from(assert_(ts));
-    quote!(if cfg!(debug_assertions) {
-        #assert
-    })
-    .into()
-}
-
-#[proc_macro]
-pub fn debug_assert_eq_(ts: TokenStream) -> TokenStream {
-    let assert = TokenStream2::from(assert_eq_(ts));
-    quote!(if cfg!(debug_assertions) {
-        #assert
-    })
-    .into()
-}
-
-#[proc_macro]
-pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
-    let assert = TokenStream2::from(assert_ne_(ts));
-    quote!(if cfg!(debug_assertions) {
-        #assert
-    })
-    .into()
 }
 
 fn ident_expr(name: &str) -> Expr {
