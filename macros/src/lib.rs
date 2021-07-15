@@ -9,6 +9,7 @@ use std::{
 };
 
 use defmt_parser::{Fragment, Level, ParserMode};
+use functions::assert_binop::BinOp;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use proc_macro_error::proc_macro_error;
@@ -51,6 +52,20 @@ pub fn format(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn assert_(input: TokenStream) -> TokenStream {
     functions::assert_like::assert::expand(input)
+}
+
+// not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
+#[proc_macro_error]
+#[proc_macro]
+pub fn assert_eq_(input: TokenStream) -> TokenStream {
+    functions::assert_binop::expand(input, BinOp::Eq)
+}
+
+// not naming this `assert_ne` to avoid shadowing `core::assert_ne` in this scope
+#[proc_macro_error]
+#[proc_macro]
+pub fn assert_ne_(input: TokenStream) -> TokenStream {
+    functions::assert_binop::expand(input, BinOp::Ne)
 }
 
 #[proc_macro_error]
@@ -321,103 +336,6 @@ pub fn error(ts: TokenStream) -> TokenStream {
     log_ts(Level::Error, ts)
 }
 
-#[derive(PartialEq)]
-enum BinOp {
-    Eq,
-    Ne,
-}
-
-// not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
-#[proc_macro]
-pub fn assert_eq_(ts: TokenStream) -> TokenStream {
-    assert_binop(ts, BinOp::Eq)
-}
-
-// not naming this `assert_ne` to avoid shadowing `core::assert_ne` in this scope
-#[proc_macro]
-pub fn assert_ne_(ts: TokenStream) -> TokenStream {
-    assert_binop(ts, BinOp::Ne)
-}
-
-// not naming this `assert_eq` to avoid shadowing `core::assert_eq` in this scope
-fn assert_binop(ts: TokenStream, binop: BinOp) -> TokenStream {
-    let assert = parse_macro_input!(ts as AssertEq);
-
-    let left = assert.left;
-    let right = assert.right;
-
-    let mut log_args = Punctuated::new();
-
-    let extra_string = if let Some(args) = assert.args {
-        if let Some(rest) = args.rest {
-            log_args.extend(rest.1);
-        }
-        format!(": {}", args.litstr.value())
-    } else {
-        String::new()
-    };
-
-    let vals = match binop {
-        BinOp::Eq => &["left_val", "right_val"][..],
-        BinOp::Ne => &["left_val"][..],
-    };
-
-    for val in vals {
-        log_args.push(ident_expr(*val));
-    }
-
-    let log_stmt = match binop {
-        BinOp::Eq => log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!(
-                        "panicked at 'assertion failed: `(left == right)`{}'
- left: `{{:?}}`
-right: `{{:?}}`",
-                        extra_string
-                    ),
-                    Span2::call_site(),
-                ),
-                rest: Some((syn::token::Comma::default(), log_args)),
-            },
-        ),
-        BinOp::Ne => log(
-            Level::Error,
-            FormatArgs {
-                litstr: LitStr::new(
-                    &format!(
-                        "panicked at 'assertion failed: `(left != right)`{}'
-left/right: `{{:?}}`",
-                        extra_string
-                    ),
-                    Span2::call_site(),
-                ),
-                rest: Some((syn::token::Comma::default(), log_args)),
-            },
-        ),
-    };
-
-    let mut cond = quote!(*left_val == *right_val);
-    if binop == BinOp::Eq {
-        cond = quote!(!(#cond));
-    }
-
-    quote!(
-        // evaluate arguments first
-        match (&(#left), &(#right)) {
-            (left_val, right_val) => {
-                // following `core::assert_eq!`
-                if #cond {
-                    #log_stmt;
-                    defmt::export::panic()
-                }
-            }
-        }
-    )
-    .into()
-}
-
 // NOTE these `debug_*` macros can be written using `macro_rules!` (that'd be simpler) but that
 // results in an incorrect source code location being reported: the location of the `macro_rules!`
 // statement is reported. Using a proc-macro results in the call site being reported, which is what
@@ -469,47 +387,6 @@ fn ident_expr(name: &str) -> Expr {
 fn escape_expr(expr: &Expr) -> String {
     let q = quote!(#expr);
     q.to_string().replace("{", "{{").replace("}", "}}")
-}
-
-struct AssertEq {
-    left: Expr,
-    right: Expr,
-    args: Option<FormatArgs>,
-}
-
-impl Parse for AssertEq {
-    fn parse(input: ParseStream) -> parse::Result<Self> {
-        let left = input.parse()?;
-        let _comma: Token![,] = input.parse()?;
-        let right = input.parse()?;
-
-        if input.is_empty() {
-            // assert_eq!(a, b)
-            return Ok(AssertEq {
-                left,
-                right,
-                args: None,
-            });
-        }
-
-        let _comma: Token![,] = input.parse()?;
-
-        if input.is_empty() {
-            // assert_eq!(a, b,)
-            Ok(AssertEq {
-                left,
-                right,
-                args: None,
-            })
-        } else {
-            // assert_eq!(a, b, "c", d)
-            Ok(AssertEq {
-                left,
-                right,
-                args: Some(input.parse()?),
-            })
-        }
-    }
 }
 
 struct FormatArgs {
