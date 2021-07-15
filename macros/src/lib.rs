@@ -2,11 +2,6 @@
 
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-};
-
 use defmt_parser::{Fragment, Level, ParserMode};
 use functions::assert_binop::BinOp;
 use proc_macro::TokenStream;
@@ -242,7 +237,7 @@ fn log(level: Level, log: FormatArgs) -> TokenStream2 {
         Err(e) => return e.to_compile_error(),
     };
 
-    let sym = mksym(&ls, level.as_str(), true);
+    let sym = construct::interned_string(&ls, level.as_str(), true);
     let logging_enabled = cfg_if_logging_enabled(level);
     quote!({
         #[cfg(#logging_enabled)] {
@@ -309,59 +304,6 @@ impl Parse for FormatArgs {
             },
         })
     }
-}
-
-/// work around restrictions on length and allowed characters imposed by macos linker
-/// returns (note the comma character for macos):
-///   under macos: ".defmt," + 16 character hex digest of symbol's hash
-///   otherwise:   ".defmt." + prefix + symbol
-fn mksection(macos: bool, prefix: &str, symbol: &str) -> String {
-    let mut sub_section = format!(".{}{}", prefix, symbol);
-
-    if macos {
-        let mut hasher = DefaultHasher::new();
-        sub_section.hash(&mut hasher);
-        sub_section = format!(",{:x}", hasher.finish());
-    }
-
-    format!(".defmt{}", sub_section)
-}
-
-fn mkstatic(varname: Ident2, string: &str, tag: &str) -> TokenStream2 {
-    let sym = symbol::Symbol::new(tag, string).mangle();
-    let section = mksection(false, "", &sym);
-    let section_macos = mksection(true, "", &sym);
-
-    quote!(
-        #[cfg_attr(target_os = "macos", link_section = #section_macos)]
-        #[cfg_attr(not(target_os = "macos"), link_section = #section)]
-        #[export_name = #sym]
-        static #varname: u8 = 0;
-    )
-}
-
-fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
-    // NOTE we rely on this variable name when extracting file location information from the DWARF
-    // without it we have no other mean to differentiate static variables produced by `info!` vs
-    // produced by `intern!` (or `internp`)
-    let varname = if is_log_statement {
-        format_ident!("DEFMT_LOG_STATEMENT")
-    } else {
-        format_ident!("S")
-    };
-    let sym = if cfg!(feature = "unstable-test") {
-        quote!({ defmt::export::fetch_add_string_index() })
-    } else {
-        let statik = mkstatic(varname.clone(), string, tag);
-        quote!({
-            #statik
-            &#varname as *const u8 as u16
-        })
-    };
-
-    quote!({
-        defmt::export::make_istr(#sym)
-    })
 }
 
 struct Codegen {

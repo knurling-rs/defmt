@@ -3,13 +3,15 @@ use proc_macro_error::abort_call_site;
 use quote::quote;
 use syn::{DataEnum, Ident};
 
+use crate::construct;
+
 use super::EncodeData;
 
 pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> EncodeData {
     if data.variants.is_empty() {
         return EncodeData {
             stmts: vec![quote!(match *self {})],
-            format_tag: crate::mksym("!", "derived", false),
+            format_tag: construct::interned_string("!", "derived", false),
         };
     }
 
@@ -44,7 +46,7 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> EncodeData {
         ))
     }
 
-    let format_tag = crate::mksym(&format_string, "derived", false);
+    let format_tag = construct::interned_string(&format_string, "derived", false);
     let stmts = vec![quote!(match self {
         #(#match_arms)*
     })];

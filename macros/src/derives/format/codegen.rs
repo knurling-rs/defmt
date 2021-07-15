@@ -4,6 +4,8 @@ use syn::{parse_quote, DataStruct, GenericParam, Ident, ImplGenerics, TypeGeneri
 
 pub(crate) use enum_data::encode as encode_enum_data;
 
+use crate::construct;
+
 mod enum_data;
 mod fields;
 
@@ -25,7 +27,7 @@ pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> EncodeData
         }
     }));
 
-    let format_tag = crate::mksym(&format_string, "derived", false);
+    let format_tag = construct::interned_string(&format_string, "derived", false);
     EncodeData { format_tag, stmts }
 }
 

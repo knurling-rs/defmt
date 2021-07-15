@@ -4,7 +4,7 @@ use proc_macro_error::abort;
 use quote::quote;
 use syn::parse_macro_input;
 
-use crate::Codegen;
+use crate::{construct, Codegen};
 
 use self::args::Args;
 
@@ -12,8 +12,8 @@ mod args;
 
 pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let args = parse_macro_input!(input as Args);
-    let ls = args.format_string.value();
-    let fragments = match defmt_parser::parse(&ls, ParserMode::Strict) {
+    let format_string = args.format_string.value();
+    let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
         Ok(args) => args,
         Err(e) => {
             abort!(args.format_string, "{}", e)
@@ -32,7 +32,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         };
 
     let formatter = &args.formatter;
-    let sym = crate::mksym(&ls, "write", false);
+    let sym = construct::interned_string(&format_string, "write", false);
     quote!({
         let fmt: defmt::Formatter<'_> = #formatter;
         match (#(&(#format_exprs)),*) {

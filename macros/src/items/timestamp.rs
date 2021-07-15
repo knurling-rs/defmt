@@ -5,6 +5,7 @@ use quote::format_ident;
 use quote::quote;
 use syn::parse_macro_input;
 
+use crate::construct;
 use crate::{Codegen, FormatArgs};
 
 pub(crate) fn expand(input: TokenStream) -> TokenStream {
@@ -27,8 +28,8 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         Err(e) => return e.to_compile_error().into(),
     };
 
-    let static_var_name = format_ident!("S");
-    let static_var_item = crate::mkstatic(static_var_name.clone(), &format_string, "timestamp");
+    let var_name = format_ident!("S");
+    let var_item = construct::static_variable(&var_name, &format_string, "timestamp");
 
     quote!(
         const _: () = {
@@ -42,15 +43,15 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
                 }
             }
 
-            #static_var_item;
+            #var_item;
 
             // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
-            // Uses `#static_var_name` to ensure it is not discarded by the linker.
+            // Uses `#var_name` to ensure it is not discarded by the linker.
             // This symbol itself is retained via a `EXTERN` directive in the linker script.
             #[no_mangle]
             #[cfg_attr(target_os = "macos", link_section = ".defmt,end.timestamp")]
             #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end.timestamp")]
-            static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#static_var_name;
+            static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#var_name;
         };
     )
     .into()

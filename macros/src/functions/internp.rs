@@ -2,14 +2,15 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, LitStr};
 
-use crate::symbol::Symbol;
+use crate::{construct, symbol::Symbol};
 
 pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(input as LitStr);
     let sym = Symbol::new("prim", &lit.value()).mangle();
 
-    let section = crate::mksection(false, "prim.", &sym);
-    let section_for_macos = crate::mksection(true, "prim.", &sym);
+    let prefix = Some("prim");
+    let section = construct::linker_section(false, prefix, &sym);
+    let section_for_macos = construct::linker_section(true, prefix, &sym);
 
     let sym = if cfg!(feature = "unstable-test") {
         quote!({ defmt::export::fetch_add_string_index() as u16 })
