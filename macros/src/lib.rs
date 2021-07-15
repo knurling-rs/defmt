@@ -4,7 +4,6 @@
 
 use std::{
     collections::hash_map::DefaultHasher,
-    convert::TryFrom,
     fmt::Write as _,
     hash::{Hash, Hasher},
 };
@@ -18,13 +17,13 @@ use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    spanned::Spanned as _,
-    Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam, LitStr,
-    Path, PathArguments, PathSegment, Token, Type, WhereClause, WherePredicate,
+    Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, LitStr, Path, PathArguments, PathSegment,
+    Token, Type,
 };
 
 mod attributes;
 mod bitflags;
+mod derives;
 mod functions;
 mod items;
 mod symbol;
@@ -39,6 +38,12 @@ pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     attributes::panic_handler::expand(args, input)
+}
+
+#[proc_macro_error]
+#[proc_macro_derive(Format)]
+pub fn format(input: TokenStream) -> TokenStream {
+    derives::format::expand(input)
 }
 
 #[proc_macro_error]
@@ -86,135 +91,6 @@ fn necessary_features_for_level(level: Level, debug_assertions: bool) -> &'stati
             "defmt-default",
         ],
     }
-}
-
-// `#[derive(Format)]`
-#[proc_macro_derive(Format)]
-pub fn format(ts: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(ts as DeriveInput);
-    let span = input.span();
-
-    let ident = input.ident;
-    let mut fs = String::new();
-    let mut field_types = vec![];
-    let mut exprs = vec![];
-    let sym: TokenStream2;
-    match input.data {
-        Data::Enum(de) => {
-            if de.variants.is_empty() {
-                // For zero-variant enums, this is unreachable code.
-                sym = mksym("!", "derived", false);
-                exprs.push(quote!(match *self {}));
-            } else {
-                let mut arms = vec![];
-                let mut first = true;
-                for (i, var) in de.variants.iter().enumerate() {
-                    let vident = &var.ident;
-
-                    if first {
-                        first = false;
-                    } else {
-                        fs.push('|');
-                    }
-                    fs.push_str(&vident.to_string());
-
-                    let mut pats = vec![];
-                    let exprs = fields(&var.fields, &mut fs, &mut field_types, &mut pats);
-                    let pats = quote!( { #(#pats),* } );
-
-                    let len = de.variants.len();
-                    let encode_discriminant = if len == 1 {
-                        // For single-variant enums, there is no need to encode the discriminant.
-                        quote!()
-                    } else if let (Ok(_), Ok(i)) = (u8::try_from(len), u8::try_from(i)) {
-                        quote!(
-                            defmt::export::u8(&#i);
-                        )
-                    } else if let (Ok(_), Ok(i)) = (u16::try_from(len), u16::try_from(i)) {
-                        quote!(
-                            defmt::export::u16(&#i);
-                        )
-                    } else if let (Ok(_), Ok(i)) = (u32::try_from(len), u32::try_from(i)) {
-                        quote!(
-                            defmt::export::u32(&#i);
-                        )
-                    } else if let (Ok(_), Ok(i)) = (u64::try_from(len), u64::try_from(i)) {
-                        quote!(
-                            defmt::export::u64(&#i);
-                        )
-                    } else {
-                        // u128 case is omitted with the assumption, that usize is never greater than u64
-                        return parse::Error::new(
-                            span,
-                            format!("`#[derive(Format)]` does not support enums with more than {} variants", u64::MAX),
-                        )
-                        .to_compile_error()
-                        .into();
-                    };
-
-                    arms.push(quote!(
-                        #ident::#vident #pats => {
-                            #encode_discriminant
-                            #(#exprs;)*
-                        }
-                    ))
-                }
-
-                sym = mksym(&fs, "derived", false);
-                exprs.push(quote!(match self {
-                    #(#arms)*
-                }));
-            }
-        }
-
-        Data::Struct(ds) => {
-            fs = ident.to_string();
-            let mut pats = vec![];
-            let args = fields(&ds.fields, &mut fs, &mut field_types, &mut pats);
-
-            sym = mksym(&fs, "derived", false);
-            exprs.push(quote!(match self {
-                Self { #(#pats),* } => {
-                    #(#args;)*
-                }
-            }));
-        }
-
-        Data::Union(..) => {
-            return parse::Error::new(span, "`#[derive(Format)]` does not support unions")
-                .to_compile_error()
-                .into();
-        }
-    }
-
-    let where_clause = input.generics.make_where_clause();
-    let mut where_clause: WhereClause = where_clause.clone();
-    let (impl_generics, type_generics, _) = input.generics.split_for_impl();
-
-    // Extend where-clause with `Format` bounds for type parameters.
-    for param in &input.generics.params {
-        if let GenericParam::Type(ty) = param {
-            let ident = &ty.ident;
-            where_clause
-                .predicates
-                .push(syn::parse::<WherePredicate>(quote!(#ident: defmt::Format).into()).unwrap());
-        }
-    }
-
-    quote!(
-        impl #impl_generics defmt::Format for #ident #type_generics #where_clause {
-            fn format(&self, f: defmt::Formatter) {
-                unreachable!()
-            }
-            fn _format_tag() -> defmt::Str {
-                #sym
-            }
-            fn _format_data(&self) {
-                #(#exprs)*
-            }
-        }
-    )
-    .into()
 }
 
 fn fields(
