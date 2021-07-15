@@ -26,6 +26,7 @@ use syn::{
 mod attributes;
 mod bitflags;
 mod functions;
+mod items;
 mod symbol;
 
 #[proc_macro_error]
@@ -46,56 +47,10 @@ pub fn dbg(input: TokenStream) -> TokenStream {
     functions::dbg::expand(input)
 }
 
+#[proc_macro_error]
 #[proc_macro]
-pub fn timestamp(ts: TokenStream) -> TokenStream {
-    let f = parse_macro_input!(ts as FormatArgs);
-
-    let ls = f.litstr.value();
-
-    let symname = Ident2::new("S", Span2::call_site());
-    let sym = mkstatic(symname.clone(), &ls, "timestamp");
-
-    let fragments = match defmt_parser::parse(&ls, ParserMode::Strict) {
-        Ok(args) => args,
-        Err(e) => {
-            return parse::Error::new(f.litstr.span(), e)
-                .to_compile_error()
-                .into()
-        }
-    };
-    let args: Vec<_> = f
-        .rest
-        .map(|(_, exprs)| exprs.into_iter().collect())
-        .unwrap_or_default();
-    let (pats, exprs) = match Codegen::new(&fragments, args.len(), f.litstr.span()) {
-        Ok(cg) => (cg.pats, cg.exprs),
-        Err(e) => return e.to_compile_error().into(),
-    };
-
-    quote!(
-        const _: () = {
-            #[export_name = "_defmt_timestamp"]
-            fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
-                match (#(&(#args)),*) {
-                    (#(#pats),*) => {
-                    // NOTE: No format string index, and no finalize call.
-                        #(#exprs;)*
-                    }
-                }
-            }
-
-            #sym;
-
-            // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
-            // Uses `#symname` to ensure it is not discarded by the linker.
-            // This symbol itself is retained via a `EXTERN` directive in the linker script.
-            #[no_mangle]
-            #[cfg_attr(target_os = "macos", link_section = ".defmt,end.timestamp")]
-            #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end.timestamp")]
-            static __DEFMT_MARKER_TIMESTAMP_WAS_DEFINED: &u8 = &#symname;
-        };
-    )
-    .into()
+pub fn timestamp(input: TokenStream) -> TokenStream {
+    items::timestamp::expand(input)
 }
 
 #[proc_macro]
