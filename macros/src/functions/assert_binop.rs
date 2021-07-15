@@ -1,10 +1,9 @@
 use defmt_parser::Level;
 use proc_macro::TokenStream;
-use proc_macro2::Span as Span2;
 use quote::quote;
-use syn::{parse_macro_input, punctuated::Punctuated, token::Comma, Expr, LitStr};
+use syn::{parse_macro_input, punctuated::Punctuated, token::Comma, Expr};
 
-use crate::FormatArgs;
+use crate::{construct, FormatArgs};
 
 mod parse;
 
@@ -49,7 +48,7 @@ left/right: `{{:?}}`",
     };
 
     let format_args = FormatArgs {
-        litstr: LitStr::new(&panic_msg, Span2::call_site()),
+        litstr: construct::string(&panic_msg),
         rest: Some((Comma::default(), log_args)),
     };
     let log_stmt = crate::log(Level::Error, format_args);

@@ -24,6 +24,7 @@ use syn::{
 
 mod attributes;
 mod bitflags;
+mod construct;
 mod derives;
 mod functions;
 mod items;
