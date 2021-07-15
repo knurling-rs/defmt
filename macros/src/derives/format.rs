@@ -26,9 +26,11 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
             fn format(&self, f: defmt::Formatter) {
                 unreachable!()
             }
+
             fn _format_tag() -> defmt::Str {
                 #format_tag
             }
+
             fn _format_data(&self) {
                 #(#stmts)*
             }
