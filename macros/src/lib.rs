@@ -46,6 +46,13 @@ pub fn format(input: TokenStream) -> TokenStream {
     derives::format::expand(input)
 }
 
+// not naming this `assert` to avoid shadowing `core::assert` in this scope
+#[proc_macro_error]
+#[proc_macro]
+pub fn assert_(input: TokenStream) -> TokenStream {
+    functions::assert_like::assert::expand(input)
+}
+
 #[proc_macro_error]
 #[proc_macro]
 pub fn dbg(input: TokenStream) -> TokenStream {
@@ -86,6 +93,12 @@ pub fn unreachable_(input: TokenStream) -> TokenStream {
             )
         },
     )
+}
+
+#[proc_macro_error]
+#[proc_macro]
+pub fn unwrap(input: TokenStream) -> TokenStream {
+    functions::assert_like::unwrap::expand(input)
 }
 
 #[proc_macro_error]
@@ -308,37 +321,6 @@ pub fn error(ts: TokenStream) -> TokenStream {
     log_ts(Level::Error, ts)
 }
 
-// not naming this `assert` to avoid shadowing `core::assert` in this scope
-#[proc_macro]
-pub fn assert_(ts: TokenStream) -> TokenStream {
-    let assert = parse_macro_input!(ts as Assert);
-
-    let condition = assert.condition;
-    let log_stmt = if let Some(args) = assert.args {
-        let litstr = LitStr::new(
-            &format!("panicked at '{}'", args.litstr.value()),
-            Span2::call_site(),
-        );
-        let rest = args.rest;
-        log(Level::Error, FormatArgs { litstr, rest })
-    } else {
-        let value = &format!(
-            "panicked at 'assertion failed: {}'",
-            escape_expr(&condition)
-        );
-        let litstr = LitStr::new(value, Span2::call_site());
-        log(Level::Error, FormatArgs { litstr, rest: None })
-    };
-
-    quote!(
-        if !(#condition) {
-            #log_stmt;
-            defmt::export::panic()
-        }
-    )
-    .into()
-}
-
 #[derive(PartialEq)]
 enum BinOp {
     Eq,
@@ -467,45 +449,6 @@ pub fn debug_assert_ne_(ts: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro]
-pub fn unwrap(ts: TokenStream) -> TokenStream {
-    let assert = parse_macro_input!(ts as Assert);
-
-    let condition = assert.condition;
-    let log_stmt = if let Some(args) = assert.args {
-        let litstr = LitStr::new(
-            &format!("panicked at '{}'", args.litstr.value()),
-            Span2::call_site(),
-        );
-        let rest = args.rest;
-        log(Level::Error, FormatArgs { litstr, rest })
-    } else {
-        let mut log_args = Punctuated::new();
-        log_args.push(ident_expr("_unwrap_err"));
-
-        let litstr = LitStr::new(
-            &format!(
-                "panicked at 'unwrap failed: {}'\nerror: `{{:?}}`",
-                escape_expr(&condition)
-            ),
-            Span2::call_site(),
-        );
-        let rest = Some((syn::token::Comma::default(), log_args));
-        log(Level::Error, FormatArgs { litstr, rest })
-    };
-
-    quote!(
-        match defmt::export::into_result(#condition) {
-            ::core::result::Result::Ok(res) => res,
-            ::core::result::Result::Err(_unwrap_err) => {
-                #log_stmt;
-                defmt::export::panic()
-            }
-        }
-    )
-    .into()
-}
-
 fn ident_expr(name: &str) -> Expr {
     let mut segments = Punctuated::new();
     segments.push(PathSegment {
@@ -526,40 +469,6 @@ fn ident_expr(name: &str) -> Expr {
 fn escape_expr(expr: &Expr) -> String {
     let q = quote!(#expr);
     q.to_string().replace("{", "{{").replace("}", "}}")
-}
-
-struct Assert {
-    condition: Expr,
-    args: Option<FormatArgs>,
-}
-
-impl Parse for Assert {
-    fn parse(input: ParseStream) -> parse::Result<Self> {
-        let condition = input.parse()?;
-        if input.is_empty() {
-            // assert!(a)
-            return Ok(Assert {
-                condition,
-                args: None,
-            });
-        }
-
-        let _comma: Token![,] = input.parse()?;
-
-        if input.is_empty() {
-            // assert!(a,)
-            Ok(Assert {
-                condition,
-                args: None,
-            })
-        } else {
-            // assert!(a, "b", c)
-            Ok(Assert {
-                condition,
-                args: Some(input.parse()?),
-            })
-        }
-    }
 }
 
 struct AssertEq {
