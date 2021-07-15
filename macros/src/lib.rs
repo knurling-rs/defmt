@@ -131,6 +131,12 @@ pub fn unwrap(input: TokenStream) -> TokenStream {
 
 #[proc_macro_error]
 #[proc_macro]
+pub fn write(input: TokenStream) -> TokenStream {
+    functions::write::expand(input)
+}
+
+#[proc_macro_error]
+#[proc_macro]
 pub fn timestamp(input: TokenStream) -> TokenStream {
     items::timestamp::expand(input)
 }
@@ -420,43 +426,6 @@ impl Parse for FormatArgs {
     }
 }
 
-#[proc_macro]
-pub fn write(ts: TokenStream) -> TokenStream {
-    let write = parse_macro_input!(ts as Write);
-    let ls = write.litstr.value();
-    let fragments = match defmt_parser::parse(&ls, ParserMode::Strict) {
-        Ok(args) => args,
-        Err(e) => {
-            return parse::Error::new(write.litstr.span(), e)
-                .to_compile_error()
-                .into()
-        }
-    };
-
-    let args: Vec<_> = write
-        .rest
-        .map(|(_, exprs)| exprs.into_iter().collect())
-        .unwrap_or_default();
-
-    let (pats, exprs) = match Codegen::new(&fragments, args.len(), write.litstr.span()) {
-        Ok(cg) => (cg.pats, cg.exprs),
-        Err(e) => return e.to_compile_error().into(),
-    };
-
-    let fmt = &write.fmt;
-    let sym = mksym(&ls, "write", false);
-    quote!({
-        let fmt: defmt::Formatter<'_> = #fmt;
-        match (#(&(#args)),*) {
-            (#(#pats),*) => {
-                defmt::export::istr(&#sym);
-                #(#exprs;)*
-            }
-        }
-    })
-    .into()
-}
-
 /// work around restrictions on length and allowed characters imposed by macos linker
 /// returns (note the comma character for macos):
 ///   under macos: ".defmt," + 16 character hex digest of symbol's hash
@@ -508,28 +477,6 @@ fn mksym(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
     quote!({
         defmt::export::make_istr(#sym)
     })
-}
-
-struct Write {
-    fmt: Expr,
-    _comma: Token![,],
-    litstr: LitStr,
-    rest: Option<(Token![,], Punctuated<Expr, Token![,]>)>,
-}
-
-impl Parse for Write {
-    fn parse(input: ParseStream) -> parse::Result<Self> {
-        Ok(Self {
-            fmt: input.parse()?,
-            _comma: input.parse()?,
-            litstr: input.parse()?,
-            rest: if input.is_empty() {
-                None
-            } else {
-                Some((input.parse()?, Punctuated::parse_terminated(input)?))
-            },
-        })
-    }
 }
 
 struct Codegen {

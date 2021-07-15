@@ -4,3 +4,4 @@ pub(crate) mod dbg;
 pub(crate) mod intern;
 pub(crate) mod internp;
 pub(crate) mod panic_like;
+pub(crate) mod write;
