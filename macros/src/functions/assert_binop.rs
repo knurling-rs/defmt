@@ -30,7 +30,7 @@ pub(crate) fn expand(input: TokenStream, binop: BinOp) -> TokenStream {
     };
 
     for val in vals {
-        log_args.push(crate::ident_expr(*val));
+        log_args.push(construct::variable(*val));
     }
 
     let panic_msg = match binop {

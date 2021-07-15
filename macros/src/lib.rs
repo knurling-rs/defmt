@@ -17,7 +17,7 @@ use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Expr, ExprPath, LitStr, Path, PathArguments, PathSegment, Token,
+    Expr, LitStr, Token,
 };
 
 mod attributes;
@@ -286,23 +286,6 @@ pub fn warn(ts: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn error(ts: TokenStream) -> TokenStream {
     log_ts(Level::Error, ts)
-}
-
-fn ident_expr(name: &str) -> Expr {
-    let mut segments = Punctuated::new();
-    segments.push(PathSegment {
-        ident: Ident2::new(name, Span2::call_site()),
-        arguments: PathArguments::None,
-    });
-
-    Expr::Path(ExprPath {
-        attrs: vec![],
-        qself: None,
-        path: Path {
-            leading_colon: None,
-            segments,
-        },
-    })
 }
 
 fn escape_expr(expr: &Expr) -> String {

@@ -17,7 +17,7 @@ pub(crate) fn expand(ts: TokenStream) -> TokenStream {
         crate::log(Level::Error, FormatArgs { litstr, rest })
     } else {
         let mut log_args = Punctuated::new();
-        log_args.push(crate::ident_expr("_unwrap_err"));
+        log_args.push(construct::variable("_unwrap_err"));
 
         let panic_msg = format!(
             "panicked at 'unwrap failed: {}'\nerror: `{{:?}}`",
