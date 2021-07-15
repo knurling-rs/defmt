@@ -2,9 +2,6 @@
 
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-mod bitflags;
-mod symbol;
-
 use std::{
     collections::hash_map::DefaultHasher,
     convert::TryFrom,
@@ -15,133 +12,31 @@ use std::{
 use defmt_parser::{Fragment, Level, ParserMode};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
+use proc_macro_error::proc_macro_error;
 use quote::{format_ident, quote};
 use syn::{
     parse::{self, Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Attribute, Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    ItemFn, ItemStruct, LitStr, Path, PathArguments, PathSegment, ReturnType, Token, Type,
-    WhereClause, WherePredicate,
+    Data, DeriveInput, Expr, ExprPath, Fields, FieldsNamed, FieldsUnnamed, GenericParam, LitStr,
+    Path, PathArguments, PathSegment, Token, Type, WhereClause, WherePredicate,
 };
 
-/// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
-///
-/// The compiler error will indicate that the attribute conflicts with `attr_name`
-fn check_attribute_conflicts(
-    attr_name: &str,
-    attrs_to_check: &[Attribute],
-    reject_list: &[&str],
-) -> parse::Result<()> {
-    for attr in attrs_to_check {
-        if let Some(ident) = attr.path.get_ident() {
-            let ident = ident.to_string();
-            if reject_list.contains(&&*ident) {
-                let message = format!(
-                    "`#[{}]` attribute cannot be used together with `#[{}]`",
-                    attr_name, ident
-                );
-                return Err(parse::Error::new(attr.span(), message));
-            }
-        }
-    }
-    Ok(())
-}
+mod attributes;
+mod bitflags;
+mod symbol;
 
+#[proc_macro_error]
 #[proc_macro_attribute]
 pub fn global_logger(args: TokenStream, input: TokenStream) -> TokenStream {
-    if !args.is_empty() {
-        return parse::Error::new(
-            Span2::call_site(),
-            "`#[global_logger]` attribute takes no arguments",
-        )
-        .to_compile_error()
-        .into();
-    }
-    let s = parse_macro_input!(input as ItemStruct);
-    let ident = &s.ident;
-    let is_unit = matches!(s.fields, Fields::Unit);
-    if !s.generics.params.is_empty() || s.generics.where_clause.is_some() || !is_unit {
-        return parse::Error::new(
-            ident.span(),
-            "struct must be a non-generic unit struct (e.g. `struct S;`)",
-        )
-        .to_compile_error()
-        .into();
-    }
-
-    let attrs = &s.attrs;
-    let vis = &s.vis;
-    quote!(
-        #(#attrs)*
-        #vis struct #ident;
-
-        #[no_mangle]
-        unsafe fn _defmt_acquire()  {
-            <#ident as defmt::Logger>::acquire()
-        }
-
-        #[no_mangle]
-        unsafe fn _defmt_release()  {
-            <#ident as defmt::Logger>::release()
-        }
-
-        #[no_mangle]
-        unsafe fn _defmt_write(bytes: &[u8])  {
-            <#ident as defmt::Logger>::write(bytes)
-        }
-    )
-    .into()
+    attributes::global_logger::expand(args, input)
 }
 
+#[proc_macro_error]
 #[proc_macro_attribute]
 pub fn panic_handler(args: TokenStream, input: TokenStream) -> TokenStream {
-    if !args.is_empty() {
-        return parse::Error::new(
-            Span2::call_site(),
-            "`#[defmt::panic_handler]` attribute takes no arguments",
-        )
-        .to_compile_error()
-        .into();
-    }
-    let f = parse_macro_input!(input as ItemFn);
-
-    let rety_is_ok = match &f.sig.output {
-        ReturnType::Default => false,
-        ReturnType::Type(_, ty) => matches!(&**ty, Type::Never(_)),
-    };
-
-    let ident = &f.sig.ident;
-    if f.sig.constness.is_some()
-        || f.sig.asyncness.is_some()
-        || f.sig.unsafety.is_some()
-        || f.sig.abi.is_some()
-        || !f.sig.generics.params.is_empty()
-        || f.sig.generics.where_clause.is_some()
-        || f.sig.variadic.is_some()
-        || !f.sig.inputs.is_empty()
-        || !rety_is_ok
-    {
-        return parse::Error::new(ident.span(), "function must have signature `fn() -> !`")
-            .to_compile_error()
-            .into();
-    }
-
-    let attrs = &f.attrs;
-    if let Err(e) = check_attribute_conflicts("panic_handler", attrs, &["export_name", "no_mangle"])
-    {
-        return e.to_compile_error().into();
-    }
-    let block = &f.block;
-    quote!(
-        #(#attrs)*
-        #[export_name = "_defmt_panic"]
-        fn #ident() -> ! {
-            #block
-        }
-    )
-    .into()
+    attributes::panic_handler::expand(args, input)
 }
 
 #[proc_macro]
