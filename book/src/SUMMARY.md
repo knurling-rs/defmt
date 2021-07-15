@@ -3,7 +3,6 @@
 [Introduction](./introduction.md)
 - [User guide](./user-guide.md)
   - [Setup](./setup.md)
-    - [Libraries](./setup-library.md)
     - [Applications](./setup-app.md)
   - [Logging macros](./macros.md)
     - [Primitives](./primitives.md)

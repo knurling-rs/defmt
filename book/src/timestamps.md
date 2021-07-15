@@ -1,8 +1,8 @@
 # Timestamps
 
-*Applications* that, directly or transitively, use any of `defmt` logging macros may use the `timestamp!` macro to define additional data to be included in every log frame.
+> *Applications* that, directly or transitively, use any of `defmt` logging macros may use the `timestamp!` macro to define additional data to be included in every log frame.
 
-The `timestamp!` macro may only be used once throughout the crate graph. Its syntax is the same as for the other logging macros (`info!`, etc.), except that `timestamp!` is global and so cannot access any local variables.
+The `timestamp!` macro may only be used once throughout the crate graph. Its syntax is the same as for the other logging macros, except that `timestamp!` is global and so cannot access any local variables.
 
 By default, no timestamp is provided or transferred over the defmt sink.
 
@@ -39,10 +39,11 @@ defmt::timestamp!("{=u32:us}", {
 
 # fn enable_monotonic_counter() {}
 fn main() {
-    defmt::info!(".."); // timestamp = 0
+    defmt::info!("..");  // timestamp = 0
     defmt::debug!(".."); // timestamp = 0
+
     enable_monotonic_counter();
-    defmt::info!(".."); // timestamp >= 0
+    defmt::info!("..");  // timestamp >= 0
     // ..
 }
 ```
@@ -73,8 +74,8 @@ To read the 64-bit value in a lock-free manner the following algorithm can be us
 ``` text
 do {
   high1: u32 <- read_high_count()
-  low : u32<- read_low_count()
-  high2 : u32<- read_high_count()
+  low : u32 <- read_low_count()
+  high2 : u32 <- read_high_count()
 } while (high1 != high2)
 count: u64 <- (high1 << 32) | low
 ```

@@ -1,41 +1,24 @@
 # Application setup
 
-**NOTE** the preferred way to create a *new* `defmt` application is to use our [`app-template`].
-These steps are for using `defmt` on an *existing* application.
-
-[`app-template`]: https://github.com/knurling-rs/app-template
-
-## Cargo features
-
-Add these Cargo features to your app's `Cargo.toml`:
-
-``` toml
-# Cargo.toml
-# under the features section, copy these
-[features]
-# ↓↓↓↓↓
-defmt-default = []
-defmt-trace = []
-defmt-debug = []
-defmt-info = []
-defmt-warn = []
-defmt-error = []
-# ↑↑↑↑↑
-```
+> ⚠️ Remember to also do the base setup from the previous chapter!
 
 ## Linker script
 
 The application must be linked using a custom linking process that includes the `defmt.x` linker script.
 Custom linking is usual for embedded applications and configured in the `.cargo/config` file.
-To pass `defmt.x` to the linker add the `-C link-arg=-Tdefmt.x` flag to the rustflags section of `.cargo/config`.
+
+To pass `defmt.x` to the linker add the `-C link-arg=-Tdefmt.x` flag to the rustflags section of `.cargo/config.toml`.
 
 ``` toml
-# .cargo/config
+# .cargo/config.toml
 [target.thumbv7m-none-eabi]
 rustflags = [
-  # likely, there's another `link-arg` flag already there; KEEP it
+  # --- KEEP existing `link-arg` flags ---
   "-C", "link-arg=-Tlink.x",
-  "-C", "link-arg=-Tdefmt.x", # <- ADD this one
+  "-C", "link-arg=--nmagic",
+
+  # --- ADD following new flag ---
+  "-C", "link-arg=-Tdefmt.x",
 ]
 ```
 
@@ -48,10 +31,12 @@ The `global_logger` can appear anywhere in the dependency graph and usually it w
 The following `global_logger`s are provided as part of the project:
 
 - [`defmt-rtt`], logs over RTT. Note that this crate can *not* be used together with `rtt-target`.
+- [`defmt-itm`], logs over ITM (Instrumentation Trace Macrocell) stimulus port 0.
 - [`defmt-semihosting`], logs over semihosting. Meant only for testing `defmt` on a virtual Cortex-M device (QEMU).
 
-[`defmt-semihosting`]: https://github.com/knurling-rs/defmt/tree/9f97c1fd562738159a142bd67c410c48ef8d4110/firmware/defmt-semihosting
 [`defmt-rtt`]: https://docs.rs/defmt-rtt/
+[`defmt-itm`]: https://docs.rs/defmt-itm/
+[`defmt-semihosting`]: https://github.com/knurling-rs/defmt/tree/6cfd947384debb18a4df761cbe454f8d86cf3441/firmware/defmt-semihosting
 
 Information about how to write a `global_logger` can be found in the [`#[global_logger]` section](./global-logger.md).
 
