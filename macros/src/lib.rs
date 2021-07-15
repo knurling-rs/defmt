@@ -210,13 +210,7 @@ fn necessary_features_for_level(level: Level, debug_assertions: bool) -> &'stati
     }
 }
 
-fn fields(
-    fields: &Fields,
-    format: &mut String,
-    // collect all *non-native* types that appear as fields
-    field_types: &mut Vec<Type>,
-    pats: &mut Vec<TokenStream2>,
-) -> Vec<TokenStream2> {
+fn fields(fields: &Fields, format: &mut String, pats: &mut Vec<TokenStream2>) -> Vec<TokenStream2> {
     let mut list = vec![];
     match fields {
         Fields::Named(FieldsNamed { named: fs, .. })
@@ -240,10 +234,7 @@ fn fields(
                     } else {
                         format.push_str(", ");
                     }
-                    let ty = as_native_type(&f.ty).unwrap_or_else(|| {
-                        field_types.push(f.ty.clone());
-                        "?".to_string()
-                    });
+                    let ty = as_native_type(&f.ty).unwrap_or_else(|| "?".to_string());
                     if let Some(ident) = f.ident.as_ref() {
                         core::write!(format, "{}: {{={}:?}}", ident, ty).ok();
 

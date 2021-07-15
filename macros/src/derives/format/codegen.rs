@@ -16,8 +16,7 @@ pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> EncodeData
     let mut stmts = vec![];
     let mut patterns = vec![];
 
-    let encode_field_stmts =
-        crate::fields(&data.fields, &mut format_string, &mut vec![], &mut patterns);
+    let encode_field_stmts = crate::fields(&data.fields, &mut format_string, &mut patterns);
 
     stmts.push(quote!(match self {
         Self { #(#patterns),* } => {
