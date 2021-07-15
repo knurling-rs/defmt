@@ -1,9 +1,15 @@
 use syn::{
     parse::{self, Parse, ParseStream},
-    Token,
+    Expr, Token,
 };
 
-use super::Args;
+use crate::functions::log;
+
+pub(crate) struct Args {
+    pub(crate) left: Expr,
+    pub(crate) right: Expr,
+    pub(crate) log_args: Option<log::Args>,
+}
 
 impl Parse for Args {
     fn parse(input: ParseStream) -> parse::Result<Self> {
@@ -16,7 +22,7 @@ impl Parse for Args {
             return Ok(Args {
                 left,
                 right,
-                format_args: None,
+                log_args: None,
             });
         }
 
@@ -27,14 +33,14 @@ impl Parse for Args {
             Ok(Args {
                 left,
                 right,
-                format_args: None,
+                log_args: None,
             })
         } else {
             // assert_eq!(a, b, "c", d)
             Ok(Args {
                 left,
                 right,
-                format_args: Some(input.parse()?),
+                log_args: Some(input.parse()?),
             })
         }
     }

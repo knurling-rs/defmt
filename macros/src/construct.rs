@@ -9,6 +9,11 @@ use syn::{parse_quote, Expr, Ident, LitStr};
 
 use crate::symbol::Symbol;
 
+pub(crate) fn escaped_expr_string(expr: &Expr) -> String {
+    let ts = quote!(#expr);
+    ts.to_string().replace("{", "{{").replace("}", "}}")
+}
+
 pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
     // NOTE we rely on this variable name when extracting file location information from the DWARF
     // without it we have no other mean to differentiate static variables produced by `info!` vs

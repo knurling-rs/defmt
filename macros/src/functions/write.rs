@@ -4,7 +4,7 @@ use proc_macro_error::abort;
 use quote::quote;
 use syn::parse_macro_input;
 
-use crate::{construct, Codegen};
+use crate::{construct, functions::log::Codegen};
 
 use self::args::Args;
 
@@ -25,11 +25,8 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or_default();
 
-    let (pats, exprs) =
-        match Codegen::new(&fragments, format_exprs.len(), args.format_string.span()) {
-            Ok(cg) => (cg.pats, cg.exprs),
-            Err(e) => return e.to_compile_error().into(),
-        };
+    let Codegen { pats, exprs } =
+        Codegen::new(&fragments, format_exprs.len(), args.format_string.span());
 
     let formatter = &args.formatter;
     let sym = construct::interned_string(&format_string, "write", false);

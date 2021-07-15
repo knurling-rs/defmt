@@ -7,6 +7,8 @@ use syn::{
     Expr, Token,
 };
 
+use crate::construct;
+
 pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as Input);
 
@@ -30,7 +32,7 @@ fn codegen(input: &Input) -> TokenStream {
         .exprs
         .iter()
         .map(|expr| {
-            let escaped_expr = crate::escape_expr(&expr);
+            let escaped_expr = construct::escaped_expr_string(&expr);
             let format_string = format!("{} = {{}}", escaped_expr);
 
             quote!(match #expr {

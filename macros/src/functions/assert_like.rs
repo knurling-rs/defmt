@@ -3,14 +3,14 @@ use syn::{
     Expr, Token,
 };
 
-use crate::FormatArgs;
+use super::log;
 
 pub(crate) mod assert;
 pub(crate) mod unwrap;
 
 struct Args {
-    args: Option<FormatArgs>,
     condition: Expr,
+    log_args: Option<log::Args>,
 }
 
 impl Parse for Args {
@@ -19,7 +19,7 @@ impl Parse for Args {
         if input.is_empty() {
             // assert!(a)
             return Ok(Args {
-                args: None,
+                log_args: None,
                 condition,
             });
         }
@@ -29,13 +29,13 @@ impl Parse for Args {
         if input.is_empty() {
             // assert!(a,)
             Ok(Args {
-                args: None,
+                log_args: None,
                 condition,
             })
         } else {
             // assert!(a, "b", c)
             Ok(Args {
-                args: Some(input.parse()?),
+                log_args: Some(input.parse()?),
                 condition,
             })
         }

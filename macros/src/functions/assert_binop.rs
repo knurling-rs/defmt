@@ -1,11 +1,13 @@
 use defmt_parser::Level;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, punctuated::Punctuated, token::Comma, Expr};
+use syn::{parse_macro_input, punctuated::Punctuated};
 
-use crate::{construct, FormatArgs};
+use crate::{construct, functions::log};
 
-mod parse;
+use self::args::Args;
+
+mod args;
 
 pub(crate) fn expand(input: TokenStream, binop: BinOp) -> TokenStream {
     let args = parse_macro_input!(input as Args);
@@ -13,13 +15,13 @@ pub(crate) fn expand(input: TokenStream, binop: BinOp) -> TokenStream {
     let left = args.left;
     let right = args.right;
 
-    let mut log_args = Punctuated::new();
+    let mut formatting_args = Punctuated::new();
 
-    let extra_string = if let Some(args) = args.format_args {
-        if let Some(rest) = args.rest {
-            log_args.extend(rest.1);
+    let extra_string = if let Some(log_args) = args.log_args {
+        if let Some(args) = log_args.formatting_args {
+            formatting_args.extend(args);
         }
-        format!(": {}", args.litstr.value())
+        format!(": {}", log_args.format_string.value())
     } else {
         String::new()
     };
@@ -30,7 +32,7 @@ pub(crate) fn expand(input: TokenStream, binop: BinOp) -> TokenStream {
     };
 
     for val in vals {
-        log_args.push(construct::variable(*val));
+        formatting_args.push(construct::variable(*val));
     }
 
     let panic_msg = match binop {
@@ -47,11 +49,11 @@ left/right: `{{:?}}`",
         ),
     };
 
-    let format_args = FormatArgs {
-        litstr: construct::string(&panic_msg),
-        rest: Some((Comma::default(), log_args)),
+    let log_args = log::Args {
+        format_string: construct::string(&panic_msg),
+        formatting_args: Some(formatting_args),
     };
-    let log_stmt = crate::log(Level::Error, format_args);
+    let log_stmt = log::expand_parsed(Level::Error, log_args);
 
     let mut cond = quote!(*left_val == *right_val);
     if binop == BinOp::Eq {
@@ -77,10 +79,4 @@ left/right: `{{:?}}`",
 pub(crate) enum BinOp {
     Eq,
     Ne,
-}
-
-struct Args {
-    left: Expr,
-    right: Expr,
-    format_args: Option<FormatArgs>,
 }

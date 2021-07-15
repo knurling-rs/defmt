@@ -1,32 +1,37 @@
 use defmt_parser::Level;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, punctuated::Punctuated, token::Comma};
+use syn::{parse_macro_input, punctuated::Punctuated};
 
-use crate::{construct, FormatArgs};
+use crate::{construct, functions::log};
 
 pub(crate) fn expand(ts: TokenStream) -> TokenStream {
     let args = parse_macro_input!(ts as super::Args);
 
     let condition = args.condition;
-    let log_stmt = if let Some(args) = args.args {
-        let panic_msg = format!("panicked at '{}'", args.litstr.value());
-        let litstr = construct::string(&panic_msg);
-        let rest = args.rest;
+    let (format_string, formatting_args) = if let Some(log_args) = args.log_args {
+        let panic_msg = format!("panicked at '{}'", log_args.format_string.value());
 
-        crate::log(Level::Error, FormatArgs { litstr, rest })
+        (construct::string(&panic_msg), log_args.formatting_args)
     } else {
-        let mut log_args = Punctuated::new();
-        log_args.push(construct::variable("_unwrap_err"));
-
         let panic_msg = format!(
             "panicked at 'unwrap failed: {}'\nerror: `{{:?}}`",
-            crate::escape_expr(&condition)
+            construct::escaped_expr_string(&condition)
         );
-        let litstr = construct::string(&panic_msg);
-        let rest = Some((Comma::default(), log_args));
-        crate::log(Level::Error, FormatArgs { litstr, rest })
+
+        let mut formatting_args = Punctuated::new();
+        formatting_args.push(construct::variable("_unwrap_err"));
+
+        (construct::string(&panic_msg), Some(formatting_args))
     };
+
+    let log_stmt = log::expand_parsed(
+        Level::Error,
+        log::Args {
+            format_string,
+            formatting_args,
+        },
+    );
 
     quote!(
         match defmt::export::into_result(#condition) {

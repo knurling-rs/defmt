@@ -6,27 +6,29 @@ use quote::quote;
 use syn::parse_macro_input;
 
 use crate::construct;
-use crate::{Codegen, FormatArgs};
+use crate::functions::log;
+use crate::functions::log::Codegen;
 
 pub(crate) fn expand(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as FormatArgs);
+    let args = parse_macro_input!(input as log::Args);
 
-    let format_string = input.litstr.value();
+    let format_string = args.format_string.value();
 
     let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
         Ok(args) => args,
-        Err(e) => abort!(input.litstr, "{}", e),
+        Err(e) => abort!(args.format_string, "{}", e),
     };
 
-    let args: Vec<_> = input
-        .rest
-        .map(|(_, exprs)| exprs.into_iter().collect())
+    let formatting_exprs: Vec<_> = args
+        .formatting_args
+        .map(|punctuated| punctuated.into_iter().collect())
         .unwrap_or_default();
 
-    let (pats, exprs) = match Codegen::new(&fragments, args.len(), input.litstr.span()) {
-        Ok(cg) => (cg.pats, cg.exprs),
-        Err(e) => return e.to_compile_error().into(),
-    };
+    let Codegen { pats, exprs } = Codegen::new(
+        &fragments,
+        formatting_exprs.len(),
+        args.format_string.span(),
+    );
 
     let var_name = format_ident!("S");
     let var_item = construct::static_variable(&var_name, &format_string, "timestamp");
@@ -35,7 +37,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         const _: () = {
             #[export_name = "_defmt_timestamp"]
             fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
-                match (#(&(#args)),*) {
+                match (#(&(#formatting_exprs)),*) {
                     (#(#pats),*) => {
                     // NOTE: No format string index, and no finalize call.
                         #(#exprs;)*

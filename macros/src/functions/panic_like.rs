@@ -3,24 +3,31 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
 
-use crate::{construct, FormatArgs};
+use crate::{construct, functions::log};
 
 pub(crate) fn expand(
     input: TokenStream,
     zero_args_string: &str,
     string_transform: impl FnOnce(&str) -> String,
 ) -> TokenStream {
-    let log_stmt = if input.is_empty() {
+    let (format_string, formatting_args) = if input.is_empty() {
         // panic!() -> error!("panicked at 'explicit panic'")
-        let litstr = construct::string(zero_args_string);
-        crate::log(Level::Error, FormatArgs { litstr, rest: None })
+        (construct::string(zero_args_string), None)
     } else {
         // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
-        let args = parse_macro_input!(input as FormatArgs);
-        let litstr = construct::string(&string_transform(&args.litstr.value()));
-        let rest = args.rest;
-        crate::log(Level::Error, FormatArgs { litstr, rest })
+        let args = parse_macro_input!(input as log::Args);
+        let format_string = construct::string(&string_transform(&args.format_string.value()));
+
+        (format_string, args.formatting_args)
     };
+
+    let log_stmt = log::expand_parsed(
+        Level::Error,
+        log::Args {
+            format_string,
+            formatting_args,
+        },
+    );
 
     quote!(
         {

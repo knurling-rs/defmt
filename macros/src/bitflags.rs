@@ -3,7 +3,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, ToTokens};
 use syn::parse_macro_input;
 
-use crate::{mksym, symbol::Symbol};
+use crate::{construct, symbol::Symbol};
 
 pub(super) fn expand(ts: TokenStream) -> TokenStream {
     let ts2 = proc_macro2::TokenStream::from(ts.clone());
@@ -20,7 +20,7 @@ pub(super) fn expand(ts: TokenStream) -> TokenStream {
         crate::symbol::package(),
         crate::symbol::disambiguator(),
     );
-    let sym = mksym(&format_str, "bitflags", false);
+    let sym = construct::interned_string(&format_str, "bitflags", false);
 
     let ident = input.ident();
     let ty = input.ty();

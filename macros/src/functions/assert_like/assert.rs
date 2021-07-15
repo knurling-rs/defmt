@@ -3,27 +3,32 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
 
-use crate::{construct, FormatArgs};
+use crate::{construct, functions::log};
 
 pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let args = parse_macro_input!(input as super::Args);
 
     let condition = args.condition;
-    let log_stmt = if let Some(args) = args.args {
-        let panic_msg = format!("panicked at '{}'", args.litstr.value());
-        let litstr = construct::string(&panic_msg);
-        let rest = args.rest;
+    let (format_string, formatting_args) = if let Some(log_args) = args.log_args {
+        let panic_msg = format!("panicked at '{}'", log_args.format_string.value());
 
-        crate::log(Level::Error, FormatArgs { litstr, rest })
+        (construct::string(&panic_msg), log_args.formatting_args)
     } else {
         let panic_msg = &format!(
             "panicked at 'assertion failed: {}'",
-            crate::escape_expr(&condition)
+            construct::escaped_expr_string(&condition)
         );
-        let litstr = construct::string(panic_msg);
 
-        crate::log(Level::Error, FormatArgs { litstr, rest: None })
+        (construct::string(panic_msg), None)
     };
+
+    let log_stmt = log::expand_parsed(
+        Level::Error,
+        log::Args {
+            format_string,
+            formatting_args,
+        },
+    );
 
     quote!(
         if !(#condition) {
