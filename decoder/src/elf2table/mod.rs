@@ -8,6 +8,7 @@ mod symbol;
 use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap},
+    convert::TryInto,
     fmt,
     path::{Path, PathBuf},
 };
@@ -105,7 +106,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 }
                 symbol::SymbolTag::Defmt(Tag::BitflagsValue) => {
                     // Bitflags values always occupy 128 bits / 16 bytes.
-                    if entry.size() != 16 {
+                    const BITFLAGS_VALUE_SIZE: u64 = 16;
+
+                    if entry.size() != BITFLAGS_VALUE_SIZE {
                         bail!(
                             "bitflags value does not occupy 16 bytes (symbol `{}`)",
                             name
@@ -115,11 +118,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     let defmt_data = defmt_section.data()?;
                     let addr = entry.address() as usize;
                     let value = match defmt_data.get(addr..addr + 16) {
-                        Some(bytes) => {
-                            let mut array = [0; 16];
-                            array.copy_from_slice(bytes);
-                            u128::from_le_bytes(array)
-                        }
+                        Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
                             "bitflags value at {:#x} outside of defmt section",
                             entry.address()

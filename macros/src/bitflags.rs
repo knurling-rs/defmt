@@ -1,18 +1,13 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, ToTokens};
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
-    token, Attribute, Expr, Ident, Token, Type, Visibility,
-};
+use syn::parse_macro_input;
 
 use crate::{mksym, symbol::Symbol};
 
 pub(super) fn expand(ts: TokenStream) -> TokenStream {
     let ts2 = proc_macro2::TokenStream::from(ts.clone());
-    let input: Input = parse_macro_input!(ts);
+    let input: parser::Input = parse_macro_input!(ts);
 
     let codegen = Codegen::new(&input);
 
@@ -20,15 +15,15 @@ pub(super) fn expand(ts: TokenStream) -> TokenStream {
     // technically redundant, since it's also stored in the symbol we create).
     let format_str = format!(
         "{{={}:__internal_bitflags_{}@{}@{}}}",
-        input.ty.to_token_stream(),
-        input.ident,
+        input.ty().to_token_stream(),
+        input.ident(),
         crate::symbol::package(),
         crate::symbol::disambiguator(),
     );
     let sym = mksym(&format_str, "bitflags", false);
 
-    let ident = &input.ident;
-    let ty = input.ty;
+    let ident = input.ident();
+    let ty = input.ty();
     let flags = codegen.flags.iter().map(|f| &f.def);
     let result = quote! {
         const _: () = {
@@ -67,19 +62,18 @@ struct Codegen {
 }
 
 impl Codegen {
-    fn new(input: &Input) -> Self {
+    fn new(input: &parser::Input) -> Self {
         let flags = input
-            .flags
-            .iter()
+            .flags()
             .map(|flag| {
-                let cfg_attrs = &flag.cfg_attrs;
-                let name = &flag.ident;
-                let value = &flag.value;
-                let repr_ty = &input.ty;
+                let cfg_attrs = flag.cfg_attrs();
+                let name = &flag.ident();
+                let value = &flag.value();
+                let repr_ty = &input.ty();
 
                 let sym = Symbol::new(
                     "bitflags_value",
-                    &format!("{}::{}", input.ident, flag.ident),
+                    &format!("{}::{}", input.ident(), flag.ident()),
                 )
                 .mangle();
 
@@ -105,66 +99,102 @@ impl Codegen {
     }
 }
 
-#[allow(dead_code)]
-struct Input {
-    struct_attrs: Vec<Attribute>,
-    vis: Visibility,
-    struct_token: Token![struct],
-    ident: Ident,
-    colon_token: Token![:],
-    ty: Type,
-    brace_token: token::Brace,
-    flags: Punctuated<Flag, Token![;]>,
-}
+mod parser {
+    use syn::{
+        parse::{Parse, ParseStream},
+        punctuated::Punctuated,
+        token, Attribute, Expr, Ident, Token, Type, Visibility,
+    };
 
-impl Parse for Input {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let flags;
-        Ok(Self {
-            struct_attrs: Attribute::parse_outer(input)?,
-            vis: input.parse()?,
-            struct_token: input.parse()?,
-            ident: input.parse()?,
-            colon_token: input.parse()?,
-            ty: input.parse()?,
-            brace_token: syn::braced!(flags in input),
-            flags: Punctuated::parse_terminated(&flags)?,
-        })
+    #[allow(dead_code)]
+    pub(super) struct Input {
+        struct_attrs: Vec<Attribute>,
+        vis: Visibility,
+        struct_token: Token![struct],
+        ident: Ident,
+        colon_token: Token![:],
+        ty: Type,
+        brace_token: token::Brace,
+        flags: Punctuated<Flag, Token![;]>,
     }
-}
 
-#[allow(dead_code)]
-struct Flag {
-    cfg_attrs: Vec<Attribute>,
-    const_attrs: Vec<Attribute>,
-    const_token: Token![const],
-    ident: Ident,
-    eq_token: Token![=],
-    value: Expr,
-}
-
-impl Parse for Flag {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let const_attrs = Attribute::parse_outer(input)?;
-        Ok(Self {
-            cfg_attrs: extract_cfgs(&const_attrs),
-            const_attrs,
-            const_token: input.parse()?,
-            ident: input.parse()?,
-            eq_token: input.parse()?,
-            value: input.parse()?,
-        })
-    }
-}
-
-fn extract_cfgs(attrs: &[Attribute]) -> Vec<Attribute> {
-    let mut cfgs = vec![];
-
-    for attr in attrs {
-        if attr.path.is_ident("cfg") {
-            cfgs.push(attr.clone());
+    impl Parse for Input {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let flags;
+            Ok(Self {
+                struct_attrs: Attribute::parse_outer(input)?,
+                vis: input.parse()?,
+                struct_token: input.parse()?,
+                ident: input.parse()?,
+                colon_token: input.parse()?,
+                ty: input.parse()?,
+                brace_token: syn::braced!(flags in input),
+                flags: Punctuated::parse_terminated(&flags)?,
+            })
         }
     }
 
-    cfgs
+    impl Input {
+        pub(super) fn flags(&self) -> impl Iterator<Item = &Flag> {
+            self.flags.iter()
+        }
+
+        pub(super) fn ident(&self) -> &Ident {
+            &self.ident
+        }
+
+        pub(super) fn ty(&self) -> &Type {
+            &self.ty
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(super) struct Flag {
+        cfg_attrs: Vec<Attribute>,
+        const_attrs: Vec<Attribute>,
+        const_token: Token![const],
+        ident: Ident,
+        eq_token: Token![=],
+        value: Expr,
+    }
+
+    impl Parse for Flag {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let const_attrs = Attribute::parse_outer(input)?;
+            Ok(Self {
+                cfg_attrs: extract_cfgs(&const_attrs),
+                const_attrs,
+                const_token: input.parse()?,
+                ident: input.parse()?,
+                eq_token: input.parse()?,
+                value: input.parse()?,
+            })
+        }
+    }
+
+    impl Flag {
+        pub(super) fn cfg_attrs(&self) -> &[Attribute] {
+            &self.cfg_attrs
+        }
+
+        pub(super) fn ident(&self) -> &Ident {
+            &self.ident
+        }
+
+        pub(super) fn value(&self) -> &Expr {
+            &self.value
+        }
+    }
+
+    fn extract_cfgs(attrs: &[Attribute]) -> Vec<Attribute> {
+        let mut cfgs = vec![];
+
+        for attr in attrs {
+            if attr.path.is_ident("cfg") {
+                cfgs.push(attr.clone());
+            }
+        }
+
+        cfgs
+    }
 }
