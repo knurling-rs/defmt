@@ -4,7 +4,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 use syn::{parse, spanned::Spanned, Attribute, Item, ItemFn, ItemMod, ReturnType, Type};
 
 #[proc_macro_attribute]
@@ -202,13 +202,16 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             };
         )
     };
-    let unit_test_running = tests
+    let unit_test_progress = tests
         .iter()
         .map(|test| {
-            format!(
+            let message = format!(
                 "({{=usize}}/{{=usize}}) running `{}`...",
                 test.func.sig.ident
-            )
+            );
+            quote_spanned! {
+                test.func.sig.ident.span() => defmt::info!(#message, __defmt_test_number, __DEFMT_TEST_COUNT);
+            }
         })
         .collect::<Vec<_>>();
     Ok(quote!(mod #ident {
@@ -223,7 +226,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             #(
                 #(#test_cfgs)*
                 {
-                    defmt::info!(#unit_test_running, __defmt_test_number, __DEFMT_TEST_COUNT);
+                    #unit_test_progress
                     #unit_test_calls
                     __defmt_test_number += 1;
                 }
