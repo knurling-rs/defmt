@@ -3,6 +3,7 @@ use std::{
     hash::{Hash as _, Hasher as _},
 };
 
+use proc_macro::Span;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{parse_quote, Expr, Ident, LitStr};
@@ -10,6 +11,13 @@ use syn::{parse_quote, Expr, Ident, LitStr};
 pub(crate) use symbol::mangled as mangled_symbol_name;
 
 mod symbol;
+
+pub(crate) fn crate_local_disambiguator() -> u64 {
+    // We want a deterministic, but unique-per-macro-invocation identifier. For that we
+    // hash the call site `Span`'s debug representation, which contains a counter that
+    // should disambiguate macro invocations within a crate.
+    hash(&format!("{:?}", Span::call_site()))
+}
 
 pub(crate) fn escaped_expr_string(expr: &Expr) -> String {
     quote!(#expr)
@@ -55,9 +63,7 @@ pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str
     };
 
     if for_macos {
-        let mut hasher = DefaultHasher::new();
-        sub_section.hash(&mut hasher);
-        sub_section = format!(",{:x}", hasher.finish());
+        sub_section = format!(",{:x}", hash(&sub_section));
     }
 
     format!(".defmt{}", sub_section)
@@ -83,4 +89,10 @@ pub(crate) fn string_literal(content: &str) -> LitStr {
 pub(crate) fn variable(name: &str) -> Expr {
     let ident = Ident::new(name, Span2::call_site());
     parse_quote!(#ident)
+}
+
+fn hash(string: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    string.hash(&mut hasher);
+    hasher.finish()
 }

@@ -9,7 +9,7 @@ use proc_macro_error::proc_macro_error;
 use quote::quote;
 
 mod attributes;
-mod bitflags;
+mod cargo;
 mod construct;
 mod consts;
 mod derives;
@@ -191,11 +191,12 @@ pub fn write(args: TokenStream) -> TokenStream {
 /* # Items */
 #[proc_macro]
 #[proc_macro_error]
-pub fn timestamp(args: TokenStream) -> TokenStream {
-    items::timestamp::expand(args)
+pub fn bitflags(ts: TokenStream) -> TokenStream {
+    items::bitflags::expand(ts)
 }
 
 #[proc_macro]
-pub fn bitflags(ts: TokenStream) -> TokenStream {
-    bitflags::expand(ts)
+#[proc_macro_error]
+pub fn timestamp(args: TokenStream) -> TokenStream {
+    items::timestamp::expand(args)
 }

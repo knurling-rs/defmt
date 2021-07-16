@@ -1,9 +1,6 @@
-use std::collections::hash_map::DefaultHasher;
-use std::env;
 use std::fmt::Write;
-use std::hash::{Hash, Hasher};
 
-use proc_macro::Span;
+use crate::cargo;
 
 pub(crate) fn mangled(defmt_tag: &str, data: &str) -> String {
     Symbol::new(defmt_tag, data).mangle()
@@ -42,8 +39,8 @@ impl<'a> Symbol<'a> {
     fn new(tag: &'a str, data: &'a str) -> Self {
         Self {
             // `CARGO_PKG_NAME` is set to the invoking package's name.
-            package: package(),
-            disambiguator: disambiguator(),
+            package: cargo::package_name(),
+            disambiguator: super::crate_local_disambiguator(),
             tag: format!("defmt_{}", tag),
             data,
         }
@@ -72,18 +69,4 @@ fn json_escape(string: &str) -> String {
         }
     }
     escaped
-}
-
-pub fn package() -> String {
-    env::var("CARGO_PKG_NAME").unwrap_or_else(|_| "<unknown>".to_string())
-}
-
-pub fn disambiguator() -> u64 {
-    // We want a deterministic, but unique-per-macro-invocation identifier. For that we
-    // hash the call site `Span`'s debug representation, which contains a counter that
-    // should disambiguate macro invocations within a crate.
-    let s = format!("{:?}", Span::call_site());
-    let mut hasher = DefaultHasher::new();
-    s.hash(&mut hasher);
-    hasher.finish()
 }
