@@ -566,7 +566,7 @@ fn main() -> ! {
             x: &'static str,
         }
 
-        defmt::info!("{:?}", S { x: "hi" });
+        defmt::info!("{}", S { x: "hi" });
     }
 
     {
@@ -577,7 +577,7 @@ fn main() -> ! {
         }
 
         defmt::info!(
-            "{:?}",
+            "{}",
             S {
                 x: PhantomData,
                 y: 42
@@ -621,24 +621,24 @@ fn main() -> ! {
     defmt::info!("{} {=bool}", True, true);
 
     // raw pointer
-    defmt::info!("{:?}", 0xAABBCCDD as *const u8);
-    defmt::info!("{:?}", 0xDDCCBBAA as *mut u8);
+    defmt::info!("{}", 0xAABBCCDD as *const u8);
+    defmt::info!("{}", 0xDDCCBBAA as *mut u8);
 
     // core::ops
-    defmt::info!("{:?}", 1..2); // Range
-    defmt::info!("{:?}", 1..); // RangeFrom
-    defmt::info!("{:?}", ..2); // RangeTo
-    defmt::info!("{:?}", ..); // RangeFull
-    defmt::info!("{:?}", 1..=2); // RangeInclusive
-    defmt::info!("{:?}", ..=2); // RangeToInclusive
+    defmt::info!("{}", 1..2); // Range
+    defmt::info!("{}", 1..); // RangeFrom
+    defmt::info!("{}", ..2); // RangeTo
+    defmt::info!("{}", ..); // RangeFull
+    defmt::info!("{}", 1..=2); // RangeInclusive
+    defmt::info!("{}", ..=2); // RangeToInclusive
 
     // core::iter
-    defmt::info!("{:?}", [0, 1, 2].iter().zip([2, 1, 0].iter())); // Zip
+    defmt::info!("{}", [0, 1, 2].iter().zip([2, 1, 0].iter())); // Zip
 
     // core::slice
-    defmt::info!("{:?}", [0, 1, 2].chunks_exact(1)); // ChunksExact
-    defmt::info!("{:?}", [0, 1, 2].iter()); // ChunksExact
-    defmt::info!("{:?}", [0, 1, 2].windows(1)); // Windows
+    defmt::info!("{}", [0, 1, 2].chunks_exact(1)); // ChunksExact
+    defmt::info!("{}", [0, 1, 2].iter()); // ChunksExact
+    defmt::info!("{}", [0, 1, 2].windows(1)); // Windows
 
     // core::num::NonZero*
     defmt::info!("{}", num::NonZeroI8::new(1).unwrap());
@@ -655,7 +655,7 @@ fn main() -> ! {
     defmt::info!("{}", num::NonZeroUsize::new(1).unwrap());
 
     struct NotFormatType;
-    defmt::info!("{:?}", 0xCCBBAADD as *mut NotFormatType);
+    defmt::info!("{}", 0xCCBBAADD as *mut NotFormatType);
 
     defmt::info!("QEMU test finished!");
 
