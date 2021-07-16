@@ -28,7 +28,7 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
         .map(|punctuated| punctuated.into_iter().collect())
         .unwrap_or_else(Vec::new);
 
-    let Codegen { pats, exprs } = Codegen::new(
+    let Codegen { patterns, exprs } = Codegen::new(
         &fragments,
         formatting_exprs.len(),
         args.format_string.span(),
@@ -39,7 +39,7 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
     quote!({
         #[cfg(#logging_enabled)] {
             match (#(&(#formatting_exprs)),*) {
-                (#(#pats),*) => {
+                (#(#patterns),*) => {
                     defmt::export::acquire();
                     defmt::export::header(&#header);
                     #(#exprs;)*

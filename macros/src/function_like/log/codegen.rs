@@ -4,7 +4,7 @@ use proc_macro_error::abort;
 use quote::{format_ident, quote};
 
 pub(crate) struct Codegen {
-    pub(crate) pats: Vec<Ident2>,
+    pub(crate) patterns: Vec<Ident2>,
     pub(crate) exprs: Vec<TokenStream2>,
 }
 
@@ -25,7 +25,7 @@ impl Codegen {
             .unwrap_or(0);
 
         let mut exprs = vec![];
-        let mut pats = vec![];
+        let mut patterns = vec![];
 
         for i in 0..actual_argument_count {
             let arg = format_ident!("arg{}", i);
@@ -105,7 +105,7 @@ impl Codegen {
                     }
                 }
             }
-            pats.push(arg);
+            patterns.push(arg);
         }
 
         if num_args != actual_argument_count {
@@ -123,6 +123,6 @@ impl Codegen {
             )
         }
 
-        Codegen { pats, exprs }
+        Codegen { patterns, exprs }
     }
 }

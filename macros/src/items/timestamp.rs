@@ -5,11 +5,10 @@ use quote::format_ident;
 use quote::quote;
 use syn::parse_macro_input;
 
-use crate::construct;
-use crate::function_like::log;
+use crate::{construct, function_like::log};
 
-pub(crate) fn expand(input: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(input as log::Args);
+pub(crate) fn expand(args: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(args as log::Args);
 
     let format_string = args.format_string.value();
 
@@ -23,7 +22,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         .map(|punctuated| punctuated.into_iter().collect())
         .unwrap_or_default();
 
-    let log::Codegen { pats, exprs } = log::Codegen::new(
+    let log::Codegen { patterns, exprs } = log::Codegen::new(
         &fragments,
         formatting_exprs.len(),
         args.format_string.span(),
@@ -37,7 +36,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
             #[export_name = "_defmt_timestamp"]
             fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
                 match (#(&(#formatting_exprs)),*) {
-                    (#(#pats),*) => {
+                    (#(#patterns),*) => {
                     // NOTE: No format string index, and no finalize call.
                         #(#exprs;)*
                     }

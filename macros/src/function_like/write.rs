@@ -25,7 +25,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         .map(|(_, exprs)| exprs.into_iter().collect())
         .unwrap_or_default();
 
-    let Codegen { pats, exprs } =
+    let Codegen { patterns, exprs } =
         Codegen::new(&fragments, format_exprs.len(), args.format_string.span());
 
     let formatter = &args.formatter;
@@ -33,7 +33,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     quote!({
         let fmt: defmt::Formatter<'_> = #formatter;
         match (#(&(#format_exprs)),*) {
-            (#(#pats),*) => {
+            (#(#patterns),*) => {
                 defmt::export::istr(&#sym);
                 #(#exprs;)*
             }

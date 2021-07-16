@@ -190,8 +190,8 @@ pub fn write(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn timestamp(input: TokenStream) -> TokenStream {
-    items::timestamp::expand(input)
+pub fn timestamp(args: TokenStream) -> TokenStream {
+    items::timestamp::expand(args)
 }
 
 #[proc_macro]
