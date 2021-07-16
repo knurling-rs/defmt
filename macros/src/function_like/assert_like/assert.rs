@@ -5,26 +5,22 @@ use syn::parse_macro_input;
 
 use crate::{construct, function_like::log};
 
-pub(crate) fn expand(input: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(input as super::Args);
+pub(crate) fn expand(args: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(args as super::Args);
 
     let condition = args.condition;
     let (format_string, formatting_args) = if let Some(log_args) = args.log_args {
-        let panic_msg = format!("panicked at '{}'", log_args.format_string.value());
-
-        (
-            construct::string_literal(&panic_msg),
-            log_args.formatting_args,
-        )
+        let format_string = format!("panicked at '{}'", log_args.format_string.value());
+        (format_string, log_args.formatting_args)
     } else {
-        let panic_msg = &format!(
+        let format_string = format!(
             "panicked at 'assertion failed: {}'",
             construct::escaped_expr_string(&condition)
         );
-
-        (construct::string_literal(panic_msg), None)
+        (format_string, None)
     };
 
+    let format_string = construct::string_literal(&format_string);
     let log_stmt = log::expand_parsed(
         Level::Error,
         log::Args {

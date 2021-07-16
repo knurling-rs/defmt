@@ -5,19 +5,15 @@ use syn::{parse_macro_input, punctuated::Punctuated};
 
 use crate::{construct, function_like::log};
 
-pub(crate) fn expand(ts: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(ts as super::Args);
+pub(crate) fn expand(args: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(args as super::Args);
 
     let condition = args.condition;
     let (format_string, formatting_args) = if let Some(log_args) = args.log_args {
-        let panic_msg = format!("panicked at '{}'", log_args.format_string.value());
-
-        (
-            construct::string_literal(&panic_msg),
-            log_args.formatting_args,
-        )
+        let format_string = format!("panicked at '{}'", log_args.format_string.value());
+        (format_string, log_args.formatting_args)
     } else {
-        let panic_msg = format!(
+        let format_string = format!(
             "panicked at 'unwrap failed: {}'\nerror: `{{:?}}`",
             construct::escaped_expr_string(&condition)
         );
@@ -25,9 +21,10 @@ pub(crate) fn expand(ts: TokenStream) -> TokenStream {
         let mut formatting_args = Punctuated::new();
         formatting_args.push(construct::variable("_unwrap_err"));
 
-        (construct::string_literal(&panic_msg), Some(formatting_args))
+        (format_string, Some(formatting_args))
     };
 
+    let format_string = construct::string_literal(&format_string);
     let log_stmt = log::expand_parsed(
         Level::Error,
         log::Args {
