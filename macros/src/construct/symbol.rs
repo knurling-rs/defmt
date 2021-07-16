@@ -1,11 +1,12 @@
-use std::collections::hash_map::DefaultHasher;
-use std::env;
 use std::fmt::Write;
-use std::hash::{Hash, Hasher};
 
-use proc_macro::Span;
+use crate::cargo;
 
-pub struct Symbol<'a> {
+pub(crate) fn mangled(defmt_tag: &str, data: &str) -> String {
+    Symbol::new(defmt_tag, data).mangle()
+}
+
+struct Symbol<'a> {
     /// Name of the Cargo package in which the symbol is being instantiated. Used for avoiding
     /// symbol name collisions.
     package: String,
@@ -35,51 +36,37 @@ pub struct Symbol<'a> {
 }
 
 impl<'a> Symbol<'a> {
-    pub fn new(tag: &'a str, data: &'a str) -> Self {
+    fn new(tag: &'a str, data: &'a str) -> Self {
         Self {
             // `CARGO_PKG_NAME` is set to the invoking package's name.
-            package: package(),
-            disambiguator: disambiguator(),
+            package: cargo::package_name(),
+            disambiguator: super::crate_local_disambiguator(),
             tag: format!("defmt_{}", tag),
             data,
         }
     }
 
-    pub fn mangle(&self) -> String {
+    fn mangle(&self) -> String {
         format!(
             r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}"}}"#,
-            escape(&self.package),
-            escape(&self.tag),
-            escape(self.data),
+            json_escape(&self.package),
+            json_escape(&self.tag),
+            json_escape(self.data),
             self.disambiguator,
         )
     }
 }
 
-fn escape(s: &str) -> String {
-    let mut out = String::new();
-    for c in s.chars() {
+fn json_escape(string: &str) -> String {
+    let mut escaped = String::new();
+    for c in string.chars() {
         match c {
-            '\\' => out.push_str("\\\\"),
-            '\"' => out.push_str("\\\""),
-            '\n' => out.push_str("\\n"),
-            c if c.is_control() || c == '@' => write!(out, "\\u{:04x}", c as u32).unwrap(),
-            c => out.push(c),
+            '\\' => escaped.push_str("\\\\"),
+            '\"' => escaped.push_str("\\\""),
+            '\n' => escaped.push_str("\\n"),
+            c if c.is_control() || c == '@' => write!(escaped, "\\u{:04x}", c as u32).unwrap(),
+            c => escaped.push(c),
         }
     }
-    out
-}
-
-pub fn package() -> String {
-    env::var("CARGO_PKG_NAME").unwrap_or_else(|_| "<unknown>".to_string())
-}
-
-pub fn disambiguator() -> u64 {
-    // We want a deterministic, but unique-per-macro-invocation identifier. For that we
-    // hash the call site `Span`'s debug representation, which contains a counter that
-    // should disambiguate macro invocations within a crate.
-    let s = format!("{:?}", Span::call_site());
-    let mut hasher = DefaultHasher::new();
-    s.hash(&mut hasher);
-    hasher.finish()
+    escaped
 }
