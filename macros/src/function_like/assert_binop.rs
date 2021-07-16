@@ -9,8 +9,16 @@ use self::args::Args;
 
 mod args;
 
-pub(crate) fn expand(input: TokenStream, binop: BinOp) -> TokenStream {
-    let args = parse_macro_input!(input as Args);
+pub(crate) fn eq(args: TokenStream) -> TokenStream {
+    expand(args, BinOp::Eq)
+}
+
+pub(crate) fn ne(args: TokenStream) -> TokenStream {
+    expand(args, BinOp::Ne)
+}
+
+fn expand(args: TokenStream, binop: BinOp) -> TokenStream {
+    let args = parse_macro_input!(args as Args);
 
     let left = args.left;
     let right = args.right;
@@ -76,7 +84,7 @@ left/right: `{{:?}}`",
 }
 
 #[derive(PartialEq)]
-pub(crate) enum BinOp {
+enum BinOp {
     Eq,
     Ne,
 }

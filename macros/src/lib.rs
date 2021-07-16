@@ -3,7 +3,6 @@
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
 use defmt_parser::Level;
-use function_like::assert_binop::BinOp;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro_error::proc_macro_error;
@@ -44,20 +43,20 @@ pub fn format(input: TokenStream) -> TokenStream {
 /* # Function-like */
 #[proc_macro]
 #[proc_macro_error]
-pub fn assert_(input: TokenStream) -> TokenStream {
-    function_like::assert_like::assert::expand(input)
+pub fn assert_(args: TokenStream) -> TokenStream {
+    function_like::assert_like::assert::expand(args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn assert_eq_(input: TokenStream) -> TokenStream {
-    function_like::assert_binop::expand(input, BinOp::Eq)
+pub fn assert_eq_(args: TokenStream) -> TokenStream {
+    function_like::assert_binop::eq(args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn assert_ne_(input: TokenStream) -> TokenStream {
-    function_like::assert_binop::expand(input, BinOp::Ne)
+pub fn assert_ne_(args: TokenStream) -> TokenStream {
+    function_like::assert_binop::ne(args)
 }
 
 /* ## `debug_` variants */
@@ -98,77 +97,75 @@ pub fn debug_assert_ne_(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn dbg(input: TokenStream) -> TokenStream {
-    function_like::dbg::expand(input)
+pub fn dbg(args: TokenStream) -> TokenStream {
+    function_like::dbg::expand(args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn intern(input: TokenStream) -> TokenStream {
-    function_like::intern::expand(input)
+pub fn intern(args: TokenStream) -> TokenStream {
+    function_like::intern::expand(args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn internp(input: TokenStream) -> TokenStream {
-    function_like::internp::expand(input)
+pub fn internp(args: TokenStream) -> TokenStream {
+    function_like::internp::expand(args)
 }
 
 /* ## Logging macros */
 #[proc_macro]
 #[proc_macro_error]
-pub fn trace(input: TokenStream) -> TokenStream {
-    function_like::log::expand(Level::Trace, input)
+pub fn trace(args: TokenStream) -> TokenStream {
+    function_like::log::expand(Level::Trace, args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn debug(input: TokenStream) -> TokenStream {
-    function_like::log::expand(Level::Debug, input)
+pub fn debug(args: TokenStream) -> TokenStream {
+    function_like::log::expand(Level::Debug, args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn info(input: TokenStream) -> TokenStream {
-    function_like::log::expand(Level::Info, input)
+pub fn info(args: TokenStream) -> TokenStream {
+    function_like::log::expand(Level::Info, args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn warn(input: TokenStream) -> TokenStream {
-    function_like::log::expand(Level::Warn, input)
+pub fn warn(args: TokenStream) -> TokenStream {
+    function_like::log::expand(Level::Warn, args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn error(input: TokenStream) -> TokenStream {
-    function_like::log::expand(Level::Error, input)
+pub fn error(args: TokenStream) -> TokenStream {
+    function_like::log::expand(Level::Error, args)
 }
 /* ## end of logging macros */
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn panic_(input: TokenStream) -> TokenStream {
-    function_like::panic_like::expand(input, "panicked at 'explicit panic'", |format_string| {
+pub fn panic_(args: TokenStream) -> TokenStream {
+    function_like::panic_like::expand(args, "panicked at 'explicit panic'", |format_string| {
         format!("panicked at '{}'", format_string)
     })
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn todo_(input: TokenStream) -> TokenStream {
-    function_like::panic_like::expand(
-        input,
-        "panicked at 'not yet implemented'",
-        |format_string| format!("panicked at 'not yet implemented: {}'", format_string),
-    )
+pub fn todo_(args: TokenStream) -> TokenStream {
+    function_like::panic_like::expand(args, "panicked at 'not yet implemented'", |format_string| {
+        format!("panicked at 'not yet implemented: {}'", format_string)
+    })
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn unreachable_(input: TokenStream) -> TokenStream {
+pub fn unreachable_(args: TokenStream) -> TokenStream {
     function_like::panic_like::expand(
-        input,
+        args,
         "panicked at 'internal error: entered unreachable code'",
         |format_string| {
             format!(
@@ -181,14 +178,14 @@ pub fn unreachable_(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn unwrap(input: TokenStream) -> TokenStream {
-    function_like::assert_like::unwrap::expand(input)
+pub fn unwrap(args: TokenStream) -> TokenStream {
+    function_like::assert_like::unwrap::expand(args)
 }
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn write(input: TokenStream) -> TokenStream {
-    function_like::write::expand(input)
+pub fn write(args: TokenStream) -> TokenStream {
+    function_like::write::expand(args)
 }
 
 /* # Items */
