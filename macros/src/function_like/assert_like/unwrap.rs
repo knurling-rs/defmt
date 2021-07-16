@@ -12,7 +12,10 @@ pub(crate) fn expand(ts: TokenStream) -> TokenStream {
     let (format_string, formatting_args) = if let Some(log_args) = args.log_args {
         let panic_msg = format!("panicked at '{}'", log_args.format_string.value());
 
-        (construct::string(&panic_msg), log_args.formatting_args)
+        (
+            construct::string_literal(&panic_msg),
+            log_args.formatting_args,
+        )
     } else {
         let panic_msg = format!(
             "panicked at 'unwrap failed: {}'\nerror: `{{:?}}`",
@@ -22,7 +25,7 @@ pub(crate) fn expand(ts: TokenStream) -> TokenStream {
         let mut formatting_args = Punctuated::new();
         formatting_args.push(construct::variable("_unwrap_err"));
 
-        (construct::string(&panic_msg), Some(formatting_args))
+        (construct::string_literal(&panic_msg), Some(formatting_args))
     };
 
     let log_stmt = log::expand_parsed(

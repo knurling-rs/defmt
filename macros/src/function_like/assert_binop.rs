@@ -50,7 +50,7 @@ left/right: `{{:?}}`",
     };
 
     let log_args = log::Args {
-        format_string: construct::string(&panic_msg),
+        format_string: construct::string_literal(&panic_msg),
         formatting_args: Some(formatting_args),
     };
     let log_stmt = log::expand_parsed(Level::Error, log_args);

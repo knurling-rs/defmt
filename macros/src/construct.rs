@@ -12,8 +12,10 @@ pub(crate) use symbol::mangled as mangled_symbol_name;
 mod symbol;
 
 pub(crate) fn escaped_expr_string(expr: &Expr) -> String {
-    let ts = quote!(#expr);
-    ts.to_string().replace("{", "{{").replace("}", "}}")
+    quote!(#expr)
+        .to_string()
+        .replace("{", "{{")
+        .replace("}", "}}")
 }
 
 pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
@@ -26,7 +28,7 @@ pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -
         format_ident!("S")
     };
 
-    let sym = if cfg!(feature = "unstable-test") {
+    let var_addr = if cfg!(feature = "unstable-test") {
         quote!({ defmt::export::fetch_add_string_index() })
     } else {
         let var_item = static_variable(&var_name, string, tag);
@@ -37,7 +39,7 @@ pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -
     };
 
     quote!({
-        defmt::export::make_istr(#sym)
+        defmt::export::make_istr(#var_addr)
     })
 }
 
@@ -62,19 +64,19 @@ pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str
 }
 
 pub(crate) fn static_variable(name: &Ident2, data: &str, tag: &str) -> TokenStream2 {
-    let symbol = mangled_symbol_name(tag, data);
-    let section = linker_section(false, None, &symbol);
-    let section_macos = linker_section(true, None, &symbol);
+    let sym_name = mangled_symbol_name(tag, data);
+    let section = linker_section(false, None, &sym_name);
+    let section_for_macos = linker_section(true, None, &sym_name);
 
     quote!(
-        #[cfg_attr(target_os = "macos", link_section = #section_macos)]
+        #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
         #[cfg_attr(not(target_os = "macos"), link_section = #section)]
-        #[export_name = #symbol]
+        #[export_name = #sym_name]
         static #name: u8 = 0;
     )
 }
 
-pub(crate) fn string(content: &str) -> LitStr {
+pub(crate) fn string_literal(content: &str) -> LitStr {
     LitStr::new(content, Span2::call_site())
 }
 

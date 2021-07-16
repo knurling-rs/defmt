@@ -12,11 +12,12 @@ pub(crate) fn expand(
 ) -> TokenStream {
     let (format_string, formatting_args) = if input.is_empty() {
         // panic!() -> error!("panicked at 'explicit panic'")
-        (construct::string(zero_args_string), None)
+        (construct::string_literal(zero_args_string), None)
     } else {
         // panic!("a", b, c) -> error!("panicked at 'a'", b, c)
         let args = parse_macro_input!(input as log::Args);
-        let format_string = construct::string(&string_transform(&args.format_string.value()));
+        let format_string =
+            construct::string_literal(&string_transform(&args.format_string.value()));
 
         (format_string, args.formatting_args)
     };

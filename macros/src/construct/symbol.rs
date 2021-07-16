@@ -52,26 +52,26 @@ impl<'a> Symbol<'a> {
     fn mangle(&self) -> String {
         format!(
             r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}"}}"#,
-            escape(&self.package),
-            escape(&self.tag),
-            escape(self.data),
+            json_escape(&self.package),
+            json_escape(&self.tag),
+            json_escape(self.data),
             self.disambiguator,
         )
     }
 }
 
-fn escape(s: &str) -> String {
-    let mut out = String::new();
-    for c in s.chars() {
+fn json_escape(string: &str) -> String {
+    let mut escaped = String::new();
+    for c in string.chars() {
         match c {
-            '\\' => out.push_str("\\\\"),
-            '\"' => out.push_str("\\\""),
-            '\n' => out.push_str("\\n"),
-            c if c.is_control() || c == '@' => write!(out, "\\u{:04x}", c as u32).unwrap(),
-            c => out.push(c),
+            '\\' => escaped.push_str("\\\\"),
+            '\"' => escaped.push_str("\\\""),
+            '\n' => escaped.push_str("\\n"),
+            c if c.is_control() || c == '@' => write!(escaped, "\\u{:04x}", c as u32).unwrap(),
+            c => escaped.push(c),
         }
     }
-    out
+    escaped
 }
 
 pub fn package() -> String {
