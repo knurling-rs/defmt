@@ -9,9 +9,9 @@ use crate::consts;
 pub(crate) fn codegen(
     fields: &Fields,
     format_string: &mut String,
-    pats: &mut Vec<TokenStream2>,
+    patterns: &mut Vec<TokenStream2>,
 ) -> Vec<TokenStream2> {
-    let (fields, named_fields) = match fields {
+    let (fields, fields_are_named) = match fields {
         Fields::Named(named) => (&named.named, true),
         Fields::Unit => return vec![],
         Fields::Unnamed(unnamed) => (&unnamed.unnamed, false),
@@ -21,7 +21,7 @@ pub(crate) fn codegen(
         return vec![];
     }
 
-    if named_fields {
+    if fields_are_named {
         format_string.push_str(" {{ ");
     } else {
         format_string.push('(');
@@ -47,7 +47,7 @@ pub(crate) fn codegen(
                 stmts.push(quote!(defmt::export::#method(#ident)));
             }
 
-            pats.push(quote!( #ident ));
+            patterns.push(quote!( #ident ));
         } else {
             // Unnamed (tuple) field.
 
@@ -62,11 +62,11 @@ pub(crate) fn codegen(
             }
 
             let index = Index::from(index);
-            pats.push(quote!( #index: #ident ));
+            patterns.push(quote!( #index: #ident ));
         }
     }
 
-    if named_fields {
+    if fields_are_named {
         format_string.push_str(" }}");
     } else {
         format_string.push(')');

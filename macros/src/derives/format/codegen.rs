@@ -17,13 +17,14 @@ pub(crate) struct EncodeData {
 pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> EncodeData {
     let mut format_string = ident.to_string();
     let mut stmts = vec![];
-    let mut patterns = vec![];
+    let mut field_patterns = vec![];
 
-    let encode_field_stmts = fields::codegen(&data.fields, &mut format_string, &mut patterns);
+    let encode_fields_stmts =
+        fields::codegen(&data.fields, &mut format_string, &mut field_patterns);
 
     stmts.push(quote!(match self {
-        Self { #(#patterns),* } => {
-            #(#encode_field_stmts;)*
+        Self { #(#field_patterns),* } => {
+            #(#encode_fields_stmts;)*
         }
     }));
 

@@ -31,15 +31,15 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> EncodeData {
         }
         format_string.push_str(&variant_ident.to_string());
 
-        let mut pats = vec![];
+        let mut field_patterns = vec![];
         let encode_fields_stmts =
-            super::fields::codegen(&variant.fields, &mut format_string, &mut pats);
-        let pats = quote!( { #(#pats),* } );
+            super::fields::codegen(&variant.fields, &mut format_string, &mut field_patterns);
+        let pattern = quote!( { #(#field_patterns),* } );
 
         let encode_discriminant_stmt = discriminant_encoder.encode(index);
 
         match_arms.push(quote!(
-            #enum_ident::#variant_ident #pats => {
+            #enum_ident::#variant_ident #pattern => {
                 #encode_discriminant_stmt
                 #(#encode_fields_stmts;)*
             }
@@ -83,6 +83,7 @@ impl DiscriminantEncoder {
         }
     }
 
+    // NOTE this assumes `index` < `number_of_variants` used to construct `self`
     fn encode(&self, index: usize) -> TokenStream2 {
         match self {
             // For single-variant enums, there is no need to encode the discriminant.
