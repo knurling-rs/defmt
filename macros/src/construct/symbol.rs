@@ -5,7 +5,11 @@ use std::hash::{Hash, Hasher};
 
 use proc_macro::Span;
 
-pub struct Symbol<'a> {
+pub(crate) fn mangled(defmt_tag: &str, data: &str) -> String {
+    Symbol::new(defmt_tag, data).mangle()
+}
+
+struct Symbol<'a> {
     /// Name of the Cargo package in which the symbol is being instantiated. Used for avoiding
     /// symbol name collisions.
     package: String,
@@ -35,7 +39,7 @@ pub struct Symbol<'a> {
 }
 
 impl<'a> Symbol<'a> {
-    pub fn new(tag: &'a str, data: &'a str) -> Self {
+    fn new(tag: &'a str, data: &'a str) -> Self {
         Self {
             // `CARGO_PKG_NAME` is set to the invoking package's name.
             package: package(),
@@ -45,7 +49,7 @@ impl<'a> Symbol<'a> {
         }
     }
 
-    pub fn mangle(&self) -> String {
+    fn mangle(&self) -> String {
         format!(
             r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}"}}"#,
             escape(&self.package),

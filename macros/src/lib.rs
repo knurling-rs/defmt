@@ -16,7 +16,6 @@ mod consts;
 mod derives;
 mod function_like;
 mod items;
-mod symbol;
 
 #[proc_macro_error]
 #[proc_macro_attribute]

@@ -7,7 +7,9 @@ use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{parse_quote, Expr, Ident, LitStr};
 
-use crate::symbol::Symbol;
+pub(crate) use symbol::mangled as mangled_symbol_name;
+
+mod symbol;
 
 pub(crate) fn escaped_expr_string(expr: &Expr) -> String {
     let ts = quote!(#expr);
@@ -60,14 +62,14 @@ pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str
 }
 
 pub(crate) fn static_variable(name: &Ident2, data: &str, tag: &str) -> TokenStream2 {
-    let sym = Symbol::new(tag, data).mangle();
-    let section = linker_section(false, None, &sym);
-    let section_macos = linker_section(true, None, &sym);
+    let symbol = mangled_symbol_name(tag, data);
+    let section = linker_section(false, None, &symbol);
+    let section_macos = linker_section(true, None, &symbol);
 
     quote!(
         #[cfg_attr(target_os = "macos", link_section = #section_macos)]
         #[cfg_attr(not(target_os = "macos"), link_section = #section)]
-        #[export_name = #sym]
+        #[export_name = #symbol]
         static #name: u8 = 0;
     )
 }
