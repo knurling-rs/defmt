@@ -1,34 +1,20 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
-    Expr, Token,
-};
+use syn::parse_macro_input;
 
 use crate::construct;
 
-pub(crate) fn expand(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as Input);
+use self::args::Args;
 
-    codegen(&input)
+mod args;
+
+pub(crate) fn expand(args: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(args as Args);
+    codegen(&args)
 }
 
-struct Input {
-    exprs: Punctuated<Expr, Token![,]>,
-}
-
-impl Parse for Input {
-    fn parse(input: ParseStream) -> Result<Self, syn::Error> {
-        Ok(Self {
-            exprs: Punctuated::parse_terminated(input)?,
-        })
-    }
-}
-
-fn codegen(input: &Input) -> TokenStream {
-    let tuple_exprs = input
+fn codegen(args: &Args) -> TokenStream {
+    let tuple_exprs = args
         .exprs
         .iter()
         .map(|expr| {
