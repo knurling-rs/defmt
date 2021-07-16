@@ -152,9 +152,14 @@ impl<'a> Printer<'a> {
     pub fn print_colored<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         writeln!(
             sink,
-            "{timestamp:>0$} {level:5} {args}",
+            "{timestamp:>0$}{spacing}{level:5} {args}",
             self.min_timestamp_width,
             timestamp = self.record.timestamp(),
+            spacing = if self.record.timestamp().is_empty() {
+                ""
+            } else {
+                " "
+            },
             level = self
                 .record
                 .level()
