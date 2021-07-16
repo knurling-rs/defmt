@@ -4,7 +4,7 @@ use proc_macro_error::abort;
 use quote::quote;
 use syn::parse_macro_input;
 
-use crate::{construct, functions::log::Codegen};
+use crate::{construct, function_like::log::Codegen};
 
 use self::args::Args;
 

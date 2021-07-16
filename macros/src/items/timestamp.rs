@@ -6,8 +6,7 @@ use quote::quote;
 use syn::parse_macro_input;
 
 use crate::construct;
-use crate::functions::log;
-use crate::functions::log::Codegen;
+use crate::function_like::log;
 
 pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let args = parse_macro_input!(input as log::Args);
@@ -24,7 +23,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         .map(|punctuated| punctuated.into_iter().collect())
         .unwrap_or_default();
 
-    let Codegen { pats, exprs } = Codegen::new(
+    let log::Codegen { pats, exprs } = log::Codegen::new(
         &fragments,
         formatting_exprs.len(),
         args.format_string.span(),

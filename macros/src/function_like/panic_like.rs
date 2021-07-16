@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
 
-use crate::{construct, functions::log};
+use crate::{construct, function_like::log};
 
 pub(crate) fn expand(
     input: TokenStream,

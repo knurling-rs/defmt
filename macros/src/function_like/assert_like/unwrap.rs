@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, punctuated::Punctuated};
 
-use crate::{construct, functions::log};
+use crate::{construct, function_like::log};
 
 pub(crate) fn expand(ts: TokenStream) -> TokenStream {
     let args = parse_macro_input!(ts as super::Args);

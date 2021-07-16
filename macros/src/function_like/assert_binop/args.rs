@@ -3,7 +3,7 @@ use syn::{
     Expr, Token,
 };
 
-use crate::functions::log;
+use crate::function_like::log;
 
 pub(crate) struct Args {
     pub(crate) left: Expr,
