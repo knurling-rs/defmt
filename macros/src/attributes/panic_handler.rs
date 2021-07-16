@@ -3,12 +3,12 @@ use proc_macro_error::{abort, abort_call_site};
 use quote::quote;
 use syn::{parse_macro_input, Attribute, ItemFn, ReturnType, Type};
 
-pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
+pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     if !args.is_empty() {
         abort_call_site!("`#[defmt::panic_handler]` attribute takes no arguments");
     }
 
-    let fun = parse_macro_input!(input as ItemFn);
+    let fun = parse_macro_input!(item as ItemFn);
 
     validate(&fun);
 

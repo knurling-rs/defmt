@@ -3,12 +3,12 @@ use proc_macro_error::{abort, abort_call_site};
 use quote::quote;
 use syn::{parse_macro_input, Fields, ItemStruct};
 
-pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
+pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     if !args.is_empty() {
         abort_call_site!("`#[global_logger]` attribute takes no arguments")
     }
 
-    let strukt = parse_macro_input!(input as ItemStruct);
+    let strukt = parse_macro_input!(item as ItemStruct);
 
     validate(&strukt);
 
