@@ -1,14 +1,14 @@
 use syn::{
     parse::{self, Parse, ParseStream},
-    punctuated::Punctuated,
-    Expr, LitStr, Token,
+    Expr, Token,
 };
+
+use crate::function_like::log;
 
 pub(crate) struct Args {
     pub(crate) formatter: Expr,
     _comma: Token![,],
-    pub(crate) format_string: LitStr,
-    pub(crate) format_args: Option<(Token![,], Punctuated<Expr, Token![,]>)>,
+    pub(crate) log_args: log::Args,
 }
 
 impl Parse for Args {
@@ -16,12 +16,7 @@ impl Parse for Args {
         Ok(Self {
             formatter: input.parse()?,
             _comma: input.parse()?,
-            format_string: input.parse()?,
-            format_args: if input.is_empty() {
-                None
-            } else {
-                Some((input.parse()?, Punctuated::parse_terminated(input)?))
-            },
+            log_args: input.parse()?,
         })
     }
 }
