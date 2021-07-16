@@ -12,8 +12,8 @@ pub(crate) use self::{args::Args, codegen::Codegen};
 mod args;
 mod codegen;
 
-pub(crate) fn expand(level: Level, input: TokenStream) -> TokenStream {
-    expand_parsed(level, parse_macro_input!(input as Args)).into()
+pub(crate) fn expand(level: Level, args: TokenStream) -> TokenStream {
+    expand_parsed(level, parse_macro_input!(args as Args)).into()
 }
 
 pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
