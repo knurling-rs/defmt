@@ -31,7 +31,7 @@ fn validate(fun: &ItemFn) {
         || !fun.sig.inputs.is_empty()
         || !is_divergent
     {
-        abort!(fun, "function must have signature `fn() -> !`");
+        abort!(fun.sig.ident, "function must have signature `fn() -> !`");
     }
 
     check_for_attribute_conflicts("panic_handler", &fun.attrs, &["export_name", "no_mangle"]);
