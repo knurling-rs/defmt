@@ -18,6 +18,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+mod encoding;
 #[doc(hidden)]
 pub mod export;
 mod formatter;
@@ -27,6 +28,7 @@ mod tests;
 mod traits;
 
 pub use crate::{
+    encoding::Encoder,
     formatter::{Formatter, Str},
     impls::adapter::{Debug2Format, Display2Format},
     traits::{Format, Logger},
