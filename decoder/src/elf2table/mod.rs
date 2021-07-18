@@ -13,7 +13,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
+use crate::{BitflagsKey, Encoding, StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection, ObjectSymbol};
 
@@ -21,9 +21,29 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     let elf = object::File::parse(elf)?;
     // first pass to extract the `_defmt_version`
     let mut version = None;
-    let is_defmt_version = |name: &str| {
-        name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ")
+    let mut encoding = None;
+
+    // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
+    // makes it keep the quotes from the linker script.
+    let try_get_version = |name: &str| {
+        if name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ") {
+            Some(
+                name.trim_start_matches("\"_defmt_version_ = ")
+                    .trim_start_matches("_defmt_version_ = ")
+                    .trim_end_matches('"')
+                    .to_string(),
+            )
+        } else {
+            None
+        }
     };
+
+    // No need to remove quotes for `_defmt_encoding_`, since it's
+    let try_get_encoding = |name: &str| {
+        name.strip_prefix("_defmt_encoding_ = ")
+            .map(ToString::to_string)
+    };
+
     for entry in elf.symbols() {
         let name = match entry.name() {
             Ok(name) => name,
@@ -32,13 +52,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
 
         // Not in the `.defmt` section because it's not tied to the address of any symbol
         // in `.defmt`.
-        // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
-        // makes it keep the quotes from the linker script.
-        if is_defmt_version(name) {
-            let new_version = name
-                .trim_start_matches("\"_defmt_version_ = ")
-                .trim_start_matches("_defmt_version_ = ")
-                .trim_end_matches('"');
+        if let Some(new_version) = try_get_version(name) {
             if let Some(version) = version {
                 return Err(anyhow!(
                     "multiple defmt versions in use: {} and {} (only one is supported)",
@@ -47,6 +61,17 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 ));
             }
             version = Some(new_version);
+        }
+
+        if let Some(new_encoding) = try_get_encoding(name) {
+            if let Some(encoding) = encoding {
+                return Err(anyhow!(
+                    "multiple defmt encodings in use: {} and {} (only one is supported)",
+                    encoding,
+                    new_encoding
+                ));
+            }
+            encoding = Some(new_encoding);
         }
     }
 
@@ -69,8 +94,17 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     };
 
     if check_version {
-        self::check_version(version).map_err(anyhow::Error::msg)?;
+        self::check_version(&version).map_err(anyhow::Error::msg)?;
     }
+
+    let encoding = match encoding {
+        Some(e) => match &e[..] {
+            "raw" => Encoding::Raw,
+            "rzcobs" => Encoding::Rzcobs,
+            _ => bail!("Unknown defmt encoding '{}' specified. This is a bug.", e),
+        },
+        None => bail!("No defmt encoding specified. This is a bug."),
+    };
 
     // second pass to demangle symbols
     let mut map = BTreeMap::new();
@@ -84,7 +118,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             _ => continue,
         };
 
-        if is_defmt_version(name) || name.starts_with("__DEFMT_MARKER") {
+        if name.starts_with("_defmt") || name.starts_with("__DEFMT_MARKER") {
             // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
             // LLD and GNU LD behave differently here. LLD doesn't include `_defmt_version_`
             // (defined in a linker script) in the `.defmt` section but GNU LD does.
@@ -157,12 +191,12 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         }
     }
 
-    let mut table = Table::new(map);
-    if let Some(ts) = timestamp {
-        table.set_timestamp_entry(ts);
-    }
-    table.bitflags = bitflags_map;
-    Ok(Some(table))
+    Ok(Some(Table {
+        entries: map,
+        timestamp,
+        bitflags: bitflags_map,
+        encoding,
+    }))
 }
 
 /// Checks if the version encoded in the symbol table is compatible with this version of the `decoder` crate

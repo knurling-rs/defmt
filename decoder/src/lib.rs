@@ -116,24 +116,22 @@ struct BitflagsKey {
     disambig: String,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum Encoding {
+    Raw,
+    Rzcobs,
+}
+
 /// Internal table that holds log levels and maps format strings to indices
 #[derive(Debug, PartialEq)]
 pub struct Table {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
     bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
+    encoding: Encoding,
 }
 
 impl Table {
-    /// NOTE caller must verify that defmt symbols are compatible with this version of the `decoder` crate using the `check_version` function
-    pub fn new(entries: BTreeMap<usize, TableEntry>) -> Self {
-        Self {
-            entries,
-            timestamp: None,
-            bitflags: Default::default(),
-        }
-    }
-
     /// Parses an ELF file and returns the decoded `defmt` table.
     ///
     /// This function returns `None` if the ELF file contains no `.defmt` section.
@@ -236,12 +234,10 @@ impl Table {
     }
 
     pub fn new_stream_decoder(&self) -> Box<dyn StreamDecoder + '_> {
-        Box::new(stream::Rzcobs::new(self))
-    }
-
-    // temporary, will remove
-    pub fn new_stream_decoder_raw(&self) -> Box<dyn StreamDecoder + '_> {
-        Box::new(stream::Raw::new(self))
+        match self.encoding {
+            Encoding::Raw => Box::new(stream::Raw::new(self)),
+            Encoding::Rzcobs => Box::new(stream::Rzcobs::new(self)),
+        }
     }
 }
 
@@ -326,6 +322,7 @@ mod tests {
             timestamp: None,
             entries: entries.into_iter().enumerate().collect(),
             bitflags: Default::default(),
+            encoding: Encoding::Raw,
         }
     }
 
@@ -340,6 +337,7 @@ mod tests {
             )),
             entries: entries.into_iter().enumerate().collect(),
             bitflags: Default::default(),
+            encoding: Encoding::Raw,
         }
     }
 
@@ -362,6 +360,7 @@ mod tests {
                 "{=u8:us}".to_owned(),
             )),
             bitflags: Default::default(),
+            encoding: Encoding::Raw,
         };
 
         let frame = table.decode(&bytes).unwrap().0;
@@ -1021,6 +1020,7 @@ mod tests {
                 "{=u8:us}".to_owned(),
             )),
             bitflags: Default::default(),
+            encoding: Encoding::Raw,
         };
 
         let bytes = [

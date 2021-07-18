@@ -18,6 +18,19 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+// This must be in the root lib.rs, otherwise it doesn't appear in the final binary.
+#[used]
+#[cfg_attr(target_os = "macos", link_section = ".defmt,end.ENCODING")]
+#[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
+#[cfg_attr(feature = "encoding-raw", export_name = "_defmt_encoding_ = raw")]
+#[cfg_attr(
+    not(feature = "encoding-raw"),
+    export_name = "_defmt_encoding_ = rzcobs"
+)]
+#[allow(missing_docs)]
+#[doc(hidden)]
+pub static DEFMT_ENCODING: u8 = 0;
+
 mod encoding;
 #[doc(hidden)]
 pub mod export;
