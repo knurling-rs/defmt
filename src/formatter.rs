@@ -11,6 +11,6 @@ pub struct Formatter<'a> {
 /// [`intern!`]: macro.intern.html
 #[derive(Clone, Copy)]
 pub struct Str {
-    /// 14-bit address
+    /// 16-bit address
     pub(crate) address: u16,
 }
