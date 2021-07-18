@@ -27,10 +27,6 @@ SECTIONS
     /* Symbols that aren't referenced by the program and */
     /* should be placed at the end of the section */
     KEEP(*(.defmt.end .defmt.end.*));
-
-    /* $DEFMT_VERSION may contain special chars, so we quote the symbol name */
-    /* Note that the quotes actually become part of the symbol name though! */
-    "_defmt_version_ = $DEFMT_VERSION" = 1;
   }
 }
 

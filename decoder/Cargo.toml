@@ -28,9 +28,6 @@ object = { version = "0.25", default-features = false, features = ["read_core", 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-[build-dependencies]
-semver = "1.0"
-
 [features]
 # WARNING: API and wire format subject to change.
 unstable = []

@@ -19,6 +19,13 @@
 extern crate alloc;
 
 // This must be in the root lib.rs, otherwise it doesn't appear in the final binary.
+
+#[used]
+#[cfg_attr(target_os = "macos", link_section = ".defmt,end.VERSION")]
+#[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
+#[export_name = "_defmt_version_ = 3"]
+static DEFMT_VERSION: u8 = 0;
+
 #[used]
 #[cfg_attr(target_os = "macos", link_section = ".defmt,end.ENCODING")]
 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]

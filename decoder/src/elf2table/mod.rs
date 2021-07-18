@@ -201,51 +201,11 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
 
 /// Checks if the version encoded in the symbol table is compatible with this version of the `decoder` crate
 fn check_version(version: &str) -> Result<(), String> {
-    enum Kind {
-        /// `1` or `0.1`
-        Semver,
-        /// commit hash `e739d0ac703dfa629a159be329e8c62a1c3ed206`
-        Git,
-    }
-
-    impl Kind {
-        fn of(version: &str) -> Kind {
-            if version.contains('.') || version.parse::<u64>().is_ok() {
-                Kind::Semver
-            } else {
-                Kind::Git
-            }
-        }
-    }
-
     if version != DEFMT_VERSION {
-        let mut msg = format!(
-            "defmt version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: ",
-            version, DEFMT_VERSION
+        let msg = format!(
+            "defmt wire format version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: `cargo install` a different version of `probe-run` that supports defmt {}",
+            version, DEFMT_VERSION, DEFMT_VERSION
         );
-
-        let git_sem = "migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR `cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`";
-        let sem_git = "`cargo install` a non-git version of `probe-run`: `cargo install probe-run`";
-        let sem_sem = &*format!(
-            "`cargo install` a different non-git version of `probe-run` that supports defmt {}",
-            version,
-        );
-        let git_git = &*format!(
-            "pin _all_ `defmt` related dependencies to revision {0}; modify Cargo.toml files as shown below\n
-[dependencies]
-defmt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
-defmt-rtt = {{ git = \"https://github.com/knurling-rs/defmt\", rev = \"{0}\" }}
-# ONLY pin this dependency if you are using the `print-defmt` feature
-panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"print-defmt\"], rev = \"{0}\" }}",
-            DEFMT_VERSION
-        );
-
-        match (Kind::of(version), Kind::of(DEFMT_VERSION)) {
-            (Kind::Git, Kind::Git) => msg.push_str(git_git),
-            (Kind::Git, Kind::Semver) => msg.push_str(git_sem),
-            (Kind::Semver, Kind::Git) => msg.push_str(sem_git),
-            (Kind::Semver, Kind::Semver) => msg.push_str(sem_sem),
-        }
 
         return Err(msg);
     }
