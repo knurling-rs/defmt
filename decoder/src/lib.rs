@@ -17,6 +17,7 @@ mod decoder;
 mod elf2table;
 mod frame;
 pub mod log;
+mod stream;
 
 use std::{
     collections::{BTreeMap, HashMap},
@@ -31,6 +32,7 @@ use elf2table::parse_impl;
 
 pub use elf2table::{Location, Locations};
 pub use frame::Frame;
+pub use stream::StreamDecoder;
 
 /// Specifies the origin of a format string
 #[derive(PartialEq, Eq, Debug)]
@@ -231,6 +233,15 @@ impl Table {
 
         let consumed = len - decoder.bytes.len();
         Ok((frame, consumed))
+    }
+
+    pub fn new_stream_decoder(&self) -> Box<dyn StreamDecoder + '_> {
+        Box::new(stream::Rzcobs::new(self))
+    }
+
+    // temporary, will remove
+    pub fn new_stream_decoder_raw(&self) -> Box<dyn StreamDecoder + '_> {
+        Box::new(stream::Raw::new(self))
     }
 }
 
