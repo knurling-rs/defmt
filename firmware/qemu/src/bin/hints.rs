@@ -115,8 +115,11 @@ fn main() -> ! {
     let x = 42u32;
     defmt::info!("no hint {=0..4}", x);
     defmt::info!("hex     {=0..4:x}", x);
+    defmt::info!("hex     {=0..4:#x}", x);
     defmt::info!("HEX     {=0..4:X}", x);
+    defmt::info!("HEX     {=0..4:#X}", x);
     defmt::info!("binary  {=0..4:b}", x);
+    defmt::info!("binary  {=0..4:#b}", x);
     defmt::info!("ASCII   {=0..4:a}", x);
     defmt::info!("Debug   {=0..4:?}", x);
 
