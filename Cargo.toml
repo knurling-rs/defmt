@@ -15,6 +15,15 @@ version = "0.2.3"
 [features]
 alloc = []
 
+# Encoding feature flags. These should only be set by end-user crates, not by library crates.
+#
+# If no encoding is selected, `defmt` will assume the encoding is "don't care" and
+# will pick a default one. The current default is `encoding-rzcobs`. The default may change 
+# in minor releases, changing it is not considered a breaking change since all encodings
+# are guaranteed to be supported by the corresponding `defmt-decoder` version.
+encoding-raw = []
+encoding-rzcobs = []
+
 # WARNING: for internal use only, not covered by semver guarantees
 unstable-test = ["defmt-macros/unstable-test"]
 

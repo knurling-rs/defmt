@@ -10,7 +10,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
-use defmt_decoder::{DecodeError, Table};
+use defmt_decoder::{DecodeError, StreamDecoder, Table};
 use process::Child;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -64,29 +64,22 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
         .take()
         .ok_or_else(|| anyhow!("failed to acquire child's stdout handle"))?;
 
-    let mut frames = vec![];
+    let mut decoder = table.new_stream_decoder();
+
     let mut readbuf = [0; 256];
     let exit_code;
     loop {
         let n = stdout.read(&mut readbuf)?;
-
-        if n != 0 {
-            frames.extend_from_slice(&readbuf[..n]);
-
-            decode(&mut frames, &table)?;
-        }
+        decoder.received(&readbuf[..n]);
+        decode(&mut *decoder)?;
 
         if let Some(status) = child.0.try_wait()? {
             exit_code = status.code();
 
-            stdout.read_to_end(&mut frames)?;
-            decode(&mut frames, &table)?;
-            if !frames.is_empty() {
-                return Err(anyhow!(
-                    "couldn't decode all data (remaining: {:x?})",
-                    frames
-                ));
-            }
+            let mut data = Vec::new();
+            stdout.read_to_end(&mut data)?;
+            decoder.received(&data);
+            decode(&mut *decoder)?;
 
             break;
         }
@@ -95,18 +88,15 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     Ok(exit_code)
 }
 
-fn decode(frames: &mut Vec<u8>, table: &Table) -> Result<(), DecodeError> {
+fn decode(decoder: &mut dyn StreamDecoder) -> Result<(), DecodeError> {
     loop {
-        match table.decode(&frames) {
-            Ok((frame, consumed)) => {
-                println!("{}", frame.display(true));
-                let n = frames.len();
-                frames.rotate_left(consumed);
-                frames.truncate(n - consumed);
+        match decoder.decode() {
+            Ok(frame) => {
+                println!("{}", frame.display(true))
             }
             Err(DecodeError::UnexpectedEof) => return Ok(()),
             Err(DecodeError::Malformed) => {
-                eprintln!("failed to decode defmt data: {:x?}", frames);
+                eprintln!("failed to decode defmt data");
                 return Err(DecodeError::Malformed);
             }
         }
