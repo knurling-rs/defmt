@@ -7,17 +7,77 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#545]: Revert "`build.rs`: Obtain version from macro; simplify" r=Urhengulas a=Urhengulas
+- [#539]: Add optional rzCOBS encoding+framing r=japaric a=Dirbaio
+- [#518]: `build.rs`: Obtain version from macro; simplify r=Urhengulas a=Urhengulas
+- [#543]: `CI`: Temporarily drop backward-compatibility check r=jonas-schievink a=Urhengulas
+- [#542]: `snapshot-tests`: Test alternate hint for bitfields r=Urhengulas a=Urhengulas
+- [#538]: Fix wrong bit count in comment. r=Urhengulas a=Dirbaio
+- [#537]: `snapshot-tests`: Delete `:?` hint without impact r=Urhengulas a=Urhengulas
+- [#531]: refactor the `macros` crate r=japaric a=japaric
+- [#535]: Don't print leading space when timestamp is absent r=japaric a=jonas-schievink
+- [#529]: Refactor user-guide of `book` r=Urhengulas a=Urhengulas
+- [#528]: Support bitflags r=japaric a=jonas-schievink
+- [#533]: Adds add for user survey into readme. r=Urhengulas a=BriocheBerlin
+- [#527]: `book`: Add logo and support text to introduction r=Urhengulas a=Urhengulas
+- [#526]: `decoder`: Simplify tests r=Urhengulas a=Urhengulas
+- [#359]: Implement precedence of inner display hint r=Urhengulas a=justahero
+- [#523]: Minimize dependencies r=Urhengulas a=Urhengulas
+- [#508]: [5/n] Format trait v2 r=japaric a=Dirbaio
+- [#522]: Replace `µs` hint with `us` r=Urhengulas a=jonas-schievink
+- [#521]: [3/n] Remove u24 r=japaric a=Dirbaio
+- [#516]: `xtask`: Only install additional targets for tests that require them r=Urhengulas a=Urhengulas
+- [#512]: Add overwrite option for xtask cross results. r=Urhengulas a=derekdreery
+- [#514]: extend raw pointer implementation to include !Format types r=Urhengulas a=japaric
+- [#513]: book/duplicates.md: discriminator -> disambiguator r=Urhengulas a=eupn
+- [#507]: [2/n] - Remove code-size-costly optimizations r=jonas-schievink a=Dirbaio
+- [#505]: [1/n] - Logger trait v2. r=jonas-schievink a=Dirbaio
+
+[#545]: https://github.com/knurling-rs/defmt/pull/545
+[#539]: https://github.com/knurling-rs/defmt/pull/539
+[#518]: https://github.com/knurling-rs/defmt/pull/518
+[#543]: https://github.com/knurling-rs/defmt/pull/543
+[#542]: https://github.com/knurling-rs/defmt/pull/542
+[#538]: https://github.com/knurling-rs/defmt/pull/538
+[#537]: https://github.com/knurling-rs/defmt/pull/537
+[#531]: https://github.com/knurling-rs/defmt/pull/531
+[#535]: https://github.com/knurling-rs/defmt/pull/535
+[#529]: https://github.com/knurling-rs/defmt/pull/529
+[#528]: https://github.com/knurling-rs/defmt/pull/528
+[#533]: https://github.com/knurling-rs/defmt/pull/533
+[#527]: https://github.com/knurling-rs/defmt/pull/527
+[#526]: https://github.com/knurling-rs/defmt/pull/526
+[#359]: https://github.com/knurling-rs/defmt/pull/359
+[#523]: https://github.com/knurling-rs/defmt/pull/523
+[#508]: https://github.com/knurling-rs/defmt/pull/508
+[#522]: https://github.com/knurling-rs/defmt/pull/522
+[#521]: https://github.com/knurling-rs/defmt/pull/521
+[#516]: https://github.com/knurling-rs/defmt/pull/516
+[#512]: https://github.com/knurling-rs/defmt/pull/512
+[#514]: https://github.com/knurling-rs/defmt/pull/514
+[#513]: https://github.com/knurling-rs/defmt/pull/513
+[#507]: https://github.com/knurling-rs/defmt/pull/507
+[#505]: https://github.com/knurling-rs/defmt/pull/505
+
 ## [v0.2.3] - 2021-06-17
+
+### Added
+
+- [#499] Illustrate structure of the defmt crates
+- [#503] Add alternate hint ('#')
+- [#509] `impl Format for NonZero*`
+
+### Changed
 
 - [#488] Structure `impl Format`s into multiple files
 - [#496] Bump build-dep `semver` to  `1.0`
-- [#497] `macros`: match unused vars if logging is disabled
 - [#489] Structure lib
-- [#499] Illustrate structure of the defmt crates
 - [#500] book: fix leftover old formatting syntax; typos
-- [#503] Add alternate hint ('#')
-- [#509] `impl Format for NonZero*`
 - [#510] `CI`: Don't install MacOS dependency which is included by default
+
+### Fixed
+
+- [#497] `macros`: match unused vars if logging is disabled
 
 [#488]: https://github.com/knurling-rs/defmt/pull/488
 [#496]: https://github.com/knurling-rs/defmt/pull/496
@@ -31,12 +91,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.2.2] - 2021-05-20
 
+### Added
+
 - [#446] Add usage examples for `Debug2Format`, `Display2Format`
 - [#464] `impl<T> Format for {*const, *mut} T where T: Format + ?Sized`
 - [#472] `impl Format for` the core::{iter, ops, slice} structs
 - [#473] `impl Format for` all the `Cow`s
-- [#477] Disable logging calls via conditional compilation when all defmt features are disabled
 - [#478] add `dbg!` macro
+
+### Changed
+
+- [#477] Disable logging calls via conditional compilation when all defmt features are disabled
 
 [#446]: https://github.com/knurling-rs/defmt/pull/446
 [#464]: https://github.com/knurling-rs/defmt/pull/464
@@ -48,9 +113,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v0.2.1] - 2021-03-08
 
 ### Added
+
 - [#403] Add knurling logo to API docs
 
 ### Fixed
+
 - [#413] Fix docs-rs build, by disabling feature "unstable-test"
 - [#427] Drop outdated note about `defmt v0.2.0` from book
 
