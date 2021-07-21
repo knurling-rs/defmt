@@ -57,14 +57,27 @@ As well as all other logging calls where you were using `µs`.
 + defmt::info!("{=u8:us}", time)
 ```
 
-> 💡 Use the global search-and-replace feature of your editor/IDE for this fix. *([vs code](https://code.visualstudio.com/docs/editor/codebasics#_search-and-replace))*
+> 💡 Easily fix this, using the global search-and-replace feature of your editor/IDE. *([vs code](https://code.visualstudio.com/docs/editor/codebasics#_search-and-replace))*
+
+## Drop `u24` type hint
+
+The `u24` type hint got dropped, cause it was confusing users and complicates the code.
+
+Therefore replace it with `u32` in all logging calls.
+
+```diff
+- defmt::info!("{=u24}", 42);
++ defmt::info!("{=u32}", 42);
+```
+
+> 💡 Use the global search-and-replace here as well!
 
 ---
 
 TODO
 
 - [ ] `#505`: Logger trait v2
-- [ ] `#521`: [3/n] Remove u24
+- [x] `#521`: [3/n] Remove u24
 - [x] `#522`: Replace `µs` hint with `us`
 - [ ] `#508`: [5/n] Format trait v2
   - no Write trait anymore
