@@ -61,15 +61,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.2.3] - 2021-06-17
 
-- [#488] Structure `impl Format`s into multiple files
-- [#496] Bump build-dep `semver` to  `1.0`
-- [#497] `macros`: match unused vars if logging is disabled
-- [#489] Structure lib
+### Added
+
 - [#499] Illustrate structure of the defmt crates
-- [#500] book: fix leftover old formatting syntax; typos
 - [#503] Add alternate hint ('#')
 - [#509] `impl Format for NonZero*`
+
+### Changed
+
+- [#488] Structure `impl Format`s into multiple files
+- [#496] Bump build-dep `semver` to  `1.0`
+- [#489] Structure lib
+- [#500] book: fix leftover old formatting syntax; typos
 - [#510] `CI`: Don't install MacOS dependency which is included by default
+
+### Fixed
+
+- [#497] `macros`: match unused vars if logging is disabled
 
 [#488]: https://github.com/knurling-rs/defmt/pull/488
 [#496]: https://github.com/knurling-rs/defmt/pull/496
@@ -83,12 +91,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.2.2] - 2021-05-20
 
+### Added
+
 - [#446] Add usage examples for `Debug2Format`, `Display2Format`
 - [#464] `impl<T> Format for {*const, *mut} T where T: Format + ?Sized`
 - [#472] `impl Format for` the core::{iter, ops, slice} structs
 - [#473] `impl Format for` all the `Cow`s
-- [#477] Disable logging calls via conditional compilation when all defmt features are disabled
 - [#478] add `dbg!` macro
+
+### Changed
+
+- [#477] Disable logging calls via conditional compilation when all defmt features are disabled
 
 [#446]: https://github.com/knurling-rs/defmt/pull/446
 [#464]: https://github.com/knurling-rs/defmt/pull/464
@@ -100,9 +113,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v0.2.1] - 2021-03-08
 
 ### Added
+
 - [#403] Add knurling logo to API docs
 
 ### Fixed
+
 - [#413] Fix docs-rs build, by disabling feature "unstable-test"
 - [#427] Drop outdated note about `defmt v0.2.0` from book
 
