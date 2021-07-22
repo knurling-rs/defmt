@@ -47,6 +47,10 @@ unsafe impl defmt::Logger for Logger {
         unsafe { ENCODER.start_frame(do_write) }
     }
 
+    unsafe fn flush() {
+        todo!()
+    }
+
     unsafe fn release() {
         // safety: accessing the `static mut` is OK because we have disabled interrupts.
         ENCODER.end_frame(do_write);

@@ -277,6 +277,10 @@ pub use defmt_macros::write;
 /// # todo!()
 ///         // ...
 ///     }
+///     unsafe fn flush() {
+///         # todo!()
+///         // ...
+///     }
 ///     unsafe fn release() {
 /// # todo!()
 ///         // ...
@@ -351,13 +355,10 @@ pub use defmt_macros::bitflags;
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use defmt_macros::Format;
 
-#[export_name = "__defmt_default_timestamp"]
-fn default_timestamp(_f: Formatter<'_>) {
-    // By default, no timestamp is used.
-}
-
 // There is no default timestamp format. Instead, the decoder looks for a matching ELF symbol. If
 // absent, timestamps are turned off.
+#[export_name = "__defmt_default_timestamp"]
+fn default_timestamp(_f: Formatter<'_>) {}
 
 #[export_name = "__defmt_default_panic"]
 fn default_panic() -> ! {

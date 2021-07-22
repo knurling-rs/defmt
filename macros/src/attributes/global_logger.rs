@@ -44,6 +44,11 @@ fn codegen(strukt: &ItemStruct) -> TokenStream {
         }
 
         #[no_mangle]
+        unsafe fn _defmt_flush()  {
+            <#ident as defmt::Logger>::flush()
+        }
+
+        #[no_mangle]
         unsafe fn _defmt_release()  {
             <#ident as defmt::Logger>::release()
         }
