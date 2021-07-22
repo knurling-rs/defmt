@@ -82,10 +82,8 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
         0 // default behavior is the same as no zero-padding.
     };
 
-    if s.starts_with(BITFLAGS_HINT_START) {
-        let parts = s[BITFLAGS_HINT_START.len()..]
-            .split('@')
-            .collect::<Vec<_>>();
+    if let Some(stripped) = s.strip_prefix(BITFLAGS_HINT_START) {
+        let parts = stripped.split('@').collect::<Vec<_>>();
         match *parts {
             [bitflags_name, package, disambiguator] => {
                 return Some(DisplayHint::Bitflags {
