@@ -48,7 +48,8 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn flush() {
-        todo!()
+        // SAFETY: if we get here, the global logger mutex is currently acquired
+        handle().flush();
     }
 
     unsafe fn release() {
@@ -98,7 +99,7 @@ impl Channel {
         // NOTE `flags` is modified by the host after RAM initialization while the device is halted
         // it cannot otherwise be modified so we don't need to check its state more often than
         // just here
-        if self.flags.load(Ordering::Relaxed) == BLOCK_IF_FULL {
+        if host_is_connected(self) {
             while !bytes.is_empty() {
                 let consumed = self.blocking_write(bytes);
                 if consumed != 0 {
@@ -176,6 +177,18 @@ impl Channel {
 
         len
     }
+
+    fn flush(&self) {
+        // return early, if host is disconnected
+        if !host_is_connected(self) {
+            return;
+        }
+
+        // busy wait, until the read- catches up with the write-pointer
+        let read = || self.read.load(Ordering::Relaxed);
+        let write = || self.write.load(Ordering::Relaxed);
+        while read() != write() {}
+    }
 }
 
 // make sure we only get shared references to the header/channel (avoid UB)
@@ -209,4 +222,8 @@ unsafe fn handle() -> &'static Channel {
     static NAME: &[u8] = b"defmt\0";
 
     &_SEGGER_RTT.up_channel
+}
+
+fn host_is_connected(channel: &Channel) -> bool {
+    channel.flags.load(Ordering::Relaxed) == BLOCK_IF_FULL
 }
