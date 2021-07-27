@@ -20,6 +20,12 @@ extern crate alloc;
 
 // This must be in the root lib.rs, otherwise it doesn't appear in the final binary.
 
+/// The defmt ABI and wire format version.
+///
+/// This number has to be updated every time there is a backwards-incompatible change to
+/// - the symbol naming scheme
+/// - the symbol and section layout
+/// - the data encoding / wire format
 #[used]
 #[cfg_attr(target_os = "macos", link_section = ".defmt,end.VERSION")]
 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
