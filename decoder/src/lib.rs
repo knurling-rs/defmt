@@ -14,7 +14,7 @@
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 mod decoder;
-mod elf2table;
+pub mod elf2table;
 mod frame;
 pub mod log;
 mod stream;
@@ -135,13 +135,16 @@ impl Table {
     /// Parses an ELF file and returns the decoded `defmt` table.
     ///
     /// This function returns `None` if the ELF file contains no `.defmt` section.
-    pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+    // hier
+    pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> { // hier anderer error?
+        println!("inside parse (decoder)");
         parse_impl(elf, true)
     }
 
     /// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
     ///
     /// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage data.
+    // brauchen wir das wenn aus qemu oder print kommend?
     pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
         parse_impl(elf, false)
     }

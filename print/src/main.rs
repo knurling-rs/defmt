@@ -1,11 +1,7 @@
-use std::{
-    env, fs,
-    io::{self, Read},
-    path::PathBuf,
-};
+use std::{env, fmt::Error, fs, io::{self, Read}, path::PathBuf};
 
 use anyhow::anyhow;
-use defmt_decoder::Table;
+use defmt_decoder::{Table, elf2table::VersionError};
 use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
@@ -40,9 +36,21 @@ fn main() -> anyhow::Result<()> {
 
     let bytes = fs::read(&opts.elf.unwrap())?;
 
-    let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
-    let locs = table.get_locations(&bytes)?;
+    // let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
+    let table = Table::parse(&bytes);
+    if let Err(ref e) = table {
+        if e.is::<VersionError>() {
+            println!("Version Error");
+            println!("Error e: {}", e);
+            // what should happen here?
+        } else {
+            anyhow!(".defmt data not found");
+        }
+    };
 
+    let table = table?.unwrap();
+    
+    let locs = table.get_locations(&bytes)?;
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
         Some(locs)
     } else {
@@ -109,6 +117,7 @@ fn main() -> anyhow::Result<()> {
 #[allow(clippy::unnecessary_wraps)]
 fn print_version() -> anyhow::Result<()> {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    println!("gettin here!!!!");
     println!("supported defmt version: {}", defmt_decoder::DEFMT_VERSION);
     Ok(())
 }

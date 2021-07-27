@@ -18,7 +18,10 @@ use crate::{BitflagsKey, Encoding, StringEntry, Table, TableEntry, Tag, DEFMT_VE
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection, ObjectSymbol};
 
+// brauchen wir anderen return type? unseren fehler?
+// wahrscheinlich nicht, result ist die version? version wovon?
 pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
+    println!("inside parse_impl (decoder)");
     let elf = object::File::parse(elf)?;
     // first pass to extract the `_defmt_version`
     let mut version = None;
@@ -62,7 +65,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     new_version
                 ));
             }
-            version = Some(new_version);
+            version = Some(new_version); // defmt version
+            // println!("version: {:?}", version);
+            // version: Some("0.2")
         }
 
         if let Some(new_encoding) = try_get_encoding(name) {
@@ -96,6 +101,8 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     };
 
     if check_version {
+        println!("inside check_version (decoder)");
+        println!("version {}", &version);
         self::check_version(&version).map_err(anyhow::Error::msg)?;
     }
 
@@ -201,7 +208,10 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     }));
 }
 
+// funktion, in der der error erzeugt wird
+// version of the symbol table == defmt version?
 /// Checks if the version encoded in the symbol table is compatible with this version of the `decoder` crate
+// version ist defmt version
 fn check_version(version: &str) -> Result<(), VersionError> {
     format!("version: {}", version);
     enum Kind {
@@ -224,17 +234,14 @@ fn check_version(version: &str) -> Result<(), VersionError> {
     // that has a variant that indicates a version mismatch. 
     // Then the calling binary can print its own message.
     if version != DEFMT_VERSION {
-        let bla = format!("version: {}", version);
-        let blub = format!("DEFMT_VERSION: {}", DEFMT_VERSION);
-        // Error:
         let mut msg = format!(
             "defmt version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: ",
             // "es passiert doch??? {}, {}",
             version, DEFMT_VERSION
         );
 
-        msg.push_str(&bla);
-        msg.push_str(&blub);
+        // msg.push_str(&bla);
+        // msg.push_str(&blub);
 
         let git_sem = "git_sem: migrate your firmware to a crates.io version of defmt (check https://https://defmt.ferrous-systems.com) OR `cargo install` a _git_ version of `probe-run`: `cargo install --git https://github.com/knurling-rs/probe-run --branch main`";
         // jetzt diese version:
@@ -268,6 +275,7 @@ panic-probe = {{ git = \"https://github.com/knurling-rs/defmt\", features = [\"p
 
 ////////
 #[derive(Debug, Eq, PartialEq)]
+// pub enum VersionError<T: Debug> {
 pub enum VersionError {
     GitToGit,
     GitToSemver,
@@ -278,10 +286,10 @@ pub enum VersionError {
 impl fmt::Display for VersionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VersionError::GitToGit => f.write_str(""),
-            VersionError::GitToSemver => f.write_str(""),
-            VersionError::SemverToSemver => f.write_str(""),
-            VersionError::SemverToGit => f.write_str(""),
+            VersionError::GitToGit => f.write_str("git_git"),
+            VersionError::GitToSemver => f.write_str("git_sem"),
+            VersionError::SemverToSemver => f.write_str("sem_sem"),
+            VersionError::SemverToGit => f.write_str("sem_git"), // aktueller fehler
         }
     }
 }
