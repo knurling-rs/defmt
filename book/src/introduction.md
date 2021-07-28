@@ -47,3 +47,13 @@ Sponsors].
 [Knurling]: https://knurling.ferrous-systems.com/
 [Ferrous Systems]: https://ferrous-systems.com/
 [GitHub Sponsors]: https://github.com/sponsors/knurling-rs
+
+
+<!-- git commit & date are injected in this block -->
+<div style="font-size: 0.75em;">
+  <center>
+    <code>
+      VERSION-PLACEHOLDER
+    </code>
+  </center>
+</div>
