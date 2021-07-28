@@ -53,7 +53,7 @@ Sponsors].
 <div style="font-size: 0.75em;">
   <center>
     <code>
-      VERSION-PLACEHOLDER
+      {{ #include ../version.md }}
     </code>
   </center>
 </div>

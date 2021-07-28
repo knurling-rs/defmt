@@ -4,6 +4,3 @@ language = "en"
 multilingual = false
 src = "src"
 title = "defmt book"
-
-[preprocessor.generate-version]
-command = """sh -c 'jq ".[1]"; sed -i .bak "s/VERSION-PLACEHOLDER/commit: $(git rev-parse --short HEAD), compiled at $(git show -s --format="%ci" HEAD | cut -d" " -f1-2)/" src/introduction.md'"""
