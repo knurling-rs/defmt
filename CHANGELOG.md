@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#]
+- [#551]: Display git version & date to introduction section r=justahero a=jonas-schievink
+- [#540]: Separate "crate version" from "wire format version r=jonas-schievink a=Dirbaio
+- [#549]: Fix clippy warnings. r=Urhengulas a=Urhengulas
 - [#545]: Revert "`build.rs`: Obtain version from macro; simplify" r=Urhengulas a=Urhengulas
 - [#539]: Add optional rzCOBS encoding+framing r=japaric a=Dirbaio
 - [#518]: `build.rs`: Obtain version from macro; simplify r=Urhengulas a=Urhengulas
@@ -15,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#538]: Fix wrong bit count in comment. r=Urhengulas a=Dirbaio
 - [#537]: `snapshot-tests`: Delete `:?` hint without impact r=Urhengulas a=Urhengulas
 - [#531]: refactor the `macros` crate r=japaric a=japaric
+- [#534]: Attribute test progress message to the test in question; r=japaric a=jonas-schievink
 - [#535]: Don't print leading space when timestamp is absent r=japaric a=jonas-schievink
 - [#529]: Refactor user-guide of `book` r=Urhengulas a=Urhengulas
 - [#528]: Support bitflags r=japaric a=jonas-schievink
@@ -33,6 +38,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#507]: [2/n] - Remove code-size-costly optimizations r=jonas-schievink a=Dirbaio
 - [#505]: [1/n] - Logger trait v2. r=jonas-schievink a=Dirbaio
 
+[#551]: https://github.com/knurling-rs/defmt/pull/551
+[#540]: https://github.com/knurling-rs/defmt/pull/540
+[#549]: https://github.com/knurling-rs/defmt/pull/549
 [#545]: https://github.com/knurling-rs/defmt/pull/545
 [#539]: https://github.com/knurling-rs/defmt/pull/539
 [#518]: https://github.com/knurling-rs/defmt/pull/518
@@ -40,6 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#542]: https://github.com/knurling-rs/defmt/pull/542
 [#538]: https://github.com/knurling-rs/defmt/pull/538
 [#537]: https://github.com/knurling-rs/defmt/pull/537
+[#534]: https://github.com/knurling-rs/defmt/pull/534
 [#531]: https://github.com/knurling-rs/defmt/pull/531
 [#535]: https://github.com/knurling-rs/defmt/pull/535
 [#529]: https://github.com/knurling-rs/defmt/pull/529
