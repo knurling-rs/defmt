@@ -24,3 +24,9 @@ non_zero! {num::NonZeroU32, "{=u32}"}
 non_zero! {num::NonZeroU64, "{=u64}"}
 non_zero! {num::NonZeroU128, "{=u128}"}
 non_zero! {num::NonZeroUsize, "{=usize}"}
+
+impl Format for num::TryFromIntError {
+    fn format(&self, fmt: Formatter) {
+        crate::write!(fmt, "TryFromIntError(())");
+    }
+}
