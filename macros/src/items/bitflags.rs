@@ -61,7 +61,8 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
 fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
     input
         .flags()
-        .map(|flag| {
+        .enumerate()
+        .map(|(i, flag)| {
             let cfg_attrs = flag.cfg_attrs();
             let var_name = &flag.ident();
             let value = &flag.value();
@@ -69,7 +70,7 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
 
             let sym_name = construct::mangled_symbol_name(
                 "bitflags_value",
-                &format!("{}::{}", input.ident(), flag.ident()),
+                &format!("{}::{}::{}", input.ident(), i, flag.ident()),
             );
 
             quote! {

@@ -161,8 +161,10 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     log::debug!("bitflags value `{}` has value {:#x}", sym.data(), value);
 
                     let segments = sym.data().split("::").collect::<Vec<_>>();
-                    let (bitflags_name, value_name) = match &*segments {
-                        [bitflags_name, value_name] => (*bitflags_name, *value_name),
+                    let (bitflags_name, value_idx, value_name) = match &*segments {
+                        [bitflags_name, value_idx, value_name] => {
+                            (*bitflags_name, value_idx.parse::<u128>()?, *value_name)
+                        }
                         _ => bail!("malformed bitflags value string '{}'", sym.data()),
                     };
 
@@ -172,10 +174,11 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                         disambig: sym.disambiguator().into(),
                     };
 
-                    bitflags_map
-                        .entry(key)
-                        .or_insert_with(Vec::new)
-                        .push((value_name.into(), value));
+                    bitflags_map.entry(key).or_insert_with(Vec::new).push((
+                        value_name.into(),
+                        value_idx,
+                        value,
+                    ));
                 }
                 symbol::SymbolTag::Defmt(tag) => {
                     map.insert(
@@ -191,10 +194,26 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         }
     }
 
+    // Sort bitflags values by the value's index in definition order. Since all values get their own
+    // symbol and section, their order in the final binary is unspecified and can't be relied on, so
+    // we put them back in the original order here.
+    let bitflags = bitflags_map
+        .into_iter()
+        .map(|(k, mut values)| {
+            values.sort_by_key(|(_, index, _)| *index);
+            let values = values
+                .into_iter()
+                .map(|(name, _index, value)| (name, value))
+                .collect();
+
+            (k, values)
+        })
+        .collect();
+
     Ok(Some(Table {
         entries: map,
         timestamp,
-        bitflags: bitflags_map,
+        bitflags,
         encoding,
     }))
 }
