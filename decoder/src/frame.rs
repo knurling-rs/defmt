@@ -226,8 +226,6 @@ impl<'t> Frame<'t> {
                 };
                 match self.table.bitflags.get(&key) {
                     Some(flags) => {
-                        // FIXME flag print order does not match definition order
-                        // (does some part of the toolchain alphabetically sort them?)
                         let set_flags = flags
                             .iter()
                             .filter(|(_, value)| {
