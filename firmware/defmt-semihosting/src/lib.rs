@@ -38,7 +38,10 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn flush() {
-        todo!()
+        // Do nothing.
+        //
+        // semihosting is fundamentally blocking, and does not have I/O buffers the target can control.
+        // After write returns, the host has the data, so there's nothing left to flush.
     }
 
     unsafe fn release() {
