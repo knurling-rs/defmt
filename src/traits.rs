@@ -62,6 +62,16 @@ pub trait Format {
 
 /// Global logger acquire-release mechanism
 ///
+/// This trait's methods will be called by the defmt logging macros to transmit the
+/// encoded log data over the wire. The call order is:
+/// - One `acquire()` call to start the log frame.
+/// - Multiple `write()` calls, with fragments of the log frame data each.
+/// - One `release()` call.
+///
+/// The data passed to `write()` is *unencoded*. Implementations MUST encode it with `Encoder`
+/// prior to sending it over the wire. The simplest way is for `acquire()` to call `Encoder::start_frame()`,
+/// `write()` to call `Encoder::write()`, and `release()` to call `Encoder::end_frame()`.
+///
 /// The global logger can be acquired once for each "execution context". The definition
 /// of execution context is up to the implementation. For example, it can be:
 ///
@@ -81,10 +91,14 @@ pub trait Format {
 pub unsafe trait Logger {
     /// Acquire the global logger in the current execution context.
     ///
+    /// This will be called by the defmt logging macros before writing each log frame.
+    ///
     /// Panics if already acquired in the current execution context. Otherwise it must never fail.
     fn acquire();
 
     /// Releases the global logger in the current execution context.
+    ///
+    /// This will be called by the defmt logging macros after writing each log frame.
     ///
     /// # Safety
     /// Must be called exactly once for each acquire(), in the same execution context.
@@ -92,8 +106,11 @@ pub unsafe trait Logger {
 
     /// Writes `bytes` to the destination.
     ///
-    /// This will be called by the defmt logging macros to transmit encoded data. The write
-    /// operation must not fail.
+    /// This will be called by the defmt logging macros to transmit frame data. The write
+    /// operation must not fail. One log frame may cause multiple `write` calls.
+    ///
+    /// The `bytes` are unencoded log frame data, they MUST be encoded with `Encoder` prior to
+    /// sending over the wire.
     ///
     /// Note that a call to `write` does *not* correspond to a defmt logging macro invocation. A
     /// single `defmt::info!` call can result in an arbitrary number of `write` calls.
