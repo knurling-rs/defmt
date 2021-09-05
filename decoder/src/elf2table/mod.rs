@@ -38,7 +38,8 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         }
     };
 
-    // No need to remove quotes for `_defmt_encoding_`, since it's
+    // No need to remove quotes for `_defmt_encoding_`, since it's defined in Rust code
+    // using `#[export_name = "_defmt_encoding_ = x"]`, never in linker scripts.
     let try_get_encoding = |name: &str| {
         name.strip_prefix("_defmt_encoding_ = ")
             .map(ToString::to_string)
