@@ -8,6 +8,15 @@
 //! // src/main.rs or src/bin/my-app.rs
 //! use defmt_rtt as _;
 //! ```
+//!
+//! # Blocking/Non-blocking
+//!
+//! `probe-run` puts RTT into blocking-mode, to avoid loosing data.
+//!
+//! As an effect this implementation may block forever if `probe-run` disconnects on runtime. This
+//! is because the RTT buffer will fill up and writing will eventually halt the program execution.
+//! 
+//! `defmt::flush` would also block forever in that case.
 
 #![no_std]
 
