@@ -16,7 +16,11 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use cortex_m::{interrupt, itm, peripheral::ITM, register};
+use cortex_m::{
+    asm, interrupt, itm,
+    peripheral::{itm::Stim, ITM},
+    register,
+};
 
 #[cfg(armv6m)]
 compile_error!(
@@ -65,7 +69,11 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn flush() {
-        todo!()
+        // wait for the queue to be able to accept more data
+        while !stim_0().is_fifo_ready() {}
+
+        // delay "a bit" to drain the queue
+        asm::delay(100); // TODO: how long does it take to drain?
     }
 
     unsafe fn release() {
@@ -88,5 +96,13 @@ unsafe impl defmt::Logger for Logger {
 fn do_write(bytes: &[u8]) {
     // NOTE(unsafe) this function will be invoked *after* `enable` has run so this crate now has
     // ownership over the ITM thus it's OK to instantiate the ITM register block here
-    unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
+    unsafe { itm::write_all(stim_0(), bytes) }
+}
+
+/// Get access to stimulus port 0
+///
+/// # Safety
+/// Can only be invoked *after* `enable` has run
+unsafe fn stim_0<'a>() -> &'a mut Stim {
+    &mut (*ITM::PTR).stim[0]
 }
