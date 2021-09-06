@@ -412,13 +412,14 @@ impl fmt::Display for DisplayFrame<'_> {
                 format!(
                     "{} ",
                     self.frame
-                        .format_args(&fmt, &self.frame.timestamp_args, None,)
+                        .format_args(fmt, &self.frame.timestamp_args, None,),
                 )
             })
             .unwrap_or_default();
+
         let args = self
             .frame
-            .format_args(&self.frame.format, &self.frame.args, None);
+            .format_args(self.frame.format, &self.frame.args, None);
 
         write!(f, "{}{} {}", timestamp, level, args)
     }

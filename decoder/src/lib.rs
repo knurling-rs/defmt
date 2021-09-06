@@ -52,6 +52,8 @@ pub enum Tag {
 
     /// `static` containing a possible value of a bitflags type.
     BitflagsValue,
+    /// Format string created by `defmt::println!`.
+    Println,
 
     Trace,
     Debug,

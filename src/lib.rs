@@ -218,6 +218,13 @@ pub use defmt_macros::panic_handler;
 /// [`Str`]: struct.Str.html
 pub use defmt_macros::intern;
 
+/// Always logs data irrespective of log level.
+///
+/// Please refer to [the manual] for documentation on the syntax.
+///
+/// [the manual]: https://defmt.ferrous-systems.com/macros.html
+pub use defmt_macros::println;
+
 /// Logs data at *debug* level.
 ///
 /// Please refer to [the manual] for documentation on the syntax.
