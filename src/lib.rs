@@ -320,17 +320,13 @@ pub use defmt_macros::timestamp;
 ///
 /// # Limitations
 ///
-/// To integrate with defmt, this macro imposes a few minor limitations on the input that do not
-/// apply when using the `bitflags` crate directly:
-///
-/// - The macro only supports Rust's built-in unsigned types. Custom types are not supported.
-///
-/// - When defining bitflags constants, you cannot refer to the `Self` type. Instead, spell out the
-///   name of the bitflags struct.
+/// This macro only supports bitflags structs represented as one of Rust's built-in unsigned integer
+/// types (`u8`, `u16`, `u32`, `u64`, or `u128`). Custom types are not supported. This restriction
+/// is necessary to support defmt's efficient encoding.
 ///
 /// # Examples
 ///
-/// The example from the bitflags crate works with a minor modification:
+/// The example from the bitflags crate works as-is:
 ///
 /// ```
 /// defmt::bitflags! {
@@ -338,8 +334,7 @@ pub use defmt_macros::timestamp;
 ///         const A = 0b00000001;
 ///         const B = 0b00000010;
 ///         const C = 0b00000100;
-///         // Uses `Flags` instead of `Self`
-///         const ABC = Flags::A.bits | Flags::B.bits | Flags::C.bits;
+///         const ABC = Self::A.bits | Self::B.bits | Self::C.bits;
 ///     }
 /// }
 ///

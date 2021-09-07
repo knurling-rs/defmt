@@ -78,10 +78,6 @@ impl Flag {
     pub(super) fn ident(&self) -> &Ident {
         &self.ident
     }
-
-    pub(super) fn value(&self) -> &Expr {
-        &self.value
-    }
 }
 
 fn extract_cfgs(attrs: &[Attribute]) -> Vec<Attribute> {
