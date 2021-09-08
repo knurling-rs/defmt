@@ -73,6 +73,7 @@ unsafe impl defmt::Logger for Logger {
         while !stim_0().is_fifo_ready() {}
 
         // delay "a bit" to drain the queue
+        // This is a heuristic and might be too short in reality. Please open an issue if it is!
         asm::delay(100); // TODO: how long does it take to drain?
     }
 
