@@ -22,6 +22,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     error::Error,
     fmt, io,
+    str::FromStr,
 };
 
 use byteorder::{ReadBytesExt, LE};
@@ -119,6 +120,18 @@ struct BitflagsKey {
 enum Encoding {
     Raw,
     Rzcobs,
+}
+
+impl FromStr for Encoding {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "raw" => Ok(Encoding::Raw),
+            "rzcobs" => Ok(Encoding::Rzcobs),
+            _ => anyhow::bail!("Unknown defmt encoding '{}' specified. This is a bug.", s),
+        }
+    }
 }
 
 /// Internal table that holds log levels and maps format strings to indices

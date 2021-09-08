@@ -13,7 +13,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{BitflagsKey, Encoding, StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
+use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSION};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection, ObjectSymbol};
 
@@ -99,11 +99,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     }
 
     let encoding = match encoding {
-        Some(e) => match &e[..] {
-            "raw" => Encoding::Raw,
-            "rzcobs" => Encoding::Rzcobs,
-            _ => bail!("Unknown defmt encoding '{}' specified. This is a bug.", e),
-        },
+        Some(e) => e.parse()?,
         None => bail!("No defmt encoding specified. This is a bug."),
     };
 
