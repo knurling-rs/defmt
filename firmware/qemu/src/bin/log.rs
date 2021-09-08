@@ -657,6 +657,12 @@ fn main() -> ! {
     struct NotFormatType;
     defmt::info!("{}", 0xCCBBAADD as *mut NotFormatType);
 
+    // tests for `defmt::flush()`
+    defmt::info!("log data: {}", 0xABCD);
+    defmt::info!("flush! 🚽");
+    defmt::flush();
+    defmt::info!("log more data! 🎉");
+
     defmt::info!("QEMU test finished!");
 
     loop {
