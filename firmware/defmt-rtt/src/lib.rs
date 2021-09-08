@@ -11,7 +11,7 @@
 //!
 //! # Blocking/Non-blocking
 //!
-//! `probe-run` puts RTT into blocking-mode, to avoid loosing data.
+//! `probe-run` puts RTT into blocking-mode, to avoid losing data.
 //!
 //! As an effect this implementation may block forever if `probe-run` disconnects on runtime. This
 //! is because the RTT buffer will fill up and writing will eventually halt the program execution.
