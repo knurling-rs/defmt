@@ -277,6 +277,10 @@ pub use defmt_macros::write;
 /// # todo!()
 ///         // ...
 ///     }
+///     unsafe fn flush() {
+///         # todo!()
+///         // ...
+///     }
 ///     unsafe fn release() {
 /// # todo!()
 ///         // ...
@@ -346,15 +350,37 @@ pub use defmt_macros::bitflags;
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use defmt_macros::Format;
 
-#[export_name = "__defmt_default_timestamp"]
-fn default_timestamp(_f: Formatter<'_>) {
-    // By default, no timestamp is used.
-}
-
 // There is no default timestamp format. Instead, the decoder looks for a matching ELF symbol. If
 // absent, timestamps are turned off.
+#[export_name = "__defmt_default_timestamp"]
+fn default_timestamp(_f: Formatter<'_>) {}
 
 #[export_name = "__defmt_default_panic"]
 fn default_panic() -> ! {
     core::panic!()
+}
+
+/// Block until host has read all pending data.
+///
+/// The flush operation will not fail, but might not succeed in flushing _all_ pending data. It is
+/// implemented as a "best effort" operation.
+///
+/// This calls the method `flush` of the used "global [`Logger`]". The logger is likely provided by
+/// [`defmt-rtt`](https://crates.io/crates/defmt-rtt) or [`defmt-itm`](https://crates.io/crates/defmt-itm).
+pub fn flush() {
+    extern "Rust" {
+        fn _defmt_acquire();
+        fn _defmt_flush();
+        fn _defmt_release();
+    }
+    // SAFETY:
+    // * we call these function in the correct order: first acquire the lock, then flush and
+    //   finally release the lock
+    // * these function should be provided by the macro `#[global_logger]` and therefore
+    //   trustworthy to call through FFI-bounds
+    unsafe {
+        _defmt_acquire();
+        _defmt_flush();
+        _defmt_release()
+    }
 }

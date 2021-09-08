@@ -96,6 +96,15 @@ pub unsafe trait Logger {
     /// Panics if already acquired in the current execution context. Otherwise it must never fail.
     fn acquire();
 
+    /// Block until host has read all pending data.
+    ///
+    /// The flush operation must not fail. This is a "best effort" operation, I/O errors should be discarded.
+    ///
+    /// # Safety
+    /// Must only be called when the global logger is acquired in the current execution context.
+    /// (i.e. between `acquire()` and `release()`).
+    unsafe fn flush();
+
     /// Releases the global logger in the current execution context.
     ///
     /// This will be called by the defmt logging macros after writing each log frame.
@@ -106,8 +115,9 @@ pub unsafe trait Logger {
 
     /// Writes `bytes` to the destination.
     ///
-    /// This will be called by the defmt logging macros to transmit frame data. The write
-    /// operation must not fail. One log frame may cause multiple `write` calls.
+    /// This will be called by the defmt logging macros to transmit frame data. One log frame may cause multiple `write` calls.
+    ///
+    /// The write operation must not fail. This is a "best effort" operation, I/O errors should be discarded.
     ///
     /// The `bytes` are unencoded log frame data, they MUST be encoded with `Encoder` prior to
     /// sending over the wire.
@@ -117,6 +127,6 @@ pub unsafe trait Logger {
     ///
     /// # Safety
     /// Must only be called when the global logger is acquired in the current execution context.
-    /// (i.e. between acquire() and release())
+    /// (i.e. between `acquire()` and `release()`).
     unsafe fn write(bytes: &[u8]);
 }

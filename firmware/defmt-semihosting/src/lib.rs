@@ -37,6 +37,13 @@ unsafe impl defmt::Logger for Logger {
         unsafe { ENCODER.start_frame(do_write) }
     }
 
+    unsafe fn flush() {
+        // Do nothing.
+        //
+        // semihosting is fundamentally blocking, and does not have I/O buffers the target can control.
+        // After write returns, the host has the data, so there's nothing left to flush.
+    }
+
     unsafe fn release() {
         // safety: accessing the `static mut` is OK because we have disabled interrupts.
         ENCODER.end_frame(do_write);
