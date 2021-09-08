@@ -48,25 +48,6 @@ pub fn acquire() {
 }
 
 #[cfg(feature = "unstable-test")]
-pub fn flush() {}
-
-#[cfg(not(feature = "unstable-test"))]
-#[inline(never)]
-pub fn flush() {
-    extern "Rust" {
-        fn _defmt_acquire();
-        fn _defmt_flush();
-        fn _defmt_release();
-    }
-    // SAFETY: ...
-    unsafe {
-        _defmt_acquire();
-        _defmt_flush();
-        _defmt_release()
-    }
-}
-
-#[cfg(feature = "unstable-test")]
 pub fn release() {}
 
 #[cfg(not(feature = "unstable-test"))]

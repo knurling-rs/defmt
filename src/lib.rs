@@ -364,3 +364,33 @@ fn default_timestamp(_f: Formatter<'_>) {}
 fn default_panic() -> ! {
     core::panic!()
 }
+
+/// Block until host has read all pending data.
+///
+/// The flush operation will not fail, but might not succeed in flushing _all_ pending data. It is
+/// implemented as a "best effort" operation.
+///
+/// This calls the method `flush` of the used "global [`Logger`]". The logger is likely provided by
+/// [`defmt-rtt`](https://crates.io/crates/defmt-rtt) or [`defmt-itm`](https://crates.io/crates/defmt-itm).
+#[cfg(not(feature = "unstable-test"))]
+#[inline(never)]
+pub fn flush() {
+    extern "Rust" {
+        fn _defmt_acquire();
+        fn _defmt_flush();
+        fn _defmt_release();
+    }
+    // SAFETY:
+    // * we call these function in the correct order: first acquire the lock, then flush and
+    //   finally release the lock
+    // * these function should be provided by the macro `#[global_logger]` and therefore
+    //   trustworthy to call through FFI-bounds
+    unsafe {
+        _defmt_acquire();
+        _defmt_flush();
+        _defmt_release()
+    }
+}
+
+#[cfg(feature = "unstable-test")]
+pub fn flush() {}
