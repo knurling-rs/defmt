@@ -15,7 +15,7 @@
 //!
 //! As an effect this implementation may block forever if `probe-run` disconnects on runtime. This
 //! is because the RTT buffer will fill up and writing will eventually halt the program execution.
-//! 
+//!
 //! `defmt::flush` would also block forever in that case.
 
 #![no_std]
@@ -105,22 +105,17 @@ const NOBLOCK_TRIM: usize = 1;
 
 impl Channel {
     fn write_all(&self, mut bytes: &[u8]) {
-        // NOTE `flags` is modified by the host after RAM initialization while the device is halted
-        // it cannot otherwise be modified so we don't need to check its state more often than
-        // just here
-        if host_is_connected(self) {
-            while !bytes.is_empty() {
-                let consumed = self.blocking_write(bytes);
-                if consumed != 0 {
-                    bytes = &bytes[consumed..];
-                }
-            }
-        } else {
-            while !bytes.is_empty() {
-                let consumed = self.nonblocking_write(bytes);
-                if consumed != 0 {
-                    bytes = &bytes[consumed..];
-                }
+        // the host-connection-status is only modified after RAM initialization while the device is
+        // halted, so we only need to check it once before the write-loop
+        let write = match host_is_connected(self) {
+            true => Channel::blocking_write,
+            false => Channel::nonblocking_write,
+        };
+
+        while !bytes.is_empty() {
+            let consumed = write(self, bytes);
+            if consumed != 0 {
+                bytes = &bytes[consumed..];
             }
         }
     }
@@ -234,5 +229,6 @@ unsafe fn handle() -> &'static Channel {
 }
 
 fn host_is_connected(channel: &Channel) -> bool {
+    // we assume that a host is connected if we are in blocking-mode. this is what probe-run does.
     channel.flags.load(Ordering::Relaxed) == BLOCK_IF_FULL
 }
