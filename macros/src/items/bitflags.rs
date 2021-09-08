@@ -64,9 +64,9 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
         .enumerate()
         .map(|(i, flag)| {
             let cfg_attrs = flag.cfg_attrs();
-            let var_name = &flag.ident();
-            let value = &flag.value();
-            let repr_ty = &input.ty();
+            let var_name = flag.ident();
+            let struct_name = input.ident();
+            let repr_ty = input.ty();
 
             let sym_name = construct::mangled_symbol_name(
                 "bitflags_value",
@@ -83,7 +83,7 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
                     // causes a value such as `1 << 127` to be evaluated as an `i32`, which
                     // overflows. So we instead coerce (but don't cast) it to the bitflags' raw
                     // type, and then cast that to u128.
-                    let coerced_value: #repr_ty = #value;
+                    let coerced_value: #repr_ty = #struct_name::#var_name.bits;
                     coerced_value as u128
                 };
             }

@@ -15,6 +15,8 @@ bitflags! {
         const FLAG_2 = 0b10;
         const FLAG_7 = 1 << 7;
 
+        const FLAG_7_COPY = Self::FLAG_7.bits;
+
         #[cfg(never)]
         const CFGD_OUT = 1;
     }
