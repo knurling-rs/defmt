@@ -1,7 +1,5 @@
-// TODO use `proc_macro_error` crate
-use std::panic as abort_call_site;
-
 use defmt_parser::Level;
+use proc_macro_error::abort_call_site;
 use syn::Ident;
 
 // None = "off" pseudo-level
