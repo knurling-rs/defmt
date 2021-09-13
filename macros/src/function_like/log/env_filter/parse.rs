@@ -14,8 +14,13 @@ pub(crate) fn defmt_log(input: &str) -> impl Iterator<Item = Entry> + '_ {
     input.rsplit(',').map(|entry| {
         if let Some((path, log_level)) = entry.rsplit_once('=') {
             let module_path = ModulePath::parse(path);
-            let log_level = parse_log_level(log_level)
-                .unwrap_or_else(|_| abort_call_site!("unknown log level `{}`", log_level));
+            let log_level = parse_log_level(log_level).unwrap_or_else(|_| {
+                abort_call_site!(
+                    "unknown log level `{}` in DEFMT_LOG env var. \
+                     expected one of: off, error, info, warn, debug, trace",
+                    log_level
+                )
+            });
 
             Entry::ModulePathLogLevel {
                 module_path,
@@ -42,14 +47,16 @@ pub(crate) enum Entry {
 impl ModulePath {
     pub(crate) fn from_crate_name(input: &str) -> Self {
         if input.is_empty() && input.contains("::") {
-            abort_call_site!("crate name cannot be an empty string or contain path separators")
+            abort_call_site!(
+                "DEFMT_LOG env var: crate name cannot be an empty string or contain path separators"
+            )
         }
         Self::parse(input)
     }
 
     fn parse(input: &str) -> Self {
         if input.is_empty() {
-            abort_call_site!("module path cannot be an empty string")
+            abort_call_site!("DEFMT_LOG env var: module path cannot be an empty string")
         }
 
         input.split("::").for_each(validate_identifier);
