@@ -6,99 +6,39 @@ pub trait Truncate<U> {
     fn truncate(self) -> U;
 }
 
-impl Truncate<u8> for u8 {
-    fn truncate(self) -> u8 {
-        self
-    }
+macro_rules! impl_truncate {
+    ($t:ty, $u:ty) => {
+        impl Truncate<$t> for $u {
+            fn truncate(self) -> $t {
+                self as $t
+            }
+        }
+    };
 }
 
-impl Truncate<u8> for u16 {
-    fn truncate(self) -> u8 {
-        self as u8
-    }
-}
-
-impl Truncate<u8> for u32 {
-    fn truncate(self) -> u8 {
-        self as u8
-    }
-}
-
-impl Truncate<u8> for u64 {
-    fn truncate(self) -> u8 {
-        self as u8
-    }
-}
-
-impl Truncate<u8> for u128 {
-    fn truncate(self) -> u8 {
-        self as u8
-    }
-}
+impl_truncate!(u8, u8);
+impl_truncate!(u8, u16);
+impl_truncate!(u8, u32);
+impl_truncate!(u8, u64);
+impl_truncate!(u8, u128);
 
 // needed so we can call truncate() without having to check whether truncation is necessary first
-impl Truncate<u16> for u16 {
-    fn truncate(self) -> u16 {
-        self
-    }
-}
-
-impl Truncate<u16> for u32 {
-    fn truncate(self) -> u16 {
-        self as u16
-    }
-}
-
-impl Truncate<u16> for u64 {
-    fn truncate(self) -> u16 {
-        self as u16
-    }
-}
-
-impl Truncate<u16> for u128 {
-    fn truncate(self) -> u16 {
-        self as u16
-    }
-}
+impl_truncate!(u16, u16);
+impl_truncate!(u16, u32);
+impl_truncate!(u16, u64);
+impl_truncate!(u16, u128);
 
 // needed so we can call truncate() without having to check whether truncation is necessary first
-impl Truncate<u32> for u32 {
-    fn truncate(self) -> u32 {
-        self
-    }
-}
-
-impl Truncate<u32> for u64 {
-    fn truncate(self) -> u32 {
-        self as u32
-    }
-}
-
-impl Truncate<u32> for u128 {
-    fn truncate(self) -> u32 {
-        self as u32
-    }
-}
+impl_truncate!(u32, u32);
+impl_truncate!(u32, u64);
+impl_truncate!(u32, u128);
 
 // needed so we can call truncate() without having to check whether truncation is necessary first
-impl Truncate<u64> for u64 {
-    fn truncate(self) -> u64 {
-        self
-    }
-}
-
-impl Truncate<u64> for u128 {
-    fn truncate(self) -> u64 {
-        self as u64
-    }
-}
+impl_truncate!(u64, u64);
+impl_truncate!(u64, u128);
 
 // needed so we can call truncate() without having to check whether truncation is necessary first
-impl Truncate<u128> for u128 {
-    fn truncate(self) -> u128 {
-        self
-    }
-}
+impl_truncate!(u128, u128);
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct NoneError;
