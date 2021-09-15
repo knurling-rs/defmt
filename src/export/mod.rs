@@ -1,9 +1,11 @@
+mod integers;
 mod sealed;
 
 use core::fmt::Write as _;
 
 use crate::{Format, Formatter, Str};
 
+pub use self::integers::*;
 pub use bitflags::bitflags;
 
 pub trait UnsignedInt {}
@@ -128,72 +130,12 @@ pub fn fmt<T: Format + ?Sized>(f: &T) {
 }
 
 /// Implementation detail
-pub fn i8(b: &i8) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn i16(b: &i16) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn i32(b: &i32) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn i64(b: &i64) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn i128(b: &i128) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn isize(b: &isize) {
-    write(&(*b as i32).to_le_bytes())
-}
-
-/// Implementation detail
 pub fn fmt_slice<T: Format>(values: &[T]) {
     usize(&values.len());
     istr(&T::_format_tag());
     for value in values {
         value._format_data();
     }
-}
-
-/// Implementation detail
-pub fn u8(b: &u8) {
-    write(&[*b])
-}
-
-/// Implementation detail
-pub fn u16(b: &u16) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn u32(b: &u32) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn u64(b: &u64) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn u128(b: &u128) {
-    write(&b.to_le_bytes())
-}
-
-/// Implementation detail
-pub fn usize(b: &usize) {
-    write(&(*b as u32).to_le_bytes())
 }
 
 /// Implementation detail
