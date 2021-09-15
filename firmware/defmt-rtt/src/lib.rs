@@ -97,11 +97,17 @@ struct Channel {
     size: usize,
     write: AtomicUsize,
     read: AtomicUsize,
+    /// Channel properties.
+    ///
+    /// Currently, only the lowest 2 bits are used to set the channel mode (see constants below).
     flags: AtomicUsize,
 }
 
-const BLOCK_IF_FULL: usize = 2;
-const NOBLOCK_TRIM: usize = 1;
+const MODE_MASK: usize = 0b11;
+/// Block the application if the RTT buffer is full, wait for the host to read data.
+const MODE_BLOCK_IF_FULL: usize = 2;
+/// Don't block if the RTT buffer is full. Truncate data to output as much as fits.
+const MODE_NON_BLOCKING_TRIM: usize = 1;
 
 impl Channel {
     fn write_all(&self, mut bytes: &[u8]) {
@@ -215,7 +221,7 @@ unsafe fn handle() -> &'static Channel {
             size: SIZE,
             write: AtomicUsize::new(0),
             read: AtomicUsize::new(0),
-            flags: AtomicUsize::new(NOBLOCK_TRIM),
+            flags: AtomicUsize::new(MODE_NON_BLOCKING_TRIM),
         },
     };
 
@@ -230,5 +236,5 @@ unsafe fn handle() -> &'static Channel {
 
 fn host_is_connected(channel: &Channel) -> bool {
     // we assume that a host is connected if we are in blocking-mode. this is what probe-run does.
-    channel.flags.load(Ordering::Relaxed) == BLOCK_IF_FULL
+    channel.flags.load(Ordering::Relaxed) & MODE_MASK == MODE_BLOCK_IF_FULL
 }
