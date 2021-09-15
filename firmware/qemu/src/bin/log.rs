@@ -475,6 +475,7 @@ fn main() -> ! {
 
     // Debug adapter
     {
+        #[allow(dead_code)]
         #[derive(Clone, Copy, Debug)]
         struct S {
             x: i8,
