@@ -1,4 +1,4 @@
-#[cfg(all(feature = "encoding-raw", feature = "encoding-rzcrawobs"))]
+#[cfg(all(feature = "encoding-raw", feature = "encoding-rzcobs"))]
 compile_error!("Multiple `encoding-*` features are enabled. You may only enable one.");
 
 #[cfg_attr(feature = "encoding-raw", path = "raw.rs")]
