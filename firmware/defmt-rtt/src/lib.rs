@@ -20,20 +20,18 @@
 
 #![no_std]
 
-use core::{
-    ptr,
-    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
-};
+mod channel;
+
+use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use cortex_m::{interrupt, register};
 
-// TODO make configurable
-// NOTE use a power of 2 for best performance
-const SIZE: usize = 1024;
+use crate::channel::Channel;
 
 #[defmt::global_logger]
 struct Logger;
 
+/// Global logger lock.
 static TAKEN: AtomicBool = AtomicBool::new(false);
 static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
 static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
@@ -90,116 +88,15 @@ struct Header {
     up_channel: Channel,
 }
 
-#[repr(C)]
-struct Channel {
-    name: *const u8,
-    buffer: *mut u8,
-    size: usize,
-    write: AtomicUsize,
-    read: AtomicUsize,
-    /// Channel properties.
-    ///
-    /// Currently, only the lowest 2 bits are used to set the channel mode (see constants below).
-    flags: AtomicUsize,
-}
-
 const MODE_MASK: usize = 0b11;
 /// Block the application if the RTT buffer is full, wait for the host to read data.
 const MODE_BLOCK_IF_FULL: usize = 2;
 /// Don't block if the RTT buffer is full. Truncate data to output as much as fits.
 const MODE_NON_BLOCKING_TRIM: usize = 1;
 
-impl Channel {
-    fn write_all(&self, mut bytes: &[u8]) {
-        // the host-connection-status is only modified after RAM initialization while the device is
-        // halted, so we only need to check it once before the write-loop
-        let write = match host_is_connected(self) {
-            true => Channel::blocking_write,
-            false => Channel::nonblocking_write,
-        };
-
-        while !bytes.is_empty() {
-            let consumed = write(self, bytes);
-            if consumed != 0 {
-                bytes = &bytes[consumed..];
-            }
-        }
-    }
-
-    fn blocking_write(&self, bytes: &[u8]) -> usize {
-        if bytes.is_empty() {
-            return 0;
-        }
-
-        let read = self.read.load(Ordering::Relaxed);
-        let write = self.write.load(Ordering::Acquire);
-        let available = if read > write {
-            read - write - 1
-        } else if read == 0 {
-            SIZE - write - 1
-        } else {
-            SIZE - write
-        };
-
-        if available == 0 {
-            return 0;
-        }
-
-        let cursor = write;
-        let len = bytes.len().min(available);
-
-        unsafe {
-            if cursor + len > SIZE {
-                // split memcpy
-                let pivot = SIZE - cursor;
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
-                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
-            } else {
-                // single memcpy
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
-            }
-        }
-        self.write
-            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
-
-        len
-    }
-
-    fn nonblocking_write(&self, bytes: &[u8]) -> usize {
-        let write = self.write.load(Ordering::Acquire);
-        let cursor = write;
-        // NOTE truncate at SIZE to avoid more than one "wrap-around" in a single `write` call
-        let len = bytes.len().min(SIZE);
-
-        unsafe {
-            if cursor + len > SIZE {
-                // split memcpy
-                let pivot = SIZE - cursor;
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
-                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
-            } else {
-                // single memcpy
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
-            }
-        }
-        self.write
-            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
-
-        len
-    }
-
-    fn flush(&self) {
-        // return early, if host is disconnected
-        if !host_is_connected(self) {
-            return;
-        }
-
-        // busy wait, until the read- catches up with the write-pointer
-        let read = || self.read.load(Ordering::Relaxed);
-        let write = || self.write.load(Ordering::Relaxed);
-        while read() != write() {}
-    }
-}
+// TODO make configurable
+// NOTE use a power of 2 for best performance
+const SIZE: usize = 1024;
 
 // make sure we only get shared references to the header/channel (avoid UB)
 /// # Safety
@@ -232,9 +129,4 @@ unsafe fn handle() -> &'static Channel {
     static NAME: &[u8] = b"defmt\0";
 
     &_SEGGER_RTT.up_channel
-}
-
-fn host_is_connected(channel: &Channel) -> bool {
-    // we assume that a host is connected if we are in blocking-mode. this is what probe-run does.
-    channel.flags.load(Ordering::Relaxed) & MODE_MASK == MODE_BLOCK_IF_FULL
 }
