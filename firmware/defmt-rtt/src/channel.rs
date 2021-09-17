@@ -22,7 +22,7 @@ impl Channel {
     pub fn write_all(&self, mut bytes: &[u8]) {
         // the host-connection-status is only modified after RAM initialization while the device is
         // halted, so we only need to check it once before the write-loop
-        let write = match host_is_connected(self) {
+        let write = match self.host_is_connected() {
             true => Channel::blocking_write,
             false => Channel::nonblocking_write,
         };
@@ -99,7 +99,7 @@ impl Channel {
 
     pub fn flush(&self) {
         // return early, if host is disconnected
-        if !host_is_connected(self) {
+        if !self.host_is_connected() {
             return;
         }
 
@@ -108,9 +108,9 @@ impl Channel {
         let write = || self.write.load(Ordering::Relaxed);
         while read() != write() {}
     }
-}
 
-fn host_is_connected(channel: &Channel) -> bool {
-    // we assume that a host is connected if we are in blocking-mode. this is what probe-run does.
-    channel.flags.load(Ordering::Relaxed) & MODE_MASK == MODE_BLOCK_IF_FULL
+    fn host_is_connected(&self) -> bool {
+        // we assume that a host is connected if we are in blocking-mode. this is what probe-run does.
+        self.flags.load(Ordering::Relaxed) & MODE_MASK == MODE_BLOCK_IF_FULL
+    }
 }
