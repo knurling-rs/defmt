@@ -42,8 +42,6 @@ use crate::{export, Formatter, Str};
 ///     }
 /// }
 /// ```
-///
-/// Note that [`write!`] can only be called once, as it consumes the [`Formatter`].
 pub trait Format {
     /// Writes the defmt representation of `self` to `fmt`.
     fn format(&self, fmt: Formatter);
