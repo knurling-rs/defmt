@@ -28,10 +28,6 @@ use cortex_m::{interrupt, register};
 
 use crate::channel::Channel;
 
-// TODO make configurable
-// NOTE use a power of 2 for best performance
-const SIZE: usize = 1024;
-
 #[defmt::global_logger]
 struct Logger;
 
@@ -97,6 +93,10 @@ const MODE_MASK: usize = 0b11;
 const MODE_BLOCK_IF_FULL: usize = 2;
 /// Don't block if the RTT buffer is full. Truncate data to output as much as fits.
 const MODE_NON_BLOCKING_TRIM: usize = 1;
+
+// TODO make configurable
+// NOTE use a power of 2 for best performance
+const SIZE: usize = 1024;
 
 // make sure we only get shared references to the header/channel (avoid UB)
 /// # Safety
