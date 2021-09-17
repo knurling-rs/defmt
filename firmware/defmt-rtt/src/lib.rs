@@ -35,6 +35,7 @@ const SIZE: usize = 1024;
 #[defmt::global_logger]
 struct Logger;
 
+/// Global logger lock.
 static TAKEN: AtomicBool = AtomicBool::new(false);
 static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
 static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
