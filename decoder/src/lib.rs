@@ -743,6 +743,26 @@ mod tests {
     }
 
     #[test]
+    fn decode_with_pipe_symbol() {
+        let entries = vec![
+            TableEntry::new_without_symbol(Tag::Derived, "{}|".to_owned()),
+        ];
+
+        let table = test_table_with_timestamp(entries, "{=u8:us}");
+
+        let bytes = [
+            0, 0, // frame index
+            2, // timestamp value of type `u8`
+            10u8, // "i"
+        ];
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "0.000002 INFO 10|",
+        );
+    }
+
+    #[test]
     fn bools_simple() {
         let bytes = [
             0, 0,          // index
