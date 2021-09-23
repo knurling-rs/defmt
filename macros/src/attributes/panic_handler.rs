@@ -69,6 +69,7 @@ fn codegen(fun: &ItemFn) -> TokenStream {
     quote!(
         #(#attrs)*
         #[export_name = "_defmt_panic"]
+        #[inline(never)]
         fn #ident() -> ! {
             #block
         }

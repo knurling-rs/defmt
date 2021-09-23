@@ -39,7 +39,7 @@ pub fn fetch_bytes() -> Vec<u8> {
 pub fn acquire() {}
 
 #[cfg(not(feature = "unstable-test"))]
-#[inline(never)]
+#[inline(always)]
 pub fn acquire() {
     extern "Rust" {
         fn _defmt_acquire();
@@ -51,7 +51,7 @@ pub fn acquire() {
 pub fn release() {}
 
 #[cfg(not(feature = "unstable-test"))]
-#[inline(never)]
+#[inline(always)]
 pub fn release() {
     extern "Rust" {
         fn _defmt_release();
@@ -65,7 +65,7 @@ pub fn write(bytes: &[u8]) {
 }
 
 #[cfg(not(feature = "unstable-test"))]
-#[inline(never)]
+#[inline(always)]
 pub fn write(bytes: &[u8]) {
     extern "Rust" {
         fn _defmt_write(bytes: &[u8]);
@@ -78,6 +78,7 @@ pub fn write(bytes: &[u8]) {
 pub fn timestamp(_fmt: crate::Formatter<'_>) {}
 
 #[cfg(not(feature = "unstable-test"))]
+#[inline(always)]
 pub fn timestamp(fmt: crate::Formatter<'_>) {
     extern "Rust" {
         fn _defmt_timestamp(_: crate::Formatter<'_>);
@@ -257,6 +258,7 @@ pub fn panic() -> ! {
 }
 
 #[cfg(not(feature = "unstable-test"))]
+#[inline(always)]
 pub fn panic() -> ! {
     extern "Rust" {
         fn _defmt_panic() -> !;
