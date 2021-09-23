@@ -1,4 +1,4 @@
-use std::{process::Command, sync::Mutex};
+use std::{process::Command, str::FromStr, sync::Mutex};
 
 use anyhow::{anyhow, Context};
 use colored::Colorize;
@@ -14,6 +14,50 @@ use crate::utils::{
 };
 
 static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
+
+const ALL_SNAPSHOT_TESTS: [&str; 12] = [
+    "log",
+    "bitflags",
+    "timestamp",
+    "panic",
+    "assert",
+    "assert-eq",
+    "assert-ne",
+    "unwrap",
+    "defmt-test",
+    "hints",
+    "hints_inner",
+    "dbg",
+];
+
+#[derive(Debug, StructOpt)]
+#[allow(clippy::enum_variant_names)]
+enum Snapshot {
+    All,
+    Single { name: String },
+}
+
+impl FromStr for Snapshot {
+    type Err = String;
+
+    fn from_str(source: &str) -> Result<Self, Self::Err> {
+        match source {
+            "all" => Ok(Snapshot::All),
+            test => {
+                if ALL_SNAPSHOT_TESTS.contains(&test) {
+                    Ok(Self::Single {
+                        name: String::from(test),
+                    })
+                } else {
+                    Err(format!(
+                        "Specified test '{}' does not exist, available are: {:?} or 'all'",
+                        test, ALL_SNAPSHOT_TESTS
+                    ))
+                }
+            }
+        }
+    }
+}
 
 #[derive(Debug, StructOpt)]
 struct Options {
@@ -40,6 +84,9 @@ enum TestCommand {
         /// Overwrite the expected output instead of comparing it.
         #[structopt(long)]
         overwrite: bool,
+        /// Runs a single snapshot test in Debug mode
+        #[structopt(long, default_value = "all")]
+        single: Snapshot,
     },
 }
 
@@ -57,11 +104,13 @@ fn main() -> anyhow::Result<()> {
             added_targets = Some(targets::install().expect("Error while installing required targets"));
             match cmd {
                 TestCommand::TestCross => test_cross(),
-                TestCommand::TestSnapshot { overwrite } => test_snapshot(overwrite),
+                TestCommand::TestSnapshot { overwrite, single } => {
+                    test_snapshot(overwrite, single);
+                }
                 TestCommand::TestAll => {
                     test_host(opt.deny_warnings);
                     test_cross();
-                    test_snapshot(false);
+                    test_snapshot(false, Snapshot::All);
                     test_book();
                     test_lint();
                 }
@@ -248,22 +297,22 @@ fn test_cross() {
     )
 }
 
-fn test_snapshot(overwrite: bool) {
+fn test_snapshot(overwrite: bool, snapshot: Snapshot) {
     println!("🧪 qemu/snapshot");
-    let mut tests = vec![
-        "log",
-        "bitflags",
-        "timestamp",
-        "panic",
-        "assert",
-        "assert-eq",
-        "assert-ne",
-        "unwrap",
-        "defmt-test",
-        "hints",
-        "hints_inner",
-        "dbg",
-    ];
+
+    match snapshot {
+        Snapshot::All => test_all_snapshots(overwrite),
+        Snapshot::Single { name } => {
+            do_test(
+                || test_single_snapshot(&name, "", false, overwrite),
+                "qemu/snapshot",
+            );
+        }
+    }
+}
+
+fn test_all_snapshots(overwrite: bool) {
+    let mut tests = ALL_SNAPSHOT_TESTS.iter().cloned().collect::<Vec<_>>();
 
     if rustc_is_nightly() {
         tests.push("alloc");
