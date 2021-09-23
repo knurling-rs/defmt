@@ -662,6 +662,17 @@ fn main() -> ! {
     defmt::flush();
     defmt::info!("log more data! 🎉");
 
+    {
+        struct State;
+        impl Format for State {
+            fn format(&self, fmt: defmt::Formatter) {
+                defmt::write!(fmt, "{}|", 10)
+            }
+        }
+
+        defmt::info!("State: {:?}", State{});
+    }
+
     defmt::info!("QEMU test finished!");
 
     loop {

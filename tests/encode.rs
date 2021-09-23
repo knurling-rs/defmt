@@ -191,6 +191,19 @@ fn single_struct() {
 }
 
 #[test]
+fn format_using_pipe_symbol() {
+    struct State {}
+    impl Format for State {
+        fn format(&self, f: Formatter) {
+            defmt::write!(f, "{}|", 10u8)
+        }
+    }
+
+    let index = fetch_string_index();
+    check_format!(&State {}, [index, 10u8, 0u16]);
+}
+
+#[test]
 fn single_struct_manual() {
     // Above `#[derive]`d impl should be equivalent to this:
     struct X {
