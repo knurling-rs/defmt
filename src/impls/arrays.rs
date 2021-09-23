@@ -2,8 +2,8 @@ use super::*;
 use crate::export;
 
 macro_rules! arrays {
-    ( $($len:literal $fmt:literal,)+ ) => { $(
-        impl<T> Format for [T; $len]
+    ( $($len:literal $fmt:literal,)+ ) => {
+        impl<T, const N: usize> Format for [T; N]
         where
             T: Format
         {
@@ -11,15 +11,23 @@ macro_rules! arrays {
 
             #[inline]
             fn _format_tag() -> Str {
-                internp!($fmt)
+                match N {
+                    $(
+                        $len => internp!($fmt),
+                    )+
+                    _ => internp!("{=[?]}"),
+                }
             }
 
             #[inline]
             fn _format_data(&self) {
-                export::fmt_array(self);
+                match N {
+                    $( $len )|+ => export::fmt_array(self),
+                    _ => export::fmt_slice(self),
+                }
             }
         }
-    )+ };
+    };
 }
 
 arrays! {
