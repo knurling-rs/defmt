@@ -30,6 +30,30 @@ const ALL_SNAPSHOT_TESTS: [&str; 12] = [
     "dbg",
 ];
 
+#[derive(Debug)]
+struct Snapshot(String);
+
+impl Snapshot {
+    pub fn name(&self) -> &str {
+        &self.0
+    }
+}
+
+impl FromStr for Snapshot {
+    type Err = String;
+
+    fn from_str(test: &str) -> Result<Self, Self::Err> {
+        if ALL_SNAPSHOT_TESTS.contains(&test) {
+            Ok(Self(String::from(test)))
+        } else {
+            Err(format!(
+                "Specified test '{}' does not exist, available tests are: {:?}",
+                test, ALL_SNAPSHOT_TESTS
+            ))
+        }
+    }
+}
+
 #[derive(Debug, StructOpt)]
 struct Options {
     #[structopt(subcommand)]
@@ -57,7 +81,7 @@ enum TestCommand {
         overwrite: bool,
         /// Runs a single snapshot test in Debug mode
         #[structopt()]
-        single: Option<String>,
+        single: Option<Snapshot>,
     },
 }
 
@@ -268,14 +292,14 @@ fn test_cross() {
     )
 }
 
-fn test_snapshot(overwrite: bool, snapshot: Option<String>) {
+fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
     println!("🧪 qemu/snapshot");
 
     match snapshot {
         None => test_all_snapshots(overwrite),
-        Some(name) => {
+        Some(snapshot) => {
             do_test(
-                || test_single_snapshot(&name, "", false, overwrite),
+                || test_single_snapshot(&snapshot.name(), "", false, overwrite),
                 "qemu/snapshot",
             );
         }
@@ -283,7 +307,7 @@ fn test_snapshot(overwrite: bool, snapshot: Option<String>) {
 }
 
 fn test_all_snapshots(overwrite: bool) {
-    let mut tests = ALL_SNAPSHOT_TESTS.iter().cloned().collect::<Vec<_>>();
+    let mut tests = ALL_SNAPSHOT_TESTS.to_vec();
 
     if rustc_is_nightly() {
         tests.push("alloc");
