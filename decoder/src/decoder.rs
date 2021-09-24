@@ -73,7 +73,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
         num_elements: usize,
     ) -> Result<Vec<FormatSliceElement<'t>>, DecodeError> {
         let format = self.get_format()?;
-        let is_enum = format.contains('|');
+        let is_enum = is_enum_format(format);
 
         let mut elements = Vec::with_capacity(num_elements);
         for _i in 0..num_elements {
@@ -132,8 +132,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::Format => {
                     let format = self.get_format()?;
 
-                    if format.contains('|') {
-                        // enum
+                    if is_enum_format(format) {
                         let variant = self.get_variant(format)?;
                         let inner_args = self.decode_format(variant)?;
                         args.push(Arg::Format {
@@ -247,8 +246,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                             .get_without_level(index as usize)
                             .map_err(|_| DecodeError::Malformed)?;
 
-                        if format.contains('|') {
-                            // enum
+                        if is_enum_format(format) {
                             let variant = self.get_variant(format)?;
                             let inner_args = self.decode_format(variant)?;
                             seq_args.push(Arg::Format {
@@ -329,6 +327,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 }
 
 /// Checks if the given format contains the pipe symbol (`|`) between a pair of `{}` to indicate enum variants
+/// This algorithm kind of assumets an even number of brackets is a pair of `{{` chars to escape a single bracket.
 fn is_enum_format(format: &str) -> bool {
     let mut brackets = 0usize;
     for char in format.chars() {
@@ -353,6 +352,7 @@ mod tests {
         assert_eq!(false, is_enum_format("|{}"));
         assert_eq!(false, is_enum_format("{=u8}|"));
         assert_eq!(false, is_enum_format("{{ | hello }}"));
+        assert_eq!(true, is_enum_format("State {{ {A | B} }}"));
         assert_eq!(true, is_enum_format("{A | B}"));
     }
 
