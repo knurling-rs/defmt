@@ -328,9 +328,33 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
     params.append(&mut merged_bitfields);
 }
 
+/// Checks if the given format contains the pipe symbol (`|`) between a pair of `{}` to indicate enum variants
+fn is_enum_format(format: &str) -> bool {
+    let mut brackets = 0usize;
+    for char in format.chars() {
+        match char {
+            '{' => brackets += 1,
+            '}' => brackets -= 1,
+            '|' => return brackets % 2 == 1,
+            _ => (),
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_is_enum_format() {
+        assert_eq!(false, is_enum_format("{}"));
+        assert_eq!(false, is_enum_format("|"));
+        assert_eq!(false, is_enum_format("|{}"));
+        assert_eq!(false, is_enum_format("{=u8}|"));
+        assert_eq!(false, is_enum_format("{{ | hello }}"));
+        assert_eq!(true, is_enum_format("{A | B}"));
+    }
 
     #[test]
     fn merge_bitfields_simple() {
