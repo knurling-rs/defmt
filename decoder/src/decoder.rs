@@ -186,7 +186,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                     let string = self
                         .table
-                        .get_without_level(str_index as usize)
+                        .get_without_level(str_index)
                         .map_err(|_| DecodeError::Malformed)?;
 
                     args.push(Arg::IStr(string));
@@ -243,7 +243,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
                         let format = self
                             .table
-                            .get_without_level(index as usize)
+                            .get_without_level(index)
                             .map_err(|_| DecodeError::Malformed)?;
 
                         if is_enum_format(format) {
