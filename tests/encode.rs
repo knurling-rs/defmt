@@ -191,16 +191,24 @@ fn single_struct() {
 }
 
 #[test]
-fn format_using_pipe_symbol() {
+fn format_ignore_pipe_symbol() {
     struct State {}
     impl Format for State {
         fn format(&self, f: Formatter) {
-            defmt::write!(f, "{}|", 10u8)
+            defmt::write!(f, "{=u8}|", 10)
         }
     }
 
     let index = fetch_string_index();
-    check_format!(&State {}, [index, 10u8, 0u16]);
+    check_format!(
+        &State {},
+        [
+            index,         // "{=__internal_FormatSequence}"
+            inc(index, 1), // "{}|"
+            10u8,          // value
+            0u16,          // terminator
+        ]
+    );
 }
 
 #[test]
