@@ -31,35 +31,6 @@ const ALL_SNAPSHOT_TESTS: [&str; 12] = [
 ];
 
 #[derive(Debug, StructOpt)]
-#[allow(clippy::enum_variant_names)]
-enum Snapshot {
-    All,
-    Single { name: String },
-}
-
-impl FromStr for Snapshot {
-    type Err = String;
-
-    fn from_str(source: &str) -> Result<Self, Self::Err> {
-        match source {
-            "all" => Ok(Snapshot::All),
-            test => {
-                if ALL_SNAPSHOT_TESTS.contains(&test) {
-                    Ok(Self::Single {
-                        name: String::from(test),
-                    })
-                } else {
-                    Err(format!(
-                        "Specified test '{}' does not exist, available are: {:?} or 'all'",
-                        test, ALL_SNAPSHOT_TESTS
-                    ))
-                }
-            }
-        }
-    }
-}
-
-#[derive(Debug, StructOpt)]
 struct Options {
     #[structopt(subcommand)]
     cmd: TestCommand,
@@ -85,8 +56,8 @@ enum TestCommand {
         #[structopt(long)]
         overwrite: bool,
         /// Runs a single snapshot test in Debug mode
-        #[structopt(long, default_value = "all")]
-        single: Snapshot,
+        #[structopt()]
+        single: Option<String>,
     },
 }
 
@@ -110,7 +81,7 @@ fn main() -> anyhow::Result<()> {
                 TestCommand::TestAll => {
                     test_host(opt.deny_warnings);
                     test_cross();
-                    test_snapshot(false, Snapshot::All);
+                    test_snapshot(false, None);
                     test_book();
                     test_lint();
                 }
@@ -297,12 +268,12 @@ fn test_cross() {
     )
 }
 
-fn test_snapshot(overwrite: bool, snapshot: Snapshot) {
+fn test_snapshot(overwrite: bool, snapshot: Option<String>) {
     println!("🧪 qemu/snapshot");
 
     match snapshot {
-        Snapshot::All => test_all_snapshots(overwrite),
-        Snapshot::Single { name } => {
+        None => test_all_snapshots(overwrite),
+        Some(name) => {
             do_test(
                 || test_single_snapshot(&name, "", false, overwrite),
                 "qemu/snapshot",
