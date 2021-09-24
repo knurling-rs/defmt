@@ -376,6 +376,8 @@ fn main() -> ! {
         "[(u32,u32);4]: {=?}",
         [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]
     );
+    // No special-cased length, uses const-generic slice fallback
+    defmt::info!("[u8; 33]: {}", [1; 33]);
 
     {
         #[derive(Format)]
