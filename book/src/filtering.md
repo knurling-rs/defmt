@@ -8,42 +8,174 @@
 - `WARN`
 - `ERROR`
 
-By default all logging is *disabled*.
-The amount of logging to perform can be controlled at the *crate* level using the following Cargo features:
+The logging macros `trace!`, `debug!`, `info!`, `warn!` and `error!` match these logging levels.
 
-| Feature         | Log at ...                           |
-| :-------------- | :----------------------------------- |
-| `defmt-trace`   | ... `TRACE` level and up             |
-| `defmt-debug`   | ... `DEBUG` level and up             |
-| `defmt-info`    | ... `INFO` level and up              |
-| `defmt-warn`    | ... `WARN` level and up              |
-| `defmt-error`   | ... `ERROR` level                    |
-| `defmt-default` | ... `INFO`, or `TRACE`, level and up |
+By default, only `ERROR` level messages are emitted.
+All other logging levels are disabled.
 
-These features must only be enabled by the top level *application* crate as shown below.
+Note that `defmt::println!` statements cannot be filtered and are always included in the output.
 
-``` toml
-# Cargo.toml
-[package]
-name = "app"
+## `DEFMT_LOG`
 
-[dependencies]
-usb-device = "0.3.0"
+> if you are already familiar with [`env_logger`] and `RUST_LOG`, `defmt`'s filtering mechanism works very similarly
 
-[features]
-default = [
-  # enable logs of the `usb-device` dependency at the TRACE/INFO level
-  "usb-device/defmt-default",
+[`env_logger`]: https://docs.rs/env_logger/0.9.0/env_logger/
 
-  # enable logs of this crate (`app`) at the TRACE level
-  "defmt-trace",
-]
+To change which logging levels are enabled use the `DEFMT_LOG` environment variable.
+
+``` console
+$ export DEFMT_LOG=warn
+$ cargo build --bin app
+
+$ # OR if using probe-run as the cargo runner you can use
+$ DEFMT_LOG=warn cargo run --bin app
 ```
 
-When only the `defmt-default` feature is enabled for a crate, that crate will:
+`DEFMT_LOG` accepts the following logging levels: `error`, `warn`, `info`, `debug`, `trace`.
+Enabling a logging level also enables higher severity logging levels.
+For example,
 
-- log at the TRACE level and up if `debug-assertions = true` (`dev` profile), or
-- log at the INFO level and up if `debug-assertions = false` (`release` profile)
-- log when using the `println!` macro
+``` rust,ignore
+defmt::trace!("trace");
+defmt::debug!("debug");
+defmt::info!("info");
+defmt::warn!("warn");
+defmt::error!("error");
+```
 
-When any of the other features is enabled the crate will log at that, and higher severity regardless of the state of `debug-assertions` or `defmt-default`.
+``` console
+$ DEFMT_LOG=warn cargo run --bin all-logging-levels
+WARN  warn
+ERROR error
+
+$ DEFMT_LOG=trace cargo run --bin all-logging-levels
+TRACE trace
+DEBUG debug
+INFO  info
+WARN  warn
+ERROR error
+```
+
+## Modules
+
+A different logging level filter can be applied to different modules using *logging directives*.
+A logging directive has the syntax `krate::module::path=level`.
+`DEFMT_LOG` can contain a list of comma separated logging directives.
+
+``` rust,ignore
+// crate-name = app
+
+mod important {
+    pub fn function() {
+        defmt::debug!("important debug");
+        defmt::info!("important info");
+        defmt::warn!("important warn");
+        defmt::error!("important error");
+    }
+}
+
+mod noisy {
+    pub fn function() {
+        defmt::warn!("noisy warn");
+        defmt::error!("noisy error");
+        inner::function();
+    }
+
+    mod inner {
+        pub fn function() {
+            defmt::warn!("inner warn");
+            defmt::error!("inner error");
+        }
+    }
+}
+
+important::function();
+noisy::function();
+```
+
+``` console
+$ DEFMT_LOG=app::important=info,app::noisy=error cargo run --bin app
+INFO  important info
+WARN  important warn
+ERROR important error
+ERROR noisy error
+ERROR inner error
+```
+
+Note that the `app::noisy=error` directive also applies to the internal module `app::noisy::inner`.
+
+### Hyphens
+
+Crate names can have hyphens (`-`) in Cargo metadata, and file paths, but when they appear in logging directives all hyphens must be converted into underscores (`_`).
+
+### Packages vs crates
+
+Do not confuse Cargo package names with crate names.
+A Cargo package can contain more than one crate.
+By default, the main crate has the same name as the package but this can be overridden in `Cargo.toml` (e.g. in the `[lib]` and `[[bin]]` sections).
+
+``` console
+$ cargo new --lib my-package
+
+$ tree my-package
+my-package # package-name = my-package
+├── Cargo.toml
+└── src
+   ├── bin
+   │  └── my-binary.rs # crate-name = my_binary
+   └── lib.rs          # crate-name = my_package
+```
+
+## Overrides
+
+Logging directives that appear later in the list override preceding instances.
+
+``` rust,ignore
+// crate-name = app
+pub fn function() {
+    defmt::trace!("root trace");
+}
+
+mod inner {
+    pub fn function() {
+        defmt::trace!("inner trace");
+        defmt::error!("inner error");
+    }
+}
+
+function();
+inner::function();
+```
+
+``` console
+$ DEFMT_LOG=trace,app::inner=error cargo run --bin app
+TRACE root trace
+ERROR inner error
+```
+
+This is equivalent to saying:
+`app::inner` emits ERROR level log messages and everything else emits TRACE level log messages.
+
+## Disabling logs
+
+The "pseudo" logging level `off` can be used to disable logs globally, per crate or per module.
+
+``` console
+$ # globally disable logs
+$ DEFMT_LOG=off cargo run --bin app
+
+$ # disable logs from the `noisy` crate (dependency)
+$ DEFMT_LOG=trace,noisy=off cargo run --bin app
+
+$ # disable logs from the `noisy` module
+$ DEFMT_LOG=trace,app::noisy=off cargo run --bin app
+```
+
+## Recompilation
+
+It should be noted that `DEFMT_LOG` is a *compile-time* mechanism.
+Changing the contents of `DEFMT_LOG` will cause all crates that depend on `defmt` to be recompiled.
+
+## Default logging level for a crate
+
+At the moment it's **not** possible to set a default logging level, other than ERROR, for a crate.

@@ -42,16 +42,5 @@ Information about how to write a `global_logger` can be found in the [`#[global_
 
 ## Enabling logging
 
-All logging is *disabled* by default.
-Logging can be enabled at the *crate* level.
-At the very least you'll want to enable logging for the top level application crate so we recommend adding `defmt-default` to your crate's `default` feature.
-
-``` toml
-# Cargo.toml
-[features]
-default = [
-  "defmt-default", # <- ADD this feature
-]
-```
-
-More information about log filtering can be found in the [Filtering section](./filtering.md).
+By default, only ERROR level messages are logged.
+To learn how to enable other logging levels and filters logs per modules read the [Filtering section](./filtering.md).
