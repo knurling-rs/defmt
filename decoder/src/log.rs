@@ -75,7 +75,7 @@ impl<'a> DefmtRecord<'a> {
         }
 
         let timestamp = &target[DEFMT_TARGET_MARKER.len()..];
-        (Self{
+        Some(Self {
             timestamp,
             log_record: record,
         })
