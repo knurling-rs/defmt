@@ -3,7 +3,7 @@ use std::{
     ops::Range,
 };
 
-use crate::{Arg, DecodeError, FormatSliceElement, Table};
+use crate::{Arg, DecodeError, FormatSliceElement, Table, Tag};
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
@@ -27,15 +27,20 @@ impl<'t, 'b> Decoder<'t, 'b> {
         params.dedup_by(|a, b| a.index == b.index);
     }
 
-    /// Gets a format string from `bytes` and `table`
-    fn get_format(&mut self) -> Result<&'t str, DecodeError> {
+    /// Gets a format string & its Tag from `bytes` and `table`
+    fn get_format(&mut self) -> Result<(&'t str, &Tag), DecodeError> {
         let index = self.bytes.read_u16::<LE>()? as usize;
         let format = self
             .table
-            .get_without_level(index as usize)
+            .get_without_level(index)
             .map_err(|_| DecodeError::Malformed)?;
 
-        Ok(format)
+        let tag = self
+            .table
+            .get_tag(index)
+            .map_err(|_| DecodeError::Malformed)?;
+
+        Ok((format, tag))
     }
 
     fn get_variant(&mut self, format: &'t str) -> Result<&'t str, DecodeError> {
@@ -72,8 +77,8 @@ impl<'t, 'b> Decoder<'t, 'b> {
         &mut self,
         num_elements: usize,
     ) -> Result<Vec<FormatSliceElement<'t>>, DecodeError> {
-        let format = self.get_format()?;
-        let is_enum = is_enum_format(format);
+        let (format, tag) = self.get_format()?;
+        let is_enum = *tag == Tag::Derived && format.contains('|');
 
         let mut elements = Vec::with_capacity(num_elements);
         for _i in 0..num_elements {
@@ -130,9 +135,9 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::FormatSlice { elements });
                 }
                 Type::Format => {
-                    let format = self.get_format()?;
+                    let (format, tag) = self.get_format()?;
 
-                    if is_enum_format(format) {
+                    if is_enum_format(format, tag) {
                         let variant = self.get_variant(format)?;
                         let inner_args = self.decode_format(variant)?;
                         args.push(Arg::Format {
@@ -246,7 +251,12 @@ impl<'t, 'b> Decoder<'t, 'b> {
                             .get_without_level(index)
                             .map_err(|_| DecodeError::Malformed)?;
 
-                        if is_enum_format(format) {
+                        let tag = self
+                            .table
+                            .get_tag(index)
+                            .map_err(|_| DecodeError::Malformed)?;
+
+                        if is_enum_format(format, tag) {
                             let variant = self.get_variant(format)?;
                             let inner_args = self.decode_format(variant)?;
                             seq_args.push(Arg::Format {
@@ -326,19 +336,9 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
     params.append(&mut merged_bitfields);
 }
 
-/// Checks if the given format contains the pipe symbol (`|`) between a pair of `{}` to indicate enum variants
-/// This algorithm kind of assumets an even number of brackets is a pair of `{{` chars to escape a single bracket.
-fn is_enum_format(format: &str) -> bool {
-    let mut brackets = 0usize;
-    for char in format.chars() {
-        match char {
-            '{' => brackets += 1,
-            '}' => brackets -= 1,
-            '|' => return brackets % 2 == 1,
-            _ => (),
-        }
-    }
-    false
+/// Checks if the given format contains the pipe symbol (`|`) to indicate enum variants
+fn is_enum_format(format: &str, tag: &Tag) -> bool {
+    format.contains('|') && *tag == Tag::Derived
 }
 
 #[cfg(test)]
@@ -347,13 +347,9 @@ mod tests {
 
     #[test]
     fn test_is_enum_format() {
-        assert_eq!(false, is_enum_format("{}"));
-        assert_eq!(false, is_enum_format("|"));
-        assert_eq!(false, is_enum_format("|{}"));
-        assert_eq!(false, is_enum_format("{=u8}|"));
-        assert_eq!(false, is_enum_format("{{ | hello }}"));
-        assert_eq!(true, is_enum_format("State {{ {A | B} }}"));
-        assert_eq!(true, is_enum_format("{A | B}"));
+        assert_eq!(false, is_enum_format("{}", &Tag::Derived));
+        assert_eq!(false, is_enum_format("|", &Tag::Prim));
+        assert_eq!(true, is_enum_format("A | B", &Tag::Derived));
     }
 
     #[test]

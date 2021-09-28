@@ -169,6 +169,11 @@ impl Table {
         Ok((entry.string.tag.to_level(), &entry.string.string))
     }
 
+    fn get_tag(&self, index: usize) -> Result<&Tag, ()> {
+        let entry = self.entries.get(&index).ok_or(())?;
+        Ok(&entry.string.tag)
+    }
+
     fn get_with_level(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
         self._get(index)
     }
