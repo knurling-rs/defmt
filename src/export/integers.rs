@@ -9,11 +9,7 @@ macro_rules! write_to_le_bytes {
     };
 }
 
-/// Implementation detail
-pub fn u8(b: &u8) {
-    write(&[*b])
-}
-
+write_to_le_bytes!(u8);
 write_to_le_bytes!(u16);
 write_to_le_bytes!(u32);
 write_to_le_bytes!(u64);
