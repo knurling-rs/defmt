@@ -47,15 +47,11 @@ mod imp {
         cortex_m::interrupt::disable();
 
         // Guard against infinite recursion, just in case.
-        if PANICKED.load(Ordering::Relaxed) {
-            loop {
-                asm::bkpt();
-            }
+        if !PANICKED.load(Ordering::Relaxed) {
+            PANICKED.store(true, Ordering::Relaxed);
+
+            print(info);
         }
-
-        PANICKED.store(true, Ordering::Relaxed);
-
-        print(info);
 
         // Trigger a `HardFault` via `udf` instruction.
 
