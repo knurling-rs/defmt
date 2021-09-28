@@ -50,6 +50,10 @@ impl Format for NoneError {
     fn _format_data(&self) {}
 }
 
+/// Transform `self` into a `Result`
+///
+/// # Call sites
+/// * [`defmt::unwrap!`]
 pub trait IntoResult {
     type Ok;
     type Error;
