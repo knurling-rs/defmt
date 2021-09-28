@@ -662,7 +662,7 @@ fn main() -> ! {
     defmt::flush();
     defmt::info!("log more data! 🎉");
 
-    // defmt::println!("Hello {}{}", "World", '!');
+    defmt::println!("Hello {}{}", "World", '!');
 
     defmt::info!("QEMU test finished!");
 
