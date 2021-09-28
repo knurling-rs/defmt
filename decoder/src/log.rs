@@ -27,7 +27,7 @@ pub fn log_defmt(
     line: Option<u32>,
     module_path: Option<&str>,
 ) {
-    let level = match frame.level() {
+    let level = match frame.level().expect("log level expected") {
         crate::Level::Trace => Level::Trace,
         crate::Level::Debug => Level::Debug,
         crate::Level::Info => Level::Info,
