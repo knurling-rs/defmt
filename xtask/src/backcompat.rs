@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -129,7 +130,7 @@ fn run_silently(command: &mut Command, err: impl FnOnce() -> anyhow::Error) -> a
 
         if !output.stdout.is_empty() {
             println!(
-                "{}",
+                "stdout:\n{}",
                 std::str::from_utf8(&output.stdout).map_err(|e| anyhow!(
                     "`{}` output is not UTF-8: {}",
                     formatted_command,
@@ -139,8 +140,8 @@ fn run_silently(command: &mut Command, err: impl FnOnce() -> anyhow::Error) -> a
         }
 
         if !output.stderr.is_empty() {
-            eprintln!(
-                "{}",
+            println!(
+                "stderr:\n{}",
                 std::str::from_utf8(&output.stderr).map_err(|e| anyhow!(
                     "`{}` output is not UTF-8: {}",
                     formatted_command,
@@ -148,6 +149,15 @@ fn run_silently(command: &mut Command, err: impl FnOnce() -> anyhow::Error) -> a
                 ))?
             );
         }
+
+        println!(
+            "exit-code: {}",
+            output
+                .status
+                .code()
+                .map(|code| code.to_string().into())
+                .unwrap_or(Cow::Borrowed("non-zero"))
+        );
 
         return Err(err());
     }
