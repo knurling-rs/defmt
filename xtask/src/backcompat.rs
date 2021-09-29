@@ -9,8 +9,8 @@ use tempfile::TempDir;
 
 use crate::{ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
 
-// PR #540
-const BRANCH_UNDER_TEST: &str = "defmt-version-3";
+// PR #564
+const REVISION_UNDER_TEST: &str = "45beb423a5c2b4e6c645ea98b293513a6feadf6d";
 
 // the target name is in `firmware/qemu/.cargo/config.toml` but it'd be hard to extract it from that file
 const RUNNER_ENV_VAR: &str = "CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER";
@@ -88,9 +88,16 @@ fn clone_repo(tempdir: &Path) -> anyhow::Result<()> {
         Command::new("git")
             .arg("clone")
             .arg(repo_path)
-            .args(&["--branch", BRANCH_UNDER_TEST, "."])
+            .arg(".")
             .current_dir(tempdir),
         || anyhow!("`git clone` failed"),
+    )?;
+
+    run_silently(
+        Command::new("git")
+            .args(&["reset", "--hard", REVISION_UNDER_TEST])
+            .current_dir(tempdir),
+        || anyhow!("`git reset` failed"),
     )?;
 
     Ok(())
