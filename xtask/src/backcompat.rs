@@ -19,7 +19,7 @@ const RUNNER_ENV_VAR: &str = "CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER";
 pub fn test() -> anyhow::Result<()> {
     println!("🧪 backcompat");
 
-    println!("building old qemu-run..");
+    println!("building old qemu-run.. (git revision: {})", REVISION_UNDER_TEST);
     let qemu_run = QemuRun::build()?;
 
     for release_mode in [false, true] {
