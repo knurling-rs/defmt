@@ -94,7 +94,7 @@ fn main() -> anyhow::Result<()> {
 
     match opt.cmd {
         TestCommand::TestBook => test_book(),
-        TestCommand::TestBackcompat => backcompat::test()?,
+        TestCommand::TestBackcompat => backcompat::test(),
         TestCommand::TestHost => test_host(opt.deny_warnings),
         TestCommand::TestLint => test_lint(),
 
@@ -110,9 +110,9 @@ fn main() -> anyhow::Result<()> {
                     test_host(opt.deny_warnings);
                     test_cross();
                     test_snapshot(false, None);
+                    backcompat::test();
                     test_book();
                     test_lint();
-                    backcompat::test()?;
                 }
                 _ => unreachable!("get handled in outer `match`"),
             }

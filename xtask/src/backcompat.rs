@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use colored::Colorize as _;
 use tempfile::TempDir;
 
-use crate::{ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
+use crate::{ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
 
 // PR #564
 const REVISION_UNDER_TEST: &str = "45beb423a5c2b4e6c645ea98b293513a6feadf6d";
@@ -16,11 +16,22 @@ const REVISION_UNDER_TEST: &str = "45beb423a5c2b4e6c645ea98b293513a6feadf6d";
 // the target name is in `firmware/qemu/.cargo/config.toml` but it'd be hard to extract it from that file
 const RUNNER_ENV_VAR: &str = "CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER";
 
-pub fn test() -> anyhow::Result<()> {
+pub fn test() {
     println!("🧪 backcompat");
 
     println!("building old qemu-run.. (git revision: {})", REVISION_UNDER_TEST);
-    let qemu_run = QemuRun::build()?;
+    let qemu_run = match QemuRun::build() {
+        Ok(qemu_run) => qemu_run,
+        Err(e) => {
+            // only print build errors so the user can fix those manually if needed
+            eprintln!("error building old qemu-run: {}", e);
+            ALL_ERRORS
+                .lock()
+                .unwrap()
+                .push("backcompat (building qemu-run)".to_string());
+            return;
+        }
+    };
 
     for release_mode in [false, true] {
         for snapshot_test in ALL_SNAPSHOT_TESTS {
@@ -30,8 +41,6 @@ pub fn test() -> anyhow::Result<()> {
             );
         }
     }
-
-    Ok(())
 }
 
 struct QemuRun {
