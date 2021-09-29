@@ -112,6 +112,7 @@ fn main() -> anyhow::Result<()> {
                     test_snapshot(false, None);
                     test_book();
                     test_lint();
+                    backcompat::test()?;
                 }
                 _ => unreachable!("get handled in outer `match`"),
             }
