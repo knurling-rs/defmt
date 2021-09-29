@@ -184,7 +184,9 @@ impl Table {
 
     pub fn indices(&self) -> impl Iterator<Item = usize> + '_ {
         self.entries.iter().filter_map(move |(idx, entry)| {
-            if entry.string.tag.to_level().is_some() {
+            eprintln!(">>> Table::indices - idx: {} - entry: {:?}", idx, entry);
+
+            if entry.string.tag.to_level().is_some() || entry.string.tag == Tag::Println {
                 Some(*idx)
             } else {
                 None
