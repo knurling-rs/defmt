@@ -1,11 +1,7 @@
 #![no_std]
 #![no_main]
 
-use core::{
-    marker::PhantomData,
-    num,
-    sync::atomic::{AtomicU32, Ordering},
-};
+use core::{marker::PhantomData, num};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
 use defmt::{Debug2Format, Display2Format, Format, Formatter};
@@ -376,6 +372,8 @@ fn main() -> ! {
         "[(u32,u32);4]: {=?}",
         [(1u32, 2u32), (3, 4), (5, 6), (7, 8)]
     );
+    // No special-cased length, uses const-generic slice fallback
+    defmt::info!("[u8; 33]: {}", [1; 33]);
 
     {
         #[derive(Format)]
@@ -692,9 +690,6 @@ impl Format for True {
         defmt::write!(fmt, "{=bool}", true);
     }
 }
-
-static COUNT: AtomicU32 = AtomicU32::new(0);
-defmt::timestamp!("{=u32:us}", COUNT.fetch_add(1, Ordering::Relaxed));
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
 #[cfg(target_os = "none")]

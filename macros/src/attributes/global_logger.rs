@@ -38,21 +38,25 @@ fn codegen(strukt: &ItemStruct) -> TokenStream {
         #(#attrs)*
         #vis struct #ident;
 
+        #[inline(never)]
         #[no_mangle]
         unsafe fn _defmt_acquire()  {
             <#ident as defmt::Logger>::acquire()
         }
 
+        #[inline(never)]
         #[no_mangle]
         unsafe fn _defmt_flush()  {
             <#ident as defmt::Logger>::flush()
         }
 
+        #[inline(never)]
         #[no_mangle]
         unsafe fn _defmt_release()  {
             <#ident as defmt::Logger>::release()
         }
 
+        #[inline(never)]
         #[no_mangle]
         unsafe fn _defmt_write(bytes: &[u8])  {
             <#ident as defmt::Logger>::write(bytes)

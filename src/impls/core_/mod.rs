@@ -5,6 +5,7 @@
 //! We generally keep the type parameter trait bounds in case it becomes possible to use this
 //! later, without making a backwards-incompatible change.
 
+mod alloc_;
 mod array;
 mod num;
 mod ops;

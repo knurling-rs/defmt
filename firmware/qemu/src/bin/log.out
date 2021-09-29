@@ -1,146 +1,147 @@
-0.000000 INFO Hello!
-0.000001 INFO World!
-0.000002 INFO The answer is 42
-0.000003 INFO Hello 42 42!
-0.000004 INFO Hello 256 42 false
-0.000005 INFO 🍕 slice [3, 14]
-0.000006 INFO 🍕 array [3, 14, 1]
-0.000007 INFO float like a butterfly 5.67 5.67
-0.000008 INFO double like a butterfly 5.000000000000067 5.000000000000067
-0.000009 INFO Hello 42
-0.000010 INFO u64: 0 = 0, 1 = 1, MAX = 18446744073709551615, MIN = 0
-0.000011 INFO i64: 0 = 0, -1 = -1, MAX = 9223372036854775807, MIN = -9223372036854775808
-0.000012 INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
-0.000013 INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
-0.000014 INFO usize: 0 = 0, MAX = 4294967295
-0.000015 INFO bitfields 6 2
-0.000016 TRACE log trace
-0.000017 DEBUG log debug
-0.000018 INFO log info
-0.000019 WARN log warn
-0.000020 ERROR log error
-0.000021 INFO S { x: 1, y: 256 }
-0.000022 INFO X { y: Y { z: 42 } }
-0.000023 INFO &str = string slice
-0.000024 INFO &str = string slice
-0.000025 INFO &Str = interned string
-0.000026 INFO &Str = interned string
-0.000027 INFO Arr { arr1: [31], arr0: [], arr32: [85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85] }
-0.000028 INFO [256, 257, 258]
-0.000029 INFO [S { x: 128, y: 256 }, S { x: 129, y: 257 }]
-0.000030 INFO [X { y: Y { z: 128 } }, X { y: Y { z: 129 } }]
-0.000031 INFO [[256, 257, 258], [259, 260]]
-0.000032 INFO e1=A
-0.000033 INFO e2=B
-0.000034 INFO e3=Some(42)
-0.000035 INFO e4=None
-0.000036 INFO e5=Ok(42)
-0.000037 INFO e6=Err(256)
-0.000038 INFO e7=Some(X { y: Y { z: 42 } })
-0.000039 INFO true Flags { a: true, b: false, c: true }
-0.000040 INFO [true, true, false]
-0.000041 INFO usize slice: [1, 2, 3]
-0.000042 INFO isize slice: [-1, -2, -3]
-0.000043 INFO S { x: 42, y: 43 }
-0.000044 INFO S { x: 44, y: 45 }
-0.000045 INFO S { x: 46, y: Some(47) }
-0.000046 INFO S { x: Some(48), y: 49 }
-0.000047 INFO A
-0.000048 INFO B(42)
-0.000049 INFO C { y: 43 }
-0.000050 INFO A
-0.000051 INFO B(44)
-0.000052 INFO C { y: 45 }
-0.000053 INFO A
-0.000054 INFO B(Some(46))
-0.000055 INFO C { y: Ok(47) }
-0.000056 INFO A
-0.000057 INFO B(Some(48))
-0.000058 INFO C { y: 49 }
-0.000059 INFO [None, Some(42)]
-0.000060 INFO [Ok(42), Err(43)]
-0.000061 INFO [A, B(42)]
-0.000062 INFO [S { x: 42, y: None }, S { x: 43, y: Some(44) }]
-0.000063 INFO [None, Some(S { x: 42, y: 256 })]
-0.000064 INFO [None, Some([42, 43])]
-0.000065 INFO in nested 123
-0.000066 INFO after nested log: NestedStruct { a: 170, b: 305419896 }
-0.000067 INFO I can now print the @ symbol!
-0.000068 INFO @nd @lso vi@ interned strings: this is @n interned string
-0.000069 INFO empty tuple: ()
-0.000070 INFO tuple of ints: (1, 2, 3)
-0.000071 INFO nested tuple of ints: (1, 2, (3, 4, 5), (6, 7, 8))
-0.000072 INFO super nested tuples: (((((((())))))), (((((((), ())))))))
-0.000073 INFO slice of tuples: [(1, 2), (3, 4), (5, 6)]
-0.000074 INFO tuple of slices: ([1, 2, 3], [4, 5, 6])
-0.000075 INFO tuple of [u8;4]: ([1, 2, 3, 4], [5, 6, 7, 8])
-0.000076 INFO [u8;0]: []
-0.000077 INFO [u8;4]: [1, 2, 3, 4]
-0.000078 INFO [i8;4]: [-1, 2, 3, -4]
-0.000079 INFO [(u32,u32);4]: [(1, 2), (3, 4), (5, 6), (7, 8)]
-0.000080 INFO [u8;0]: []
-0.000081 INFO [u8;4]: [1, 2, 3, 4]
-0.000082 INFO [i8;4]: [-1, 2, 3, -4]
-0.000083 INFO [u32;4]: [1, 2, 3, 4]
-0.000084 INFO [i32;4]: [-1, 2, 3, -4]
-0.000085 INFO [[u32;4];4]: [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]]
-0.000086 INFO [Option<u32>;4]: [Some(1), None, Some(3), None]
-0.000087 INFO [(u32,u32);4]: [(1, 2), (3, 4), (5, 6), (7, 8)]
-0.000088 INFO 1-variant enum: A { fld: 123 }
-0.000089 INFO wrapped: A(A { fld: 200 })
-0.000090 INFO (A(true), B(true)), (A(false), B(true)), (A(true), B(false))
-0.000091 INFO true, [1, 2]: DhcpReprMin { broadcast: true, a: [1, 2] }
-0.000092 INFO nested `Format` impls using `write!`: outer value (inner value (42))
-0.000093 INFO manual `Format` impl with multiple `write!`: MyMultiStruct@0 IS ZERO
-0.000094 INFO manual `Format` impl with multiple `write!`: MyMultiStruct@20 IS NOT ZERO, division result: 5
-0.000095 INFO S { x: -1, y: 2 }
-0.000096 INFO Some(S { x: -1, y: 2 })
-0.000097 INFO [S { x: -1, y: 2 }, S { x: -1, y: 2 }]
-0.000098 INFO [Some(S { x: -1, y: 2 }), None]
-0.000099 INFO 127.0.0.1:8888
-0.000100 INFO i128: 0 = 0, -1 = -1, MAX = 170141183460469231731687303715884105727, MIN = -170141183460469231731687303715884105728
-0.000101 INFO u128: 0 = 0, -1 = 1, MAX = 340282366920938463463374607431768211455, MIN = 0
-0.000102 INFO 340282366920938
-0.000103 INFO -170141183460469
-0.000104 INFO Hello 💜
-0.000105 INFO Hello 💜 & 🍕
-0.000106 INFO EnumLarge::A051
-0.000107 INFO EnumLarge::A269
-0.000108 INFO S { x: "hi" }
-0.000109 INFO S { x: PhantomData, y: 42 }
-0.000110 INFO bitfields 97 10000100 12 b"42" b"hello"
-0.000111 INFO b"Hi"
-0.000112 INFO b"Hi"
-0.000113 INFO b"Hi"
-0.000114 INFO [45054, 49406]
-0.000115 INFO [Data { name: b"Hi", value: true }]
-0.000116 INFO true true
-0.000117 INFO aabbccdd
-0.000118 INFO ddccbbaa
-0.000119 INFO 1..2
-0.000120 INFO 1..
-0.000121 INFO ..2
-0.000122 INFO ..
-0.000123 INFO 1..=2
-0.000124 INFO ..=2
-0.000125 INFO Zip(..)
-0.000126 INFO ChunksExact(..)
-0.000127 INFO Iter { slice: [0, 1, 2], position: ? }
-0.000128 INFO Windows(..)
-0.000129 INFO 1
-0.000130 INFO 1
-0.000131 INFO 1
-0.000132 INFO 1
-0.000133 INFO 1
-0.000134 INFO 1
-0.000135 INFO 1
-0.000136 INFO 1
-0.000137 INFO 1
-0.000138 INFO 1
-0.000139 INFO 1
-0.000140 INFO 1
-0.000141 INFO ccbbaadd
-0.000142 INFO log data: 43981
-0.000143 INFO flush! 🚽
-0.000144 INFO log more data! 🎉
-0.000145 INFO QEMU test finished!
+INFO Hello!
+INFO World!
+INFO The answer is 42
+INFO Hello 42 42!
+INFO Hello 256 42 false
+INFO 🍕 slice [3, 14]
+INFO 🍕 array [3, 14, 1]
+INFO float like a butterfly 5.67 5.67
+INFO double like a butterfly 5.000000000000067 5.000000000000067
+INFO Hello 42
+INFO u64: 0 = 0, 1 = 1, MAX = 18446744073709551615, MIN = 0
+INFO i64: 0 = 0, -1 = -1, MAX = 9223372036854775807, MIN = -9223372036854775808
+INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
+INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648
+INFO usize: 0 = 0, MAX = 4294967295
+INFO bitfields 6 2
+TRACE log trace
+DEBUG log debug
+INFO log info
+WARN log warn
+ERROR log error
+INFO S { x: 1, y: 256 }
+INFO X { y: Y { z: 42 } }
+INFO &str = string slice
+INFO &str = string slice
+INFO &Str = interned string
+INFO &Str = interned string
+INFO Arr { arr1: [31], arr0: [], arr32: [85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85] }
+INFO [256, 257, 258]
+INFO [S { x: 128, y: 256 }, S { x: 129, y: 257 }]
+INFO [X { y: Y { z: 128 } }, X { y: Y { z: 129 } }]
+INFO [[256, 257, 258], [259, 260]]
+INFO e1=A
+INFO e2=B
+INFO e3=Some(42)
+INFO e4=None
+INFO e5=Ok(42)
+INFO e6=Err(256)
+INFO e7=Some(X { y: Y { z: 42 } })
+INFO true Flags { a: true, b: false, c: true }
+INFO [true, true, false]
+INFO usize slice: [1, 2, 3]
+INFO isize slice: [-1, -2, -3]
+INFO S { x: 42, y: 43 }
+INFO S { x: 44, y: 45 }
+INFO S { x: 46, y: Some(47) }
+INFO S { x: Some(48), y: 49 }
+INFO A
+INFO B(42)
+INFO C { y: 43 }
+INFO A
+INFO B(44)
+INFO C { y: 45 }
+INFO A
+INFO B(Some(46))
+INFO C { y: Ok(47) }
+INFO A
+INFO B(Some(48))
+INFO C { y: 49 }
+INFO [None, Some(42)]
+INFO [Ok(42), Err(43)]
+INFO [A, B(42)]
+INFO [S { x: 42, y: None }, S { x: 43, y: Some(44) }]
+INFO [None, Some(S { x: 42, y: 256 })]
+INFO [None, Some([42, 43])]
+INFO in nested 123
+INFO after nested log: NestedStruct { a: 170, b: 305419896 }
+INFO I can now print the @ symbol!
+INFO @nd @lso vi@ interned strings: this is @n interned string
+INFO empty tuple: ()
+INFO tuple of ints: (1, 2, 3)
+INFO nested tuple of ints: (1, 2, (3, 4, 5), (6, 7, 8))
+INFO super nested tuples: (((((((())))))), (((((((), ())))))))
+INFO slice of tuples: [(1, 2), (3, 4), (5, 6)]
+INFO tuple of slices: ([1, 2, 3], [4, 5, 6])
+INFO tuple of [u8;4]: ([1, 2, 3, 4], [5, 6, 7, 8])
+INFO [u8;0]: []
+INFO [u8;4]: [1, 2, 3, 4]
+INFO [i8;4]: [-1, 2, 3, -4]
+INFO [(u32,u32);4]: [(1, 2), (3, 4), (5, 6), (7, 8)]
+INFO [u8;0]: []
+INFO [u8;4]: [1, 2, 3, 4]
+INFO [i8;4]: [-1, 2, 3, -4]
+INFO [u32;4]: [1, 2, 3, 4]
+INFO [i32;4]: [-1, 2, 3, -4]
+INFO [[u32;4];4]: [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]]
+INFO [Option<u32>;4]: [Some(1), None, Some(3), None]
+INFO [(u32,u32);4]: [(1, 2), (3, 4), (5, 6), (7, 8)]
+INFO [u8; 33]: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+INFO 1-variant enum: A { fld: 123 }
+INFO wrapped: A(A { fld: 200 })
+INFO (A(true), B(true)), (A(false), B(true)), (A(true), B(false))
+INFO true, [1, 2]: DhcpReprMin { broadcast: true, a: [1, 2] }
+INFO nested `Format` impls using `write!`: outer value (inner value (42))
+INFO manual `Format` impl with multiple `write!`: MyMultiStruct@0 IS ZERO
+INFO manual `Format` impl with multiple `write!`: MyMultiStruct@20 IS NOT ZERO, division result: 5
+INFO S { x: -1, y: 2 }
+INFO Some(S { x: -1, y: 2 })
+INFO [S { x: -1, y: 2 }, S { x: -1, y: 2 }]
+INFO [Some(S { x: -1, y: 2 }), None]
+INFO 127.0.0.1:8888
+INFO i128: 0 = 0, -1 = -1, MAX = 170141183460469231731687303715884105727, MIN = -170141183460469231731687303715884105728
+INFO u128: 0 = 0, -1 = 1, MAX = 340282366920938463463374607431768211455, MIN = 0
+INFO 340282366920938
+INFO -170141183460469
+INFO Hello 💜
+INFO Hello 💜 & 🍕
+INFO EnumLarge::A051
+INFO EnumLarge::A269
+INFO S { x: "hi" }
+INFO S { x: PhantomData, y: 42 }
+INFO bitfields 97 10000100 12 b"42" b"hello"
+INFO b"Hi"
+INFO b"Hi"
+INFO b"Hi"
+INFO [45054, 49406]
+INFO [Data { name: b"Hi", value: true }]
+INFO true true
+INFO aabbccdd
+INFO ddccbbaa
+INFO 1..2
+INFO 1..
+INFO ..2
+INFO ..
+INFO 1..=2
+INFO ..=2
+INFO Zip(..)
+INFO ChunksExact(..)
+INFO Iter { slice: [0, 1, 2], position: ? }
+INFO Windows(..)
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO 1
+INFO ccbbaadd
+INFO log data: 43981
+INFO flush! 🚽
+INFO log more data! 🎉
+INFO QEMU test finished!
