@@ -7,10 +7,10 @@ pub trait Truncate<U> {
 }
 
 macro_rules! impl_truncate {
-    ($($t:ty => $u:ty),*) => {
-        $(impl Truncate<$t> for $u {
-            fn truncate(self) -> $t {
-                self as $t
+    ($($from:ty => $into:ty),*) => {
+        $(impl Truncate<$into> for $from {
+            fn truncate(self) -> $into {
+                self as $into
             }
         })*
     };
@@ -20,19 +20,19 @@ macro_rules! impl_truncate {
 // even if no truncation is performed.
 impl_truncate!(
     u8   => u8,
-    u8   => u16,
-    u8   => u32,
-    u8   => u64,
-    u8   => u128,
+    u16  => u8,
+    u32  => u8,
+    u64  => u8,
+    u128 => u8,
     u16  => u16,
-    u16  => u32,
-    u16  => u64,
-    u16  => u128,
+    u32  => u16,
+    u64  => u16,
+    u128 => u16,
     u32  => u32,
-    u32  => u64,
-    u32  => u128,
+    u64  => u32,
+    u128 => u32,
     u64  => u64,
-    u64  => u128,
+    u128 => u64,
     u128 => u128
 );
 
