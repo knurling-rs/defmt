@@ -1,5 +1,5 @@
 mod integers;
-mod sealed;
+mod traits;
 
 use core::fmt::Write as _;
 
@@ -101,11 +101,11 @@ pub fn make_formatter<'a>() -> Formatter<'a> {
     }
 }
 
-pub fn truncate<T>(x: impl sealed::Truncate<T>) -> T {
+pub fn truncate<T>(x: impl traits::Truncate<T>) -> T {
     x.truncate()
 }
 
-pub fn into_result<T: sealed::IntoResult>(x: T) -> Result<T::Ok, T::Error> {
+pub fn into_result<T: traits::IntoResult>(x: T) -> Result<T::Ok, T::Error> {
     x.into_result()
 }
 
