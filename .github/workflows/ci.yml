@@ -114,7 +114,7 @@ jobs:
       - name: Run QEMU snapshot tests
         run: cargo xtask test-snapshot
 
-  qemu-snapshot:
+  backcompat:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -140,6 +140,7 @@ jobs:
       - lint
       - mdbook
       - qemu-snapshot
+      - backcompat
     runs-on: ubuntu-20.04
     steps:
       - name: CI succeeded
