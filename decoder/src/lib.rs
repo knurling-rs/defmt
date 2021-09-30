@@ -52,6 +52,8 @@ pub enum Tag {
 
     /// `static` containing a possible value of a bitflags type.
     BitflagsValue,
+    /// Format string created by `defmt::println!`.
+    Println,
 
     Trace,
     Debug,
@@ -167,9 +169,8 @@ impl Table {
         Ok((entry.string.tag.to_level(), &entry.string.string))
     }
 
-    fn get_with_level(&self, index: usize) -> Result<(Level, &str), ()> {
-        let (lvl, format) = self._get(index)?;
-        Ok((lvl.ok_or(())?, format))
+    fn get_with_level(&self, index: usize) -> Result<(Option<Level>, &str), ()> {
+        self._get(index)
     }
 
     fn get_without_level(&self, index: usize) -> Result<&str, ()> {
@@ -183,7 +184,7 @@ impl Table {
 
     pub fn indices(&self) -> impl Iterator<Item = usize> + '_ {
         self.entries.iter().filter_map(move |(idx, entry)| {
-            if entry.string.tag.to_level().is_some() {
+            if entry.string.tag.to_level().is_some() || entry.string.tag == Tag::Println {
                 Some(*idx)
             } else {
                 None
@@ -396,7 +397,7 @@ mod tests {
             Ok((
                 Frame::new(
                     &table,
-                    Level::Info,
+                    Some(Level::Info),
                     0,
                     None,
                     vec![],
@@ -417,7 +418,7 @@ mod tests {
             Ok((
                 Frame::new(
                     &table,
-                    Level::Debug,
+                    Some(Level::Debug),
                     1,
                     None,
                     vec![],
@@ -461,7 +462,7 @@ mod tests {
             Ok((
                 Frame::new(
                     &table,
-                    Level::Info,
+                    Some(Level::Info),
                     0,
                     None,
                     vec![],
@@ -505,7 +506,7 @@ mod tests {
             Ok((
                 Frame::new(
                     &table,
-                    Level::Info,
+                    Some(Level::Info),
                     0,
                     None,
                     vec![],
@@ -527,7 +528,7 @@ mod tests {
             Ok((
                 Frame::new(
                     &table,
-                    Level::Info,
+                    Some(Level::Info),
                     1,
                     None,
                     vec![],
@@ -559,7 +560,7 @@ mod tests {
             Ok((
                 Frame::new(
                     &table,
-                    Level::Info,
+                    Some(Level::Info),
                     0,
                     None,
                     vec![],
@@ -597,7 +598,7 @@ mod tests {
             Ok((
                 Frame::new(
                     &table,
-                    Level::Info,
+                    Some(Level::Info),
                     0,
                     None,
                     vec![],

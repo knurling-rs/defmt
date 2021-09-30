@@ -299,7 +299,7 @@ fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
         None => test_all_snapshots(overwrite),
         Some(snapshot) => {
             do_test(
-                || test_single_snapshot(&snapshot.name(), "", false, overwrite),
+                || test_single_snapshot(snapshot.name(), "", false, overwrite),
                 "qemu/snapshot",
             );
         }

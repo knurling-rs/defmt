@@ -113,7 +113,14 @@ pub fn internp(args: TokenStream) -> TokenStream {
     function_like::internp::expand(args)
 }
 
+#[proc_macro]
+#[proc_macro_error]
+pub fn println(args: TokenStream) -> TokenStream {
+    function_like::println::expand(args)
+}
+
 /* ## Logging macros */
+
 #[proc_macro]
 #[proc_macro_error]
 pub fn trace(args: TokenStream) -> TokenStream {

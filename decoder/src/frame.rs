@@ -12,7 +12,7 @@ use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, Type};
 #[derive(Debug, PartialEq)]
 pub struct Frame<'t> {
     table: &'t Table,
-    level: Level,
+    level: Option<Level>,
     index: u64,
     timestamp_format: Option<&'t str>,
     timestamp_args: Vec<Arg<'t>>,
@@ -24,7 +24,7 @@ pub struct Frame<'t> {
 impl<'t> Frame<'t> {
     pub(crate) fn new(
         table: &'t Table,
-        level: Level,
+        level: Option<Level>,
         index: u64,
         timestamp_format: Option<&'t str>,
         timestamp_args: Vec<Arg<'t>>,
@@ -61,7 +61,7 @@ impl<'t> Frame<'t> {
         DisplayMessage { frame: self }
     }
 
-    pub fn level(&self) -> Level {
+    pub fn level(&self) -> Option<Level> {
         self.level
     }
 
@@ -387,22 +387,27 @@ pub struct DisplayFrame<'t> {
 
 impl fmt::Display for DisplayFrame<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let level = if self.colored {
-            match self.frame.level {
-                Level::Trace => "TRACE".dimmed().to_string(),
-                Level::Debug => "DEBUG".normal().to_string(),
-                Level::Info => "INFO".green().to_string(),
-                Level::Warn => "WARN".yellow().to_string(),
-                Level::Error => "ERROR".red().to_string(),
-            }
+        let level = if let Some(level) = self.frame.level {
+            let level = if self.colored {
+                match level {
+                    Level::Trace => "TRACE".dimmed().to_string(),
+                    Level::Debug => "DEBUG".normal().to_string(),
+                    Level::Info => "INFO".green().to_string(),
+                    Level::Warn => "WARN".yellow().to_string(),
+                    Level::Error => "ERROR".red().to_string(),
+                }
+            } else {
+                match level {
+                    Level::Trace => "TRACE".to_string(),
+                    Level::Debug => "DEBUG".to_string(),
+                    Level::Info => "INFO".to_string(),
+                    Level::Warn => "WARN".to_string(),
+                    Level::Error => "ERROR".to_string(),
+                }
+            };
+            format!("{} ", level)
         } else {
-            match self.frame.level {
-                Level::Trace => "TRACE".to_string(),
-                Level::Debug => "DEBUG".to_string(),
-                Level::Info => "INFO".to_string(),
-                Level::Warn => "WARN".to_string(),
-                Level::Error => "ERROR".to_string(),
-            }
+            "".to_string()
         };
 
         let timestamp = self
@@ -412,14 +417,15 @@ impl fmt::Display for DisplayFrame<'_> {
                 format!(
                     "{} ",
                     self.frame
-                        .format_args(&fmt, &self.frame.timestamp_args, None,)
+                        .format_args(fmt, &self.frame.timestamp_args, None,),
                 )
             })
             .unwrap_or_default();
+
         let args = self
             .frame
-            .format_args(&self.frame.format, &self.frame.args, None);
+            .format_args(self.frame.format, &self.frame.args, None);
 
-        write!(f, "{}{} {}", timestamp, level, args)
+        write!(f, "{}{}{}", timestamp, level, args)
     }
 }

@@ -11,6 +11,8 @@ use defmt_semihosting as _; // global logger
 fn main() -> ! {
     defmt::info!("test {=bool}", true);
 
+    defmt::println!("Hello {}{}", "World", '!');
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

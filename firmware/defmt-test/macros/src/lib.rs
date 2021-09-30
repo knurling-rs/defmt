@@ -210,7 +210,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 test.func.sig.ident
             );
             quote_spanned! {
-                test.func.sig.ident.span() => defmt::info!(#message, __defmt_test_number, __DEFMT_TEST_COUNT);
+                test.func.sig.ident.span() => defmt::println!(#message, __defmt_test_number, __DEFMT_TEST_COUNT);
             }
         })
         .collect::<Vec<_>>();
@@ -232,7 +232,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 }
             )*
 
-            defmt::info!("all tests passed!");
+            defmt::println!("all tests passed!");
             #krate::export::exit()
         }
 

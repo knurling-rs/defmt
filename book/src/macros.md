@@ -1,6 +1,8 @@
 # Logging macros
 
 > Logging is done using the `error!`, `warn!`, `info!`, `debug!` and `trace!` macros.
+>
+> There is also the `println!` macro that always prints the content.
 
 Each macro logs at the logging level indicated by its name.
 The syntax of these macros is roughly the same as the `println!`-macro.

@@ -47,6 +47,7 @@ impl Symbol {
             "defmt_timestamp" => SymbolTag::Defmt(Tag::Timestamp),
             "defmt_bitflags_value" => SymbolTag::Defmt(Tag::BitflagsValue),
             "defmt_str" => SymbolTag::Defmt(Tag::Str),
+            "defmt_println" => SymbolTag::Defmt(Tag::Println),
             "defmt_trace" => SymbolTag::Defmt(Tag::Trace),
             "defmt_debug" => SymbolTag::Defmt(Tag::Debug),
             "defmt_info" => SymbolTag::Defmt(Tag::Info),

@@ -74,7 +74,7 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
         false
     };
 
-    let zero_pad = if let Some(rest) = s.strip_prefix("0") {
+    let zero_pad = if let Some(rest) = s.strip_prefix('0') {
         let (rest, columns) = parse_integer::<usize>(rest)?;
         s = rest;
         columns

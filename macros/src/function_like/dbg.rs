@@ -18,7 +18,7 @@ fn codegen(args: &Args) -> TokenStream {
         .exprs
         .iter()
         .map(|expr| {
-            let escaped_expr = construct::escaped_expr_string(&expr);
+            let escaped_expr = construct::escaped_expr_string(expr);
             let format_string = format!("{} = {{}}", escaped_expr);
 
             quote!(match #expr {

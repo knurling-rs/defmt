@@ -44,5 +44,6 @@ When only the `defmt-default` feature is enabled for a crate, that crate will:
 
 - log at the TRACE level and up if `debug-assertions = true` (`dev` profile), or
 - log at the INFO level and up if `debug-assertions = false` (`release` profile)
+- log when using the `println!` macro
 
-When any of the other features is enabled the crate will log at that, and higher, severity regardless of the state of `debug-assertions` or `defmt-default`.
+When any of the other features is enabled the crate will log at that, and higher severity regardless of the state of `debug-assertions` or `defmt-default`.
