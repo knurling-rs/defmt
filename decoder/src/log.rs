@@ -187,7 +187,12 @@ impl<'a> Printer<'a> {
 
         if self.include_location {
             let log_record = self.record.log_record;
-            print_location(sink, log_record.file(), log_record.line(), log_record.module_path())?;
+            print_location(
+                sink,
+                log_record.file(),
+                log_record.line(),
+                log_record.module_path(),
+            )?;
         }
 
         Ok(())
@@ -347,7 +352,13 @@ impl Log for Logger {
                 .ok();
 
                 if self.always_include_location {
-                    print_location(&mut sink, record.file(), record.line(), record.module_path()).ok();
+                    print_location(
+                        &mut sink,
+                        record.file(),
+                        record.line(),
+                        record.module_path(),
+                    )
+                    .ok();
                 }
             }
         }
@@ -366,7 +377,12 @@ fn color_for_log_level(level: Level) -> Color {
     }
 }
 
-fn print_location<W: io::Write>(sink: &mut W, file: Option<&str>, line: Option<u32>, module_path: Option<&str>) -> io::Result<()> {
+fn print_location<W: io::Write>(
+    sink: &mut W,
+    file: Option<&str>,
+    line: Option<u32>,
+    module_path: Option<&str>,
+) -> io::Result<()> {
     if let Some(file) = file {
         // NOTE will always be `Some` if `file` is `Some`
         let mod_path = module_path.unwrap();
