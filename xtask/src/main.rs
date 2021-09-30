@@ -351,6 +351,9 @@ fn test_single_snapshot(
         args.extend_from_slice(&["--features", features]);
     }
 
+    // matches the behavior of the old Cargo-feature-based log filter
+    // TODO(japaric) the new log filter doesn't depend on the compilation profile so
+    // we can remove the release version of the snapshot tests
     let defmt_log = if release_mode { "info" } else { "trace" };
 
     let actual = run_capturing_stdout(
