@@ -351,9 +351,12 @@ fn test_single_snapshot(
         args.extend_from_slice(&["--features", features]);
     }
 
+    let defmt_log = if release_mode { "info" } else { "trace" };
+
     let actual = run_capturing_stdout(
         Command::new("cargo")
             .args(&args)
+            .env("DEFMT_LOG", defmt_log)
             .current_dir(SNAPSHOT_TESTS_DIRECTORY),
     )
     .with_context(|| display_name.clone())?;
