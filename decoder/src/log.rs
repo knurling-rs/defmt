@@ -33,8 +33,8 @@ pub fn log_defmt(
         .unwrap_or_default();
     let display = frame.display_message();
 
-    if frame.level().is_some() {
-        let level = match frame.level().expect("log level expected") {
+    if let Some(level) = frame.level() {
+        let level = match level {
             crate::Level::Trace => Level::Trace,
             crate::Level::Debug => Level::Debug,
             crate::Level::Info => Level::Info,
