@@ -20,24 +20,6 @@ use std::{
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
 
-pub fn println(
-    frame: &Frame<'_>,
-    file: Option<&str>,
-    line: Option<u32>,
-    module_path: Option<&str>,
-) -> io::Result<()> {
-    let timestamp = frame
-        .display_timestamp()
-        .map(|display| display.to_string())
-        .unwrap_or_default();
-    let display = frame.display_message();
-
-    let stdout = io::stdout();
-    let mut sink = stdout.lock();
-    writeln!(&mut sink, "{} {}", timestamp, display).ok();
-    print_location(&mut sink, file, line, module_path)
-}
-
 /// Logs a defmt frame using the `log` facade.
 pub fn log_defmt(
     frame: &Frame<'_>,
@@ -45,31 +27,38 @@ pub fn log_defmt(
     line: Option<u32>,
     module_path: Option<&str>,
 ) {
-    let level = match frame.level().expect("log level expected") {
-        crate::Level::Trace => Level::Trace,
-        crate::Level::Debug => Level::Debug,
-        crate::Level::Info => Level::Info,
-        crate::Level::Warn => Level::Warn,
-        crate::Level::Error => Level::Error,
-    };
-
     let timestamp = frame
         .display_timestamp()
         .map(|display| display.to_string())
         .unwrap_or_default();
-    let target = format!("{}{}", DEFMT_TARGET_MARKER, timestamp);
     let display = frame.display_message();
 
-    log::logger().log(
-        &Record::builder()
-            .args(format_args!("{}", display))
-            .level(level)
-            .target(&target)
-            .module_path(module_path)
-            .file(file)
-            .line(line)
-            .build(),
-    );
+    if frame.level().is_some() {
+        let level = match frame.level().expect("log level expected") {
+            crate::Level::Trace => Level::Trace,
+            crate::Level::Debug => Level::Debug,
+            crate::Level::Info => Level::Info,
+            crate::Level::Warn => Level::Warn,
+            crate::Level::Error => Level::Error,
+        };
+
+        let target = format!("{}{}", DEFMT_TARGET_MARKER, timestamp);
+        log::logger().log(
+            &Record::builder()
+                .args(format_args!("{}", display))
+                .level(level)
+                .target(&target)
+                .module_path(module_path)
+                .file(file)
+                .line(line)
+                .build(),
+        );
+    } else {
+        let stdout = io::stdout();
+        let mut sink = stdout.lock();
+        writeln!(&mut sink, "{} {}", timestamp, display).ok();
+        print_location(&mut sink, file, line, module_path).ok();
+    }
 }
 
 /// Determines whether `metadata` belongs to a log record produced by [`log_defmt`].
