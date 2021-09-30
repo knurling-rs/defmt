@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use colored::Colorize as _;
 use tempfile::TempDir;
 
-use crate::{ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
+use crate::{utils, ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
 
 // PR #564
 const REVISION_UNDER_TEST: &str = "45beb423a5c2b4e6c645ea98b293513a6feadf6d";
@@ -63,7 +63,7 @@ impl QemuRun {
     }
 
     fn run_snapshot(&self, name: &str, release_mode: bool) -> anyhow::Result<()> {
-        let formatted_test_name = formatted_test_name(name, release_mode);
+        let formatted_test_name = utils::formatted_test_name(name, release_mode);
         println!("{}", formatted_test_name.bold());
 
         let args = if release_mode {
@@ -86,10 +86,6 @@ impl QemuRun {
     fn path(&self) -> &Path {
         &self.executable_path
     }
-}
-
-fn formatted_test_name(name: &str, release_mode: bool) -> String {
-    format!("{} ({})", name, if release_mode { "release" } else { "dev" })
 }
 
 fn clone_repo(tempdir: &Path) -> anyhow::Result<()> {

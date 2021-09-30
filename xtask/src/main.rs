@@ -338,7 +338,7 @@ fn test_single_snapshot(
     release_mode: bool,
     overwrite: bool,
 ) -> anyhow::Result<()> {
-    let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
+    let display_name = utils::formatted_test_name(name, release_mode);
     println!("{}", display_name.bold());
 
     let mut args = if release_mode {

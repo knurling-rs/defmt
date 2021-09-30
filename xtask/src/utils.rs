@@ -83,3 +83,7 @@ pub fn rustc_is_nightly() -> bool {
     let out = run_capturing_stdout(Command::new("rustc").args(&["-V"])).unwrap();
     out.contains("nightly")
 }
+
+pub fn formatted_test_name(name: &str, release_mode: bool) -> String {
+    format!("{} ({})", name, if release_mode { "release" } else { "dev" })
+}
