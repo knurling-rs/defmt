@@ -407,7 +407,9 @@ fn test_book() {
                 "mdbook",
                 &["test", "-L", "../target/debug", "-L", "../target/debug/deps"],
                 Some("book"),
-                &[],
+                // logging macros need this but mdbook, not being Cargo, doesn't set the env var so
+                // we use a dummy value
+                &[("CARGO_CRATE_NAME", "krate")],
             )
         },
         "book",
