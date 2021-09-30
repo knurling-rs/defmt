@@ -81,18 +81,13 @@ fn main() -> anyhow::Result<()> {
                         mod_path = Some(loc.module.clone());
                     }
 
-                    println!("OMG::: FRAME {:?}", frame);
-                    if frame.level().is_some() {
-                        // Forward the defmt frame to our logger.
-                        defmt_decoder::log::log_defmt(
-                            &frame,
-                            file.as_deref(),
-                            line,
-                            mod_path.as_deref(),
-                        );
-                    } else {
-                        println!("!!! defmt-print - FRAME: {:?}", frame);
-                    }
+                    // Forward the defmt frame to our logger.
+                    defmt_decoder::log::log_defmt(
+                        &frame,
+                        file.as_deref(),
+                        line,
+                        mod_path.as_deref(),
+                    );
 
                     let num_frames = frames.len();
                     frames.rotate_left(consumed);

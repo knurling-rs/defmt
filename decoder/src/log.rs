@@ -20,6 +20,24 @@ use std::{
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
 
+pub fn println(
+    frame: &Frame<'_>,
+    file: Option<&str>,
+    line: Option<u32>,
+    module_path: Option<&str>,
+) -> io::Result<()> {
+    let timestamp = frame
+        .display_timestamp()
+        .map(|display| display.to_string())
+        .unwrap_or_default();
+    let display = frame.display_message();
+
+    let stdout = io::stdout();
+    let mut sink = stdout.lock();
+    writeln!(&mut sink, "{} {}", timestamp, display).ok();
+    print_location(&mut sink, file, line, module_path)
+}
+
 /// Logs a defmt frame using the `log` facade.
 pub fn log_defmt(
     frame: &Frame<'_>,
@@ -168,7 +186,8 @@ impl<'a> Printer<'a> {
         )?;
 
         if self.include_location {
-            print_location(sink, self.record.log_record)?;
+            let log_record = self.record.log_record;
+            print_location(sink, log_record.file(), log_record.line(), log_record.module_path())?;
         }
 
         Ok(())
@@ -328,7 +347,7 @@ impl Log for Logger {
                 .ok();
 
                 if self.always_include_location {
-                    print_location(&mut sink, record).ok();
+                    print_location(&mut sink, record.file(), record.line(), record.module_path()).ok();
                 }
             }
         }
@@ -347,12 +366,12 @@ fn color_for_log_level(level: Level) -> Color {
     }
 }
 
-fn print_location<W: io::Write>(sink: &mut W, record: &Record) -> io::Result<()> {
-    if let Some(file) = record.file() {
+fn print_location<W: io::Write>(sink: &mut W, file: Option<&str>, line: Option<u32>, module_path: Option<&str>) -> io::Result<()> {
+    if let Some(file) = file {
         // NOTE will always be `Some` if `file` is `Some`
-        let mod_path = record.module_path().unwrap();
+        let mod_path = module_path.unwrap();
         let mut loc = file.to_string();
-        if let Some(line) = record.line() {
+        if let Some(line) = line {
             loc.push_str(&format!(":{}", line));
         }
         writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed())?;
