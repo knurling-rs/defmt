@@ -1,5 +1,6 @@
 use defmt_parser::Level;
-use proc_macro_error::abort_call_site;
+#[cfg(not(test))]
+use proc_macro_error::abort_call_site as panic;
 use syn::Ident;
 
 // None = "off" pseudo-level
@@ -15,7 +16,7 @@ pub(crate) fn defmt_log(input: &str) -> impl Iterator<Item = Entry> + '_ {
         if let Some((path, log_level)) = entry.rsplit_once('=') {
             let module_path = ModulePath::parse(path);
             let log_level = parse_log_level(log_level).unwrap_or_else(|_| {
-                abort_call_site!(
+                panic!(
                     "unknown log level `{}` in DEFMT_LOG env var. \
                      expected one of: off, error, info, warn, debug, trace",
                     log_level
@@ -47,7 +48,7 @@ pub(crate) enum Entry {
 impl ModulePath {
     pub(crate) fn from_crate_name(input: &str) -> Self {
         if input.is_empty() && input.contains("::") {
-            abort_call_site!(
+            panic!(
                 "DEFMT_LOG env var: crate name cannot be an empty string or contain path separators"
             )
         }
@@ -56,7 +57,7 @@ impl ModulePath {
 
     fn parse(input: &str) -> Self {
         if input.is_empty() {
-            abort_call_site!("DEFMT_LOG env var: module path cannot be an empty string")
+            panic!("DEFMT_LOG env var: module path cannot be an empty string")
         }
 
         input.split("::").for_each(validate_identifier);
@@ -90,7 +91,7 @@ fn parse_log_level(input: &str) -> Result<LogLevelOrOff, ()> {
 
 fn validate_identifier(input: &str) {
     syn::parse_str::<Ident>(input)
-        .unwrap_or_else(|_| abort_call_site!("`{}` is not a valid identifier", input));
+        .unwrap_or_else(|_| panic!("`{}` is not a valid identifier", input));
 }
 
 #[cfg(test)]
