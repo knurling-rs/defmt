@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
     };
 
     let mut buf = [0; READ_BUFFER_SIZE];
-    let mut frames = vec![];
+    let mut stream = table.new_stream_decoder();
 
     let current_dir = env::current_dir()?;
     let stdin = io::stdin();
@@ -60,21 +60,17 @@ fn main() -> anyhow::Result<()> {
     loop {
         // read from stdin and add it the the frames
         let n = stdin.read(&mut buf)?;
-        frames.extend_from_slice(&buf[..n]);
+        stream.received(&buf[..n]);
 
         loop {
-            match table.decode(&frames) {
-                Ok((frame, consumed)) => {
+            match stream.decode() {
+                Ok(frame) => {
                     let location_info = obtain_location_info(&locs, &frame, &current_dir);
                     forward_defmt_frame_to_logger(&frame, location_info);
-
-                    let num_frames = frames.len();
-                    frames.rotate_left(consumed);
-                    frames.truncate(num_frames - consumed);
                 }
                 Err(defmt_decoder::DecodeError::UnexpectedEof) => break,
                 Err(defmt_decoder::DecodeError::Malformed) => {
-                    log::error!("failed to decode defmt data: {:x?}", frames);
+                    log::error!("failed to decode defmt data");
                     return Err(defmt_decoder::DecodeError::Malformed.into());
                 }
             }
