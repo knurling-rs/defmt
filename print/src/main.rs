@@ -1,7 +1,7 @@
 use std::{
     env, fs,
     io::{self, Read},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::anyhow;
@@ -81,7 +81,12 @@ fn main() -> anyhow::Result<()> {
 
 type LocationInfo = (Option<String>, Option<u32>, Option<String>);
 
-fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &PathBuf) -> LocationInfo {
+fn forward_to_logger(frame: &Frame, location_info: LocationInfo) {
+    let (file, line, mod_path) = location_info;
+    defmt_decoder::log::log_defmt(frame, file.as_deref(), line, mod_path.as_deref());
+}
+
+fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) -> LocationInfo {
     let (mut file, mut line, mut mod_path) = (None, None, None);
 
     // NOTE(`[]` indexing) all indices in `table` have been verified to exist in the `locs` map
@@ -100,11 +105,6 @@ fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &PathBuf)
     }
 
     (file, line, mod_path)
-}
-
-fn forward_to_logger(frame: &Frame, location_info: LocationInfo) {
-    let (file, line, mod_path) = location_info;
-    defmt_decoder::log::log_defmt(&frame, file.as_deref(), line, mod_path.as_deref());
 }
 
 /// Report version from Cargo.toml _(e.g. "0.1.4")_ and supported `defmt`-versions.
