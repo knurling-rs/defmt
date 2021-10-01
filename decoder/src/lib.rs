@@ -138,7 +138,7 @@ impl FromStr for Encoding {
 }
 
 impl Encoding {
-    pub const fn recoverable(&self) -> bool {
+    pub const fn can_recover(&self) -> bool {
         match self {
             Encoding::Raw => false,
             Encoding::Rzcobs => true,
