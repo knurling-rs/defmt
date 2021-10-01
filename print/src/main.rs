@@ -67,7 +67,7 @@ fn main() -> anyhow::Result<()> {
             match stream_decoder.decode() {
                 Ok(frame) => forward_to_logger(&frame, location_info(&locs, &frame, &current_dir)),
                 Err(DecodeError::UnexpectedEof) => break,
-                Err(DecodeError::Malformed) => match table.encoding().recoverable() {
+                Err(DecodeError::Malformed) => match table.encoding().can_recover() {
                     // if recovery is impossible, abort
                     false => return Err(DecodeError::Malformed.into()),
                     // if recovery is possible, skip the current frame and continue with new data
