@@ -205,14 +205,15 @@ impl Table {
         elf2table::get_locations(elf, self)
     }
 
-    /// decode the data sent by the device using the previosuly stored metadata
+    /// Decode the data sent by the device using the previously stored metadata.
     ///
-    /// * bytes: contains the data sent by the device that logs.
-    ///          contains the [log string index, timestamp, optional fmt string args]
+    /// * `bytes`
+    ///   * contains the data sent by the device that logs.
+    ///   * contains the [log string index, timestamp, optional fmt string args]
     pub fn decode<'t>(
         &'t self,
         mut bytes: &[u8],
-    ) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
+    ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
         let len = bytes.len();
         let index = bytes.read_u16::<LE>()? as u64;
 
