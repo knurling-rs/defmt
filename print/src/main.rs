@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use defmt_decoder::{DecodeError, Encoding, Frame, Locations, Table};
+use defmt_decoder::{DecodeError, Frame, Locations, Table};
 use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
