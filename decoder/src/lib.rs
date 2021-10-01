@@ -119,7 +119,7 @@ struct BitflagsKey {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-enum Encoding {
+pub enum Encoding {
     Raw,
     Rzcobs,
 }
@@ -252,6 +252,10 @@ impl Table {
             Encoding::Raw => Box::new(stream::Raw::new(self)),
             Encoding::Rzcobs => Box::new(stream::Rzcobs::new(self)),
         }
+    }
+
+    pub fn encoding(&self) -> Encoding {
+        self.encoding
     }
 }
 

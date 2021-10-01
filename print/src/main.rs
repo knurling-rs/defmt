@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use defmt_decoder::{Frame, Locations, Table};
+use defmt_decoder::{DecodeError, Encoding, Frame, Locations, Table};
 use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
@@ -51,28 +51,32 @@ fn main() -> anyhow::Result<()> {
     };
 
     let mut buf = [0; READ_BUFFER_SIZE];
-    let mut stream = table.new_stream_decoder();
+    let mut stream_decoder = table.new_stream_decoder();
 
     let current_dir = env::current_dir()?;
     let stdin = io::stdin();
     let mut stdin = stdin.lock();
 
     loop {
-        // read from stdin and add it the the frames
+        // read from stdin and push it to the decoder
         let n = stdin.read(&mut buf)?;
-        stream.received(&buf[..n]);
+        stream_decoder.received(&buf[..n]);
 
+        // decode the received data
         loop {
-            match stream.decode() {
+            match stream_decoder.decode() {
                 Ok(frame) => {
                     let location_info = obtain_location_info(&locs, &frame, &current_dir);
                     forward_defmt_frame_to_logger(&frame, location_info);
                 }
-                Err(defmt_decoder::DecodeError::UnexpectedEof) => break,
-                Err(defmt_decoder::DecodeError::Malformed) => {
-                    log::error!("failed to decode defmt data");
-                    return Err(defmt_decoder::DecodeError::Malformed.into());
-                }
+                Err(DecodeError::UnexpectedEof) => break,
+                Err(DecodeError::Malformed) => match table.encoding() {
+                    // raw encoding doesn't allow for recovery. therefore we abort.
+                    Encoding::Raw => return Err(DecodeError::Malformed.into()),
+                    // rzcobs encoding allows recovery from decoding-errors. therefore we stop
+                    // decoding the current, corrupted, data and continue with new one
+                    Encoding::Rzcobs => break,
+                },
             }
         }
     }
