@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use defmt_decoder::Table;
+use defmt_decoder::{Frame, Locations, Table};
 use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
@@ -56,30 +56,16 @@ fn main() -> anyhow::Result<()> {
     let current_dir = env::current_dir()?;
     let stdin = io::stdin();
     let mut stdin = stdin.lock();
-    loop {
-        let n = stdin.read(&mut buf)?;
 
+    loop {
+        // read from stdin and add it the the frames
+        let n = stdin.read(&mut buf)?;
         frames.extend_from_slice(&buf[..n]);
 
         loop {
             match table.decode(&frames) {
                 Ok((frame, consumed)) => {
-                    // NOTE(`[]` indexing) all indices in `table` have already been
-                    // verified to exist in the `locs` map
-                    let loc = locs.as_ref().map(|locs| &locs[&frame.index()]);
-
-                    let (mut file, mut line, mut mod_path) = (None, None, None);
-                    if let Some(loc) = loc {
-                        let relpath = if let Ok(relpath) = loc.file.strip_prefix(&current_dir) {
-                            relpath
-                        } else {
-                            // not relative; use full path
-                            &loc.file
-                        };
-                        file = Some(relpath.display().to_string());
-                        line = Some(loc.line as u32);
-                        mod_path = Some(loc.module.clone());
-                    }
+                    let (file, line, mod_path) = obtain_location_info(&locs, &frame, &current_dir);
 
                     // Forward the defmt frame to our logger.
                     defmt_decoder::log::log_defmt(
@@ -101,6 +87,31 @@ fn main() -> anyhow::Result<()> {
             }
         }
     }
+}
+
+fn obtain_location_info(
+    locs: &Option<Locations>,
+    frame: &Frame,
+    current_dir: &PathBuf,
+) -> (Option<String>, Option<u32>, Option<String>) {
+    let (mut file, mut line, mut mod_path) = (None, None, None);
+
+    // NOTE(`[]` indexing) all indices in `table` have been verified to exist in the `locs` map
+    let loc = locs.as_ref().map(|locs| &locs[&frame.index()]);
+
+    if let Some(loc) = loc {
+        let relpath = if let Ok(relpath) = loc.file.strip_prefix(&current_dir) {
+            relpath
+        } else {
+            // not relative; use full path
+            &loc.file
+        };
+        file = Some(relpath.display().to_string());
+        line = Some(loc.line as u32);
+        mod_path = Some(loc.module.clone());
+    }
+
+    (file, line, mod_path)
 }
 
 /// Report version from Cargo.toml _(e.g. "0.1.4")_ and supported `defmt`-versions.
