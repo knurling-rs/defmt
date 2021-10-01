@@ -119,7 +119,8 @@ struct BitflagsKey {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-enum Encoding {
+#[non_exhaustive]
+pub enum Encoding {
     Raw,
     Rzcobs,
 }
@@ -132,6 +133,15 @@ impl FromStr for Encoding {
             "raw" => Ok(Encoding::Raw),
             "rzcobs" => Ok(Encoding::Rzcobs),
             _ => anyhow::bail!("Unknown defmt encoding '{}' specified. This is a bug.", s),
+        }
+    }
+}
+
+impl Encoding {
+    pub const fn can_recover(&self) -> bool {
+        match self {
+            Encoding::Raw => false,
+            Encoding::Rzcobs => true,
         }
     }
 }
@@ -205,14 +215,15 @@ impl Table {
         elf2table::get_locations(elf, self)
     }
 
-    /// decode the data sent by the device using the previosuly stored metadata
+    /// Decode the data sent by the device using the previously stored metadata.
     ///
-    /// * bytes: contains the data sent by the device that logs.
-    ///          contains the [log string index, timestamp, optional fmt string args]
+    /// * `bytes`
+    ///   * contains the data sent by the device that logs.
+    ///   * contains the [log string index, timestamp, optional fmt string args]
     pub fn decode<'t>(
         &'t self,
         mut bytes: &[u8],
-    ) -> Result<(Frame<'t>, /*consumed: */ usize), DecodeError> {
+    ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
         let len = bytes.len();
         let index = bytes.read_u16::<LE>()? as u64;
 
@@ -251,6 +262,10 @@ impl Table {
             Encoding::Raw => Box::new(stream::Raw::new(self)),
             Encoding::Rzcobs => Box::new(stream::Rzcobs::new(self)),
         }
+    }
+
+    pub fn encoding(&self) -> Encoding {
+        self.encoding
     }
 }
 

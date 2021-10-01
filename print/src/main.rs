@@ -1,11 +1,11 @@
 use std::{
     env, fs,
     io::{self, Read},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::anyhow;
-use defmt_decoder::Table;
+use defmt_decoder::{DecodeError, Frame, Locations, Table};
 use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
@@ -51,56 +51,59 @@ fn main() -> anyhow::Result<()> {
     };
 
     let mut buf = [0; READ_BUFFER_SIZE];
-    let mut frames = vec![];
+    let mut stream_decoder = table.new_stream_decoder();
 
     let current_dir = env::current_dir()?;
     let stdin = io::stdin();
     let mut stdin = stdin.lock();
+
     loop {
+        // read from stdin and push it to the decoder
         let n = stdin.read(&mut buf)?;
+        stream_decoder.received(&buf[..n]);
 
-        frames.extend_from_slice(&buf[..n]);
-
+        // decode the received data
         loop {
-            match table.decode(&frames) {
-                Ok((frame, consumed)) => {
-                    // NOTE(`[]` indexing) all indices in `table` have already been
-                    // verified to exist in the `locs` map
-                    let loc = locs.as_ref().map(|locs| &locs[&frame.index()]);
-
-                    let (mut file, mut line, mut mod_path) = (None, None, None);
-                    if let Some(loc) = loc {
-                        let relpath = if let Ok(relpath) = loc.file.strip_prefix(&current_dir) {
-                            relpath
-                        } else {
-                            // not relative; use full path
-                            &loc.file
-                        };
-                        file = Some(relpath.display().to_string());
-                        line = Some(loc.line as u32);
-                        mod_path = Some(loc.module.clone());
-                    }
-
-                    // Forward the defmt frame to our logger.
-                    defmt_decoder::log::log_defmt(
-                        &frame,
-                        file.as_deref(),
-                        line,
-                        mod_path.as_deref(),
-                    );
-
-                    let num_frames = frames.len();
-                    frames.rotate_left(consumed);
-                    frames.truncate(num_frames - consumed);
-                }
-                Err(defmt_decoder::DecodeError::UnexpectedEof) => break,
-                Err(defmt_decoder::DecodeError::Malformed) => {
-                    log::error!("failed to decode defmt data: {:x?}", frames);
-                    return Err(defmt_decoder::DecodeError::Malformed.into());
-                }
+            match stream_decoder.decode() {
+                Ok(frame) => forward_to_logger(&frame, location_info(&locs, &frame, &current_dir)),
+                Err(DecodeError::UnexpectedEof) => break,
+                Err(DecodeError::Malformed) => match table.encoding().can_recover() {
+                    // if recovery is impossible, abort
+                    false => return Err(DecodeError::Malformed.into()),
+                    // if recovery is possible, skip the current frame and continue with new data
+                    true => continue,
+                },
             }
         }
     }
+}
+
+type LocationInfo = (Option<String>, Option<u32>, Option<String>);
+
+fn forward_to_logger(frame: &Frame, location_info: LocationInfo) {
+    let (file, line, mod_path) = location_info;
+    defmt_decoder::log::log_defmt(frame, file.as_deref(), line, mod_path.as_deref());
+}
+
+fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) -> LocationInfo {
+    let (mut file, mut line, mut mod_path) = (None, None, None);
+
+    // NOTE(`[]` indexing) all indices in `table` have been verified to exist in the `locs` map
+    let loc = locs.as_ref().map(|locs| &locs[&frame.index()]);
+
+    if let Some(loc) = loc {
+        let relpath = if let Ok(relpath) = loc.file.strip_prefix(&current_dir) {
+            relpath
+        } else {
+            // not relative; use full path
+            &loc.file
+        };
+        file = Some(relpath.display().to_string());
+        line = Some(loc.line as u32);
+        mod_path = Some(loc.module.clone());
+    }
+
+    (file, line, mod_path)
 }
 
 /// Report version from Cargo.toml _(e.g. "0.1.4")_ and supported `defmt`-versions.
