@@ -65,10 +65,7 @@ fn main() -> anyhow::Result<()> {
         // decode the received data
         loop {
             match stream_decoder.decode() {
-                Ok(frame) => {
-                    let location_info = obtain_location_info(&locs, &frame, &current_dir);
-                    forward_defmt_frame_to_logger(&frame, location_info);
-                }
+                Ok(frame) => forward_to_logger(&frame, location_info(&locs, &frame, &current_dir)),
                 Err(DecodeError::UnexpectedEof) => break,
                 Err(DecodeError::Malformed) => match table.encoding() {
                     // raw encoding doesn't allow for recovery. therefore we abort.
@@ -84,11 +81,7 @@ fn main() -> anyhow::Result<()> {
 
 type LocationInfo = (Option<String>, Option<u32>, Option<String>);
 
-fn obtain_location_info(
-    locs: &Option<Locations>,
-    frame: &Frame,
-    current_dir: &PathBuf,
-) -> LocationInfo {
+fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &PathBuf) -> LocationInfo {
     let (mut file, mut line, mut mod_path) = (None, None, None);
 
     // NOTE(`[]` indexing) all indices in `table` have been verified to exist in the `locs` map
@@ -109,7 +102,7 @@ fn obtain_location_info(
     (file, line, mod_path)
 }
 
-fn forward_defmt_frame_to_logger(frame: &Frame, location_info: LocationInfo) {
+fn forward_to_logger(frame: &Frame, location_info: LocationInfo) {
     let (file, line, mod_path) = location_info;
     defmt_decoder::log::log_defmt(&frame, file.as_deref(), line, mod_path.as_deref());
 }
