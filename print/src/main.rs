@@ -67,12 +67,11 @@ fn main() -> anyhow::Result<()> {
             match stream_decoder.decode() {
                 Ok(frame) => forward_to_logger(&frame, location_info(&locs, &frame, &current_dir)),
                 Err(DecodeError::UnexpectedEof) => break,
-                Err(DecodeError::Malformed) => match table.encoding() {
-                    // raw encoding doesn't allow for recovery. therefore we abort.
-                    Encoding::Raw => return Err(DecodeError::Malformed.into()),
-                    // rzcobs encoding allows recovery from decoding-errors. therefore we stop
-                    // decoding the current, corrupted, data and continue with new one
-                    Encoding::Rzcobs => break,
+                Err(DecodeError::Malformed) => match table.encoding().recoverable() {
+                    // if recovery is impossible, abort
+                    false => return Err(DecodeError::Malformed.into()),
+                    // if recovery is possible, skip the current frame and continue with new data
+                    true => continue,
                 },
             }
         }

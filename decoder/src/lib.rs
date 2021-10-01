@@ -119,6 +119,7 @@ struct BitflagsKey {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Encoding {
     Raw,
     Rzcobs,
@@ -132,6 +133,15 @@ impl FromStr for Encoding {
             "raw" => Ok(Encoding::Raw),
             "rzcobs" => Ok(Encoding::Rzcobs),
             _ => anyhow::bail!("Unknown defmt encoding '{}' specified. This is a bug.", s),
+        }
+    }
+}
+
+impl Encoding {
+    pub const fn recoverable(&self) -> bool {
+        match self {
+            Encoding::Raw => false,
+            Encoding::Rzcobs => true,
         }
     }
 }
