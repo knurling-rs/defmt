@@ -6,6 +6,7 @@ use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
 use structopt::StructOpt;
 
+mod backcompat;
 mod targets;
 mod utils;
 
@@ -15,6 +16,7 @@ use crate::utils::{
 
 static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
 
+const SNAPSHOT_TESTS_DIRECTORY: &str = "firmware/qemu";
 const ALL_SNAPSHOT_TESTS: [&str; 12] = [
     "log",
     "bitflags",
@@ -70,6 +72,7 @@ struct Options {
 #[allow(clippy::enum_variant_names)]
 enum TestCommand {
     TestAll,
+    TestBackcompat,
     TestBook,
     TestCross,
     TestHost,
@@ -91,6 +94,7 @@ fn main() -> anyhow::Result<()> {
 
     match opt.cmd {
         TestCommand::TestBook => test_book(),
+        TestCommand::TestBackcompat => backcompat::test(),
         TestCommand::TestHost => test_host(opt.deny_warnings),
         TestCommand::TestLint => test_lint(),
 
@@ -106,6 +110,7 @@ fn main() -> anyhow::Result<()> {
                     test_host(opt.deny_warnings);
                     test_cross();
                     test_snapshot(false, None);
+                    backcompat::test();
                     test_book();
                     test_lint();
                 }
@@ -333,7 +338,7 @@ fn test_single_snapshot(
     release_mode: bool,
     overwrite: bool,
 ) -> anyhow::Result<()> {
-    let display_name = format!("{} ({})", name, if release_mode { "release" } else { "dev" });
+    let display_name = utils::formatted_test_name(name, release_mode);
     println!("{}", display_name.bold());
 
     let mut args = if release_mode {
@@ -346,9 +351,12 @@ fn test_single_snapshot(
         args.extend_from_slice(&["--features", features]);
     }
 
-    const CWD: &str = "firmware/qemu";
-    let actual = run_capturing_stdout(Command::new("cargo").args(&args).current_dir(CWD))
-        .with_context(|| display_name.clone())?;
+    let actual = run_capturing_stdout(
+        Command::new("cargo")
+            .args(&args)
+            .current_dir(SNAPSHOT_TESTS_DIRECTORY),
+    )
+    .with_context(|| display_name.clone())?;
 
     if overwrite {
         overwrite_expected_output(name, release_mode, actual.as_bytes())?;

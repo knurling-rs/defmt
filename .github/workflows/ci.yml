@@ -114,6 +114,23 @@ jobs:
       - name: Run QEMU snapshot tests
         run: cargo xtask test-snapshot
 
+  backcompat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ env.QEMU_TARGET }}
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install qemu qemu-system-arm
+      - name: Run backward compatibility test
+        run: cargo xtask test-backcompat
+
   # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
   # bors.tech integration
   ci-success:
@@ -125,6 +142,7 @@ jobs:
       - lint
       - mdbook
       - qemu-snapshot
+      - backcompat
     runs-on: ubuntu-20.04
     steps:
       - name: CI succeeded

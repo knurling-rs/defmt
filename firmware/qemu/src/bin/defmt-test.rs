@@ -1,11 +1,15 @@
 #![no_std]
 #![no_main]
 
+use core::sync::atomic::{AtomicBool, Ordering};
+
 use defmt_semihosting as _; // global logger
+
+static MAY_PANIC: AtomicBool = AtomicBool::new(false);
 
 #[defmt_test::tests]
 mod tests {
-    use core::u8::MAX;
+    use core::{sync::atomic::Ordering, u8::MAX};
     use defmt::{assert, assert_eq};
 
     struct InitStruct {
@@ -19,12 +23,9 @@ mod tests {
         elem2: f32,
     }
 
-
     #[init]
     fn init() -> InitStruct {
-        InitStruct {
-            test: 8,
-        }
+        InitStruct { test: 8 }
     }
 
     #[test]
@@ -71,6 +72,9 @@ mod tests {
     #[test]
     #[should_error]
     fn fail() -> Result<&'static str, ()> {
+        // this test is expected to fail (= panic)
+        super::MAY_PANIC.store(true, Ordering::Relaxed);
+
         Ok("this should have returned `Err`")
     }
 }
@@ -82,6 +86,11 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
     use cortex_m_semihosting::debug;
 
     loop {
-        debug::exit(debug::EXIT_FAILURE)
+        let exit_code = if MAY_PANIC.load(Ordering::Relaxed) {
+            debug::EXIT_SUCCESS
+        } else {
+            debug::EXIT_FAILURE
+        };
+        debug::exit(exit_code)
     }
 }

@@ -41,15 +41,6 @@ pub fn run_capturing_stdout(cmd: &mut Command) -> anyhow::Result<String> {
     match output.status.success() {
         true => Ok(str::from_utf8(&output.stdout)?.to_string()),
         false => {
-            // #[should_error]-tests return non-zero code
-            if output.status.code() == Some(1) {
-                let stdout = str::from_utf8(&output.stdout)?;
-                if stdout.contains(
-                    "`#[should_error]` test failed with outcome: Ok(this should have returned `Err`)",
-                ) {
-                    return Ok(stdout.to_string());
-                }
-            }
             eprintln!("{}", str::from_utf8(&output.stderr)?.dimmed());
             Err(anyhow!(""))
         }
@@ -91,4 +82,8 @@ pub fn rustc_is_nightly() -> bool {
     // if this crashes the system is not in a good state, so we'll not pretend to be able to recover
     let out = run_capturing_stdout(Command::new("rustc").args(&["-V"])).unwrap();
     out.contains("nightly")
+}
+
+pub fn formatted_test_name(name: &str, release_mode: bool) -> String {
+    format!("{} ({})", name, if release_mode { "release" } else { "dev" })
 }
