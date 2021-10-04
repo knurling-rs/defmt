@@ -10,8 +10,9 @@ use tempfile::TempDir;
 
 use crate::{utils, ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
 
-// PR #564
-const REVISION_UNDER_TEST: &str = "45beb423a5c2b4e6c645ea98b293513a6feadf6d";
+// use this format: PR <number> - <what feature / change broke compatibility>
+// PR #569 - defmt::println!
+const REVISION_UNDER_TEST: &str = "8a6e8eebe40f943d9b0ba8725cd6da033b9c399e";
 
 // the target name is in `firmware/qemu/.cargo/config.toml` but it'd be hard to extract it from that file
 const RUNNER_ENV_VAR: &str = "CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER";
