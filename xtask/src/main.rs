@@ -351,9 +351,15 @@ fn test_single_snapshot(
         args.extend_from_slice(&["--features", features]);
     }
 
+    // matches the behavior of the old Cargo-feature-based log filter
+    // TODO(japaric) the new log filter doesn't depend on the compilation profile so
+    // we can remove the release version of the snapshot tests
+    let defmt_log = if release_mode { "info" } else { "trace" };
+
     let actual = run_capturing_stdout(
         Command::new("cargo")
             .args(&args)
+            .env("DEFMT_LOG", defmt_log)
             .current_dir(SNAPSHOT_TESTS_DIRECTORY),
     )
     .with_context(|| display_name.clone())?;
@@ -404,7 +410,9 @@ fn test_book() {
                 "mdbook",
                 &["test", "-L", "../target/debug", "-L", "../target/debug/deps"],
                 Some("book"),
-                &[],
+                // logging macros need this but mdbook, not being Cargo, doesn't set the env var so
+                // we use a dummy value
+                &[("CARGO_CRATE_NAME", "krate")],
             )
         },
         "book",
