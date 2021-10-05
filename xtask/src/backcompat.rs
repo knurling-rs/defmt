@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use colored::Colorize as _;
 use tempfile::TempDir;
 
-use crate::{utils, ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
+use crate::{ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
 
 // use this format: PR <number> - <what feature / change broke compatibility>
 // PR #569 - defmt::println!
@@ -34,13 +34,8 @@ pub fn test() {
         }
     };
 
-    for release_mode in [false, true] {
-        for snapshot_test in ALL_SNAPSHOT_TESTS {
-            super::do_test(
-                || qemu_run.run_snapshot(snapshot_test, release_mode),
-                "backcompat",
-            );
-        }
+    for snapshot_test in ALL_SNAPSHOT_TESTS {
+        super::do_test(|| qemu_run.run_snapshot(snapshot_test), "backcompat");
     }
 }
 
@@ -63,22 +58,15 @@ impl QemuRun {
         })
     }
 
-    fn run_snapshot(&self, name: &str, release_mode: bool) -> anyhow::Result<()> {
-        let formatted_test_name = utils::formatted_test_name(name, release_mode);
-        println!("{}", formatted_test_name.bold());
-
-        let args = if release_mode {
-            ["-q", "rrb", name]
-        } else {
-            ["-q", "rb", name]
-        };
+    fn run_snapshot(&self, name: &str) -> anyhow::Result<()> {
+        println!("{}", name.bold());
 
         run_silently(
             Command::new("cargo")
-                .args(args)
+                .args(["-q", "rb", name])
                 .current_dir(SNAPSHOT_TESTS_DIRECTORY)
                 .env(RUNNER_ENV_VAR, self.path()),
-            || anyhow!("{}", formatted_test_name),
+            || anyhow!("{}", name.to_string()),
         )?;
 
         Ok(())
