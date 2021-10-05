@@ -3,8 +3,8 @@ use std::{fs, path::Path, process::Command, str};
 use anyhow::{anyhow, Context};
 use colored::Colorize;
 
-pub fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<String> {
-    let file = expected_output_path(name, release_mode);
+pub fn load_expected_output(name: &str) -> anyhow::Result<String> {
+    let file = expected_output_path(name);
     let path = Path::new(&file);
 
     fs::read_to_string(path).with_context(|| {
@@ -15,8 +15,8 @@ pub fn load_expected_output(name: &str, release_mode: bool) -> anyhow::Result<St
     })
 }
 
-pub fn overwrite_expected_output(name: &str, release_mode: bool, contents: &[u8]) -> anyhow::Result<()> {
-    let file = expected_output_path(name, release_mode);
+pub fn overwrite_expected_output(name: &str, contents: &[u8]) -> anyhow::Result<()> {
+    let file = expected_output_path(name);
     let path = Path::new(&file);
 
     fs::write(path, contents).with_context(|| {
@@ -27,12 +27,9 @@ pub fn overwrite_expected_output(name: &str, release_mode: bool, contents: &[u8]
     })
 }
 
-fn expected_output_path(name: &str, release_mode: bool) -> String {
+fn expected_output_path(name: &str) -> String {
     const BASE: &str = "firmware/qemu/src/bin";
-    match release_mode {
-        true => format!("{}/{}.release.out", BASE, name),
-        false => format!("{}/{}.out", BASE, name),
-    }
+    format!("{}/{}.out", BASE, name)
 }
 
 /// Execute the [`Command`]. If success return `stdout`, if failure print to `stderr`
@@ -82,8 +79,4 @@ pub fn rustc_is_nightly() -> bool {
     // if this crashes the system is not in a good state, so we'll not pretend to be able to recover
     let out = run_capturing_stdout(Command::new("rustc").args(&["-V"])).unwrap();
     out.contains("nightly")
-}
-
-pub fn formatted_test_name(name: &str, release_mode: bool) -> String {
-    format!("{} ({})", name, if release_mode { "release" } else { "dev" })
 }

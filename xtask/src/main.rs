@@ -304,7 +304,7 @@ fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
         None => test_all_snapshots(overwrite),
         Some(snapshot) => {
             do_test(
-                || test_single_snapshot(snapshot.name(), "", false, overwrite),
+                || test_single_snapshot(snapshot.name(), "", overwrite),
                 "qemu/snapshot",
             );
         }
@@ -322,54 +322,35 @@ fn test_all_snapshots(overwrite: bool) {
         let features = if test == "alloc" { "alloc" } else { "" };
 
         do_test(
-            || test_single_snapshot(test, features, false, overwrite),
-            "qemu/snapshot",
-        );
-        do_test(
-            || test_single_snapshot(test, features, true, overwrite),
+            || test_single_snapshot(test, features, overwrite),
             "qemu/snapshot",
         );
     }
 }
 
-fn test_single_snapshot(
-    name: &str,
-    features: &str,
-    release_mode: bool,
-    overwrite: bool,
-) -> anyhow::Result<()> {
-    let display_name = utils::formatted_test_name(name, release_mode);
-    println!("{}", display_name.bold());
+fn test_single_snapshot(name: &str, features: &str, overwrite: bool) -> anyhow::Result<()> {
+    println!("{}", name.bold());
 
-    let mut args = if release_mode {
-        vec!["-q", "rrb", name]
-    } else {
-        vec!["-q", "rb", name]
-    };
+    let mut args = vec!["-q", "rb", name];
 
     if !features.is_empty() {
         args.extend_from_slice(&["--features", features]);
     }
 
-    // matches the behavior of the old Cargo-feature-based log filter
-    // TODO(japaric) the new log filter doesn't depend on the compilation profile so
-    // we can remove the release version of the snapshot tests
-    let defmt_log = if release_mode { "info" } else { "trace" };
-
     let actual = run_capturing_stdout(
         Command::new("cargo")
             .args(&args)
-            .env("DEFMT_LOG", defmt_log)
+            .env("DEFMT_LOG", "trace")
             .current_dir(SNAPSHOT_TESTS_DIRECTORY),
     )
-    .with_context(|| display_name.clone())?;
+    .with_context(|| name.to_string())?;
 
     if overwrite {
-        overwrite_expected_output(name, release_mode, actual.as_bytes())?;
+        overwrite_expected_output(name, actual.as_bytes())?;
         return Ok(());
     }
 
-    let expected = load_expected_output(name, release_mode)?;
+    let expected = load_expected_output(name)?;
     let diff = TextDiff::from_lines(&expected, &actual);
 
     // if anything isn't ChangeTag::Equal, print it and turn on error flag
@@ -391,7 +372,7 @@ fn test_single_snapshot(
     if actual_matches_expected {
         Ok(())
     } else {
-        Err(anyhow!("{}", display_name))
+        Err(anyhow!("{}", name))
     }
 }
 

@@ -1,3 +1,0 @@
-INFO The answer is 42
-ERROR panicked at 'unwrap failed: x'
-error: `Bar`
