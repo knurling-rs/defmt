@@ -13,7 +13,7 @@ version = "0.2.3"
 [dependencies]
 cortex-m = "0.7.2"
 cortex-m-rt = "0.7.0"
-defmt = { version = "0.2.2", path = "../.." }
+defmt = { version = "0.2.2", path = "../../defmt" }
 defmt-test-macros = { version = "=0.2.1", path = "macros" }
 
 [features]

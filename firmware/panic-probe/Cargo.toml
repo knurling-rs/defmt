@@ -12,7 +12,7 @@ version = "0.2.1"
 
 [dependencies]
 cortex-m = "0.7"
-defmt = { version = "0.2", path = "../..", optional = true }
+defmt = { version = "0.2", path = "../../defmt", optional = true }
 rtt-target = { version = "0.3", optional = true }
 
 

@@ -7,7 +7,7 @@ publish = false
 version = "0.1.0"
 
 [dependencies]
-defmt = { path = "../.." }
+defmt = { path = "../../defmt" }
 defmt-semihosting = { path = "../defmt-semihosting" }
 defmt-test = { path = "../defmt-test" }
 cortex-m = "0.7.2"
