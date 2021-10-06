@@ -214,7 +214,9 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             }
         })
         .collect::<Vec<_>>();
-    Ok(quote!(mod #ident {
+    Ok(quote!(
+    #[cfg(test)]
+    mod #ident {
         #(#untouched_tokens)*
         // TODO use `cortex-m-rt::entry` here to get the `static mut` transform
         #[export_name = "main"]
