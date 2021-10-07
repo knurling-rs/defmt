@@ -8,6 +8,35 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#]
+- [#601]: Move crate `defmt` to `defmt/` r=jonas-schievink a=Urhengulas
+- [#600]: Run snapshot & backcompat tests in dev mode only r=jonas-schievink a=japaric
+- [#519]: Target-side `env_logger`-like env filter r=Urhengulas a=japaric
+- [#592]: xtask: add backward compability test r=Urhengulas a=japaric
+- [#598]: `defmt-print`: Recover from decoding-errors r=Urhengulas a=Urhengulas
+- [#569]: Add defmt `println!` macro r=justahero a=justahero
+- [#580]: Structure `defmt::export` r=jonas-schievink a=Urhengulas
+- [#594]: panic-probe: use UDF instruction on nested panics r=jonas-schievink a=japaric
+- [#591]: Remove timestamps from snapshot test r=japaric a=jonas-schievink
+- [#585]: Add xtask option to run a single snapshot test by name r=jonas-schievink a=justahero
+- [#589]: Implement `Format` for arrays of any length r=japaric a=jonas-schievink
+- [#587]: Tweak inline attributes to remove machine code duplication r=jonas-schievink a=japaric
+- [#574]: Refactor rtt [1/2] r=jonas-schievink a=Urhengulas
+- [#584]: Remove outdated doc "you may only call write! once" r=jonas-schievink a=Dirbaio
+- [#582]: Release of `panic-probe v0.2.1` r=Urhengulas a=Urhengulas
+- [#581]: Add impl for `alloc::Layout` r=Urhengulas a=newAM
+- [#579]: defmt-rtt: fix check for blocking RTT r=japaric a=jonas-schievink
+- [#577]: Fix typo in `cfg` of encoding-feature-`compile_error!` r=Urhengulas a=Urhengulas
+- [#578]: `qemu`: Allow dead code r=Urhengulas a=Urhengulas
+- [#550]: `defmt::flush()` r=jonas-schievink a=Urhengulas
+- [#572]: `defmt-decoder`: `impl TryFrom<Option<String>> for Encoding` r=Urhengulas a=Urhengulas
+- [#570]: Support referring to `Self` in bitflags constants r=Urhengulas a=jonas-schievink
+- [#568]: Encoding docs. r=jonas-schievink a=Dirbaio
+- [#564]: Make order of bitflags values deterministic r=Urhengulas a=jonas-schievink
+- [#561]: Remove unused cortex-m-rt in panic-probe a=Dirbaio r=jonas-schievink
+- [#562]: Remove call to fill in user survey from `README` r=Urhengulas a=briocheberlin
+- [#560]: Update cortex-m-rt crate from `0.6` to `0.7` r=jonas-schievink a=newAM
+- [#557]: Add impl for TryFromSliceError r=justahero a=newAM
+- [#556]: Add impl for TryFromIntError r=jonas-schievink a=newAM
 - [#551]: Display git version & date to introduction section r=justahero a=jonas-schievink
 - [#540]: Separate "crate version" from "wire format version r=jonas-schievink a=Dirbaio
 - [#549]: Fix clippy warnings. r=Urhengulas a=Urhengulas
@@ -38,6 +67,35 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#507]: [2/n] - Remove code-size-costly optimizations r=jonas-schievink a=Dirbaio
 - [#505]: [1/n] - Logger trait v2. r=jonas-schievink a=Dirbaio
 
+[#601]: https://github.com/knurling-rs/defmt/pull/601
+[#600]: https://github.com/knurling-rs/defmt/pull/600
+[#519]: https://github.com/knurling-rs/defmt/pull/519
+[#592]: https://github.com/knurling-rs/defmt/pull/592
+[#598]: https://github.com/knurling-rs/defmt/pull/598
+[#569]: https://github.com/knurling-rs/defmt/pull/569
+[#580]: https://github.com/knurling-rs/defmt/pull/580
+[#594]: https://github.com/knurling-rs/defmt/pull/594
+[#591]: https://github.com/knurling-rs/defmt/pull/591
+[#585]: https://github.com/knurling-rs/defmt/pull/585
+[#589]: https://github.com/knurling-rs/defmt/pull/589
+[#587]: https://github.com/knurling-rs/defmt/pull/587
+[#574]: https://github.com/knurling-rs/defmt/pull/574
+[#584]: https://github.com/knurling-rs/defmt/pull/584
+[#582]: https://github.com/knurling-rs/defmt/pull/582
+[#581]: https://github.com/knurling-rs/defmt/pull/581
+[#579]: https://github.com/knurling-rs/defmt/pull/579
+[#577]: https://github.com/knurling-rs/defmt/pull/577
+[#578]: https://github.com/knurling-rs/defmt/pull/578
+[#550]: https://github.com/knurling-rs/defmt/pull/550
+[#572]: https://github.com/knurling-rs/defmt/pull/572
+[#570]: https://github.com/knurling-rs/defmt/pull/570
+[#568]: https://github.com/knurling-rs/defmt/pull/568
+[#564]: https://github.com/knurling-rs/defmt/pull/564
+[#561]: https://github.com/knurling-rs/defmt/pull/561
+[#562]: https://github.com/knurling-rs/defmt/pull/562
+[#560]: https://github.com/knurling-rs/defmt/pull/560
+[#557]: https://github.com/knurling-rs/defmt/pull/557
+[#556]: https://github.com/knurling-rs/defmt/pull/556
 [#551]: https://github.com/knurling-rs/defmt/pull/551
 [#540]: https://github.com/knurling-rs/defmt/pull/540
 [#549]: https://github.com/knurling-rs/defmt/pull/549
