@@ -8,64 +8,64 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#]
-- [#601]: Move crate `defmt` to `defmt/` r=jonas-schievink a=Urhengulas
-- [#600]: Run snapshot & backcompat tests in dev mode only r=jonas-schievink a=japaric
-- [#519]: Target-side `env_logger`-like env filter r=Urhengulas a=japaric
-- [#592]: xtask: add backward compability test r=Urhengulas a=japaric
-- [#598]: `defmt-print`: Recover from decoding-errors r=Urhengulas a=Urhengulas
-- [#569]: Add defmt `println!` macro r=justahero a=justahero
-- [#580]: Structure `defmt::export` r=jonas-schievink a=Urhengulas
-- [#594]: panic-probe: use UDF instruction on nested panics r=jonas-schievink a=japaric
-- [#591]: Remove timestamps from snapshot test r=japaric a=jonas-schievink
-- [#585]: Add xtask option to run a single snapshot test by name r=jonas-schievink a=justahero
-- [#589]: Implement `Format` for arrays of any length r=japaric a=jonas-schievink
-- [#587]: Tweak inline attributes to remove machine code duplication r=jonas-schievink a=japaric
-- [#574]: Refactor rtt [1/2] r=jonas-schievink a=Urhengulas
-- [#584]: Remove outdated doc "you may only call write! once" r=jonas-schievink a=Dirbaio
-- [#582]: Release of `panic-probe v0.2.1` r=Urhengulas a=Urhengulas
-- [#581]: Add impl for `alloc::Layout` r=Urhengulas a=newAM
-- [#579]: defmt-rtt: fix check for blocking RTT r=japaric a=jonas-schievink
-- [#577]: Fix typo in `cfg` of encoding-feature-`compile_error!` r=Urhengulas a=Urhengulas
-- [#578]: `qemu`: Allow dead code r=Urhengulas a=Urhengulas
-- [#550]: `defmt::flush()` r=jonas-schievink a=Urhengulas
-- [#572]: `defmt-decoder`: `impl TryFrom<Option<String>> for Encoding` r=Urhengulas a=Urhengulas
-- [#570]: Support referring to `Self` in bitflags constants r=Urhengulas a=jonas-schievink
-- [#568]: Encoding docs. r=jonas-schievink a=Dirbaio
-- [#564]: Make order of bitflags values deterministic r=Urhengulas a=jonas-schievink
-- [#561]: Remove unused cortex-m-rt in panic-probe a=Dirbaio r=jonas-schievink
-- [#562]: Remove call to fill in user survey from `README` r=Urhengulas a=briocheberlin
-- [#560]: Update cortex-m-rt crate from `0.6` to `0.7` r=jonas-schievink a=newAM
-- [#557]: Add impl for TryFromSliceError r=justahero a=newAM
-- [#556]: Add impl for TryFromIntError r=jonas-schievink a=newAM
-- [#551]: Display git version & date to introduction section r=justahero a=jonas-schievink
-- [#540]: Separate "crate version" from "wire format version r=jonas-schievink a=Dirbaio
-- [#549]: Fix clippy warnings. r=Urhengulas a=Urhengulas
-- [#545]: Revert "`build.rs`: Obtain version from macro; simplify" r=Urhengulas a=Urhengulas
-- [#539]: Add optional rzCOBS encoding+framing r=japaric a=Dirbaio
-- [#518]: `build.rs`: Obtain version from macro; simplify r=Urhengulas a=Urhengulas
-- [#543]: `CI`: Temporarily drop backward-compatibility check r=jonas-schievink a=Urhengulas
-- [#542]: `snapshot-tests`: Test alternate hint for bitfields r=Urhengulas a=Urhengulas
-- [#538]: Fix wrong bit count in comment. r=Urhengulas a=Dirbaio
-- [#537]: `snapshot-tests`: Delete `:?` hint without impact r=Urhengulas a=Urhengulas
-- [#531]: refactor the `macros` crate r=japaric a=japaric
-- [#534]: Attribute test progress message to the test in question; r=japaric a=jonas-schievink
-- [#535]: Don't print leading space when timestamp is absent r=japaric a=jonas-schievink
-- [#529]: Refactor user-guide of `book` r=Urhengulas a=Urhengulas
-- [#528]: Support bitflags r=japaric a=jonas-schievink
-- [#533]: Adds add for user survey into readme. r=Urhengulas a=BriocheBerlin
-- [#527]: `book`: Add logo and support text to introduction r=Urhengulas a=Urhengulas
-- [#526]: `decoder`: Simplify tests r=Urhengulas a=Urhengulas
-- [#359]: Implement precedence of inner display hint r=Urhengulas a=justahero
-- [#523]: Minimize dependencies r=Urhengulas a=Urhengulas
-- [#508]: [5/n] Format trait v2 r=japaric a=Dirbaio
-- [#522]: Replace `µs` hint with `us` r=Urhengulas a=jonas-schievink
-- [#521]: [3/n] Remove u24 r=japaric a=Dirbaio
-- [#516]: `xtask`: Only install additional targets for tests that require them r=Urhengulas a=Urhengulas
-- [#512]: Add overwrite option for xtask cross results. r=Urhengulas a=derekdreery
-- [#514]: extend raw pointer implementation to include !Format types r=Urhengulas a=japaric
-- [#513]: book/duplicates.md: discriminator -> disambiguator r=Urhengulas a=eupn
-- [#507]: [2/n] - Remove code-size-costly optimizations r=jonas-schievink a=Dirbaio
-- [#505]: [1/n] - Logger trait v2. r=jonas-schievink a=Dirbaio
+- [#601]: Move crate `defmt` to `defmt/`
+- [#600]: Run snapshot & backcompat tests in dev mode only
+- [#519]: Target-side `env_logger`-like env filter
+- [#592]: xtask: add backward compability test
+- [#598]: `defmt-print`: Recover from decoding-errors
+- [#569]: Add defmt `println!` macro
+- [#580]: Structure `defmt::export`
+- [#594]: panic-probe: use UDF instruction on nested panics
+- [#591]: Remove timestamps from snapshot test
+- [#585]: Add xtask option to run a single snapshot test by name
+- [#589]: Implement `Format` for arrays of any length
+- [#587]: Tweak inline attributes to remove machine code duplication
+- [#574]: Refactor rtt [1/2]
+- [#584]: Remove outdated doc "you may only call write! once"
+- [#582]: Release of `panic-probe v0.2.1`
+- [#581]: Add impl for `alloc::Layout`
+- [#579]: defmt-rtt: fix check for blocking RTT
+- [#577]: Fix typo in `cfg` of encoding-feature-`compile_error!`
+- [#578]: `qemu`: Allow dead code
+- [#550]: `defmt::flush()`
+- [#572]: `defmt-decoder`: `impl TryFrom<Option<String>> for Encoding`
+- [#570]: Support referring to `Self` in bitflags constants
+- [#568]: Encoding docs.
+- [#564]: Make order of bitflags values deterministic
+- [#561]: Remove unused cortex-m-rt in panic-probe a=Dirbaio
+- [#562]: Remove call to fill in user survey from `README`
+- [#560]: Update cortex-m-rt crate from `0.6` to `0.7`
+- [#557]: Add impl for TryFromSliceError
+- [#556]: Add impl for TryFromIntError
+- [#551]: Display git version & date to introduction section
+- [#540]: Separate "crate version" from "wire format version
+- [#549]: Fix clippy warnings.
+- [#545]: Revert "`build.rs`: Obtain version from macro; simplify"
+- [#539]: Add optional rzCOBS encoding+framing
+- [#518]: `build.rs`: Obtain version from macro; simplify
+- [#543]: `CI`: Temporarily drop backward-compatibility check
+- [#542]: `snapshot-tests`: Test alternate hint for bitfields
+- [#538]: Fix wrong bit count in comment.
+- [#537]: `snapshot-tests`: Delete `:?` hint without impact
+- [#531]: refactor the `macros` crate
+- [#534]: Attribute test progress message to the test in question;
+- [#535]: Don't print leading space when timestamp is absent
+- [#529]: Refactor user-guide of `book`
+- [#528]: Support bitflags
+- [#533]: Adds add for user survey into readme.
+- [#527]: `book`: Add logo and support text to introduction
+- [#526]: `decoder`: Simplify tests
+- [#359]: Implement precedence of inner display hint
+- [#523]: Minimize dependencies
+- [#508]: [5/n] Format trait v2
+- [#522]: Replace `µs` hint with `us`
+- [#521]: [3/n] Remove u24
+- [#516]: `xtask`: Only install additional targets for tests that require them
+- [#512]: Add overwrite option for xtask cross results.
+- [#514]: extend raw pointer implementation to include !Format types
+- [#513]: book/duplicates.md: discriminator -> disambiguator
+- [#507]: [2/n] - Remove code-size-costly optimizations
+- [#505]: [1/n] - Logger trait v2.
 
 [#601]: https://github.com/knurling-rs/defmt/pull/601
 [#600]: https://github.com/knurling-rs/defmt/pull/600
