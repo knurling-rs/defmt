@@ -25,6 +25,22 @@ other-feature = []
 - defmt-error = []
 ```
 
+### Encoding
+
+`defmt` now offers two types of encoding: `rzcobs` and `raw`. You don't need to set this explicitly, since there is a default and both encodings are compatible with the corresponding `defmt-decoder` version.
+
+For more information on the encodings look [here](TODO: add link!).
+
+To set one explicitly you need to select it via the corresponding cargo-feature:
+
+```toml
+defmt = { version = "0.3", features = ["encoding-rzcobs"] }
+
+# OR
+
+defmt = { version = "0.3", features = ["encoding-raw"] }
+```
+
 ## Set the log-level with `DEFMT_LOG`
 
 Setting the log-level via cargo features is superseded by the new `DEFMT_LOG` environment variable.
