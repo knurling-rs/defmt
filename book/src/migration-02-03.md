@@ -88,6 +88,95 @@ Therefore replace it with `u32` in all logging calls.
 
 > 💡 Use the global search-and-replace here as well!
 
+## Adapt manual `trait Logger` implementations
+
+The `trait Logger` gained a big rework. The existing methods changed the function signature, the `trait Write` got removed and there are two new methods. Therefore you need to adapt implementations for your custom loggers.
+
+> 💡 If you are using one of our provided loggers, `defmt-rtt` and `defmt-itm`, there is no action required!
+
+Let us see what needs to be done on the example of `defmt-itm`. Here is how if conceptually worked before:
+
+```rust
+#[defmt::global_logger]
+struct Logger;
+
+static TAKEN: AtomicBool = AtomicBool::new(false);
+
+unsafe impl defmt::Logger for Logger {
+    fn acquire() -> Option<NonNull<dyn defmt::Write>> {
+        if exception {
+            return None;
+        }
+
+        if !TAKEN.load(Ordering::Relaxed) {
+            TAKEN.store(true, Ordering::Relaxed);
+
+            Some(NonNull::from(&Logger as &dyn defmt::Write))
+        } else {
+            None
+        }
+    }
+
+    unsafe fn release(_: NonNull<dyn defmt::Write>) {
+        TAKEN.store(false, Ordering::Relaxed);
+    }
+}
+
+impl defmt::Write for Logger {
+    fn write(&mut self, bytes: &[u8]) {
+        unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
+    }
+}
+```
+
+And here is, how it conceptually does now:
+
+```rust
+#[defmt::global_logger]
+struct Logger;
+
+static TAKEN: AtomicBool = AtomicBool::new(false);
+static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
+
+unsafe impl defmt::Logger for Logger {
+    fn acquire() {
+        if exception {
+            panic!("something bad happened!")
+        }
+
+        if TAKEN.load(Ordering::Relaxed) {
+            panic!("defmt logger taken reentrantly")
+        }
+
+        // acquire the lock
+        TAKEN.store(true, Ordering::Relaxed);
+
+        unsafe { ENCODER.start_frame(do_write) }
+    }
+
+    unsafe fn flush() {
+        // Omitted. We will come to this in a second
+    }
+
+    unsafe fn release() {
+        ENCODER.end_frame(do_write);
+
+        // release the lock
+        TAKEN.store(false, Ordering::Relaxed);
+    }
+
+    unsafe fn write(bytes: &[u8]) {
+        ENCODER.write(bytes, do_write);
+    }
+}
+
+fn do_write(bytes: &[u8]) {
+    unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
+}
+```
+
+### Flush
+
 ---
 
 TODO
