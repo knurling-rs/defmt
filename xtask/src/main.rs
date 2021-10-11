@@ -381,7 +381,14 @@ fn test_book() {
     do_test(|| run_command("cargo", &["clean"], None, &[]), "book");
 
     do_test(
-        || run_command("cargo", &["build", "--features", "unstable-test"], None, &[]),
+        || {
+            run_command(
+                "cargo",
+                &["build", "-p", "defmt", "--features", "unstable-test"],
+                None,
+                &[],
+            )
+        },
         "book",
     );
 
