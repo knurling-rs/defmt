@@ -5,12 +5,16 @@ use core::{
 
 use crate::{consts::BUF_SIZE, MODE_BLOCK_IF_FULL, MODE_MASK};
 
+/// RTT Up channel
 #[repr(C)]
 pub(crate) struct Channel {
     pub name: *const u8,
+    /// Pointer to the RTT buffer.
     pub buffer: *mut u8,
     pub size: usize,
+    /// Written by the target.
     pub write: AtomicUsize,
+    /// Written by the host.
     pub read: AtomicUsize,
     /// Channel properties.
     ///
