@@ -27,10 +27,7 @@ pub fn log_defmt(
     line: Option<u32>,
     module_path: Option<&str>,
 ) {
-    let timestamp = frame
-        .display_timestamp()
-        .map(|display| display.to_string())
-        .unwrap_or_default();
+    let timestamp = frame.display_timestamp().map(|display| display.to_string());
     let display = frame.display_message();
 
     if let Some(level) = frame.level() {
@@ -42,7 +39,7 @@ pub fn log_defmt(
             crate::Level::Error => Level::Error,
         };
 
-        let target = format!("{}{}", DEFMT_TARGET_MARKER, timestamp);
+        let target = format!("{}{}", DEFMT_TARGET_MARKER, timestamp.unwrap_or_default());
         log::logger().log(
             &Record::builder()
                 .args(format_args!("{}", display))
@@ -56,7 +53,8 @@ pub fn log_defmt(
     } else {
         let stdout = io::stdout();
         let mut sink = stdout.lock();
-        writeln!(&mut sink, "{} {}", timestamp, display).ok();
+        let timestamp = timestamp.map(|ts| format!("{} ", ts)).unwrap_or_default();
+        writeln!(&mut sink, "{}{}", timestamp, display).ok();
         print_location(&mut sink, file, line, module_path).ok();
     }
 }
