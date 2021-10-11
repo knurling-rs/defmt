@@ -324,7 +324,7 @@ pub use defmt_macros::timestamp;
 
 /// Generates a bitflags structure that can be formatted with defmt.
 ///
-/// This macro is a wrapper around the [`bitflags`] crate, and provides an (almost) identical
+/// This macro is a wrapper around the [`bitflags!`] crate, and provides an (almost) identical
 /// interface. Refer to [its documentation] for an explanation of the syntax.
 ///
 /// [its documentation]: https://docs.rs/bitflags/1/bitflags/
