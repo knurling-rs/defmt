@@ -44,16 +44,11 @@ impl Channel {
             return 0;
         }
 
+        // calculate how much space is left in the buffer
         let read = self.read.load(Ordering::Relaxed);
         let write = self.write.load(Ordering::Acquire);
-        let available = if read > write {
-            read - write - 1
-        } else if read == 0 {
-            SIZE - write - 1
-        } else {
-            SIZE - write
-        };
-
+        let available = available_buffer_size(read, write);
+        // abort if buffer is full
         if available == 0 {
             return 0;
         }
@@ -116,5 +111,14 @@ impl Channel {
     fn host_is_connected(&self) -> bool {
         // we assume that a host is connected if we are in blocking-mode. this is what probe-run does.
         self.flags.load(Ordering::Relaxed) & MODE_MASK == MODE_BLOCK_IF_FULL
+    }
+}
+
+/// How much space is left in the buffer?
+fn available_buffer_size(read: usize, write: usize) -> usize {
+    match read > write {
+        true => read - write - 1,
+        false if read == 0 => SIZE - write - 1,
+        false => SIZE - write,
     }
 }
