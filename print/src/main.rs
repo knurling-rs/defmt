@@ -17,9 +17,11 @@ struct Opts {
 
     #[structopt(short = "V", long)]
     version: bool,
-    // may want to add this later
-    // #[structopt(short, long)]
-    // verbose: bool,
+
+    /// Enable more verbose logging.
+    #[structopt(short, long)]
+    verbose: bool,
+    //
     // TODO add file path argument; always use stdin for now
 }
 
@@ -32,10 +34,12 @@ fn main() -> anyhow::Result<()> {
         return print_version();
     }
 
-    let verbose = false;
-    defmt_decoder::log::init_logger(verbose, |metadata| {
-        // We display *all* defmt frames, but nothing else.
-        defmt_decoder::log::is_defmt_frame(metadata)
+    let verbose = opts.verbose;
+    defmt_decoder::log::init_logger(verbose, move |metadata| {
+        match verbose {
+            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
+            true => true,                                          // We display *all* frames
+        }
     });
 
     let bytes = fs::read(&opts.elf.unwrap())?;
