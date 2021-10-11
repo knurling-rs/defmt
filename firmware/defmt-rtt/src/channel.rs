@@ -53,7 +53,18 @@ impl Channel {
             return 0;
         }
 
-        let cursor = write;
+        self.write_impl(bytes, available)
+    }
+
+    fn nonblocking_write(&self, bytes: &[u8]) -> usize {
+        self.write_impl(bytes, SIZE)
+    }
+
+    /// Copy `available` (or all) data from `bytes` into the buffer.
+    ///
+    /// Returns the amount of bytes copied.
+    fn write_impl(&self, bytes: &[u8], available: usize) -> usize {
+        let cursor = self.write.load(Ordering::Acquire);
         let len = bytes.len().min(available);
 
         unsafe {
@@ -68,30 +79,7 @@ impl Channel {
             }
         }
         self.write
-            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
-
-        len
-    }
-
-    fn nonblocking_write(&self, bytes: &[u8]) -> usize {
-        let write = self.write.load(Ordering::Acquire);
-        let cursor = write;
-        // NOTE truncate at SIZE to avoid more than one "wrap-around" in a single `write` call
-        let len = bytes.len().min(SIZE);
-
-        unsafe {
-            if cursor + len > SIZE {
-                // split memcpy
-                let pivot = SIZE - cursor;
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
-                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
-            } else {
-                // single memcpy
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
-            }
-        }
-        self.write
-            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
+            .store(cursor.wrapping_add(len) % SIZE, Ordering::Release);
 
         len
     }
