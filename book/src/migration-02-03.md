@@ -92,11 +92,11 @@ Therefore replace it with `u32` in all logging calls.
 
 The `trait Logger` gained a big rework. The existing methods changed the function signature, the `trait Write` got removed and there are two new methods. Therefore you need to adapt implementations for your custom loggers.
 
-> 💡 If you are using one of our provided loggers, `defmt-rtt` and `defmt-itm`, there is no action required!
+> 💡 If you are using one of our loggers, `defmt-rtt` and `defmt-itm`, no action is required!
 
-Let us see what needs to be done on the example of `defmt-itm`. Here is how if conceptually worked before:
+Let us see what needs to be done on the example of `defmt-itm`. Here is how the `trait Logger` implementation conceptually worked before:
 
-```rust
+```rust,ignore
 #[defmt::global_logger]
 struct Logger;
 
@@ -132,6 +132,9 @@ impl defmt::Write for Logger {
 And here is, how it conceptually does now:
 
 ```rust
+# extern crate defmt;
+# use std::sync::atomic::{AtomicBool,Ordering};
+
 #[defmt::global_logger]
 struct Logger;
 
@@ -140,6 +143,7 @@ static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
+        # let exception = false;
         if exception {
             panic!("something bad happened!")
         }
@@ -173,6 +177,14 @@ unsafe impl defmt::Logger for Logger {
 fn do_write(bytes: &[u8]) {
     unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
 }
+
+# mod itm {
+#     pub unsafe fn write_all(a: &mut u8, b: &[u8]) {}
+# }
+# struct ITM { stim: [u8; 1] }
+# impl ITM {
+#     fn ptr() -> *mut ITM { &mut ITM { stim: [0] } as *mut _ }
+# }
 ```
 
 ### Flush
