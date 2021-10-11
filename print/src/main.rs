@@ -75,7 +75,10 @@ fn main() -> anyhow::Result<()> {
                     // if recovery is impossible, abort
                     false => return Err(DecodeError::Malformed.into()),
                     // if recovery is possible, skip the current frame and continue with new data
-                    true => continue,
+                    true => {
+                        log::warn!("malformed frame skipped");
+                        continue;
+                    }
                 },
             }
         }
