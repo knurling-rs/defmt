@@ -109,8 +109,8 @@ unsafe impl defmt::Logger for Logger {
         }
 
         if !TAKEN.load(Ordering::Relaxed) {
+            // acquire the lock
             TAKEN.store(true, Ordering::Relaxed);
-
             Some(NonNull::from(&Logger as &dyn defmt::Write))
         } else {
             None
@@ -118,6 +118,7 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn release(_: NonNull<dyn defmt::Write>) {
+        // release the lock
         TAKEN.store(false, Ordering::Relaxed);
     }
 }
@@ -159,7 +160,7 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn flush() {
-        // Omitted. We will come to this in a second
+        // Omitted. We will come to this in a second.
     }
 
     unsafe fn release() {
@@ -178,6 +179,7 @@ fn do_write(bytes: &[u8]) {
     unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
 }
 
+# // mock `cortex_m::itm`
 # mod itm {
 #     pub unsafe fn write_all(a: &mut u8, b: &[u8]) {}
 # }
@@ -187,16 +189,48 @@ fn do_write(bytes: &[u8]) {
 # }
 ```
 
+Let us go through the changes step-by-step:
+- Drop `trait Write`:
+  - Extract the `fn write` from the `trait Write` and name it `fn do_write`.
+  - Remove the `impl defmt::Write for Logger`.
+  - Remove the the first argument of `&mut self` from `fn do_write`.
+- Add a new `static mut ENCODER: defmt::Encoder = defmt::Encoder::new()` outside the `impl defmt::Logger for Logger`-block.
+- Adapt `fn acquire`:
+  - Remove the return type `Option<NonNull<dyn defmt::Write>>` from `fn acquire`.
+  - Replace all `return None` with an explicit `panic!`, with a descriptive error message.
+  - Call `unsafe { ENCODER.start_frame(do_write) }`, after you acquired the lock.
+- Adapt `fn release`:
+  - Call `ENCODER.end_frame(do_write);`, before releasing the lock.
+- Add new method `unsafe fn write` to `impl defmt::Logger for Logger`:
+    ```rust,noplayground
+    # extern crate defmt;
+    # static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
+    # fn do_write(bytes: &[u8]) {}
+    unsafe fn write(bytes: &[u8]) {
+        ENCODER.write(bytes, do_write);
+    }
+    ```
+
+And that is already it!
+
 ### Flush
+
+One final thing is left before your custom `trait Logger` implementation works again: You need to implement `fn flush`. This functionality is what gets used when calling `defmt::flush`, whose docs say:
+> Block until host has read all pending data.
+>
+> The flush operation will not fail, but might not succeed in flushing all pending data. It is implemented as a “best effort” operation.
+
+The idea is to ensure that _all data_ is read by the host. Or if your transport doesn't allow _all all data_ at least _as much as possible data_. This could get used before a hard-reset of the device, where you would loose data if you do not flush.
+
+Since you are the expert of your transport, implement it now!
 
 ---
 
 TODO
 
-- [ ] `#505`: Logger trait v2
+- [x] `#505`: Logger trait v2
 - [x] `#521`: [3/n] Remove u24
 - [x] `#522`: Replace `µs` hint with `us`
 - [ ] `#508`: [5/n] Format trait v2
-  - no Write trait anymore
 - [x] `#519`: `DEFMT_LOG`
 
