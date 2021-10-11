@@ -51,7 +51,7 @@ To log everything on the `INFO` level and above, run your application like follo
 $ DEFMT_LOG=info cargo run
 ```
 
-For more details how to configure the log-level using `DEFMT_LOG` see the [user docs](TODO: add link).
+For more details how to configure the log-level using `DEFMT_LOG` see the [user docs](./filtering.md#defmt_log).
 
 ## Rename display hint `µs` to `us`
 
