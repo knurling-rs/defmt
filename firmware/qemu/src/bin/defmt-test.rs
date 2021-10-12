@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::AtomicBool;
 
 use defmt_semihosting as _; // global logger
 
@@ -40,7 +40,7 @@ mod tests {
     }
 
     #[test]
-    fn assert_true() -> () {
+    fn assert_true() {
         assert!(true);
     }
 

@@ -402,14 +402,13 @@ fn test_book() {
 
 fn test_lint() {
     println!("🧪 lint");
-    do_test(|| run_command("cargo", &["clean"], None, &[]), "lint");
-    do_test(
-        || run_command("cargo", &["fmt", "--all", "--", "--check"], None, &[]),
-        "lint",
-    );
 
-    do_test(
-        || run_command("cargo", &["clippy", "--workspace"], None, &[]),
-        "lint",
-    );
+    for cwd in [None, Some("firmware")] {
+        do_test(|| run_command("cargo", &["clean"], cwd, &[]), "lint");
+        do_test(
+            || run_command("cargo", &["fmt", "--", "--check"], cwd, &[]),
+            "lint",
+        );
+        do_test(|| run_command("cargo", &["clippy"], cwd, &[]), "lint");
+    }
 }

@@ -11,9 +11,11 @@ use defmt_semihosting as _; // global logger
 fn main() -> ! {
     // return value
     let x: i32 = 42;
+    #[allow(clippy::double_parens)]
     foo(dbg!(x + 1));
 
     // dbg! in log statement
+    #[allow(clippy::double_parens)]
     defmt::info!("the answer is {}", dbg!(x - 1));
 
     // dbg! with multiple arguments
@@ -23,6 +25,7 @@ fn main() -> ! {
     let _: () = dbg!();
 
     // dbg! with trailing comma
+    #[allow(clippy::double_parens)]
     foo(dbg!(x,));
 
     loop {
