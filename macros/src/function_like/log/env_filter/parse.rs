@@ -72,7 +72,7 @@ impl ModulePath {
         }
     }
 
-    pub(super) fn to_str(&self) -> String {
+    pub(super) fn to_string(&self) -> String {
         self.segments.join("::")
     }
 

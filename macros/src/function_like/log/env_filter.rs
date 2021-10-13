@@ -100,7 +100,7 @@ impl EnvFilter {
             .iter()
             .rev()
             .map(|(&module_path, criteria)| {
-                let check = codegen_is_inside_of_check(&module_path.to_str());
+                let check = codegen_is_inside_of_check(&module_path.to_string());
                 let retval = match criteria {
                     Criteria::Accept => quote!(true),
                     Criteria::Reject => quote!(false),
