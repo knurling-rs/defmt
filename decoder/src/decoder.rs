@@ -247,21 +247,12 @@ impl<'t, 'b> Decoder<'t, 'b> {
                             .get_without_level(index as usize)
                             .map_err(|_| DecodeError::Malformed)?;
 
-                        if format.contains('|') {
-                            // enum
-                            let variant = self.get_variant(format)?;
-                            let inner_args = self.decode_format(variant)?;
-                            seq_args.push(Arg::Format {
-                                format: variant,
-                                args: inner_args,
-                            });
-                        } else {
-                            let inner_args = self.decode_format(format)?;
-                            seq_args.push(Arg::Format {
-                                format,
-                                args: inner_args,
-                            });
-                        }
+
+                        let inner_args = self.decode_format(format)?;
+                        seq_args.push(Arg::Format {
+                            format,
+                            args: inner_args,
+                        });
                     }
                     args.push(Arg::FormatSequence { args: seq_args })
                 }
