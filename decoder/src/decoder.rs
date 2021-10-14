@@ -247,7 +247,6 @@ impl<'t, 'b> Decoder<'t, 'b> {
                             .get_without_level(index as usize)
                             .map_err(|_| DecodeError::Malformed)?;
 
-
                         let inner_args = self.decode_format(format)?;
                         seq_args.push(Arg::Format {
                             format,

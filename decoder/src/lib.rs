@@ -606,7 +606,7 @@ mod tests {
             1, 0, // index of Foo
             2, 0,  // index of Bar
             42, // bar.x
-            3, 0, // index of State
+            3, 0,  // index of State
             23, // State variable
             0, 0, // terminator
         ];
