@@ -108,6 +108,7 @@ INFO Hello 💜 & 🍕
 INFO EnumLarge::A051
 INFO EnumLarge::A269
 INFO S { x: "hi" }
+INFO State: 13|
 INFO S { x: PhantomData, y: 42 }
 INFO bitfields 97 10000100 12 b"42" b"hello"
 INFO b"Hi"
