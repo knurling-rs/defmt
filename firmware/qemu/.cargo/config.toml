@@ -1,4 +1,5 @@
 [alias]
+tt = "-q test --target thumbv7m-none-eabi --test"
 rb = "-q run --target thumbv7m-none-eabi --bin"
 rrb = "-q run --target thumbv7m-none-eabi --release --bin"
 

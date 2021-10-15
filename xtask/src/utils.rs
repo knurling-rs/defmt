@@ -1,13 +1,17 @@
-use std::{fs, path::Path, process::Command, str};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+    str,
+};
 
 use anyhow::{anyhow, Context};
 use colored::Colorize;
 
-pub fn load_expected_output(name: &str) -> anyhow::Result<String> {
-    let file = expected_output_path(name);
-    let path = Path::new(&file);
+pub fn load_expected_output(name: &str, is_test: bool) -> anyhow::Result<String> {
+    let path = expected_output_path(name, is_test);
 
-    fs::read_to_string(path).with_context(|| {
+    fs::read_to_string(&path).with_context(|| {
         format!(
             "Failed to load expected output data from {}",
             path.to_str().unwrap_or("(non-Unicode path)")
@@ -15,8 +19,8 @@ pub fn load_expected_output(name: &str) -> anyhow::Result<String> {
     })
 }
 
-pub fn overwrite_expected_output(name: &str, contents: &[u8]) -> anyhow::Result<()> {
-    let file = expected_output_path(name);
+pub fn overwrite_expected_output(name: &str, contents: &[u8], is_test: bool) -> anyhow::Result<()> {
+    let file = expected_output_path(name, is_test);
     let path = Path::new(&file);
 
     fs::write(path, contents).with_context(|| {
@@ -27,9 +31,19 @@ pub fn overwrite_expected_output(name: &str, contents: &[u8]) -> anyhow::Result<
     })
 }
 
-fn expected_output_path(name: &str) -> String {
-    const BASE: &str = "firmware/qemu/src/bin";
-    format!("{}/{}.out", BASE, name)
+fn expected_output_path(name: &str, is_test: bool) -> PathBuf {
+    const PROJECT_DIR: &str = "firmware/qemu";
+
+    let mut path = PathBuf::from(PROJECT_DIR);
+    if is_test {
+        path.push("tests")
+    } else {
+        path.push("src");
+        path.push("bin");
+    };
+    path.push(name);
+    path.set_extension("out");
+    path
 }
 
 /// Execute the [`Command`]. If success return `stdout`, if failure print to `stderr`
