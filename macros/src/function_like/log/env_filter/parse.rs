@@ -1,6 +1,7 @@
 use defmt_parser::Level;
 #[cfg(not(test))]
 use proc_macro_error::abort_call_site as panic;
+use std::fmt;
 use syn::Ident;
 
 // None = "off" pseudo-level
@@ -72,12 +73,14 @@ impl ModulePath {
         }
     }
 
-    pub(super) fn to_string(&self) -> String {
-        self.segments.join("::")
-    }
-
     pub(super) fn crate_name(&self) -> &str {
         &self.segments[0]
+    }
+}
+
+impl fmt::Display for ModulePath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.segments.join("::"))
     }
 }
 

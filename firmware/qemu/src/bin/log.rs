@@ -569,6 +569,18 @@ fn main() -> ! {
     }
 
     {
+        // #565 - should handle '|' symbol correctly
+        struct State {}
+        impl Format for State {
+            fn format(&self, f: Formatter) {
+                defmt::write!(f, "{=u8}|", 13_u8);
+            }
+        }
+
+        defmt::info!("State: {}", State {});
+    }
+
+    {
         #[derive(Format)]
         struct S {
             x: PhantomData<u8>,
