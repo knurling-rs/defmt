@@ -8,7 +8,7 @@
 
 - `println!`-like formatting
 - Multiple logging levels: `error`, `info`, `warn`, `debug`, `trace`
-- Crate-level logging level filters
+- `RUST_LOG`-like filtering of logs: include/omit logging levels or modules
 - Timestamped logs
 
 ## Current limitations
