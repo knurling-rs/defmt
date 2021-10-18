@@ -140,7 +140,7 @@ impl defmt::Write for Logger {
 }
 ```
 
-And here is, how it conceptually works now:
+And here is how it conceptually works now:
 
 ```rust
 # extern crate defmt;
