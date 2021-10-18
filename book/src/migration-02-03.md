@@ -313,6 +313,18 @@ unsafe impl defmt::Logger for Logger {
 
 Since you are the expert of your transport, implement the method now!
 
+## Unified `probe-run` backtrace options
+
+The new `--backtrace` and `--backtrace-limit` of `probe-run` should simplify the configuration.
+
+```console
+cargo run --bin panic --backtrace=always --backtrace-limit=5
+```
+
+Using `--backtrace` you can now specify if you want to have a backtrace `never`, `always` or only in case of an exception (the `auto` option, which is the default). For the latter two options you can specify the maximum backtrace length, which defaults to `50` and can be set to unlimited with `0`.
+
+See [the `probe-run`-README](https://github.com/knurling-rs/probe-run#backtrace-options) for all the options.
+
 ## Congrats! 🎉
 
 If you followed all the steps in this guide, your application should work flawlessly again and make use of all the internal and user-facing improvements shipped in this release! 
