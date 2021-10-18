@@ -189,7 +189,7 @@ fn do_write(bytes: &[u8]) {
     unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
 }
 
-# // mock `cortex_m::itm`
+# // mock cortex_m-crate
 # mod itm {
 #     pub unsafe fn write_all(a: &mut u8, b: &[u8]) {}
 # }
@@ -236,9 +236,13 @@ The idea is to ensure that _all data_ is read by the host. Take `defmt-rtt` as a
 
 ```rust
 # extern crate defmt;
+# use std::sync::atomic::{AtomicUsize,Ordering};
 
 # #[defmt::global_logger]
 # struct Logger;
+
+# static READ: AtomicUsize = AtomicUsize::new(0);
+# static WRITE: AtomicUsize = AtomicUsize::new(0);
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
@@ -247,8 +251,8 @@ unsafe impl defmt::Logger for Logger {
 
     unsafe fn flush() {
         // busy wait, until the read- catches up with the write-pointer
-        let read = || self.read.load(Ordering::Relaxed);
-        let write = || self.write.load(Ordering::Relaxed);
+        let read = || READ.load(Ordering::Relaxed);
+        let write = || WRITE.load(Ordering::Relaxed);
         while read() != write() {}
     }
 
@@ -293,6 +297,16 @@ unsafe impl defmt::Logger for Logger {
         // ...
     }
 }
+
+# // mock cortex_m-crate
+# struct STIM0;
+# impl STIM0 {
+#     fn is_fifo_ready(&self) -> bool { true }
+# }
+# fn stim_0() -> STIM0 { STIM0 }
+# mod asm {
+#     pub fn delay(cycles: usize) {}
+# }
 ```
 
 `defmt::flush` can be used before a hard-reset of the device, where you would loose data if you do not flush.
