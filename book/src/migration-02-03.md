@@ -15,6 +15,12 @@ Additionally please remove the `defmt-*` cargo features from your `[features]` s
 + defmt = "0.3"
 
 [features]
+default = [
+    "other-feature",
+-   "defmt-default",
+-   "dependency-a/defmt-trace",
+]
+
 other-feature = []
 
 - defmt-default = []
@@ -41,6 +47,8 @@ defmt = { version = "0.3", features = ["encoding-rzcobs"] }
 defmt = { version = "0.3", features = ["encoding-raw"] }
 ```
 
+Be aware that you can only set one encoding feature at a time! Else there will be a compile-error.
+
 ## Set the log-level with `DEFMT_LOG`
 
 Setting the log-level via cargo features is superseded by the new `DEFMT_LOG` environment variable.
@@ -53,7 +61,13 @@ $ DEFMT_LOG=info cargo run
 
 For more details how to configure the log-level using `DEFMT_LOG` see the [user docs](./filtering.md#defmt_log).
 
-## Rename display hint `µs` to `us`
+This new mechanism is modelled to be similar to the well-known `RUST_LOG` and now also supports log-configuration down to the module-level!
+
+## Upgrade display hints
+
+> 💡 Easily change the display hints, using the search-and-replace feature of your editor. *([vs code](https://code.visualstudio.com/docs/editor/codebasics#_search-and-replace))*
+
+### Rename display hint `µs` to `us`
 
 Due to ambiguity in-between `µ` (micro sign) and `μ` (small mu), the display hint for microseconds changed to be `us`.
 
@@ -73,11 +87,9 @@ As well as all other logging calls where you were using `µs`.
 + defmt::info!("{=u8:us}", time)
 ```
 
-> 💡 Easily fix this, using the global search-and-replace feature of your editor/IDE. *([vs code](https://code.visualstudio.com/docs/editor/codebasics#_search-and-replace))*
+### Drop `u24` type hint
 
-## Drop `u24` type hint
-
-The `u24` type hint got dropped, cause it was confusing users and complicates the code.
+The `u24` type hint got dropped, cause it was confusing users and complicated internal parser logic.
 
 Therefore replace it with `u32` in all logging calls.
 
@@ -86,15 +98,13 @@ Therefore replace it with `u32` in all logging calls.
 + defmt::info!("{=u32}", 42);
 ```
 
-> 💡 Use the global search-and-replace here as well!
-
 ## Adapt manual `trait Logger` implementations
 
-The `trait Logger` gained a big rework. The existing methods changed the function signature, the `trait Write` got removed and there are two new methods. Therefore you need to adapt implementations for your custom loggers.
+The `Logger` trait has seen a couple of big changes, for one the function signatures of a few methods have changed, the previous `Write` trait got removed while its `write` method is part of `Logger` now and the method `flush` was added.
 
 > 💡 If you are using one of our loggers, `defmt-rtt` and `defmt-itm`, no action is required!
 
-Let us see what needs to be done on the example of `defmt-itm`. Here is how the `trait Logger` implementation conceptually worked before:
+Let's see what a new implementation of the `Logger` in crate `defmt-itm` looks like compared to the previous implementation in version `0.2`. The following abbreviated example code shows how the `Logger` worked before.
 
 ```rust,ignore
 #[defmt::global_logger]
@@ -130,7 +140,7 @@ impl defmt::Write for Logger {
 }
 ```
 
-And here is, how it conceptually does now:
+And here is, how it conceptually works now:
 
 ```rust
 # extern crate defmt;
@@ -215,22 +225,80 @@ And that is already it!
 
 ### Flush
 
-One final thing is left before your custom `trait Logger` implementation works again: You need to implement `fn flush`. This functionality is what gets used when calling `defmt::flush`, whose docs say:
+One final thing is left before your custom `trait Logger` implementation works again: You need to implement `fn flush`.
+
+This functionality is what gets used when calling `defmt::flush`, [whose docs say](https://docs.rs/defmt/*/defmt/fn.flush.html):
 > Block until host has read all pending data.
 >
 > The flush operation will not fail, but might not succeed in flushing all pending data. It is implemented as a “best effort” operation.
 
-The idea is to ensure that _all data_ is read by the host. Or if your transport doesn't allow _all all data_ at least _as much as possible data_. This could get used before a hard-reset of the device, where you would loose data if you do not flush.
+The idea is to ensure that _all data_ is read by the host. Take `defmt-rtt` as an example:
 
-Since you are the expert of your transport, implement it now!
+```rust
+# extern crate defmt;
 
----
+# #[defmt::global_logger]
+# struct Logger;
 
-TODO
+unsafe impl defmt::Logger for Logger {
+    fn acquire() {
+        // ...
+    }
 
-- [x] `#505`: Logger trait v2
-- [x] `#521`: [3/n] Remove u24
-- [x] `#522`: Replace `µs` hint with `us`
-- [ ] `#508`: [5/n] Format trait v2
-- [x] `#519`: `DEFMT_LOG`
+    unsafe fn flush() {
+        // busy wait, until the read- catches up with the write-pointer
+        let read = || self.read.load(Ordering::Relaxed);
+        let write = || self.write.load(Ordering::Relaxed);
+        while read() != write() {}
+    }
 
+    unsafe fn release() {
+        // ...
+    }
+
+    unsafe fn write(bytes: &[u8]) {
+        // ...
+    }
+}
+```
+
+If your transport doesn't allow to ensure that _all data_ got read, `flush` should at least flush _as much data as possible_. Take `defmt-itm` as an example for this:
+
+```rust
+# extern crate defmt;
+
+# #[defmt::global_logger]
+# struct Logger;
+
+unsafe impl defmt::Logger for Logger {
+    fn acquire() {
+        // ...
+    }
+
+    unsafe fn flush() {
+        // wait for the queue to be able to accept more data
+        while !stim_0().is_fifo_ready() {}
+
+        // delay "a bit" to drain the queue
+        // This is a heuristic and might be too short in reality.
+        // Please open an issue if it is!
+        asm::delay(100);
+    }
+
+    unsafe fn release() {
+        // ...
+    }
+
+    unsafe fn write(bytes: &[u8]) {
+        // ...
+    }
+}
+```
+
+`defmt::flush` can be used before a hard-reset of the device, where you would loose data if you do not flush.
+
+Since you are the expert of your transport, implement the method now!
+
+## Congrats! 🎉
+
+If you followed all the steps in this guide, your application should work flawlessly again and make use of all the internal and user-facing improvements shipped in this release! 
