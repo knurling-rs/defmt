@@ -15,6 +15,9 @@ struct Opts {
     #[structopt(short, parse(from_os_str), required_unless_one(&["version"]))]
     elf: Option<PathBuf>,
 
+    #[structopt(long)]
+    show_skipped_frames: bool,
+
     #[structopt(short, long)]
     verbose: bool,
 
@@ -27,6 +30,7 @@ const READ_BUFFER_SIZE: usize = 1024;
 fn main() -> anyhow::Result<()> {
     let Opts {
         elf,
+        show_skipped_frames,
         verbose,
         version,
     } = Opts::from_args();
@@ -74,7 +78,10 @@ fn main() -> anyhow::Result<()> {
                     false => return Err(DecodeError::Malformed.into()),
                     // if recovery is possible, skip the current frame and continue with new data
                     true => {
-                        log::warn!("malformed frame skipped");
+                        if show_skipped_frames || verbose {
+                            println!("(HOST) malformed frame skipped");
+                            println!("└─ {} @ {}:{}", env!("CARGO_PKG_NAME"), file!(), line!());
+                        }
                         continue;
                     }
                 },
