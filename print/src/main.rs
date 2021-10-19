@@ -15,7 +15,6 @@ struct Opts {
     #[structopt(short, parse(from_os_str), required_unless_one(&["version"]))]
     elf: Option<PathBuf>,
 
-    /// Enable more verbose logging.
     #[structopt(short, long)]
     verbose: bool,
 
@@ -26,21 +25,22 @@ struct Opts {
 const READ_BUFFER_SIZE: usize = 1024;
 
 fn main() -> anyhow::Result<()> {
-    let opts: Opts = Opts::from_args();
+    let Opts {
+        elf,
+        verbose,
+        version,
+    } = Opts::from_args();
 
-    if opts.version {
+    if version {
         return print_version();
     }
 
-    let verbose = opts.verbose;
-    defmt_decoder::log::init_logger(verbose, move |metadata| {
-        match verbose {
-            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
-            true => true,                                          // We display *all* frames
-        }
+    defmt_decoder::log::init_logger(verbose, move |metadata| match verbose {
+        false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
+        true => true,                                          // We display *all* frames.
     });
 
-    let bytes = fs::read(&opts.elf.unwrap())?;
+    let bytes = fs::read(&elf.unwrap())?;
 
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
