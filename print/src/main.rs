@@ -15,14 +15,12 @@ struct Opts {
     #[structopt(short, parse(from_os_str), required_unless_one(&["version"]))]
     elf: Option<PathBuf>,
 
-    #[structopt(short = "V", long)]
-    version: bool,
-
     /// Enable more verbose logging.
     #[structopt(short, long)]
     verbose: bool,
-    //
-    // TODO add file path argument; always use stdin for now
+
+    #[structopt(short = "V", long)]
+    version: bool,
 }
 
 const READ_BUFFER_SIZE: usize = 1024;
