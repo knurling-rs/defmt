@@ -99,13 +99,10 @@ fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) ->
     let loc = locs.as_ref().map(|locs| &locs[&frame.index()]);
 
     if let Some(loc) = loc {
-        let relpath = if let Ok(relpath) = loc.file.strip_prefix(&current_dir) {
-            relpath
-        } else {
-            // not relative; use full path
-            &loc.file
-        };
-        file = Some(relpath.display().to_string());
+        // try to get the relative path, else the full one
+        let path = loc.file.strip_prefix(&current_dir).unwrap_or(&loc.file);
+
+        file = Some(path.display().to_string());
         line = Some(loc.line as u32);
         mod_path = Some(loc.module.clone());
     }
