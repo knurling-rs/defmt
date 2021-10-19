@@ -6,6 +6,10 @@ name = "firmware"
 publish = false
 version = "0.1.0"
 
+[[test]]
+name = "defmt-test"
+harness = false
+
 [dependencies]
 defmt = { path = "../../defmt" }
 defmt-semihosting = { path = "../defmt-semihosting" }

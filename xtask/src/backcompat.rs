@@ -98,9 +98,12 @@ impl QemuRun {
     fn run_snapshot(&self, name: &str) -> anyhow::Result<()> {
         println!("{}", name.bold());
 
+        let is_test = name.contains("test");
+        let command = if is_test { "tt" } else { "rb" };
+
         run_silently(
             Command::new("cargo")
-                .args(["-q", "rb", name])
+                .args(["-q", command, name])
                 .current_dir(SNAPSHOT_TESTS_DIRECTORY)
                 .env(RUNNER_ENV_VAR, self.path()),
             || anyhow!("{}", name.to_string()),

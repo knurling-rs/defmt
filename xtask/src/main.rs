@@ -331,7 +331,13 @@ fn test_all_snapshots(overwrite: bool) {
 fn test_single_snapshot(name: &str, features: &str, overwrite: bool) -> anyhow::Result<()> {
     println!("{}", name.bold());
 
-    let mut args = vec!["-q", "rb", name];
+    let is_test = name.contains("test");
+
+    let mut args = if is_test {
+        vec!["-q", "tt", name]
+    } else {
+        vec!["-q", "rb", name]
+    };
 
     if !features.is_empty() {
         args.extend_from_slice(&["--features", features]);
@@ -346,11 +352,11 @@ fn test_single_snapshot(name: &str, features: &str, overwrite: bool) -> anyhow::
     .with_context(|| name.to_string())?;
 
     if overwrite {
-        overwrite_expected_output(name, actual.as_bytes())?;
+        overwrite_expected_output(name, actual.as_bytes(), is_test)?;
         return Ok(());
     }
 
-    let expected = load_expected_output(name)?;
+    let expected = load_expected_output(name, is_test)?;
     let diff = TextDiff::from_lines(&expected, &actual);
 
     // if anything isn't ChangeTag::Equal, print it and turn on error flag
