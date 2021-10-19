@@ -15,6 +15,7 @@
   - [#[global_logger]](./global-logger.md)
   - [panic! and assert!](./panic.md)
   - [Printers](./printers.md)
+  - [Encoding](./encoding.md)
 - [Design & impl details](./design.md)
   - [Interning](./interning.md)
     - [Dealing with duplicates](./duplicates.md)
