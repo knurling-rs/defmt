@@ -24,7 +24,8 @@ version = "0.3.0"
 features = ["encoding-rzcobs"] # <- encoding
 ```
 
-Note that libraries (dependencies) MUST not select the encoder so that applications (top-level crates) can.
+> ⚠️ Note that libraries (dependencies) MUST not select the encoder so that applications (top-level crates) can.
+
 If no `enocding-*` feature is enabled then the default encoding is used.
 
 The encoding is included in the output binary artifact as metadata so [printers](printers.html) will detect it and use the appropriate decoder automatically.
