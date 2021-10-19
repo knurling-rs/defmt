@@ -596,6 +596,7 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Info, "{=__internal_FormatSequence}".to_owned()),
             TableEntry::new_without_symbol(Tag::Derived, "Foo".to_owned()),
             TableEntry::new_without_symbol(Tag::Derived, "Bar({=u8})".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "State {=u8}|".to_owned()),
         ];
 
         let table = test_table(entries);
@@ -605,6 +606,8 @@ mod tests {
             1, 0, // index of Foo
             2, 0,  // index of Bar
             42, // bar.x
+            3, 0,  // index of State
+            23, // State variable
             0, 0, // terminator
         ];
 
@@ -627,6 +630,10 @@ mod tests {
                             Arg::Format {
                                 format: "Bar({=u8})",
                                 args: vec![Arg::Uxx(42)]
+                            },
+                            Arg::Format {
+                                format: "State {=u8}|",
+                                args: vec![Arg::Uxx(23)]
                             }
                         ]
                     }],

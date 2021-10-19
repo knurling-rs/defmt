@@ -1,6 +1,7 @@
 use defmt_parser::Level;
 #[cfg(not(test))]
 use proc_macro_error::abort_call_site as panic;
+use std::fmt;
 use syn::Ident;
 
 // None = "off" pseudo-level
@@ -8,7 +9,9 @@ pub(crate) type LogLevelOrOff = Option<Level>;
 
 // NOTE this is simpler than `syn::Path`; we do not want to accept e.g. `Vec::<Ty>::new`
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(crate) struct ModulePath(String);
+pub(crate) struct ModulePath {
+    segments: Vec<String>,
+}
 
 /// Parses the contents of the `DEFMT_LOG` env var
 pub(crate) fn defmt_log(input: &str) -> impl Iterator<Item = Entry> + '_ {
@@ -55,25 +58,29 @@ impl ModulePath {
         Self::parse(input)
     }
 
-    fn parse(input: &str) -> Self {
+    pub(super) fn parse(input: &str) -> Self {
         if input.is_empty() {
             panic!("DEFMT_LOG env var: module path cannot be an empty string")
         }
 
         input.split("::").for_each(validate_identifier);
 
-        Self(input.to_string())
+        Self {
+            segments: input
+                .split("::")
+                .map(|segment| segment.to_string())
+                .collect(),
+        }
     }
 
-    pub(crate) fn as_str(&self) -> &str {
-        &self.0
+    pub(super) fn crate_name(&self) -> &str {
+        &self.segments[0]
     }
+}
 
-    pub(crate) fn crate_name(&self) -> &str {
-        self.0
-            .split_once("::")
-            .map(|(crate_name, _rest)| crate_name)
-            .unwrap_or(&self.0)
+impl fmt::Display for ModulePath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.segments.join("::"))
     }
 }
 
@@ -107,14 +114,35 @@ mod tests {
         assert_eq!(
             [
                 Entry::LogLevel(Some(Level::Info)),
-                Entry::ModulePath(ModulePath("krate".to_string())),
+                Entry::ModulePath(ModulePath {
+                    segments: vec!["krate".to_string()]
+                }),
                 Entry::ModulePathLogLevel {
-                    module_path: ModulePath("krate".to_string()),
+                    module_path: ModulePath {
+                        segments: vec!["krate".to_string()]
+                    },
                     log_level: Some(Level::Info)
                 },
             ],
             entries.as_slice()
         );
+    }
+
+    #[test]
+    fn after_sorting_innermost_modules_appear_last() {
+        let mut paths = [
+            ModulePath::parse("krate::module::inner"),
+            ModulePath::parse("krate"),
+            ModulePath::parse("krate::module"),
+        ];
+        paths.sort();
+
+        let expected = [
+            ModulePath::parse("krate"),
+            ModulePath::parse("krate::module"),
+            ModulePath::parse("krate::module::inner"),
+        ];
+        assert_eq!(expected, paths);
     }
 
     #[test]

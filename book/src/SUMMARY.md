@@ -15,6 +15,7 @@
   - [#[global_logger]](./global-logger.md)
   - [panic! and assert!](./panic.md)
   - [Printers](./printers.md)
+  - [Encoding](./encoding.md)
 - [Migrating from `v0.2.x` to `v0.3.0`](./migration-02-03.md)
 - [Design & impl details](./design.md)
   - [Interning](./interning.md)

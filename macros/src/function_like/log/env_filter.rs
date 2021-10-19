@@ -71,51 +71,51 @@ impl EnvFilter {
     ///
     /// Returns `None` if the caller crate (at any module path) will never emit logs at requested log `level`
     pub(crate) fn path_check(&self, level: Level) -> Option<TokenStream2> {
-        let paths = self.modules(level);
+        enum Criteria {
+            Accept,
+            Reject,
+        }
 
-        if paths.is_empty() {
+        let modules_to_accept = self.modules_on_for(level);
+
+        if modules_to_accept.is_empty() {
             return None;
         }
 
-        let conds = paths
+        let modules_to_reject = self.always_off_modules();
+
+        let module_to_criteria: BTreeMap<_, _> = modules_to_accept
             .iter()
-            .map(|needle| {
-                let needle = needle.as_bytes();
-                let needle_len = needle.len();
-                let byte_checks = needle
+            .map(|&path| (path, Criteria::Accept))
+            .chain(
+                modules_to_reject
                     .iter()
-                    .enumerate()
-                    .map(|(index, byte)| quote!(haystack[#index] == #byte))
-                    .collect::<Vec<_>>();
+                    .map(|&path| (path, Criteria::Reject)),
+            )
+            .collect();
 
-                quote!(
-                    // start of const-context `[u8]::starts_with(needle)`
-                    if #needle_len > haystack.len() {
-                        false
-                    } else {
-                        #(#byte_checks &&)*
-                    // end of const-context `[u8]::starts_with`
-
-                    // check that what follows the `needle` is the end of a path segment
-                    if #needle_len == haystack.len() {
-                        // end of the entire module path
-                        true
-                    } else {
-                        // end of module path _segment_
-                        //
-                        // `haystack` comes from `module_path!`; we assume it's well-formed so we
-                        // don't check *everything* that comes after `needle`; just the first
-                        // character of what should be the path separator ("::")
-                        haystack[#needle_len] == b':'
-                    }
+        // iterate in reverse because we want to early accept innermost modules
+        // the iteration will go `krate::module::inner`, then `krate::module` then `krate`
+        let checks = module_to_criteria
+            .iter()
+            .rev()
+            .map(|(&module_path, criteria)| {
+                let check = codegen_is_inside_of_check(&module_path.to_string());
+                let retval = match criteria {
+                    Criteria::Accept => quote!(true),
+                    Criteria::Reject => quote!(false),
+                };
+                quote!(if #check {
+                    return #retval;
                 })
             })
             .collect::<Vec<_>>();
 
         Some(quote!({
             const fn check() -> bool {
-                let haystack = module_path!().as_bytes();
-                false #(|| #conds)*
+                let module_path = module_path!().as_bytes();
+                #(#checks)*
+                false
             }
 
             check()
@@ -123,7 +123,7 @@ impl EnvFilter {
     }
 
     /// Returns the set of modules that can emit logs at requested `level`
-    fn modules(&self, level: Level) -> BTreeSet<&str> {
+    fn modules_on_for(&self, level: Level) -> BTreeSet<&ModulePath> {
         self.entries
             .iter()
             .rev()
@@ -131,7 +131,7 @@ impl EnvFilter {
                 // `min_level == None` means "off" so exclude the module path in that case
                 min_level.and_then(|min_level| {
                     if level >= min_level {
-                        Some(module_path.as_str())
+                        Some(module_path)
                     } else {
                         None
                     }
@@ -139,6 +139,58 @@ impl EnvFilter {
             })
             .collect()
     }
+
+    /// Returns the set of modules that must NOT emit logs (= that are set to `off`)
+    fn always_off_modules(&self) -> BTreeSet<&ModulePath> {
+        self.entries
+            .iter()
+            .rev()
+            .filter_map(|(module_path, level_or_off)| {
+                if level_or_off.is_none() {
+                    // `off` pseudo-level
+                    Some(module_path)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+}
+
+// NOTE this also returns `true` when `module_path == parent_module_path`
+// what we want to check is if the function that calls the proc-macro is inside `parent_module_path`
+// `module_path!` returns the path to the module the function is in, not the path to the function
+// itself
+fn codegen_is_inside_of_check(parent_module_path: &str) -> TokenStream2 {
+    let parent = parent_module_path.as_bytes();
+    let parent_len = parent.len();
+    let byte_checks = parent
+        .iter()
+        .enumerate()
+        .map(|(index, byte)| quote!(module_path[#index] == #byte))
+        .collect::<Vec<_>>();
+
+    quote!(
+        // start of const-context `[u8]::starts_with(needle)`
+        if #parent_len > module_path.len() {
+            false
+        } else {
+            #(#byte_checks &&)*
+        // end of const-context `[u8]::starts_with`
+
+        // check that what follows the `module_path` is the end of a path segment
+        if #parent_len == module_path.len() {
+            // end of the entire module path
+            true
+        } else {
+            // end of module path _segment_
+            //
+            // `module_path` comes from `module_path!`; we assume it's well-formed so we
+            // don't check *everything* that comes after `needle`; just the first
+            // character of what should be the path separator ("::")
+            module_path[#parent_len] == b':'
+        }
+    })
 }
 
 #[cfg(test)]
@@ -151,84 +203,152 @@ mod tests {
     #[test]
     fn when_duplicates_entries_in_defmt_log_use_last_entry() {
         let env_filter = EnvFilter::new(Some("krate=info,krate=debug"), "krate");
-        assert_eq!(btreeset!["krate"], env_filter.modules(Level::Debug));
-        assert_eq!(btreeset![], env_filter.modules(Level::Trace));
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Debug)
+        );
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Trace));
     }
 
     #[test]
     fn when_empty_defmt_log_use_error() {
         let env_filter = EnvFilter::new(None, "krate");
-        assert_eq!(btreeset!["krate"], env_filter.modules(Level::Error));
-        assert_eq!(btreeset![], env_filter.modules(Level::Warn));
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Error)
+        );
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Warn));
     }
 
     #[test]
     fn when_no_level_in_defmt_log_use_trace() {
         let env_filter = EnvFilter::new(Some("krate"), "krate");
-        assert_eq!(btreeset!["krate"], env_filter.modules(Level::Trace));
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Trace)
+        );
     }
 
     #[test]
     fn when_level_in_defmt_log_use_it() {
         let env_filter = EnvFilter::new(Some("krate=info"), "krate");
-        assert_eq!(btreeset!["krate"], env_filter.modules(Level::Info));
-        assert_eq!(btreeset![], env_filter.modules(Level::Debug));
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Info)
+        );
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Debug));
     }
 
     #[test]
     fn when_only_level_is_specified_in_defmt_log_it_applies_to_all_crates() {
         let env_filter = EnvFilter::new(Some("info"), "krate");
-        assert_eq!(btreeset!["krate"], env_filter.modules(Level::Info));
-        assert_eq!(btreeset![], env_filter.modules(Level::Debug));
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Info)
+        );
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Debug));
     }
 
     #[test]
     fn moduleless_level_has_lower_precedence() {
         let env_filter = EnvFilter::new(Some("krate=info,warn"), "krate");
-        assert_eq!(btreeset!["krate"], env_filter.modules(Level::Info));
-        assert_eq!(btreeset![], env_filter.modules(Level::Debug));
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Info)
+        );
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Debug));
     }
 
     #[test]
     fn moduleless_level_behaves_like_a_krate_level_pair() {
         let env_filter = EnvFilter::new(Some("krate::module=info,warn"), "krate");
+        let expected = [
+            ModulePath::parse("krate"),
+            ModulePath::parse("krate::module"),
+        ];
         assert_eq!(
-            btreeset!["krate", "krate::module"],
-            env_filter.modules(Level::Warn)
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Warn)
         );
-        assert_eq!(btreeset!["krate::module"], env_filter.modules(Level::Info));
-        assert_eq!(btreeset![], env_filter.modules(Level::Debug));
+
+        let expected = [ModulePath::parse("krate::module")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Info)
+        );
+
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Debug));
     }
 
     #[test]
     fn module_paths_different_levels() {
         let env_filter = EnvFilter::new(Some("krate=info,krate::module=debug"), "krate");
+
+        let expected = [
+            ModulePath::parse("krate"),
+            ModulePath::parse("krate::module"),
+        ];
         assert_eq!(
-            btreeset!["krate", "krate::module"],
-            env_filter.modules(Level::Info)
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Info)
         );
-        assert_eq!(btreeset!["krate::module"], env_filter.modules(Level::Debug));
-        assert_eq!(btreeset![], env_filter.modules(Level::Trace));
+
+        let expected = [ModulePath::parse("krate::module")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Debug)
+        );
+
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Trace));
     }
 
     #[test]
     fn blanket_off() {
         let env_filter = EnvFilter::new(Some("off"), "krate");
-        assert_eq!(btreeset![], env_filter.modules(Level::Error));
+
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Error));
+
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.always_off_modules()
+        );
     }
 
     #[test]
     fn blanket_off_plus_override() {
         let env_filter = EnvFilter::new(Some("krate::module=error,off"), "krate");
-        assert_eq!(btreeset!["krate::module"], env_filter.modules(Level::Error));
-        assert_eq!(btreeset![], env_filter.modules(Level::Warn));
+
+        let expected = [ModulePath::parse("krate::module")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Error)
+        );
+
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Warn));
+
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.always_off_modules()
+        );
     }
 
     #[test]
     fn does_not_match_partial_crate_name() {
         let env_filter = EnvFilter::new(Some("fooo=warn"), "foo");
-        assert_eq!(btreeset!["foo"], env_filter.modules(Level::Error));
-        assert_eq!(btreeset![], env_filter.modules(Level::Warn));
+        let expected = [ModulePath::parse("foo")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Error)
+        );
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Warn));
     }
 
     // doesn't affect runtime performance but it makes the expanded code smaller
@@ -236,7 +356,11 @@ mod tests {
     #[test]
     fn when_module_paths_with_same_level_remove_inner_ones() {
         let env_filter = EnvFilter::new(Some("krate=info,krate::module=info"), "krate");
-        assert_eq!(btreeset!["krate"], env_filter.modules(Level::Info));
-        assert_eq!(btreeset![], env_filter.modules(Level::Debug));
+        let expected = [ModulePath::parse("krate")];
+        assert_eq!(
+            expected.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Info)
+        );
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Debug));
     }
 }

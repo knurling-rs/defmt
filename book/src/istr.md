@@ -11,7 +11,7 @@ A `Str` value is created using the [`intern!`] macro; the argument to this macro
 # extern crate defmt;
 let s = "The quick brown fox jumps over the lazy dog";
 defmt::info!("{=str}", s);
-//                      ^ bandwidth-use = 43 bytes
+//                     ^ bandwidth-use = 43 bytes
 
 # use defmt::Str;
 let interned: Str = defmt::intern!("The quick brown fox jumps over the lazy dog");
@@ -21,8 +21,8 @@ defmt::info!("{=istr}", interned);
 
 > ⚠️ This was a contrived example to show the difference in bandwidth use.
 >
-> In practice you should following, which also interns the log string and uses as little bandwidth as the `{=istr}` version:
-> 
+> In practice you should use the following, which also interns the log string and uses as little bandwidth as the `{=istr}` version:
+>
 > ``` rust
 > # extern crate defmt;
 > defmt::info!("The quick brown fox jumps over the lazy dog");
