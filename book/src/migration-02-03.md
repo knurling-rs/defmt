@@ -96,9 +96,7 @@ static TAKEN: AtomicBool = AtomicBool::new(false);
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() -> Option<NonNull<dyn defmt::Write>> {
-        if exception {
-            return None;
-        }
+        // disable interrupts
 
         if !TAKEN.load(Ordering::Relaxed) {
             // acquire the lock
@@ -112,6 +110,8 @@ unsafe impl defmt::Logger for Logger {
     unsafe fn release(_: NonNull<dyn defmt::Write>) {
         // release the lock
         TAKEN.store(false, Ordering::Relaxed);
+
+        // re-enable interrupts
     }
 }
 
@@ -136,10 +136,7 @@ static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
-        # let exception = false;
-        if exception {
-            panic!("something bad happened!")
-        }
+        // disable interrupts
 
         if TAKEN.load(Ordering::Relaxed) {
             panic!("defmt logger taken reentrantly")
@@ -160,6 +157,8 @@ unsafe impl defmt::Logger for Logger {
 
         // release the lock
         TAKEN.store(false, Ordering::Relaxed);
+
+        // re-enable interrupts
     }
 
     unsafe fn write(bytes: &[u8]) {
