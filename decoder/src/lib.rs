@@ -765,6 +765,17 @@ mod tests {
     }
 
     #[test]
+    fn display_iso8601_timestamp() {
+        let bytes = [
+            0, 0, // index
+            2, // timestamp
+            36, 188, 151, 238, 120, 1, 0, 0, // unix timestamp in bytes: 1618910624804
+        ];
+
+        decode_and_expect("{=u64:+}", &bytes, "0.000002 INFO 2021-04-20T09:23:44.804Z");
+    }
+
+    #[test]
     fn bools_simple() {
         let bytes = [
             0, 0,          // index

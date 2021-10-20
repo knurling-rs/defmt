@@ -50,6 +50,8 @@ pub enum DisplayHint {
     Debug,
     /// `:us`, formats integers as timestamps in microseconds
     Microseconds,
+    /// `:+`, formats integers as timestamp in milliseconds in ISO6801 date time format
+    ISO8601,
     /// `__internal_bitflags_NAME` instructs the decoder to print the flags that are set, instead of
     /// the raw value.
     Bitflags {
@@ -116,6 +118,7 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
             uppercase: true,
             zero_pad,
         },
+        "+" => DisplayHint::ISO8601,
         "?" => DisplayHint::Debug,
         _ => return None,
     })
@@ -687,6 +690,15 @@ mod tests {
         );
 
         assert_eq!(
+            parse_param(":+", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::ISO8601),
+            })
+        );
+
+        assert_eq!(
             parse_param(":?", ParserMode::Strict),
             Ok(Param {
                 index: None,
@@ -812,6 +824,15 @@ mod tests {
                 index: None,
                 ty: Type::U128,
                 hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u128:+", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U128,
+                hint: Some(DisplayHint::ISO8601),
             })
         );
 

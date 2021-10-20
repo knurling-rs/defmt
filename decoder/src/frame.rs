@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::{Arg, BitflagsKey, Table};
+use chrono::TimeZone;
 use colored::Colorize;
 use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, Type};
 
@@ -115,6 +116,9 @@ impl<'t> Frame<'t> {
                                     }
                                 }
                                 _ => match hint {
+                                    Some(DisplayHint::ISO8601) => {
+                                        self.format_iso8601(*x as u64, &mut buf)?
+                                    }
                                     Some(DisplayHint::Debug) => {
                                         self.format_u128(*x as u128, parent_hint, &mut buf)?
                                     }
@@ -346,6 +350,16 @@ impl<'t> Frame<'t> {
         } else {
             buf.push_str(s);
         }
+        Ok(())
+    }
+
+    fn format_iso8601(&self, timestamp: u64, buf: &mut String) -> Result<(), fmt::Error> {
+        let date_time = chrono::Utc.timestamp_millis(timestamp as i64);
+        write!(
+            buf,
+            "{}",
+            date_time.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+        )?;
         Ok(())
     }
 }
