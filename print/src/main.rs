@@ -15,30 +15,36 @@ struct Opts {
     #[structopt(short, parse(from_os_str), required_unless_one(&["version"]))]
     elf: Option<PathBuf>,
 
+    #[structopt(long)]
+    show_skipped_frames: bool,
+
+    #[structopt(short, long)]
+    verbose: bool,
+
     #[structopt(short = "V", long)]
     version: bool,
-    // may want to add this later
-    // #[structopt(short, long)]
-    // verbose: bool,
-    // TODO add file path argument; always use stdin for now
 }
 
 const READ_BUFFER_SIZE: usize = 1024;
 
 fn main() -> anyhow::Result<()> {
-    let opts: Opts = Opts::from_args();
+    let Opts {
+        elf,
+        show_skipped_frames,
+        verbose,
+        version,
+    } = Opts::from_args();
 
-    if opts.version {
+    if version {
         return print_version();
     }
 
-    let verbose = false;
-    defmt_decoder::log::init_logger(verbose, |metadata| {
-        // We display *all* defmt frames, but nothing else.
-        defmt_decoder::log::is_defmt_frame(metadata)
+    defmt_decoder::log::init_logger(verbose, move |metadata| match verbose {
+        false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
+        true => true,                                          // We display *all* frames.
     });
 
-    let bytes = fs::read(&opts.elf.unwrap())?;
+    let bytes = fs::read(&elf.unwrap())?;
 
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
@@ -71,7 +77,13 @@ fn main() -> anyhow::Result<()> {
                     // if recovery is impossible, abort
                     false => return Err(DecodeError::Malformed.into()),
                     // if recovery is possible, skip the current frame and continue with new data
-                    true => continue,
+                    true => {
+                        if show_skipped_frames || verbose {
+                            println!("(HOST) malformed frame skipped");
+                            println!("└─ {} @ {}:{}", env!("CARGO_PKG_NAME"), file!(), line!());
+                        }
+                        continue;
+                    }
                 },
             }
         }
@@ -92,13 +104,10 @@ fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) ->
     let loc = locs.as_ref().map(|locs| &locs[&frame.index()]);
 
     if let Some(loc) = loc {
-        let relpath = if let Ok(relpath) = loc.file.strip_prefix(&current_dir) {
-            relpath
-        } else {
-            // not relative; use full path
-            &loc.file
-        };
-        file = Some(relpath.display().to_string());
+        // try to get the relative path, else the full one
+        let path = loc.file.strip_prefix(&current_dir).unwrap_or(&loc.file);
+
+        file = Some(path.display().to_string());
         line = Some(loc.line as u32);
         mod_path = Some(loc.module.clone());
     }
