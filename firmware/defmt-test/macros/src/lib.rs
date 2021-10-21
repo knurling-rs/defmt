@@ -187,9 +187,14 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
         } else {
             quote!(#ident())
         };
-        unit_test_calls.push(quote!(
-            #krate::export::check_outcome(#call, #should_error);
-        ));
+        if ignore {
+            // we need to add a dummy statement here to keep same number of items in vec
+            unit_test_calls.push(quote!());
+        } else {
+            unit_test_calls.push(quote!(
+                #krate::export::check_outcome(#call, #should_error);
+            ));
+        }
     }
 
     let test_functions = tests.iter().map(|test| &test.func);
@@ -211,10 +216,17 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
     let unit_test_progress = tests
         .iter()
         .map(|test| {
-            let message = format!(
-                "({{=usize}}/{{=usize}}) running `{}`...",
-                test.func.sig.ident
-            );
+            let message = if test.ignore {
+                format!(
+                    "({{=usize}}/{{=usize}}) ignoring `{}`...",
+                    test.func.sig.ident
+                )
+            } else {
+                format!(
+                    "({{=usize}}/{{=usize}}) running `{}`...",
+                    test.func.sig.ident
+                )
+            };
             quote_spanned! {
                 test.func.sig.ident.span() => defmt::println!(#message, __defmt_test_number, __DEFMT_TEST_COUNT);
             }
