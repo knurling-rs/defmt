@@ -42,6 +42,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             Item::Fn(mut f) => {
                 let mut test_kind = None;
                 let mut should_error = false;
+                let mut ignore = false;
 
                 f.attrs.retain(|attr| {
                     if attr.path.is_ident("init") {
@@ -52,6 +53,9 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         false
                     } else if attr.path.is_ident("should_error") {
                         should_error = true;
+                        false
+                    } else if attr.path.is_ident("ignore") {
+                        ignore = true;
                         false
                     } else {
                         true
@@ -130,6 +134,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                             func: f,
                             input,
                             should_error,
+                            ignore,
                         })
                     }
                 }
@@ -160,6 +165,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
     let mut unit_test_calls = vec![];
     for test in &tests {
         let should_error = test.should_error;
+        let ignore = test.ignore;
         let ident = &test.func.sig.ident;
         let span = test.func.sig.ident.span();
         let call = if let Some(input) = test.input.as_ref() {
@@ -263,6 +269,7 @@ struct Test {
     cfgs: Vec<Attribute>,
     input: Option<Input>,
     should_error: bool,
+    ignore: bool,
 }
 
 struct Input {

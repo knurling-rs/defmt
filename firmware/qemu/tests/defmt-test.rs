@@ -70,6 +70,12 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
+    fn ignored() -> Result<(), ()> {
+        Err(())
+    }
+
+    #[test]
     #[should_error]
     fn fail() -> Result<&'static str, ()> {
         // this test is expected to fail (= panic)
