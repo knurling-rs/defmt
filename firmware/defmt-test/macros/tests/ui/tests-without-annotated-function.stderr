@@ -1,0 +1,15 @@
+error: function requires `#[init]` or `#[test]` attribute
+ --> tests/ui/tests-without-annotated-function.rs:3:5
+  |
+3 |     fn some_function() {
+  |     ^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/tests-without-annotated-function.rs:1:1
+  |
+1 | / #[defmt_test_macros::tests]
+2 | | mod tests {
+3 | |     fn some_function() {
+4 | |     }
+5 | | }
+  | |_^ consider adding a `main` function to `$DIR/tests/ui/tests-without-annotated-function.rs`

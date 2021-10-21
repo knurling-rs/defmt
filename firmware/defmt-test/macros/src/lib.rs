@@ -88,6 +88,13 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                             ));
                         }
 
+                        if ignore {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[ignore]` is not allowed on the `#[init]` function",
+                            ));
+                        }
+
                         if check_fn_sig(&f.sig).is_err() || !f.sig.inputs.is_empty() {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
