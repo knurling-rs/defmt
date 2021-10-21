@@ -2,7 +2,7 @@
 authors = ["The Knurling-rs developers"]
 categories = ["embedded"]
 description = "A tool that decodes defmt logs and prints them to the console"
-edition = "2018"
+edition = "2021"
 keywords = ["knurling", "logging", "formatting"]
 license = "MIT OR Apache-2.0"
 name = "defmt-print"
