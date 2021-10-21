@@ -63,13 +63,6 @@ pub(crate) fn leb64(x: usize, buf: &mut [u8; 10]) -> usize {
     }
 }
 
-/// Encodes an `isize` as a `usize` by pulling its sign bit to the least-significant place (this
-/// makes it have an efficient LEB-encoding for small positive and negative values).
-pub fn zigzag_encode(v: isize) -> usize {
-    const USIZE_BITS: usize = core::mem::size_of::<usize>() * 8;
-    ((v << 1) ^ (v >> (USIZE_BITS - 1))) as usize
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
