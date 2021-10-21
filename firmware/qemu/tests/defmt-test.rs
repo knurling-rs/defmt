@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn ignored() -> Result<(), ()> {
+    fn _ignored() -> Result<(), ()> {
         Err(())
     }
 
