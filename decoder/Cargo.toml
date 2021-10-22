@@ -16,7 +16,6 @@ colored = "2.0"
 ryu = "1"
 
 # logger
-ansi_term = "0.12"
 difference = "2.0"
 log = { version = "0.4", features = ["std"] }
 
