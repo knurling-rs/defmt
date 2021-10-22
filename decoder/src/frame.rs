@@ -7,7 +7,7 @@ use std::{
 use crate::{Arg, BitflagsKey, Table};
 use chrono::TimeZone;
 use colored::Colorize;
-use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, Type};
+use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, TimePrecision, Type};
 
 /// A log frame
 #[derive(Debug, PartialEq)]
@@ -116,8 +116,8 @@ impl<'t> Frame<'t> {
                                     }
                                 }
                                 _ => match hint {
-                                    Some(DisplayHint::ISO8601) => {
-                                        self.format_iso8601(*x as u64, &mut buf)?
+                                    Some(DisplayHint::ISO8601(precision)) => {
+                                        self.format_iso8601(*x as u64, precision, &mut buf)?
                                     }
                                     Some(DisplayHint::Debug) => {
                                         self.format_u128(*x as u128, parent_hint, &mut buf)?
@@ -353,13 +353,21 @@ impl<'t> Frame<'t> {
         Ok(())
     }
 
-    fn format_iso8601(&self, timestamp: u64, buf: &mut String) -> Result<(), fmt::Error> {
-        let date_time = chrono::Utc.timestamp_millis(timestamp as i64);
-        write!(
-            buf,
-            "{}",
-            date_time.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
-        )?;
+    fn format_iso8601(
+        &self,
+        timestamp: u64,
+        precision: &TimePrecision,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
+        let format = match precision {
+            TimePrecision::Millis => chrono::SecondsFormat::Millis,
+            TimePrecision::Seconds => chrono::SecondsFormat::Secs,
+        };
+        let date_time = match precision {
+            TimePrecision::Millis => chrono::Utc.timestamp_millis(timestamp as i64),
+            TimePrecision::Seconds => chrono::Utc.timestamp(timestamp as i64, 0),
+        };
+        write!(buf, "{}", date_time.to_rfc3339_opts(format, true))?;
         Ok(())
     }
 }
