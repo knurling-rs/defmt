@@ -17,7 +17,7 @@ leb128 = "0.2"
 ryu = "1"
 
 # display
-chrono = { version = "0.4.19", features = ["alloc"] }
+chrono = "0.4"
 
 # logger
 ansi_term = "0.12"

@@ -367,8 +367,7 @@ impl<'t> Frame<'t> {
             TimePrecision::Millis => chrono::Utc.timestamp_millis(timestamp as i64),
             TimePrecision::Seconds => chrono::Utc.timestamp(timestamp as i64, 0),
         };
-        write!(buf, "{}", date_time.to_rfc3339_opts(format, true))?;
-        Ok(())
+        write!(buf, "{}", date_time.to_rfc3339_opts(format, true))
     }
 }
 

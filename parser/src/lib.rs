@@ -57,7 +57,7 @@ pub enum DisplayHint {
     Debug,
     /// `:us`, formats integers as timestamps in microseconds
     Microseconds,
-    /// `:iso8601{ms,s}`, formats integers as timestamp in ISO6801 date time format
+    /// `:iso8601{ms,s}`, formats integers as timestamp in ISO8601 date time format
     ISO8601(TimePrecision),
     /// `__internal_bitflags_NAME` instructs the decoder to print the flags that are set, instead of
     /// the raw value.
@@ -703,6 +703,15 @@ mod tests {
                 index: None,
                 ty: Type::Format,
                 hint: Some(DisplayHint::ISO8601(TimePrecision::Millis)),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":iso8601s", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::ISO8601(TimePrecision::Seconds)),
             })
         );
 
