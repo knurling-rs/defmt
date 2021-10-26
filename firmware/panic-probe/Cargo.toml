@@ -2,7 +2,7 @@
 authors = ["The Knurling Authors"]
 categories = ["embedded", "no-std"]
 description = "Panic handler that exits `probe-run` with an error code"
-edition = "2018"
+edition = "2021"
 keywords = ["knurling", "panic-impl", "defmt", "probe-run"]
 license = "MIT OR Apache-2.0"
 name = "panic-probe"

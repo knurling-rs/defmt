@@ -2,7 +2,7 @@
 authors = ["The Knurling-rs developers"]
 categories = ["embedded", "no-std"]
 description = "A test harness for embedded devices"
-edition = "2018"
+edition = "2021"
 keywords = ["knurling", "defmt", "testing"]
 license = "MIT OR Apache-2.0"
 name = "defmt-test"
