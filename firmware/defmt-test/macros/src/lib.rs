@@ -223,17 +223,11 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
     let unit_test_progress = tests
         .iter()
         .map(|test| {
-            let message = if test.ignore {
-                format!(
-                    "({{=usize}}/{{=usize}}) ignoring `{}`...",
-                    test.func.sig.ident
-                )
-            } else {
-                format!(
-                    "({{=usize}}/{{=usize}}) running `{}`...",
-                    test.func.sig.ident
-                )
-            };
+            let message = format!(
+                "({{=usize}}/{{=usize}}) {} `{}`...",
+                if test.ignore { "ignoring" } else { "running" },
+                test.func.sig.ident
+            );
             quote_spanned! {
                 test.func.sig.ident.span() => defmt::println!(#message, __defmt_test_number, __DEFMT_TEST_COUNT);
             }
