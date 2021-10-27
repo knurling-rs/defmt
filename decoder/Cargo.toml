@@ -15,6 +15,9 @@ byteorder = "1"
 colored = "2.0"
 ryu = "1"
 
+# display
+chrono = "0.4"
+
 # logger
 difference = "2.0"
 log = { version = "0.4", features = ["std"] }

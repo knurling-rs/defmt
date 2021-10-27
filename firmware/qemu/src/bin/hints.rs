@@ -123,6 +123,10 @@ fn main() -> ! {
     defmt::info!("ASCII   {=0..4:a}", x);
     defmt::info!("Debug   {=0..4:?}", x);
 
+    // ISO 8601 timestamps
+    defmt::info!("ISO8601 {:iso8601ms}", 1618910624804_u64);
+    defmt::info!("ISO8601 {:iso8601s}", 1618910624804_u64);
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }

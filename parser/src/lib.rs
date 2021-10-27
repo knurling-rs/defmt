@@ -27,6 +27,13 @@ pub struct Parameter {
     pub hint: Option<DisplayHint>,
 }
 
+/// Precision of ISO8601 datetime
+#[derive(Clone, Debug, PartialEq)]
+pub enum TimePrecision {
+    Millis,
+    Seconds,
+}
+
 /// All display hints
 #[derive(Clone, Debug, PartialEq)]
 pub enum DisplayHint {
@@ -50,6 +57,8 @@ pub enum DisplayHint {
     Debug,
     /// `:us`, formats integers as timestamps in microseconds
     Microseconds,
+    /// `:iso8601{ms,s}`, formats integers as timestamp in ISO8601 date time format
+    ISO8601(TimePrecision),
     /// `__internal_bitflags_NAME` instructs the decoder to print the flags that are set, instead of
     /// the raw value.
     Bitflags {
@@ -116,6 +125,8 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
             uppercase: true,
             zero_pad,
         },
+        "iso8601ms" => DisplayHint::ISO8601(TimePrecision::Millis),
+        "iso8601s" => DisplayHint::ISO8601(TimePrecision::Seconds),
         "?" => DisplayHint::Debug,
         _ => return None,
     })
@@ -687,6 +698,24 @@ mod tests {
         );
 
         assert_eq!(
+            parse_param(":iso8601ms", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::ISO8601(TimePrecision::Millis)),
+            })
+        );
+
+        assert_eq!(
+            parse_param(":iso8601s", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::ISO8601(TimePrecision::Seconds)),
+            })
+        );
+
+        assert_eq!(
             parse_param(":?", ParserMode::Strict),
             Ok(Param {
                 index: None,
@@ -812,6 +841,15 @@ mod tests {
                 index: None,
                 ty: Type::U128,
                 hint: None,
+            })
+        );
+
+        assert_eq!(
+            parse_param("=u128:iso8601s", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::U128,
+                hint: Some(DisplayHint::ISO8601(TimePrecision::Seconds)),
             })
         );
 
