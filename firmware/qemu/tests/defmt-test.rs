@@ -71,7 +71,6 @@ mod tests {
 
     #[test]
     #[ignore]
-    #[allow(dead_code)]
     fn ignored() -> Result<(), ()> {
         Err(())
     }

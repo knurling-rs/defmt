@@ -195,8 +195,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             quote!(#ident())
         };
         if ignore {
-            // we need to add a dummy statement here to keep same number of items in vec
-            unit_test_calls.push(quote!());
+            unit_test_calls.push(quote!(let _ = #call;));
         } else {
             unit_test_calls.push(quote!(
                 #krate::export::check_outcome(#call, #should_error);
