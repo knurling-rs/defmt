@@ -77,6 +77,7 @@ enum TestCommand {
     TestCross,
     TestHost,
     TestLint,
+    TestUi,
     /// Run snapshot tests or optionally overwrite the expected output
     TestSnapshot {
         /// Overwrite the expected output instead of comparing it.
@@ -97,6 +98,7 @@ fn main() -> anyhow::Result<()> {
         TestCommand::TestBackcompat => backcompat::test(),
         TestCommand::TestHost => test_host(opt.deny_warnings),
         TestCommand::TestLint => test_lint(),
+        TestCommand::TestUi => test_ui(),
 
         // following tests need to install additional targets
         cmd => {
@@ -424,5 +426,13 @@ fn test_lint() {
     do_test(
         || run_command("cargo", &["clippy", "--workspace"], None, &[]),
         "lint",
+    );
+}
+
+fn test_ui() {
+    println!("🧪 lint");
+    do_test(
+        || run_command("cargo", &["test"], Some("defmt-test-macros"), &[]),
+        "ui",
     );
 }
