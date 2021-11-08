@@ -192,7 +192,7 @@ fn test_host(deny_warnings: bool) {
         || {
             run_command(
                 "cargo",
-                &["test", "--workspace", "--features", "unstable-test"],
+                &["test", "--workspace", "--features", "unstable-test,alloc"],
                 None,
                 &[],
             )
