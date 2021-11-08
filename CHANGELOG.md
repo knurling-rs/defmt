@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#]
 - [#621]: Readme Diagram: Replace duplicate defmt-itm with defmt-rtt
 - [#617]: Add display hint to output `u64` as ISO8601 time
-- [#620]: Tidy up
+- [#620]: Tidy up: remove unused code and dependencies
 - [#619]: Update all crates to rust edition 2021! 🎉
 - [#610]: `defmt-print`: Log if malformed frame gets skipped
 - [#547]: Migration guide `v0.2.x` to `v0.3.0`
