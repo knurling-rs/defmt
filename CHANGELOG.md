@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#]
+- [#621]: Readme Diagram: Replace duplicate defmt-itm with defmt-rtt
+- [#617]: Add display hint to output `u64` as ISO8601 time
+- [#620]: Tidy up: remove unused code and dependencies
+- [#619]: Update all crates to rust edition 2021! 🎉
+- [#610]: `defmt-print`: Log if malformed frame gets skipped
+- [#547]: Migration guide `v0.2.x` to `v0.3.0`
+- [#604]: defmt-test: `#[cfg(test)]` the `#[defmt_test::tests]` module
+- [#616]: Update user guide part of the book 
+- [#615]: Document how to deal with backward compatibility breakage
+- [#614]: Bugfix: decoder breaks with pipe symbol
+- [#605]: Properly handle the `off` pseudo-level in presence of nested logging directives
+- [#611]: Fix `cargo doc`-warnings
+- [#608]: `decoder`: Fix that `defmt::println!` shows leading space when timestamps are disabled
 - [#601]: Move crate `defmt` to `defmt/`
 - [#600]: Run snapshot & backcompat tests in dev mode only
 - [#519]: Target-side `env_logger`-like env filter
@@ -67,6 +80,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#507]: [2/n] - Remove code-size-costly optimizations
 - [#505]: [1/n] - Logger trait v2.
 
+[#621]: https://github.com/knurling-rs/defmt/pull/621
+[#617]: https://github.com/knurling-rs/defmt/pull/617
+[#620]: https://github.com/knurling-rs/defmt/pull/620
+[#619]: https://github.com/knurling-rs/defmt/pull/619
+[#610]: https://github.com/knurling-rs/defmt/pull/610
+[#547]: https://github.com/knurling-rs/defmt/pull/547
+[#604]: https://github.com/knurling-rs/defmt/pull/604
+[#616]: https://github.com/knurling-rs/defmt/pull/616
+[#615]: https://github.com/knurling-rs/defmt/pull/615
+[#614]: https://github.com/knurling-rs/defmt/pull/614
+[#605]: https://github.com/knurling-rs/defmt/pull/605
+[#611]: https://github.com/knurling-rs/defmt/pull/611
+[#608]: https://github.com/knurling-rs/defmt/pull/608
 [#601]: https://github.com/knurling-rs/defmt/pull/601
 [#600]: https://github.com/knurling-rs/defmt/pull/600
 [#519]: https://github.com/knurling-rs/defmt/pull/519
