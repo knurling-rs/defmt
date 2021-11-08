@@ -71,6 +71,18 @@ jobs:
       - name: Run rustfmt & clippy
         run: cargo xtask test-lint
 
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Install Rust stable, run all UI tests on the host
+        run: cargo xtask test-ui
+
   mdbook:
     strategy:
       matrix:
@@ -143,6 +155,7 @@ jobs:
       - mdbook
       - qemu-snapshot
       - backcompat
+      - ui
     runs-on: ubuntu-20.04
     steps:
       - name: CI succeeded
