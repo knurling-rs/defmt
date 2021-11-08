@@ -432,7 +432,7 @@ fn test_lint() {
 fn test_ui() {
     println!("🧪 lint");
     do_test(
-        || run_command("cargo", &["test"], Some("defmt-test-macros"), &[]),
+        || run_command("cargo", &["test"], Some("firmware/defmt-test/macros"), &[]),
         "ui",
     );
 }
