@@ -15,7 +15,7 @@ name = "defmt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
 homepage = "https://knurling.ferrous-systems.com/"
-version = "0.2.3"
+version = "0.3.0"
 
 [features]
 alloc = []
@@ -41,7 +41,7 @@ encoding-rzcobs = []
 unstable-test = [ "defmt-macros/unstable-test" ]
 
 [dependencies]
-defmt-macros = { path = "../macros", version = "0.2.2" }
+defmt-macros = { path = "../macros", version = "0.3.0" }
 bitflags = "1"
 
 [dev-dependencies]
