@@ -18,12 +18,12 @@ unstable-test = []
 
 [dependencies]
 defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.3.0" }
-proc-macro-error = "1.0.4"
-proc-macro2 = "1.0.27"
-quote = "1.0.9"
-syn = { version = "1.0", features = ["full"] }
+proc-macro-error = "1"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "1", features = ["full"] }
 
 [dev_dependencies]
 maplit = "1"
-pretty_assertions = "0.7.2"
-rstest = "0.10.0"
+pretty_assertions = "1"
+rstest = "0.11"

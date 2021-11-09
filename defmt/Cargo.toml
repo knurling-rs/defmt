@@ -41,12 +41,12 @@ encoding-rzcobs = []
 unstable-test = [ "defmt-macros/unstable-test" ]
 
 [dependencies]
-defmt-macros = { path = "../macros", version = "0.3.0" }
+defmt-macros = { path = "../macros", version = "0.3" }
 bitflags = "1"
 
 [dev-dependencies]
 rustc_version = "0.4"
-trybuild = "1.0.42"
+trybuild = "1"
 
 [package.metadata.docs.rs]
 features = [ "alloc" ]
