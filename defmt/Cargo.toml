@@ -12,10 +12,10 @@ keywords = [ "knurling", "logging", "logger", "formatting", "formatter" ]
 license = "MIT OR Apache-2.0"
 links = "defmt" # Prevent multiple versions of defmt being linked
 name = "defmt"
-readme = "README.md"
+readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
 homepage = "https://knurling.ferrous-systems.com/"
-version = "0.2.3"
+version = "0.3.0"
 
 [features]
 alloc = []
@@ -41,12 +41,12 @@ encoding-rzcobs = []
 unstable-test = [ "defmt-macros/unstable-test" ]
 
 [dependencies]
-defmt-macros = { path = "../macros", version = "0.2.2" }
+defmt-macros = { path = "../macros", version = "0.3" }
 bitflags = "1"
 
 [dev-dependencies]
 rustc_version = "0.4"
-trybuild = "1.0.42"
+trybuild = "1"
 
 [package.metadata.docs.rs]
 features = [ "alloc" ]

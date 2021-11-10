@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#]
+
+## [v0.3.0] - 2021-11-09
+
+- [#618]: Support #[ignore] attribute in defmt_test
 - [#621]: Readme Diagram: Replace duplicate defmt-itm with defmt-rtt
 - [#617]: Add display hint to output `u64` as ISO8601 time
 - [#620]: Tidy up: remove unused code and dependencies
@@ -80,6 +84,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#507]: [2/n] - Remove code-size-costly optimizations
 - [#505]: [1/n] - Logger trait v2.
 
+[#618]: https://github.com/knurling-rs/defmt/pull/621
 [#621]: https://github.com/knurling-rs/defmt/pull/621
 [#617]: https://github.com/knurling-rs/defmt/pull/617
 [#620]: https://github.com/knurling-rs/defmt/pull/620
@@ -421,7 +426,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...main
+[v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...defmt-v0.3.0
 [v0.2.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.2...defmt-v0.2.3
 [v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.1...defmt-v0.2.2
 [v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...defmt-v0.2.1
