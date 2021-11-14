@@ -220,7 +220,7 @@ fn check_version(version: &str) -> Result<(), String> {
     if version != DEFMT_VERSION {
         let msg = format!(
             "defmt wire format version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: `cargo install` a different version of `probe-run` that supports defmt {}",
-            version, DEFMT_VERSION, DEFMT_VERSION
+            version, DEFMT_VERSION, version
         );
 
         return Err(msg);
