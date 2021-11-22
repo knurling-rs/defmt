@@ -31,6 +31,26 @@ The following diagram illustrates the user-facing and internal crates of the def
 
 ![defmt crates structure](assets/defmt.png)
 
+## Developer Information
+
+### Running Tests
+
+Tests are run using `cargo xtask` -- although this is simply an alias (defined in `.cargo/config.toml`) for `cargo run --package xtask --`.
+
+To see a list of options, see [`xtask/src/main.rs`](xtask/src/main.rs), or run:
+
+```console
+$ cargo xtask help
+```
+
+For example, to run all the tests, run:
+
+```console
+$ cargo xtask test-all
+```
+
+You will need `qemu-system-arm` installed and in your `$PATH` for some of the tests (e.g. `test-snapshot`).
+
 ## Support
 
 `defmt` is part of the [Knurling] project, [Ferrous Systems]' effort at
