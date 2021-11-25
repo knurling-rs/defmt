@@ -30,7 +30,7 @@ use crate::channel::Channel;
 
 mod consts;
 
-/// RTT buffer size. Default: 1024; can be customized by setting `DEFMT_RTT_BUFFER_SIZE`.
+/// RTT buffer size. Default: 1024; can be customized by setting the `DEFMT_RTT_BUFFER_SIZE` environment variable.
 /// Use a power of 2 for best performance.
 use crate::consts::BUF_SIZE;
 
