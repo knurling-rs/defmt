@@ -28,6 +28,12 @@ use cortex_m::{interrupt, register};
 
 use crate::channel::Channel;
 
+mod consts;
+
+/// RTT buffer size. Default: 1024; can be customized by setting the `DEFMT_RTT_BUFFER_SIZE` environment variable.
+/// Use a power of 2 for best performance.
+use crate::consts::BUF_SIZE;
+
 #[defmt::global_logger]
 struct Logger;
 
@@ -94,10 +100,6 @@ const MODE_BLOCK_IF_FULL: usize = 2;
 /// Don't block if the RTT buffer is full. Truncate data to output as much as fits.
 const MODE_NON_BLOCKING_TRIM: usize = 1;
 
-// TODO make configurable
-// NOTE use a power of 2 for best performance
-const SIZE: usize = 1024;
-
 // make sure we only get shared references to the header/channel (avoid UB)
 /// # Safety
 /// `Channel` API is not re-entrant; this handle should not be held from different execution
@@ -115,7 +117,7 @@ unsafe fn handle() -> &'static Channel {
         up_channel: Channel {
             name: NAME as *const _ as *const u8,
             buffer: unsafe { &mut BUFFER as *mut _ as *mut u8 },
-            size: SIZE,
+            size: BUF_SIZE,
             write: AtomicUsize::new(0),
             read: AtomicUsize::new(0),
             flags: AtomicUsize::new(MODE_NON_BLOCKING_TRIM),
@@ -124,7 +126,7 @@ unsafe fn handle() -> &'static Channel {
 
     #[cfg_attr(target_os = "macos", link_section = ".uninit,defmt-rtt.BUFFER")]
     #[cfg_attr(not(target_os = "macos"), link_section = ".uninit.defmt-rtt.BUFFER")]
-    static mut BUFFER: [u8; SIZE] = [0; SIZE];
+    static mut BUFFER: [u8; BUF_SIZE] = [0; BUF_SIZE];
 
     static NAME: &[u8] = b"defmt\0";
 
