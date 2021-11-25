@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#]
 - [#633]: make RTT buffer size configurable
 
+[#633]: https://github.com/knurling-rs/defmt/pull/633
+
+
 ## [v0.3.0] - 2021-11-09
 
 - [#618]: Support #[ignore] attribute in defmt_test
@@ -85,7 +88,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#507]: [2/n] - Remove code-size-costly optimizations
 - [#505]: [1/n] - Logger trait v2.
 
-[#618]: https://github.com/knurling-rs/defmt/pull/621
+[#618]: https://github.com/knurling-rs/defmt/pull/618
 [#621]: https://github.com/knurling-rs/defmt/pull/621
 [#617]: https://github.com/knurling-rs/defmt/pull/617
 [#620]: https://github.com/knurling-rs/defmt/pull/620
