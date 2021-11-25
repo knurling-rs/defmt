@@ -6,7 +6,7 @@ fn main() {
     let size = env::var("DEFMT_RTT_BUFFER_SIZE")
         .map(|s| {
             s.parse()
-                .expect("coult not parse DEFMT_RTT_BUFFER_SIZE as usize")
+                .expect("could not parse DEFMT_RTT_BUFFER_SIZE as usize")
         })
         .unwrap_or(1024_usize);
 
