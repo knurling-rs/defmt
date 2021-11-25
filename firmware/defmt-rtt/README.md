@@ -12,6 +12,12 @@ The fastest way to get started with `defmt` is to use our [app-template] to set 
 
 For more details about the framework check the book at https://defmt.ferrous-systems.com
 
+## Customization
+
+The RTT buffer size (default: 1024) can be configured with the `DEFMT_RTT_BUFFER_SIZE` environment variable. 
+- use a power of 2 for best performance
+- caution: the `sccache` compiler cache is not supported because [it does not honor environment variables](https://github.com/mozilla/sccache/blob/master/docs/Rust.md).
+
 ## Support
 
 `defmt-rtt` is part of the [Knurling] project, [Ferrous Systems]' effort at
