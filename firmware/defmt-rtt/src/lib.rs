@@ -94,10 +94,9 @@ const MODE_BLOCK_IF_FULL: usize = 2;
 /// Don't block if the RTT buffer is full. Truncate data to output as much as fits.
 const MODE_NON_BLOCKING_TRIM: usize = 1;
 
-// buffer size. Default: 1024; can be customized by setting `DEFMT_RTT_BUFFER_SIZE`
-// NOTE
-// - use a power of 2 for best performance
-// - `sccache` does not honor environment variables, so unset `RUSTC_WRAPPER` when customizing.
+/// buffer size. Default: 1024; can be customized by setting `DEFMT_RTT_BUFFER_SIZE`
+/// - use a power of 2 for best performance
+/// - `sccache` does not honor environment variables, so unset `RUSTC_WRAPPER` when customizing.
 const SIZE: usize = size();
 const fn size() -> usize {
     if let Some(size_s) = option_env!("DEFMT_RTT_BUFFER_SIZE") {
