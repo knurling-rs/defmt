@@ -3,7 +3,7 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::{MODE_BLOCK_IF_FULL, MODE_MASK, SIZE};
+use crate::{consts::BUF_SIZE, MODE_BLOCK_IF_FULL, MODE_MASK};
 
 #[repr(C)]
 pub(crate) struct Channel {
@@ -45,9 +45,9 @@ impl Channel {
         let available = if read > write {
             read - write - 1
         } else if read == 0 {
-            SIZE - write - 1
+            BUF_SIZE - write - 1
         } else {
-            SIZE - write
+            BUF_SIZE - write
         };
 
         if available == 0 {
@@ -58,9 +58,9 @@ impl Channel {
         let len = bytes.len().min(available);
 
         unsafe {
-            if cursor + len > SIZE {
+            if cursor + len > BUF_SIZE {
                 // split memcpy
-                let pivot = SIZE - cursor;
+                let pivot = BUF_SIZE - cursor;
                 ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
                 ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
             } else {
@@ -69,7 +69,7 @@ impl Channel {
             }
         }
         self.write
-            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
+            .store(write.wrapping_add(len) % BUF_SIZE, Ordering::Release);
 
         len
     }
@@ -77,13 +77,13 @@ impl Channel {
     fn nonblocking_write(&self, bytes: &[u8]) -> usize {
         let write = self.write.load(Ordering::Acquire);
         let cursor = write;
-        // NOTE truncate at SIZE to avoid more than one "wrap-around" in a single `write` call
-        let len = bytes.len().min(SIZE);
+        // NOTE truncate atBUF_SIZE to avoid more than one "wrap-around" in a single `write` call
+        let len = bytes.len().min(BUF_SIZE);
 
         unsafe {
-            if cursor + len > SIZE {
+            if cursor + len > BUF_SIZE {
                 // split memcpy
-                let pivot = SIZE - cursor;
+                let pivot = BUF_SIZE - cursor;
                 ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
                 ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
             } else {
@@ -92,7 +92,7 @@ impl Channel {
             }
         }
         self.write
-            .store(write.wrapping_add(len) % SIZE, Ordering::Release);
+            .store(write.wrapping_add(len) % BUF_SIZE, Ordering::Release);
 
         len
     }
