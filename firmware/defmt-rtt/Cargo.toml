@@ -12,5 +12,4 @@ version = "0.3.0"
 
 [dependencies]
 cortex-m = "0.7"
-konst = "0.2"
 defmt = { version = "0.3", path = "../../defmt" }
