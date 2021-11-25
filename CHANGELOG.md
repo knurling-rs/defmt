@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#]
+- [#633]: make RTT buffer size configurable
 
 ## [v0.3.0] - 2021-11-09
 
