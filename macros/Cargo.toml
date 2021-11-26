@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 name = "defmt-macros"
 readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.1"
+version = "0.3.0"
 
 [lib]
 proc-macro = true
@@ -17,7 +17,7 @@ proc-macro = true
 unstable-test = []
 
 [dependencies]
-defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.3.1" }
+defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.3.0" }
 proc-macro-error = "1"
 proc-macro2 = "1"
 quote = "1"
