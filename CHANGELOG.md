@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#]
+- None
+
+## [v0.3.1] - 2021-11-26
+
+- [#634]: update ELF parsing dependencies
 - [#633]: make RTT buffer size configurable
+- [#630]: Add test instructions to README.md
+- [#626]: Make errror message more meaningful in case of version-mismatch
 
+[#634]: https://github.com/knurling-rs/defmt/pull/634
 [#633]: https://github.com/knurling-rs/defmt/pull/633
-
+[#630]: https://github.com/knurling-rs/defmt/pull/630
+[#626]: https://github.com/knurling-rs/defmt/pull/626
 
 ## [v0.3.0] - 2021-11-09
 
@@ -430,7 +438,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.1...main
+[v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...defmt-v0.3.1
 [v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...defmt-v0.3.0
 [v0.2.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.2...defmt-v0.2.3
 [v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.1...defmt-v0.2.2
