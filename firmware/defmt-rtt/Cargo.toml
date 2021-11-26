@@ -13,3 +13,4 @@ version = "0.3.1"
 [dependencies]
 cortex-m = "0.7"
 defmt = { version = "0.3", path = "../../defmt" }
+critical-section = "0.2.5"
