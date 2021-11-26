@@ -24,7 +24,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     quote!(
         impl #impl_generics defmt::Format for #ident #type_generics #where_clause {
             fn format(&self, f: defmt::Formatter) {
-                unreachable!()
+                defmt::unreachable!()
             }
 
             fn _format_tag() -> defmt::Str {

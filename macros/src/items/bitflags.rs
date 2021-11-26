@@ -41,7 +41,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
 
         impl defmt::Format for #ident {
             fn format(&self, f: defmt::Formatter) {
-                unreachable!()
+                defmt::unreachable!()
             }
 
             fn _format_tag() -> defmt::Str {
