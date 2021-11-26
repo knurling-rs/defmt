@@ -20,7 +20,7 @@ These Cargo features are named `encoding-{encoder_name}`, e.g. `encoding-rzcobs`
 name = "my-application"
 
 [dependencies.defmt]
-version = "0.3.0"
+version = "0.3.1"
 features = ["encoding-rzcobs"] # <- encoding
 ```
 
