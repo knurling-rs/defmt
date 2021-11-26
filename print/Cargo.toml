@@ -14,6 +14,6 @@ version = "0.3.0"
 
 [dependencies]
 anyhow = "1"
-defmt-decoder = { path = "../decoder", features = ["unstable"], version = "=0.3.0" }
+defmt-decoder = { path = "../decoder", features = ["unstable"], version = "=0.3.1" }
 log = "0.4"
 structopt = "0.3"
