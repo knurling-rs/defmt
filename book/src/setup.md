@@ -59,4 +59,4 @@ To learn how to enable other logging levels and filters logs per modules read th
 
 ### Memory use
 
-When in a tight memory situation and logging over RTT (the only supported transport as of 2021-12), the buffer size (default: 1024 bytes) can be configured with the `DEFMT_RTT_BUFFER_SIZE` environment variable. Use a power of 2 for best performance.
+When in a tight memory situation and logging over RTT, the buffer size (default: 1024 bytes) can be configured with the `DEFMT_RTT_BUFFER_SIZE` environment variable. Use a power of 2 for best performance.
