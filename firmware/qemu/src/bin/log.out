@@ -8,6 +8,10 @@ INFO 🍕 array [3, 14, 1]
 INFO float like a butterfly 5.67 5.67
 INFO double like a butterfly 5.000000000000067 5.000000000000067
 INFO Hello 42
+INFO Hex lower ff, fffe, fffffffd, fffffffffffffffc, fffffffffffffffffffffffffffffffb
+INFO Hex lower 0xff, 0xfffe, 0xfffffffd, 0xfffffffffffffffc, 0xfffffffffffffffffffffffffffffffb
+INFO Hex upper FF, FFFE, FFFFFFFD, FFFFFFFFFFFFFFFC, FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB
+INFO Hex upper 0xFF, 0xFFFE, 0xFFFFFFFD, 0xFFFFFFFFFFFFFFFC, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB
 INFO u64: 0 = 0, 1 = 1, MAX = 18446744073709551615, MIN = 0
 INFO i64: 0 = 0, -1 = -1, MAX = 9223372036854775807, MIN = -9223372036854775808
 INFO isize: 0 = 0, -1 = -1, MAX = 2147483647, MIN = -2147483648

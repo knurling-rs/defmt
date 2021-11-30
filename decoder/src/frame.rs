@@ -9,6 +9,35 @@ use chrono::TimeZone;
 use colored::Colorize;
 use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, TimePrecision, Type};
 
+/// Used to convert a `i128` value into right target type in hex
+struct Hex128(i128, Type);
+
+impl std::fmt::LowerHex for Hex128 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.1 {
+            Type::I8 => fmt::LowerHex::fmt(&(self.0 as i8), f),
+            Type::I16 => fmt::LowerHex::fmt(&(self.0 as i16), f),
+            Type::I32 => fmt::LowerHex::fmt(&(self.0 as i32), f),
+            Type::I64 => fmt::LowerHex::fmt(&(self.0 as i64), f),
+            Type::I128 => fmt::LowerHex::fmt(&(self.0 as i128), f),
+            _ => panic!("Unsupported type '{:?}' found.", self.1),
+        }
+    }
+}
+
+impl std::fmt::UpperHex for Hex128 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.1 {
+            Type::I8 => fmt::UpperHex::fmt(&(self.0 as i8), f),
+            Type::I16 => fmt::UpperHex::fmt(&(self.0 as i16), f),
+            Type::I32 => fmt::UpperHex::fmt(&(self.0 as i32), f),
+            Type::I64 => fmt::UpperHex::fmt(&(self.0 as i64), f),
+            Type::I128 => fmt::UpperHex::fmt(&(self.0 as i128), f),
+            _ => panic!("Unsupported type '{:?}' found.", self.1),
+        }
+    }
+}
+
 /// A log frame
 #[derive(Debug, PartialEq)]
 pub struct Frame<'t> {
@@ -126,7 +155,7 @@ impl<'t> Frame<'t> {
                                 },
                             }
                         }
-                        Arg::Ixx(x) => self.format_i128(*x as i128, hint, &mut buf)?,
+                        Arg::Ixx(x) => self.format_i128(*x as i128, param.ty, hint, &mut buf)?,
                         Arg::Str(x) | Arg::Preformatted(x) => self.format_str(x, hint, &mut buf)?,
                         Arg::IStr(x) => self.format_str(x, hint, &mut buf)?,
                         Arg::Format { format, args } => match parent_hint {
@@ -261,6 +290,7 @@ impl<'t> Frame<'t> {
     fn format_i128(
         &self,
         x: i128,
+        ty: Type,
         hint: Option<&DisplayHint>,
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
@@ -277,11 +307,14 @@ impl<'t> Frame<'t> {
                 uppercase,
                 alternate,
                 zero_pad,
-            }) => match (alternate, uppercase) {
-                (false, false) => write!(buf, "{:01$x}", x, zero_pad)?,
-                (false, true) => write!(buf, "{:01$X}", x, zero_pad)?,
-                (true, false) => write!(buf, "{:#01$x}", x, zero_pad)?,
-                (true, true) => write!(buf, "{:#01$X}", x, zero_pad)?,
+            }) => {
+                let value = Hex128(x, ty);
+                match (alternate, uppercase) {
+                    (false, false) => write!(buf, "{:01$x}", value, zero_pad)?,
+                    (false, true) => write!(buf, "{:01$X}", value, zero_pad)?,
+                    (true, false) => write!(buf, "{:#01$x}", value, zero_pad)?,
+                    (true, true) => write!(buf, "{:#01$X}", value, zero_pad)?,
+                }
             },
             _ => write!(buf, "{}", x)?,
         }

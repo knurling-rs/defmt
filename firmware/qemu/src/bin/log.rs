@@ -26,6 +26,39 @@ fn main() -> ! {
     defmt::info!("Hello {=u8}", 42u16 as u8);
 
     defmt::info!(
+        "Hex lower {=i8:x}, {=i16:x}, {=i32:x}, {=i64:x}, {=i128:x}",
+        -1,
+        -2,
+        -3,
+        -4,
+        -5
+    );
+    defmt::info!(
+        "Hex lower {=i8:#x}, {=i16:#x}, {=i32:#x}, {=i64:#x}, {=i128:#x}",
+        -1,
+        -2,
+        -3,
+        -4,
+        -5
+    );
+    defmt::info!(
+        "Hex upper {=i8:X}, {=i16:X}, {=i32:X}, {=i64:X}, {=i128:X}",
+        -1,
+        -2,
+        -3,
+        -4,
+        -5
+    );
+    defmt::info!(
+        "Hex upper {=i8:#X}, {=i16:#X}, {=i32:#X}, {=i64:#X}, {=i128:#X}",
+        -1,
+        -2,
+        -3,
+        -4,
+        -5
+    );
+
+    defmt::info!(
         "u64: 0 = {=u64}, 1 = {=u64}, MAX = {=u64}, MIN = {=u64}",
         0,
         1,
