@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- None
+- [#640]: use crate [critical-section](https://crates.io/crates/critical-section) in defmt-rtt
 
 ## [v0.3.1] - 2021-11-26
 
