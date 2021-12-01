@@ -315,7 +315,7 @@ impl<'t> Frame<'t> {
                     (true, false) => write!(buf, "{:#01$x}", value, zero_pad)?,
                     (true, true) => write!(buf, "{:#01$X}", value, zero_pad)?,
                 }
-            },
+            }
             _ => write!(buf, "{}", x)?,
         }
         Ok(())

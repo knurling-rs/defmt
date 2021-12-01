@@ -670,13 +670,18 @@ mod tests {
     fn display_i16_with_hex_hint() {
         // defmt::info!("x: {=i16:#x},y: {=i16:#x},z: {=i16:#x}", -1_i16, -100_i16, -1000_i16);
         let bytes = [
-            0, 0,        // index
+            0,
+            0,           // index
             2,           // timestamp
             0b1111_1111, // the logged i16 value -1
             0b1111_1111,
         ];
 
-        decode_and_expect("i16 as hex {=i16:#x}", &bytes, "0.000002 INFO i16 as hex 0xffff");
+        decode_and_expect(
+            "i16 as hex {=i16:#x}",
+            &bytes,
+            "0.000002 INFO i16 as hex 0xffff",
+        );
     }
 
     #[test]
