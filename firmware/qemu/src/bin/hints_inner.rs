@@ -9,16 +9,43 @@ use defmt_semihosting as _; // global logger
 
 #[entry]
 fn main() -> ! {
+    // outputs: "Arr: [a, b, c, d]"
+    defmt::info!("Arr: {:x}", [10, 11, 12, 13]);
     {
         #[derive(defmt::Format)]
         struct Foo {
             bar: [u8; 4],
         }
+        // outputs: "Foo { bar: [a, b, c, d] }"
+        defmt::info!("{:x}", Foo { bar: [10, 11, 12, 13] });
+    }
 
-        // outputs: "Arr: [a, b, c, d]"
-        defmt::info!("Arr: {:x}", [10, 11, 12, 13]);
-        // outputs: "Foo: Foo { bar: [a, b, c, d] }"
-        defmt::info!("Foo: {:x}", Foo { bar: [10, 11, 12, 13] });
+    {
+        struct Foo {
+            bar: [u8; 5],
+        }
+        // custom format that overrides parent hint with ascii
+        impl defmt::Format for Foo {
+            fn format(&self, f: defmt::Formatter) {
+                write!(f, "Foo {{ bar: {=[?]:a} }}", self.bar)
+            }
+        }
+        // outputs: "Foo { bar: ['h', 'e', 'l', 'l', 'o] }"
+        defmt::info!("{:x}", Foo { bar: [104, 101, 108, 108, 111] });
+    }
+
+    {
+        struct Foo {
+            bar: [u8; 4]
+        }
+        // custom format to set hex values
+        impl defmt::Format for Foo {
+            fn format(&self, f: defmt::Formatter) {
+                write!(f, "Foo {{ bar: {=?:#04X} }}", self.bar)
+            }
+        }
+        // outputs: "Foo { bar: [0x0A, 0x0B, 0x0C, 0x0D] }"
+        defmt::info!("{:?}", Foo { bar: [10, 11, 12, 13] });
     }
 
     {
