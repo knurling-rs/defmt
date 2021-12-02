@@ -10,9 +10,9 @@ use colored::Colorize;
 use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, TimePrecision, Type};
 
 /// Used to convert a `i128` value into right target type in hex
-struct Hex128(i128, Type);
+struct I128Hex(i128, Type);
 
-impl std::fmt::LowerHex for Hex128 {
+impl std::fmt::LowerHex for I128Hex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.1 {
             Type::I8 => fmt::LowerHex::fmt(&(self.0 as i8), f),
@@ -25,7 +25,7 @@ impl std::fmt::LowerHex for Hex128 {
     }
 }
 
-impl std::fmt::UpperHex for Hex128 {
+impl std::fmt::UpperHex for I128Hex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.1 {
             Type::I8 => fmt::UpperHex::fmt(&(self.0 as i8), f),
@@ -308,7 +308,7 @@ impl<'t> Frame<'t> {
                 alternate,
                 zero_pad,
             }) => {
-                let value = Hex128(x, ty);
+                let value = I128Hex(x, ty);
                 match (alternate, uppercase) {
                     (false, false) => write!(buf, "{:01$x}", value, zero_pad)?,
                     (false, true) => write!(buf, "{:01$X}", value, zero_pad)?,
