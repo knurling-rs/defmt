@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::{AtomicU32, Ordering};
-
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;
 
@@ -128,9 +126,6 @@ fn main() -> ! {
         debug::exit(debug::EXIT_SUCCESS)
     }
 }
-
-static COUNT: AtomicU32 = AtomicU32::new(0);
-defmt::timestamp!("{=u32:us}", COUNT.fetch_add(1, Ordering::Relaxed));
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
 #[cfg(target_os = "none")]
