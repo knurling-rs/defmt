@@ -685,6 +685,34 @@ mod tests {
     }
 
     #[test]
+    fn display_inner_array_with_outer_hex_hint() {
+        let entries = vec![
+            TableEntry::new_without_symbol(Tag::Prim, "{=u8}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Prim, "{=[?]}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "Foo {{ {=?:?} }}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "{:#x}".to_owned()),
+        ];
+
+        let table = test_table(entries);
+
+        let bytes = [
+            3, 0, // start index `info!`
+            2, 0, // index of struct `Foo`
+            1, 0, // Format index to `{=[?]}`
+            4, 0, 0, 0, // number of elements in array
+            0, 0,     // Format index to `{=u8}`
+            10_u8, // Array elements
+            11_u8, 12_u8, 13_u8,
+        ];
+
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display(false).to_string(),
+            "INFO Foo { [0xa, 0xb, 0xc, 0xd] }",
+        );
+    }
+
+    #[test]
     fn display_use_inner_type_hint() {
         let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "x={:b}".to_owned()),
