@@ -10,6 +10,18 @@ use defmt_semihosting as _; // global logger
 #[entry]
 fn main() -> ! {
     {
+        #[derive(defmt::Format)]
+        struct Foo {
+            bar: [u8; 4],
+        }
+
+        // outputs: "Arr: [a, b, c, d]"
+        defmt::info!("Arr: {:x}", [10, 11, 12, 13]);
+        // outputs: "Foo: Foo { bar: [a, b, c, d] }"
+        defmt::info!("Foo: {:x}", Foo { bar: [10, 11, 12, 13] });
+    }
+
+    {
         struct S1 {
             x: &'static str,
             y: u8,
