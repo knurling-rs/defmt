@@ -539,6 +539,15 @@ mod tests {
             })
         );
 
+        assert_eq!(
+            parse_param(":", ParserMode::Strict),
+            Ok(Param {
+                index: None,
+                ty: Type::Format,
+                hint: Some(DisplayHint::NoHint { zero_pad: 0 }),
+            })
+        );
+
         // only one `Param` field present - 3 cases
         assert_eq!(
             parse_param("=u8", ParserMode::Strict),
@@ -925,11 +934,27 @@ mod tests {
             }),])
         );
         assert_eq!(
-            parse("{:}", ParserMode::Strict),
+            parse("{:?}", ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
                 ty: Type::Format,
-                hint: Some(DisplayHint::NoHint { zero_pad: 0 }),
+                hint: Some(DisplayHint::Debug),
+            }),])
+        );
+        assert_eq!(
+            parse("{=?}", ParserMode::Strict),
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::Format,
+                hint: None,
+            }),])
+        );
+        assert_eq!(
+            parse("{=?:?}", ParserMode::Strict),
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::Format,
+                hint: Some(DisplayHint::Debug),
             }),])
         );
     }
