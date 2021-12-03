@@ -16,8 +16,8 @@ fn main() -> ! {
         struct Foo {
             bar: [u8; 4],
         }
-        // outputs: "Foo { bar: [a, b, c, d] }"
-        defmt::info!("{:x}", Foo { bar: [10, 11, 12, 13] });
+        // outputs: "Foo { bar: [0xa, 0xb, 0xc, 0xd] }"
+        defmt::info!("{:#x}", Foo { bar: [10, 11, 12, 13] });
     }
 
     {
@@ -30,7 +30,7 @@ fn main() -> ! {
                 write!(f, "Foo {{ bar: {=[?]:a} }}", self.bar)
             }
         }
-        // outputs: "Foo { bar: ['h', 'e', 'l', 'l', 'o] }"
+        // outputs: "Foo { bar: b"hello" }"
         defmt::info!("{:x}", Foo { bar: [104, 101, 108, 108, 111] });
     }
 
