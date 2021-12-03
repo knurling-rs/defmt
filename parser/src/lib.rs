@@ -915,6 +915,20 @@ mod tests {
     }
 
     #[test]
+    fn nohint() {
+        assert_eq!(
+            parse("{}", ParserMode::Strict),
+            Ok(vec![
+                Fragment::Parameter(Parameter {
+                    index: 0,
+                    ty: Type::Format,
+                    hint: None,
+                }),
+            ])
+        );
+    }
+
+    #[test]
     fn index() {
         // implicit
         assert_eq!(
