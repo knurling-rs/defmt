@@ -918,13 +918,19 @@ mod tests {
     fn nohint() {
         assert_eq!(
             parse("{}", ParserMode::Strict),
-            Ok(vec![
-                Fragment::Parameter(Parameter {
-                    index: 0,
-                    ty: Type::Format,
-                    hint: None,
-                }),
-            ])
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::Format,
+                hint: None,
+            }),])
+        );
+        assert_eq!(
+            parse("{:}", ParserMode::Strict),
+            Ok(vec![Fragment::Parameter(Parameter {
+                index: 0,
+                ty: Type::Format,
+                hint: Some(DisplayHint::NoHint { zero_pad: 0 }),
+            }),])
         );
     }
 
