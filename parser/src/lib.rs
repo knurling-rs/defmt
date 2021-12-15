@@ -340,6 +340,9 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
     if input.starts_with(HINT_PREFIX) {
         // skip the prefix
         input = &input[HINT_PREFIX.len()..];
+        if input.is_empty() {
+            return Err("malformed format string (missing display hint after ':')".into());
+        }
 
         hint = Some(match parse_display_hint(input) {
             Some(a) => a,
@@ -1110,6 +1113,10 @@ mod tests {
         assert_eq!(
             parse("{0dunno}", ParserMode::Strict),
             Err("unexpected content \"dunno\" in format string".into())
+        );
+        assert_eq!(
+            parse("{:}", ParserMode::Strict),
+            Err("malformed format string (missing display hint after ':')".into())
         );
     }
 
