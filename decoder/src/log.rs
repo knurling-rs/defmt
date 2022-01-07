@@ -6,16 +6,18 @@
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
 
-use crate::Frame;
 use colored::{Color, Colorize};
 use difference::{Changeset, Difference};
 use log::{Level, Log, Metadata, Record};
+use serde_json::{json, Value as JsonValue};
 
 use std::{
     fmt::{self, Write as _},
     io::{self, Write},
     sync::atomic::{AtomicUsize, Ordering},
 };
+
+use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
 
@@ -277,10 +279,17 @@ pub fn init_logger(
     log::set_max_level(log::LevelFilter::Trace);
 }
 
+pub fn init_json_logger(should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static) {
+    log::set_boxed_logger(Box::new(JsonLogger::new(Box::new(should_log)))).unwrap();
+    log::set_max_level(log::LevelFilter::Trace);
+}
+
+type ShouldLog = Box<dyn Fn(&log::Metadata) -> bool + Sync + Send>;
+
 struct Logger {
     always_include_location: bool,
 
-    should_log: Box<dyn Fn(&log::Metadata) -> bool + Sync + Send>,
+    should_log: ShouldLog,
 
     /// Number of characters used by the timestamp. This may increase over time and is used to align
     /// messages.
@@ -377,4 +386,100 @@ fn print_location<W: io::Write>(
     }
 
     Ok(())
+}
+
+struct JsonLogger {
+    should_log: ShouldLog,
+}
+
+impl Log for JsonLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        (self.should_log)(metadata)
+    }
+
+    fn log(&self, record: &Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
+        match DefmtRecord::new(record) {
+            Some(record) => {
+                let data = record.args();
+                let file = record.file();
+                let level = record.level().as_str();
+                let line = record.line();
+                let target_timestamp = record.timestamp();
+
+                let path = record
+                    .module_path()
+                    .map(|a| a.split("::").collect::<Vec<_>>())
+                    .unwrap_or_default();
+                // TODO: following 3 lines would panic, if there is no path
+                let krate = path[..1][0];
+                let function = path[path.len() - 1..][0];
+                let modules = &path[1..path.len() - 1];
+
+                let host_timestamp = chrono::Utc::now();
+
+                // defmt goes to stdout, since it's the primary output produced by this tool.
+                let stdout = io::stdout();
+                let mut sink = stdout.lock();
+
+                writeln!(
+                    &mut sink,
+                    "{}",
+                    // serde_json::to_string(&json!({
+                    serde_json::to_string_pretty(&json!({
+                        "backtrace": JsonValue::Null,
+                        "data": data,
+                        "host_timestamp": host_timestamp,
+                        "level": level,
+                        "location": {
+                            "file": file,
+                            "line": line,
+                            "column": "TODO",
+                        },
+                        "path": {
+                            "crate": krate,
+                            "modules": modules,
+                            "function": function,
+                            "is_method": "TODO",
+                        },
+                        "target_timestamp": target_timestamp,
+                    }))
+                    .unwrap(),
+                )
+                .ok();
+            }
+            None => {
+                // non-defmt logs go to stderr
+                let stderr = io::stderr();
+                let mut sink = stderr.lock();
+
+                // note: the length of '(HOST)'
+                let min_timestamp_width = 6;
+
+                writeln!(
+                    sink,
+                    "{timestamp:>0$} {level:5} {args}",
+                    min_timestamp_width,
+                    timestamp = "(HOST)",
+                    level = record
+                        .level()
+                        .to_string()
+                        .color(color_for_log_level(record.level())),
+                    args = record.args()
+                )
+                .ok();
+            }
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+impl JsonLogger {
+    fn new(should_log: ShouldLog) -> Self {
+        Self { should_log }
+    }
 }
