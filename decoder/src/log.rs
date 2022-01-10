@@ -17,7 +17,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::Frame;
+use crate::{frame::DisplayMessage, Frame};
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
 
@@ -52,11 +52,8 @@ pub fn log_defmt(
                 .build(),
         );
     } else {
-        let stdout = io::stdout();
-        let mut sink = stdout.lock();
-        let timestamp = timestamp.map(|ts| format!("{} ", ts)).unwrap_or_default();
-        writeln!(&mut sink, "{}{}", timestamp, display).ok();
-        print_location(&mut sink, file, line, module_path).ok();
+        // If `frame.level()` is `None` then we are inside a `defmt::println!` statement
+        Logger::println(timestamp, display, file, line, module_path);
     }
 }
 
@@ -359,6 +356,24 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
+impl Logger {
+    fn println(
+        timestamp: Option<String>,
+        display: DisplayMessage,
+        file: Option<&str>,
+        line: Option<u32>,
+        module_path: Option<&str>,
+    ) {
+        // log defmt::println to stderr, to make stdout of the JsonLogger pure json
+        let stderr = io::stderr();
+        let mut sink = stderr.lock();
+
+        let timestamp = timestamp.map(|ts| format!("{} ", ts)).unwrap_or_default();
+        writeln!(&mut sink, "{}{}", timestamp, display).ok();
+        print_location(&mut sink, file, line, module_path).ok();
+    }
+}
+
 fn color_for_log_level(level: Level) -> Color {
     match level {
         Level::Error => Color::Red,
@@ -439,6 +454,7 @@ impl Log for JsonLogger {
                     }),
                 )
                 .ok();
+                writeln!(sink, "").ok();
             }
             None => { /* TODO: handle host logs */ }
         }
