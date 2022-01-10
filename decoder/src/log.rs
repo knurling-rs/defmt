@@ -404,39 +404,29 @@ impl Log for JsonLogger {
 
         match DefmtRecord::new(record) {
             Some(record) => {
-                let data = record.args();
-                let file = record.file();
-                let level = record.level().as_str();
-                let line = record.line();
-                let target_timestamp = record.timestamp();
-
-                let path = record
+                let module_path = record
                     .module_path()
                     .map(|a| a.split("::").collect::<Vec<_>>())
                     .unwrap_or_default();
                 // TODO: following 3 lines would panic, if there is no path
-                let krate = path[..1][0];
-                let function = path[path.len() - 1..][0];
-                let modules = &path[1..path.len() - 1];
-
-                let host_timestamp = chrono::Utc::now();
+                let krate = module_path[..1][0];
+                let function = module_path[module_path.len() - 1..][0];
+                let modules = &module_path[1..module_path.len() - 1];
 
                 // defmt goes to stdout, since it's the primary output produced by this tool.
                 let stdout = io::stdout();
                 let mut sink = stdout.lock();
 
-                writeln!(
+                serde_json::to_writer(
                     &mut sink,
-                    "{}",
-                    // serde_json::to_string(&json!({
-                    serde_json::to_string_pretty(&json!({
+                    &json!({
                         "backtrace": JsonValue::Null,
-                        "data": data,
-                        "host_timestamp": host_timestamp,
-                        "level": level,
+                        "data": record.args(),
+                        "host_timestamp": chrono::Utc::now(),
+                        "level": record.level().as_str(),
                         "location": {
-                            "file": file,
-                            "line": line,
+                            "file": record.file(),
+                            "line": record.line(),
                             "column": "TODO",
                         },
                         "path": {
@@ -445,33 +435,12 @@ impl Log for JsonLogger {
                             "function": function,
                             "is_method": "TODO",
                         },
-                        "target_timestamp": target_timestamp,
-                    }))
-                    .unwrap(),
+                        "target_timestamp": record.timestamp(),
+                    }),
                 )
                 .ok();
             }
-            None => {
-                // non-defmt logs go to stderr
-                let stderr = io::stderr();
-                let mut sink = stderr.lock();
-
-                // note: the length of '(HOST)'
-                let min_timestamp_width = 6;
-
-                writeln!(
-                    sink,
-                    "{timestamp:>0$} {level:5} {args}",
-                    min_timestamp_width,
-                    timestamp = "(HOST)",
-                    level = record
-                        .level()
-                        .to_string()
-                        .color(color_for_log_level(record.level())),
-                    args = record.args()
-                )
-                .ok();
-            }
+            None => { /* TODO: handle host logs */ }
         }
     }
 
