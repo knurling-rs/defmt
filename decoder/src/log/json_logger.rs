@@ -30,7 +30,7 @@ impl Log for JsonLogger {
             let stdout = io::stdout();
             let mut sink = stdout.lock();
 
-            serde_json::to_writer_pretty(
+            serde_json::to_writer(
                 &mut sink,
                 &json!({
                     "backtrace": JsonValue::Null,

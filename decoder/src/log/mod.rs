@@ -10,6 +10,7 @@ mod json_logger;
 mod pretty_logger;
 
 use log::{Level, Metadata, Record};
+use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
@@ -20,7 +21,6 @@ use self::{
 use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
-const DEFMT_PRINTLN_MARKER: &str = "@DEFMT_PRINTLN";
 
 /// Logs a defmt frame using the `log` facade.
 pub fn log_defmt(
@@ -29,22 +29,34 @@ pub fn log_defmt(
     line: Option<u32>,
     module_path: Option<&str>,
 ) {
-    let timestamp = frame.display_timestamp().map(|ts| ts.to_string());
-    let mut target = format!("{}{}", DEFMT_TARGET_MARKER, timestamp.unwrap_or_default());
+    let timestamp = frame
+        .display_timestamp()
+        .map(|ts| ts.to_string())
+        .unwrap_or_default();
 
-    let level = if let Some(level) = frame.level() {
-        match level {
+    let (level, is_println) = if let Some(level) = frame.level() {
+        let level = match level {
             crate::Level::Trace => Level::Trace,
             crate::Level::Debug => Level::Debug,
             crate::Level::Info => Level::Info,
             crate::Level::Warn => Level::Warn,
             crate::Level::Error => Level::Error,
-        }
+        };
+        (level, false)
     } else {
         // If `frame.level()` is `None` then we are inside a `defmt::println!` statement
-        target = format!("{}{}", target, DEFMT_PRINTLN_MARKER);
-        Level::Trace
+        (Level::Trace, true)
     };
+
+    let target = format!(
+        "{}{}",
+        DEFMT_TARGET_MARKER,
+        serde_json::to_value(Payload {
+            timestamp,
+            is_println
+        })
+        .unwrap()
+    );
 
     log::logger().log(
         &Record::builder()
@@ -65,8 +77,13 @@ pub fn is_defmt_frame(metadata: &Metadata) -> bool {
 
 /// A `log` record representing a defmt log frame.
 pub struct DefmtRecord<'a> {
-    timestamp: &'a str,
     log_record: &'a Record<'a>,
+    payload: Payload,
+}
+
+#[derive(Deserialize, Serialize)]
+struct Payload {
+    timestamp: String,
     is_println: bool,
 }
 
@@ -74,20 +91,12 @@ impl<'a> DefmtRecord<'a> {
     /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
     pub fn new(log_record: &'a Record<'a>) -> Option<Self> {
         let target = log_record.metadata().target();
-        if let Some(timestamp) = target.strip_prefix(DEFMT_TARGET_MARKER) {
-            if let Some(timestamp) = timestamp.strip_suffix(DEFMT_PRINTLN_MARKER) {
-                Some(Self {
-                    timestamp,
-                    log_record,
-                    is_println: true,
-                })
-            } else {
-                Some(Self {
-                    timestamp,
-                    log_record,
-                    is_println: false,
-                })
-            }
+        if let Some(payload) = target.strip_prefix(DEFMT_TARGET_MARKER) {
+            let payload = serde_json::from_str(payload).unwrap();
+            Some(Self {
+                log_record,
+                payload,
+            })
         } else {
             None
         }
@@ -95,7 +104,7 @@ impl<'a> DefmtRecord<'a> {
 
     /// Returns the formatted defmt timestamp.
     pub fn timestamp(&self) -> &str {
-        self.timestamp
+        self.payload.timestamp.as_str()
     }
 
     pub fn level(&self) -> Level {
@@ -119,7 +128,7 @@ impl<'a> DefmtRecord<'a> {
     }
 
     pub fn is_println(&self) -> bool {
-        self.is_println
+        self.payload.is_println
     }
 
     /// Returns a builder that can format this record for displaying it to the user.

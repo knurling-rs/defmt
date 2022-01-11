@@ -34,7 +34,7 @@ impl Log for PrettyLogger {
                 let stdout = io::stdout();
                 let sink = stdout.lock();
 
-                match record.is_println {
+                match record.is_println() {
                     false => Self::print_defmt_record(self, record, sink),
                     true => Self::print_println_record(record, sink),
                 };
@@ -105,7 +105,7 @@ impl PrettyLogger {
     }
 
     fn print_println_record(record: DefmtRecord, mut sink: StdoutLock) {
-        writeln!(&mut sink, "{}{}", record.timestamp, record.args()).ok();
+        writeln!(&mut sink, "{}{}", record.timestamp(), record.args()).ok();
         print_location(
             &mut sink,
             record.file(),
