@@ -140,13 +140,13 @@ impl<'a> DefmtRecord<'a> {
 /// included if it is available, regardless of this setting).
 pub fn init_logger(
     always_include_location: bool,
+    json: bool,
     should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static,
 ) {
-    log::set_boxed_logger(PrettyLogger::new(always_include_location, should_log)).unwrap();
-    log::set_max_level(log::LevelFilter::Trace);
-}
-
-pub fn init_json_logger(should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static) {
-    log::set_boxed_logger(JsonLogger::new(should_log)).unwrap();
+    log::set_boxed_logger(match json {
+        false => PrettyLogger::new(always_include_location, should_log),
+        true => JsonLogger::new(should_log),
+    })
+    .unwrap();
     log::set_max_level(log::LevelFilter::Trace);
 }
