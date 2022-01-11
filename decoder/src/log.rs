@@ -13,13 +13,14 @@ use serde_json::{json, Value as JsonValue};
 
 use std::{
     fmt::{self, Write as _},
-    io::{self, Write},
+    io::{self, StderrLock, StdoutLock, Write},
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::{frame::DisplayMessage, Frame};
+use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
+const DEFMT_PRINTLN_MARKER: &str = "@DEFMT_PRINTLN";
 
 /// Logs a defmt frame using the `log` facade.
 pub fn log_defmt(
@@ -53,7 +54,23 @@ pub fn log_defmt(
         );
     } else {
         // If `frame.level()` is `None` then we are inside a `defmt::println!` statement
-        Logger::println(timestamp, display, file, line, module_path);
+
+        let target = format!(
+            "{}{}{}",
+            DEFMT_TARGET_MARKER,
+            timestamp.unwrap_or_default(),
+            DEFMT_PRINTLN_MARKER
+        );
+        log::logger().log(
+            &Record::builder()
+                .args(format_args!("{}", display))
+                .level(Level::Trace)
+                .target(&target)
+                .module_path(module_path)
+                .file(file)
+                .line(line)
+                .build(),
+        );
     }
 }
 
@@ -66,16 +83,27 @@ pub fn is_defmt_frame(metadata: &Metadata) -> bool {
 pub struct DefmtRecord<'a> {
     timestamp: &'a str,
     log_record: &'a Record<'a>,
+    is_println: bool,
 }
 
 impl<'a> DefmtRecord<'a> {
     /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
-    pub fn new(record: &'a Record<'a>) -> Option<Self> {
-        if let Some(timestamp) = record.metadata().target().strip_prefix(DEFMT_TARGET_MARKER) {
-            Some(Self {
-                timestamp,
-                log_record: record,
-            })
+    pub fn new(log_record: &'a Record<'a>) -> Option<Self> {
+        let target = log_record.metadata().target();
+        if let Some(timestamp) = target.strip_prefix(DEFMT_TARGET_MARKER) {
+            if let Some(timestamp) = timestamp.strip_suffix(DEFMT_PRINTLN_MARKER) {
+                Some(Self {
+                    timestamp,
+                    log_record,
+                    is_println: true,
+                })
+            } else {
+                Some(Self {
+                    timestamp,
+                    log_record,
+                    is_println: false,
+                })
+            }
         } else {
             None
         }
@@ -104,6 +132,10 @@ impl<'a> DefmtRecord<'a> {
 
     pub fn line(&self) -> Option<u32> {
         self.log_record.line()
+    }
+
+    pub fn is_println(&self) -> bool {
+        self.is_println
     }
 
     /// Returns a builder that can format this record for displaying it to the user.
@@ -301,51 +333,22 @@ impl Log for Logger {
         }
 
         match DefmtRecord::new(record) {
-            Some(defmt) => {
+            Some(record) => {
                 // defmt goes to stdout, since it's the primary output produced by this tool.
                 let stdout = io::stdout();
-                let mut sink = stdout.lock();
+                let sink = stdout.lock();
 
-                let len = defmt.timestamp().len();
-                self.timing_align.fetch_max(len, Ordering::Relaxed);
-                let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
-
-                defmt
-                    .printer()
-                    .include_location(true) // always include location for defmt output
-                    .min_timestamp_width(min_timestamp_width)
-                    .print_colored(&mut sink)
-                    .ok();
+                match record.is_println {
+                    false => Self::print_defmt_record(self, record, sink),
+                    true => Self::print_println_record(record, sink),
+                };
             }
             None => {
                 // non-defmt logs go to stderr
                 let stderr = io::stderr();
-                let mut sink = stderr.lock();
+                let sink = stderr.lock();
 
-                let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
-
-                writeln!(
-                    sink,
-                    "{timestamp:>0$} {level:5} {args}",
-                    min_timestamp_width,
-                    timestamp = "(HOST)",
-                    level = record
-                        .level()
-                        .to_string()
-                        .color(color_for_log_level(record.level())),
-                    args = record.args()
-                )
-                .ok();
-
-                if self.always_include_location {
-                    print_location(
-                        &mut sink,
-                        record.file(),
-                        record.line(),
-                        record.module_path(),
-                    )
-                    .ok();
-                }
+                Self::print_host_record(self, record, sink);
             }
         }
     }
@@ -354,20 +357,55 @@ impl Log for Logger {
 }
 
 impl Logger {
-    fn println(
-        timestamp: Option<String>,
-        display: DisplayMessage,
-        file: Option<&str>,
-        line: Option<u32>,
-        module_path: Option<&str>,
-    ) {
-        // log defmt::println to stderr, to make stdout of the JsonLogger pure json
-        let stderr = io::stderr();
-        let mut sink = stderr.lock();
+    fn print_defmt_record(&self, record: DefmtRecord, mut sink: StdoutLock) {
+        let len = record.timestamp().len();
+        self.timing_align.fetch_max(len, Ordering::Relaxed);
+        let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
-        let timestamp = timestamp.map(|ts| format!("{} ", ts)).unwrap_or_default();
-        writeln!(&mut sink, "{}{}", timestamp, display).ok();
-        print_location(&mut sink, file, line, module_path).ok();
+        record
+            .printer()
+            .include_location(true) // always include location for defmt output
+            .min_timestamp_width(min_timestamp_width)
+            .print_colored(&mut sink)
+            .ok();
+    }
+
+    fn print_host_record(&self, record: &log::Record, mut sink: StderrLock) {
+        let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
+
+        writeln!(
+            sink,
+            "{timestamp:>0$} {level:5} {args}",
+            min_timestamp_width,
+            timestamp = "(HOST)",
+            level = record
+                .level()
+                .to_string()
+                .color(color_for_log_level(record.level())),
+            args = record.args()
+        )
+        .ok();
+
+        if self.always_include_location {
+            print_location(
+                &mut sink,
+                record.file(),
+                record.line(),
+                record.module_path(),
+            )
+            .ok();
+        }
+    }
+
+    fn print_println_record(record: DefmtRecord, mut sink: StdoutLock) {
+        writeln!(&mut sink, "{}{}", record.timestamp, record.args()).ok();
+        print_location(
+            &mut sink,
+            record.file(),
+            record.line(),
+            record.module_path(),
+        )
+        .ok();
     }
 }
 
