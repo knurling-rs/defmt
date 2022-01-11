@@ -71,17 +71,14 @@ pub struct DefmtRecord<'a> {
 impl<'a> DefmtRecord<'a> {
     /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
     pub fn new(record: &'a Record<'a>) -> Option<Self> {
-        let target = record.metadata().target();
-        let is_defmt = target.starts_with(DEFMT_TARGET_MARKER);
-        if !is_defmt {
-            return None;
+        if let Some(timestamp) = record.metadata().target().strip_prefix(DEFMT_TARGET_MARKER) {
+            Some(Self {
+                timestamp,
+                log_record: record,
+            })
+        } else {
+            None
         }
-
-        let timestamp = &target[DEFMT_TARGET_MARKER.len()..];
-        Some(Self {
-            timestamp,
-            log_record: record,
-        })
     }
 
     /// Returns the formatted defmt timestamp.
