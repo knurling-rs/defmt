@@ -21,26 +21,23 @@ impl Log for JsonLogger {
 
         match DefmtRecord::new(record) {
             Some(record) => {
-                let module_path = record
-                    .module_path()
-                    .map(|a| a.split("::").collect::<Vec<_>>())
-                    .unwrap_or_default();
-                // TODO: following 3 lines would panic, if there is no path
-                let krate = module_path[..1][0];
-                let function = module_path[module_path.len() - 1..][0];
-                let modules = &module_path[1..module_path.len() - 1];
+                let (krate, modules, function) = extract_path(record.module_path());
+                let level = match record.is_println() {
+                    false => record.level().as_str(),
+                    true => "PRINTLN",
+                };
 
                 // defmt goes to stdout, since it's the primary output produced by this tool.
                 let stdout = io::stdout();
                 let mut sink = stdout.lock();
 
-                serde_json::to_writer(
+                serde_json::to_writer_pretty(
                     &mut sink,
                     &json!({
                         "backtrace": JsonValue::Null,
                         "data": record.args(),
                         "host_timestamp": chrono::Utc::now(),
-                        "level": record.level().as_str(),
+                        "level": level,
                         "location": {
                             "file": record.file(),
                             "line": record.line(),
@@ -71,4 +68,21 @@ impl JsonLogger {
             should_log: Box::new(should_log),
         })
     }
+}
+
+fn extract_path(module_path: Option<&str>) -> (String, Vec<String>, String) {
+    let module_path = module_path
+        .map(|a| a.split("::").collect::<Vec<_>>())
+        .unwrap_or_else(|| unreachable!("because DefmtFrames always have Some(module_path)"));
+
+    let idx = module_path.len() - 1;
+
+    let krate = module_path[..1][0].to_string();
+    let modules = module_path[1..idx]
+        .into_iter()
+        .map(|b| b.to_string())
+        .collect::<Vec<_>>();
+    let function = module_path[idx..][0].to_string();
+
+    (krate, modules, function)
 }
