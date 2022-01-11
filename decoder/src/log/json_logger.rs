@@ -19,43 +19,41 @@ impl Log for JsonLogger {
             return;
         }
 
-        match DefmtRecord::new(record) {
-            Some(record) => {
-                let (krate, modules, function) = extract_path(record.module_path());
-                let level = match record.is_println() {
-                    false => record.level().as_str(),
-                    true => "PRINTLN",
-                };
+        if let Some(record) = DefmtRecord::new(record) {
+            let (krate, modules, function) = extract_path(record.module_path());
+            let level = match record.is_println() {
+                false => record.level().as_str(),
+                true => "PRINTLN",
+            };
 
-                // defmt goes to stdout, since it's the primary output produced by this tool.
-                let stdout = io::stdout();
-                let mut sink = stdout.lock();
+            // defmt goes to stdout, since it's the primary output produced by this tool.
+            let stdout = io::stdout();
+            let mut sink = stdout.lock();
 
-                serde_json::to_writer_pretty(
-                    &mut sink,
-                    &json!({
-                        "backtrace": JsonValue::Null,
-                        "data": record.args(),
-                        "host_timestamp": chrono::Utc::now(),
-                        "level": level,
-                        "location": {
-                            "file": record.file(),
-                            "line": record.line(),
-                            "column": "TODO",
-                        },
-                        "path": {
-                            "crate": krate,
-                            "modules": modules,
-                            "function": function,
-                            "is_method": "TODO",
-                        },
-                        "target_timestamp": record.timestamp(),
-                    }),
-                )
-                .ok();
-                writeln!(sink, "").ok();
-            }
-            None => { /* TODO: handle host logs */ }
+            serde_json::to_writer_pretty(
+                &mut sink,
+                &json!({
+                    "backtrace": JsonValue::Null,
+                    "data": record.args(),
+                    "host_timestamp": chrono::Utc::now(),
+                    "level": level,
+                    "location": {
+                        "file": record.file(),
+                        "line": record.line(),
+                        "column": "TODO",
+                    },
+                    "path": {
+                        "crate": krate,
+                        "modules": modules,
+                        "function": function,
+                        "is_method": "TODO",
+                    },
+                    "target_timestamp": record.timestamp(),
+                }),
+            )
+            .ok();
+            writeln!(sink).ok();
+        } else { /* TODO: handle host logs */
         }
     }
 
@@ -79,7 +77,7 @@ fn extract_path(module_path: Option<&str>) -> (String, Vec<String>, String) {
 
     let krate = module_path[..1][0].to_string();
     let modules = module_path[1..idx]
-        .into_iter()
+        .iter()
         .map(|b| b.to_string())
         .collect::<Vec<_>>();
     let function = module_path[idx..][0].to_string();
