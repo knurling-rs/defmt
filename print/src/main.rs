@@ -16,6 +16,9 @@ struct Opts {
     elf: Option<PathBuf>,
 
     #[structopt(long)]
+    json: bool,
+
+    #[structopt(long)]
     show_skipped_frames: bool,
 
     #[structopt(short, long)]
@@ -30,6 +33,7 @@ const READ_BUFFER_SIZE: usize = 1024;
 fn main() -> anyhow::Result<()> {
     let Opts {
         elf,
+        json,
         show_skipped_frames,
         verbose,
         version,
@@ -39,7 +43,7 @@ fn main() -> anyhow::Result<()> {
         return print_version();
     }
 
-    defmt_decoder::log::init_logger(verbose, false, move |metadata| match verbose {
+    defmt_decoder::log::init_logger(verbose, json, move |metadata| match verbose {
         false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
         true => true,                                          // We display *all* frames.
     });
