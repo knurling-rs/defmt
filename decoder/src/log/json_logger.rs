@@ -20,7 +20,7 @@ impl Log for JsonLogger {
         }
 
         if let Some(record) = DefmtRecord::new(record) {
-            let (krate, modules, function) = extract_path(record.module_path());
+            let (krate, modules, function, is_method) = extract_path(record.module_path());
             let level = match record.is_println() {
                 false => record.level().as_str(),
                 true => "PRINTLN",
@@ -46,7 +46,7 @@ impl Log for JsonLogger {
                         "crate": krate,
                         "modules": modules,
                         "function": function,
-                        "is_method": "TODO",
+                        "is_method": is_method,
                     },
                     "target_timestamp": record.timestamp(),
                 }),
@@ -68,10 +68,19 @@ impl JsonLogger {
     }
 }
 
-fn extract_path(module_path: Option<&str>) -> (String, Vec<String>, String) {
-    let module_path = module_path
-        .map(|a| a.split("::").collect::<Vec<_>>())
-        .unwrap_or_else(|| unreachable!("because DefmtFrames always have Some(module_path)"));
+fn extract_path(
+    module_path: Option<&str>,
+) -> (
+    Option<String>,
+    Option<Vec<String>>,
+    Option<String>,
+    Option<bool>,
+) {
+    let module_path = if let Some(a) = module_path {
+        a.split("::").collect::<Vec<_>>()
+    } else {
+        return (None, None, None, None);
+    };
 
     let idx = module_path.len() - 1;
 
@@ -82,5 +91,7 @@ fn extract_path(module_path: Option<&str>) -> (String, Vec<String>, String) {
         .collect::<Vec<_>>();
     let function = module_path[idx..][0].to_string();
 
-    (krate, modules, function)
+    let is_method = modules.iter().any(|m| m.starts_with("{impl#"));
+
+    (Some(krate), Some(modules), Some(function), Some(is_method))
 }
