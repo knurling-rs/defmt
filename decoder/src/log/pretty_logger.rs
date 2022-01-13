@@ -35,7 +35,7 @@ impl Log for PrettyLogger {
                 let sink = stdout.lock();
 
                 match record.is_println() {
-                    false => Self::print_defmt_record(self, record, sink),
+                    false => self.print_defmt_record(record, sink),
                     true => Self::print_println_record(record, sink),
                 };
             }
@@ -44,7 +44,7 @@ impl Log for PrettyLogger {
                 let stderr = io::stderr();
                 let sink = stderr.lock();
 
-                Self::print_host_record(self, record, sink);
+                self.print_host_record(record, sink);
             }
         }
     }
