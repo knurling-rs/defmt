@@ -1,6 +1,6 @@
+use chrono::{DateTime, Utc};
 use log::{Log, Record};
-use serde::Serialize;
-use serde_json::{json, Value as JsonValue};
+use serde::{Deserialize, Serialize};
 
 use std::io::{self, Write};
 
@@ -21,11 +21,12 @@ impl Log for JsonLogger {
         }
 
         if let Some(record) = DefmtRecord::new(record) {
-            let path = self::Path::new(record.module_path());
+            let path = self::Path::new(record.file(), record.line(), record.module_path());
             let level = match record.is_println() {
                 false => record.level().as_str(),
                 true => "PRINTLN",
-            };
+            }
+            .to_string();
 
             // defmt goes to stdout, since it's the primary output produced by this tool.
             let stdout = io::stdout();
@@ -33,18 +34,14 @@ impl Log for JsonLogger {
 
             serde_json::to_writer(
                 &mut sink,
-                &json!({
-                    "backtrace": JsonValue::Null,
-                    "data": record.args(),
-                    "host_timestamp": chrono::Utc::now(),
-                    "level": level,
-                    "location": {
-                        "file": record.file(),
-                        "line": record.line(),
-                    },
-                    "path": path,
-                    "target_timestamp": record.timestamp(),
-                }),
+                &Json {
+                    backtrace: None,
+                    data: record.args().to_string(),
+                    host_timestamp: Utc::now(),
+                    level,
+                    path,
+                    target_timestamp: record.timestamp().to_string(),
+                },
             )
             .ok();
             writeln!(sink).ok();
@@ -64,15 +61,31 @@ impl JsonLogger {
     }
 }
 
-#[derive(Serialize)]
-struct Path {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Json {
+    data: String,
+    host_timestamp: DateTime<Utc>,
+    level: String,
+    path: Option<Path>,
+    target_timestamp: String,
+
+    // backtrace is omitted from output if it is `None`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    backtrace: Option<Vec<()>>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Path {
+    file: String,
+    line: u32,
+
     krate: String,
     modules: Vec<String>,
     function: String,
 }
 
 impl Path {
-    fn new(module_path: Option<&str>) -> Option<Self> {
+    fn new(file: Option<&str>, line: Option<u32>, module_path: Option<&str>) -> Option<Self> {
         let mut path = module_path?.split("::").collect::<Vec<_>>();
 
         // there need to be at least two elements, the crate and the function
@@ -82,6 +95,9 @@ impl Path {
 
         let function = path.pop()?.to_string();
         Some(Self {
+            file: file?.to_string(),
+            line: line?,
+
             krate: path[..1][0].to_string(),
             modules: path[1..].iter().map(|a| a.to_string()).collect(),
             function,
