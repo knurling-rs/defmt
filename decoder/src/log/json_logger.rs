@@ -41,7 +41,6 @@ impl Log for JsonLogger {
                     "location": {
                         "file": record.file(),
                         "line": record.line(),
-                        "column": "TODO",
                     },
                     "path": path,
                     "target_timestamp": record.timestamp(),
