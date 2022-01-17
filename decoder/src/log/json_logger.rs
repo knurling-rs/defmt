@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use log::{Log, Record};
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +37,7 @@ impl Log for JsonLogger {
                 &Json {
                     backtrace: None,
                     data: record.args().to_string(),
-                    host_timestamp: Utc::now(),
+                    host_timestamp: Utc::now().timestamp_millis(),
                     level,
                     path,
                     target_timestamp: record.timestamp().to_string(),
@@ -64,7 +64,8 @@ impl JsonLogger {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Json {
     data: String,
-    host_timestamp: DateTime<Utc>,
+    /// Unix timestamp in milliseconds
+    host_timestamp: i64,
     level: String,
     path: Option<Path>,
     target_timestamp: String,

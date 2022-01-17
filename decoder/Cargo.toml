@@ -16,7 +16,7 @@ colored = "2"
 ryu = "1"
 
 # display
-chrono = { version = "0.4", default-features = false, features = ["alloc", "clock", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["alloc", "clock"] }
 
 # logger
 difference = "2"
