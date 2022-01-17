@@ -50,6 +50,7 @@ impl JsonLogger {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct JsonFrame {
     data: String,
+    decoder_version: &'static str,
     host_timestamp: i64,
     level: String,
     location: Option<Location>,
@@ -67,6 +68,7 @@ impl JsonFrame {
 
         Self {
             data: record.args().to_string(),
+            decoder_version: env!("CARGO_PKG_VERSION"),
             host_timestamp,
             level,
             location,
@@ -76,6 +78,9 @@ impl JsonFrame {
 
     pub fn data(&self) -> &str {
         self.data.as_str()
+    }
+    pub fn decoder_version(&self) -> &str {
+        self.decoder_version
     }
     /// Unix timestamp in nanoseconds
     pub fn host_timestamp(&self) -> i64 {
