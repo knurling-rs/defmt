@@ -21,27 +21,13 @@ impl Log for JsonLogger {
         }
 
         if let Some(record) = DefmtRecord::new(record) {
-            let location = self::Location::new(record.file(), record.line(), record.module_path());
-            let level = match record.is_println() {
-                false => record.level().as_str(),
-                true => "PRINTLN",
-            }
-            .to_string();
-
             // defmt goes to stdout, since it's the primary output produced by this tool.
             let stdout = io::stdout();
             let mut sink = stdout.lock();
 
             serde_json::to_writer(
                 &mut sink,
-                &Json {
-                    backtrace: None,
-                    data: record.args().to_string(),
-                    host_timestamp: Utc::now().timestamp_nanos(),
-                    level,
-                    location,
-                    target_timestamp: record.timestamp().to_string(),
-                },
+                &JsonFrame::new(record, Utc::now().timestamp_nanos()),
             )
             .ok();
             writeln!(sink).ok();
@@ -62,17 +48,63 @@ impl JsonLogger {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Json {
+pub struct JsonFrame {
     data: String,
-    /// Unix timestamp in nanoseconds
     host_timestamp: i64,
     level: String,
     location: Option<Location>,
     target_timestamp: String,
+}
 
-    // backtrace is omitted from output if it is `None`
-    #[serde(skip_serializing_if = "Option::is_none")]
-    backtrace: Option<Vec<()>>,
+impl JsonFrame {
+    fn new(record: DefmtRecord, host_timestamp: i64) -> Self {
+        let location = self::Location::new(record.file(), record.line(), record.module_path());
+        let level = match record.is_println() {
+            false => record.level().as_str(),
+            true => "PRINTLN",
+        }
+        .to_string();
+
+        Self {
+            data: record.args().to_string(),
+            host_timestamp,
+            level,
+            location,
+            target_timestamp: record.timestamp().to_string(),
+        }
+    }
+
+    pub fn data(&self) -> &str {
+        self.data.as_str()
+    }
+    /// Unix timestamp in nanoseconds
+    pub fn host_timestamp(&self) -> i64 {
+        self.host_timestamp
+    }
+    pub fn level(&self) -> &str {
+        self.level.as_str()
+    }
+    pub fn target_timestamp(&self) -> &str {
+        self.target_timestamp.as_str()
+    }
+
+    // location attributes
+
+    pub fn file(&self) -> Option<&String> {
+        self.location.as_ref().map(|l| &l.file)
+    }
+    pub fn line(&self) -> Option<u32> {
+        self.location.as_ref().map(|l| l.line)
+    }
+    pub fn crate_name(&self) -> Option<&String> {
+        self.location.as_ref().map(|l| &l.crate_name)
+    }
+    pub fn modules(&self) -> Option<&Vec<String>> {
+        self.location.as_ref().map(|l| &l.modules)
+    }
+    pub fn function(&self) -> Option<&String> {
+        self.location.as_ref().map(|l| &l.function)
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -80,7 +112,7 @@ struct Location {
     file: String,
     line: u32,
 
-    krate: String,
+    crate_name: String,
     modules: Vec<String>,
     function: String,
 }
@@ -99,7 +131,7 @@ impl Location {
             file: file?.to_string(),
             line: line?,
 
-            krate: path[..1][0].to_string(),
+            crate_name: path[..1][0].to_string(),
             modules: path[1..].iter().map(|a| a.to_string()).collect(),
             function,
         })

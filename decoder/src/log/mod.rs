@@ -20,6 +20,8 @@ use self::{
 };
 use crate::Frame;
 
+pub use json_logger::JsonFrame;
+
 const DEFMT_TARGET_MARKER: &str = "defmt@";
 
 /// Logs a defmt frame using the `log` facade.
