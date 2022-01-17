@@ -21,7 +21,7 @@ impl Log for JsonLogger {
         }
 
         if let Some(record) = DefmtRecord::new(record) {
-            let path = self::Path::new(record.file(), record.line(), record.module_path());
+            let location = self::Location::new(record.file(), record.line(), record.module_path());
             let level = match record.is_println() {
                 false => record.level().as_str(),
                 true => "PRINTLN",
@@ -39,7 +39,7 @@ impl Log for JsonLogger {
                     data: record.args().to_string(),
                     host_timestamp: Utc::now().timestamp_nanos(),
                     level,
-                    path,
+                    location,
                     target_timestamp: record.timestamp().to_string(),
                 },
             )
@@ -67,7 +67,7 @@ pub struct Json {
     /// Unix timestamp in nanoseconds
     host_timestamp: i64,
     level: String,
-    path: Option<Path>,
+    location: Option<Location>,
     target_timestamp: String,
 
     // backtrace is omitted from output if it is `None`
@@ -76,7 +76,7 @@ pub struct Json {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Path {
+struct Location {
     file: String,
     line: u32,
 
@@ -85,7 +85,7 @@ pub struct Path {
     function: String,
 }
 
-impl Path {
+impl Location {
     fn new(file: Option<&str>, line: Option<u32>, module_path: Option<&str>) -> Option<Self> {
         let mut path = module_path?.split("::").collect::<Vec<_>>();
 
