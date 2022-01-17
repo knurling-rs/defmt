@@ -37,7 +37,7 @@ impl Log for JsonLogger {
                 &Json {
                     backtrace: None,
                     data: record.args().to_string(),
-                    host_timestamp: Utc::now().timestamp_millis(),
+                    host_timestamp: Utc::now().timestamp_nanos(),
                     level,
                     path,
                     target_timestamp: record.timestamp().to_string(),
@@ -64,7 +64,7 @@ impl JsonLogger {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Json {
     data: String,
-    /// Unix timestamp in milliseconds
+    /// Unix timestamp in nanoseconds
     host_timestamp: i64,
     level: String,
     path: Option<Path>,
