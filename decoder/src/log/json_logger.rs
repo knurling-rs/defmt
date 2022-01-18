@@ -65,6 +65,7 @@ pub struct JsonFrame {
 }
 
 impl JsonFrame {
+    /// Create a new [JsonFrame] from a log-frame from the target
     fn new(record: DefmtRecord, host_timestamp: i64) -> Self {
         let level = match record.is_println() {
             false => record.level().to_string(),
@@ -77,15 +78,16 @@ impl JsonFrame {
             host_timestamp,
             is_host: None,
             level,
-            location: Location::new(
-                record.file(),
-                record.line(),
-                ModulePath::new(record.module_path()),
-            ),
+            location: Location {
+                file: record.file().map(|f| f.to_string()),
+                line: record.line(),
+                module_path: ModulePath::new(record.module_path()),
+            },
             target_timestamp: Some(record.timestamp().to_string()),
         }
     }
 
+    /// Create a new [JsonFrame] from a log-frame from the host
     fn new_host(record: &Record, host_timestamp: i64) -> Self {
         let level = record.level().to_string();
 
@@ -95,11 +97,11 @@ impl JsonFrame {
             host_timestamp,
             is_host: Some(true),
             level,
-            location: Location::new(
-                record.file(),
-                record.line(),
-                ModulePath::new(record.module_path()),
-            ),
+            location: Location {
+                file: record.file().map(|f| f.to_string()),
+                line: record.line(),
+                module_path: ModulePath::new(record.module_path()),
+            },
             target_timestamp: None,
         }
     }
@@ -150,16 +152,6 @@ struct Location {
     file: Option<String>,
     line: Option<u32>,
     module_path: Option<ModulePath>,
-}
-
-impl Location {
-    fn new(file: Option<&str>, line: Option<u32>, module_path: Option<ModulePath>) -> Self {
-        Self {
-            file: file.map(|f| f.to_string()),
-            line,
-            module_path,
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
