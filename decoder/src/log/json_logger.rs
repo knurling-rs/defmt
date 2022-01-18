@@ -1,5 +1,5 @@
 use chrono::Utc;
-use log::{Log, Record};
+use log::{Log, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
 use std::io::{self, Write};
@@ -7,11 +7,11 @@ use std::io::{self, Write};
 use super::DefmtRecord;
 
 pub(crate) struct JsonLogger {
-    should_log: Box<dyn Fn(&log::Metadata) -> bool + Sync + Send>,
+    should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
 }
 
 impl Log for JsonLogger {
-    fn enabled(&self, metadata: &log::Metadata) -> bool {
+    fn enabled(&self, metadata: &Metadata) -> bool {
         (self.should_log)(metadata)
     }
 
@@ -20,19 +20,22 @@ impl Log for JsonLogger {
             return;
         }
 
+        let host_timestamp = Utc::now().timestamp_nanos();
+
         if let Some(record) = DefmtRecord::new(record) {
             // defmt goes to stdout, since it's the primary output produced by this tool.
             let stdout = io::stdout();
             let mut sink = stdout.lock();
 
-            serde_json::to_writer(
-                &mut sink,
-                &JsonFrame::new(record, Utc::now().timestamp_nanos()),
-            )
-            .ok();
+            serde_json::to_writer(&mut sink, &JsonFrame::new(record, host_timestamp)).ok();
             writeln!(sink).ok();
         } else {
-            // TODO: handle host logs
+            // non-defmt logs go to stderr
+            let stderr = io::stdout();
+            let mut sink = stderr.lock();
+
+            serde_json::to_writer(&mut sink, &JsonFrame::new_host(record, host_timestamp)).ok();
+            writeln!(sink).ok();
         }
     }
 
@@ -40,7 +43,7 @@ impl Log for JsonLogger {
 }
 
 impl JsonLogger {
-    pub fn new(should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static) -> Box<Self> {
+    pub fn new(should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static) -> Box<Self> {
         Box::new(Self {
             should_log: Box::new(should_log),
         })
@@ -49,30 +52,45 @@ impl JsonLogger {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct JsonFrame {
+    // please find the attribute documentation at the getter-methods
+    //
     data: String,
     decoder_version: &'static str,
     host_timestamp: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_host: Option<bool>,
     level: String,
     location: Option<Location>,
-    target_timestamp: String,
+    target_timestamp: Option<String>,
 }
 
 impl JsonFrame {
     fn new(record: DefmtRecord, host_timestamp: i64) -> Self {
-        let location = self::Location::new(record.file(), record.line(), record.module_path());
         let level = match record.is_println() {
-            false => record.level().as_str(),
-            true => "PRINTLN",
-        }
-        .to_string();
+            false => record.level().to_string(),
+            true => "PRINTLN".to_string(),
+        };
 
         Self {
             data: record.args().to_string(),
             decoder_version: env!("CARGO_PKG_VERSION"),
             host_timestamp,
+            is_host: None,
             level,
-            location,
-            target_timestamp: record.timestamp().to_string(),
+            location: Location::new(record.file(), record.line(), record.module_path()),
+            target_timestamp: Some(record.timestamp().to_string()),
+        }
+    }
+
+    fn new_host(record: &Record, host_timestamp: i64) -> Self {
+        Self {
+            data: record.args().to_string(),
+            decoder_version: env!("CARGO_PKG_VERSION"),
+            host_timestamp,
+            is_host: Some(true),
+            level: record.level().to_string(),
+            location: Location::new(record.file(), record.line(), record.module_path()),
+            target_timestamp: None,
         }
     }
 
@@ -86,11 +104,15 @@ impl JsonFrame {
     pub fn host_timestamp(&self) -> i64 {
         self.host_timestamp
     }
+    /// Originates the log-frame from the host (`true`) or the target (`false`)?
+    pub fn is_host(&self) -> bool {
+        matches!(self.is_host, Some(true))
+    }
     pub fn level(&self) -> &str {
         self.level.as_str()
     }
-    pub fn target_timestamp(&self) -> &str {
-        self.target_timestamp.as_str()
+    pub fn target_timestamp(&self) -> Option<&String> {
+        self.target_timestamp.as_ref()
     }
 
     // location attributes
