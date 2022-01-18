@@ -9,18 +9,17 @@
 mod json_logger;
 mod pretty_logger;
 
-use log::{Level, Metadata, Record};
+use log::{Level, LevelFilter, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
+pub use self::json_logger::JsonFrame;
 use self::{
     json_logger::JsonLogger,
     pretty_logger::{PrettyLogger, Printer},
 };
 use crate::Frame;
-
-pub use json_logger::JsonFrame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
 
@@ -93,15 +92,12 @@ impl<'a> DefmtRecord<'a> {
     /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
     pub fn new(log_record: &'a Record<'a>) -> Option<Self> {
         let target = log_record.metadata().target();
-        if let Some(payload) = target.strip_prefix(DEFMT_TARGET_MARKER) {
-            let payload = serde_json::from_str(payload).unwrap();
-            Some(Self {
+        target
+            .strip_prefix(DEFMT_TARGET_MARKER)
+            .map(|payload| Self {
                 log_record,
-                payload,
+                payload: serde_json::from_str(payload).expect("malformed 'payload'"),
             })
-        } else {
-            None
-        }
     }
 
     /// Returns the formatted defmt timestamp.
@@ -152,12 +148,12 @@ impl<'a> DefmtRecord<'a> {
 pub fn init_logger(
     always_include_location: bool,
     json: bool,
-    should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static,
+    should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
 ) {
     log::set_boxed_logger(match json {
         false => PrettyLogger::new(always_include_location, should_log),
         true => JsonLogger::new(should_log),
     })
     .unwrap();
-    log::set_max_level(log::LevelFilter::Trace);
+    log::set_max_level(LevelFilter::Trace);
 }

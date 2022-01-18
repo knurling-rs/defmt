@@ -1,6 +1,6 @@
 use colored::{Color, Colorize};
 use difference::{Changeset, Difference};
-use log::{Level, Log};
+use log::{Level, Log, Metadata, Record};
 
 use std::{
     fmt::Write as _,
@@ -12,18 +12,18 @@ use super::DefmtRecord;
 
 pub(crate) struct PrettyLogger {
     always_include_location: bool,
-    should_log: Box<dyn Fn(&log::Metadata) -> bool + Sync + Send>,
+    should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
     /// Number of characters used by the timestamp. This may increase over time and is used to align
     /// messages.
     timing_align: AtomicUsize,
 }
 
 impl Log for PrettyLogger {
-    fn enabled(&self, metadata: &log::Metadata) -> bool {
+    fn enabled(&self, metadata: &Metadata) -> bool {
         (self.should_log)(metadata)
     }
 
-    fn log(&self, record: &log::Record) {
+    fn log(&self, record: &Record) {
         if !self.enabled(record.metadata()) {
             return;
         }
@@ -55,7 +55,7 @@ impl Log for PrettyLogger {
 impl PrettyLogger {
     pub fn new(
         always_include_location: bool,
-        should_log: impl Fn(&log::Metadata) -> bool + Sync + Send + 'static,
+        should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
         Box::new(PrettyLogger {
             always_include_location,
@@ -77,7 +77,7 @@ impl PrettyLogger {
             .ok();
     }
 
-    fn print_host_record(&self, record: &log::Record, mut sink: StderrLock) {
+    fn print_host_record(&self, record: &Record, mut sink: StderrLock) {
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
         writeln!(
