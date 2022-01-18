@@ -60,7 +60,7 @@ pub struct JsonFrame {
     #[serde(skip_serializing_if = "Option::is_none")]
     is_host: Option<bool>,
     level: String,
-    location: Option<Location>,
+    location: Location,
     target_timestamp: Option<String>,
 }
 
@@ -77,19 +77,29 @@ impl JsonFrame {
             host_timestamp,
             is_host: None,
             level,
-            location: Location::new(record.file(), record.line(), record.module_path()),
+            location: Location::new(
+                record.file(),
+                record.line(),
+                ModulePath::new(record.module_path()),
+            ),
             target_timestamp: Some(record.timestamp().to_string()),
         }
     }
 
     fn new_host(record: &Record, host_timestamp: i64) -> Self {
+        let level = record.level().to_string();
+
         Self {
             data: record.args().to_string(),
             decoder_version: env!("CARGO_PKG_VERSION"),
             host_timestamp,
             is_host: Some(true),
-            level: record.level().to_string(),
-            location: Location::new(record.file(), record.line(), record.module_path()),
+            level,
+            location: Location::new(
+                record.file(),
+                record.line(),
+                ModulePath::new(record.module_path()),
+            ),
             target_timestamp: None,
         }
     }
@@ -97,6 +107,7 @@ impl JsonFrame {
     pub fn data(&self) -> &str {
         self.data.as_str()
     }
+    /// `defmt-decoder`-version the log-frame was produced with
     pub fn decoder_version(&self) -> &str {
         self.decoder_version
     }
@@ -117,35 +128,49 @@ impl JsonFrame {
 
     // location attributes
 
-    pub fn file(&self) -> Option<&String> {
-        self.location.as_ref().map(|l| &l.file)
+    pub fn file(&self) -> &Option<String> {
+        &self.location.file
     }
-    pub fn line(&self) -> Option<u32> {
-        self.location.as_ref().map(|l| l.line)
+    pub fn line(&self) -> &Option<u32> {
+        &self.location.line
     }
     pub fn crate_name(&self) -> Option<&String> {
-        self.location.as_ref().map(|l| &l.crate_name)
+        self.location.module_path.as_ref().map(|l| &l.crate_name)
     }
     pub fn modules(&self) -> Option<&Vec<String>> {
-        self.location.as_ref().map(|l| &l.modules)
+        self.location.module_path.as_ref().map(|l| &l.modules)
     }
     pub fn function(&self) -> Option<&String> {
-        self.location.as_ref().map(|l| &l.function)
+        self.location.module_path.as_ref().map(|l| &l.function)
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Location {
-    file: String,
-    line: u32,
+    file: Option<String>,
+    line: Option<u32>,
+    module_path: Option<ModulePath>,
+}
 
+impl Location {
+    fn new(file: Option<&str>, line: Option<u32>, module_path: Option<ModulePath>) -> Self {
+        Self {
+            file: file.map(|f| f.to_string()),
+            line,
+            module_path,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct ModulePath {
     crate_name: String,
     modules: Vec<String>,
     function: String,
 }
 
-impl Location {
-    fn new(file: Option<&str>, line: Option<u32>, module_path: Option<&str>) -> Option<Self> {
+impl ModulePath {
+    fn new(module_path: Option<&str>) -> Option<Self> {
         let mut path = module_path?.split("::").collect::<Vec<_>>();
 
         // there need to be at least two elements, the crate and the function
@@ -153,13 +178,14 @@ impl Location {
             return None;
         };
 
+        // the last element is the function
         let function = path.pop()?.to_string();
-        Some(Self {
-            file: file?.to_string(),
-            line: line?,
+        // the first element is the crate_name
+        let crate_name = path.remove(0).to_string();
 
-            crate_name: path[..1][0].to_string(),
-            modules: path[1..].iter().map(|a| a.to_string()).collect(),
+        Some(Self {
+            crate_name,
+            modules: path.into_iter().map(|a| a.to_string()).collect(),
             function,
         })
     }
