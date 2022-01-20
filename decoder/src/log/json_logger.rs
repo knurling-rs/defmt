@@ -4,10 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use std::io::{self, Write};
 
-use super::DefmtRecord;
+use super::{pretty_logger::PrettyLogger, DefmtRecord};
 
 pub(crate) struct JsonLogger {
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
+    host_logger: PrettyLogger,
 }
 
 impl Log for JsonLogger {
@@ -29,7 +30,11 @@ impl Log for JsonLogger {
             serde_json::to_writer(&mut sink, &JsonFrame::new(record, host_timestamp)).ok();
             writeln!(sink).ok();
         } else {
-            // non-defmt logs are dropped
+            // non-defmt logs go to stderr
+            let stderr = io::stderr();
+            let sink = stderr.lock();
+
+            self.host_logger.print_host_record(record, sink);
         }
     }
 
@@ -40,6 +45,7 @@ impl JsonLogger {
     pub fn new(should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static) -> Box<Self> {
         Box::new(Self {
             should_log: Box::new(should_log),
+            host_logger: PrettyLogger::new_unboxed(true, |_| true),
         })
     }
 }

@@ -57,11 +57,18 @@ impl PrettyLogger {
         always_include_location: bool,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
-        Box::new(PrettyLogger {
+        Box::new(Self::new_unboxed(always_include_location, should_log))
+    }
+
+    pub fn new_unboxed(
+        always_include_location: bool,
+        should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
+    ) -> Self {
+        Self {
             always_include_location,
             should_log: Box::new(should_log),
             timing_align: AtomicUsize::new(0),
-        })
+        }
     }
 
     fn print_defmt_record(&self, record: DefmtRecord, mut sink: StdoutLock) {
@@ -77,7 +84,7 @@ impl PrettyLogger {
             .ok();
     }
 
-    fn print_host_record(&self, record: &Record, mut sink: StderrLock) {
+    pub(super) fn print_host_record(&self, record: &Record, mut sink: StderrLock) {
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
         writeln!(
