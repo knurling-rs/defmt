@@ -21,6 +21,7 @@ chrono = { version = "0.4", default-features = false, features = ["alloc", "cloc
 # logger
 difference = "2"
 log = { version = "0.4", features = ["std"] }
+defmt-json-schema = { version = "0.1", path = "./defmt-json-schema" }
 
 # elf2table
 anyhow = "1.0.45"

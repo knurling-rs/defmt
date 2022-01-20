@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
-pub use self::json_logger::JsonFrame;
 use self::{
     json_logger::JsonLogger,
     pretty_logger::{PrettyLogger, Printer},
