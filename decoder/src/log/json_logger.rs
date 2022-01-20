@@ -104,14 +104,17 @@ impl JsonFrame {
     pub fn line(&self) -> &Option<u32> {
         &self.location.line
     }
-    pub fn crate_name(&self) -> Option<&String> {
-        self.location.module_path.as_ref().map(|l| &l.crate_name)
+    fn module_path(&self) -> Option<&ModulePath> {
+        self.location.module_path.as_ref()
     }
-    pub fn modules(&self) -> Option<&Vec<String>> {
-        self.location.module_path.as_ref().map(|l| &l.modules)
+    pub fn crate_name(&self) -> Option<&str> {
+        self.module_path().map(|l| l.crate_name.as_str())
     }
-    pub fn function(&self) -> Option<&String> {
-        self.location.module_path.as_ref().map(|l| &l.function)
+    pub fn modules(&self) -> Option<&[String]> {
+        self.module_path().map(|l| l.modules.as_slice())
+    }
+    pub fn function(&self) -> Option<&str> {
+        self.module_path().map(|l| l.function.as_str())
     }
 }
 
