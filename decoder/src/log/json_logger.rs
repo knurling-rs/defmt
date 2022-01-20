@@ -20,22 +20,16 @@ impl Log for JsonLogger {
             return;
         }
 
-        let host_timestamp = Utc::now().timestamp_nanos();
-
         if let Some(record) = DefmtRecord::new(record) {
             // defmt goes to stdout, since it's the primary output produced by this tool.
             let stdout = io::stdout();
             let mut sink = stdout.lock();
 
+            let host_timestamp = Utc::now().timestamp_nanos();
             serde_json::to_writer(&mut sink, &JsonFrame::new(record, host_timestamp)).ok();
             writeln!(sink).ok();
         } else {
-            // non-defmt logs go to stderr
-            let stderr = io::stdout();
-            let mut sink = stderr.lock();
-
-            serde_json::to_writer(&mut sink, &JsonFrame::new_host(record, host_timestamp)).ok();
-            writeln!(sink).ok();
+            // non-defmt logs are dropped
         }
     }
 
@@ -57,11 +51,9 @@ pub struct JsonFrame {
     data: String,
     decoder_version: &'static str,
     host_timestamp: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    is_host: Option<bool>,
     level: String,
     location: Location,
-    target_timestamp: Option<String>,
+    target_timestamp: String,
 }
 
 impl JsonFrame {
@@ -76,33 +68,13 @@ impl JsonFrame {
             data: record.args().to_string(),
             decoder_version: env!("CARGO_PKG_VERSION"),
             host_timestamp,
-            is_host: None,
             level,
             location: Location {
                 file: record.file().map(|f| f.to_string()),
                 line: record.line(),
                 module_path: ModulePath::new(record.module_path()),
             },
-            target_timestamp: Some(record.timestamp().to_string()),
-        }
-    }
-
-    /// Create a new [JsonFrame] from a log-frame from the host
-    fn new_host(record: &Record, host_timestamp: i64) -> Self {
-        let level = record.level().to_string();
-
-        Self {
-            data: record.args().to_string(),
-            decoder_version: env!("CARGO_PKG_VERSION"),
-            host_timestamp,
-            is_host: Some(true),
-            level,
-            location: Location {
-                file: record.file().map(|f| f.to_string()),
-                line: record.line(),
-                module_path: ModulePath::new(record.module_path()),
-            },
-            target_timestamp: None,
+            target_timestamp: record.timestamp().to_string(),
         }
     }
 
@@ -117,15 +89,11 @@ impl JsonFrame {
     pub fn host_timestamp(&self) -> i64 {
         self.host_timestamp
     }
-    /// Originates the log-frame from the host (`true`) or the target (`false`)?
-    pub fn is_host(&self) -> bool {
-        matches!(self.is_host, Some(true))
-    }
     pub fn level(&self) -> &str {
         self.level.as_str()
     }
-    pub fn target_timestamp(&self) -> Option<&String> {
-        self.target_timestamp.as_ref()
+    pub fn target_timestamp(&self) -> &str {
+        self.target_timestamp.as_str()
     }
 
     // location attributes
