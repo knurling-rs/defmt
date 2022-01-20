@@ -1,5 +1,5 @@
 use chrono::Utc;
-use defmt_json_schema::v1::{JsonFrame, Location, ModulePath};
+use defmt_json_schema::v1::{JsonFrame, Location, ModulePath, SCHEMA_VERSION};
 use log::{Log, Metadata, Record};
 
 use std::io::{self, Write};
@@ -48,6 +48,13 @@ impl JsonLogger {
             host_logger: PrettyLogger::new_unboxed(true, |_| true),
         })
     }
+
+    pub fn print_schema_version() {
+        let stdout = io::stdout();
+        let mut sink = stdout.lock();
+        serde_json::to_writer(&mut sink, &SCHEMA_VERSION).ok();
+        writeln!(sink).ok();
+    }
 }
 
 /// Create a new [JsonFrame] from a log-frame from the target
@@ -59,7 +66,6 @@ fn create_json_frame(record: DefmtRecord, host_timestamp: i64) -> JsonFrame {
 
     JsonFrame {
         data: record.args().to_string(),
-        decoder_version: env!("CARGO_PKG_VERSION"),
         host_timestamp,
         level,
         location: Location {

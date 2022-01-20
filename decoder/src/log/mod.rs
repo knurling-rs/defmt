@@ -151,7 +151,10 @@ pub fn init_logger(
 ) {
     log::set_boxed_logger(match json {
         false => PrettyLogger::new(always_include_location, should_log),
-        true => JsonLogger::new(should_log),
+        true => {
+            JsonLogger::print_schema_version();
+            JsonLogger::new(should_log)
+        }
     })
     .unwrap();
     log::set_max_level(LevelFilter::Trace);
