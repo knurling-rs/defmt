@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "decoder",
+  "decoder/defmt-json-schema",
   "defmt",
   "macros",
   "parser",
