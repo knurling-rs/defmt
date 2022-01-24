@@ -14,10 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
-use self::{
-    json_logger::JsonLogger,
-    pretty_logger::{PrettyLogger, Printer},
-};
+use self::{json_logger::JsonLogger, pretty_logger::PrettyLogger};
 use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
@@ -34,34 +31,24 @@ pub fn log_defmt(
         .map(|ts| ts.to_string())
         .unwrap_or_default();
 
-    let (level, is_println) = if let Some(level) = frame.level() {
-        let level = match level {
-            crate::Level::Trace => Level::Trace,
-            crate::Level::Debug => Level::Debug,
-            crate::Level::Info => Level::Info,
-            crate::Level::Warn => Level::Warn,
-            crate::Level::Error => Level::Error,
-        };
-        (level, false)
-    } else {
-        // If `frame.level()` is `None` then we are inside a `defmt::println!` statement
-        (Level::Trace, true)
-    };
+    let level = frame.level().map(|level| match level {
+        crate::Level::Trace => Level::Trace,
+        crate::Level::Debug => Level::Debug,
+        crate::Level::Info => Level::Info,
+        crate::Level::Warn => Level::Warn,
+        crate::Level::Error => Level::Error,
+    });
 
     let target = format!(
         "{}{}",
         DEFMT_TARGET_MARKER,
-        serde_json::to_value(Payload {
-            timestamp,
-            is_println
-        })
-        .unwrap()
+        serde_json::to_value(Payload { timestamp, level }).unwrap()
     );
 
     log::logger().log(
         &Record::builder()
             .args(format_args!("{}", frame.display_message()))
-            .level(level)
+            // .level(level) // no need to set the level, since it is transferred via payload
             .target(&target)
             .module_path(module_path)
             .file(file)
@@ -83,8 +70,8 @@ pub struct DefmtRecord<'a> {
 
 #[derive(Deserialize, Serialize)]
 struct Payload {
+    level: Option<Level>,
     timestamp: String,
-    is_println: bool,
 }
 
 impl<'a> DefmtRecord<'a> {
@@ -104,8 +91,8 @@ impl<'a> DefmtRecord<'a> {
         self.payload.timestamp.as_str()
     }
 
-    pub fn level(&self) -> Level {
-        self.log_record.level()
+    pub fn level(&self) -> Option<Level> {
+        self.payload.level
     }
 
     pub fn args(&self) -> &fmt::Arguments<'a> {
@@ -122,15 +109,6 @@ impl<'a> DefmtRecord<'a> {
 
     pub fn line(&self) -> Option<u32> {
         self.log_record.line()
-    }
-
-    pub fn is_println(&self) -> bool {
-        self.payload.is_println
-    }
-
-    /// Returns a builder that can format this record for displaying it to the user.
-    pub fn printer(&'a self) -> Printer<'a> {
-        Printer::new(self)
     }
 }
 

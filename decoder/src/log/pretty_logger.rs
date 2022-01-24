@@ -34,9 +34,9 @@ impl Log for PrettyLogger {
                 let stdout = io::stdout();
                 let sink = stdout.lock();
 
-                match record.is_println() {
-                    false => self.print_defmt_record(record, sink),
-                    true => Self::print_println_record(record, sink),
+                match record.level() {
+                    Some(level) => self.print_defmt_record(record, level, sink),
+                    None => Self::print_println_record(record, sink),
                 };
             }
             None => {
@@ -71,13 +71,12 @@ impl PrettyLogger {
         }
     }
 
-    fn print_defmt_record(&self, record: DefmtRecord, mut sink: StdoutLock) {
+    fn print_defmt_record(&self, record: DefmtRecord, level: Level, mut sink: StdoutLock) {
         let len = record.timestamp().len();
         self.timing_align.fetch_max(len, Ordering::Relaxed);
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
-        record
-            .printer()
+        Printer::new(&record, level)
             .include_location(true) // always include location for defmt output
             .min_timestamp_width(min_timestamp_width)
             .print_colored(&mut sink)
@@ -127,14 +126,16 @@ impl PrettyLogger {
 pub struct Printer<'a> {
     record: &'a DefmtRecord<'a>,
     include_location: bool,
+    level: Level,
     min_timestamp_width: usize,
 }
 
 impl<'a> Printer<'a> {
-    pub fn new(record: &'a DefmtRecord) -> Self {
+    pub fn new(record: &'a DefmtRecord, level: Level) -> Self {
         Self {
             record,
             include_location: false,
+            level,
             min_timestamp_width: 0,
         }
     }
@@ -175,10 +176,9 @@ impl<'a> Printer<'a> {
                 " "
             },
             level = self
-                .record
-                .level()
+                .level
                 .to_string()
-                .color(color_for_log_level(self.record.level())),
+                .color(color_for_log_level(self.level)),
             args = color_diff(self.record.args().to_string()),
         )?;
 

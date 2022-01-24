@@ -59,15 +59,10 @@ impl JsonLogger {
 
 /// Create a new [JsonFrame] from a log-frame from the target
 fn create_json_frame(record: DefmtRecord, host_timestamp: i64) -> JsonFrame {
-    let level = match record.is_println() {
-        false => record.level().to_string(),
-        true => "PRINTLN".to_string(),
-    };
-
     JsonFrame {
         data: record.args().to_string(),
         host_timestamp,
-        level,
+        level: record.level(),
         location: Location {
             file: record.file().map(|f| f.to_string()),
             line: record.line(),

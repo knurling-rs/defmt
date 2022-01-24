@@ -1,3 +1,4 @@
+use log::Level;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -15,7 +16,7 @@ pub mod v1 {
         pub data: String,
         /// Unix timestamp in nanoseconds
         pub host_timestamp: i64,
-        pub level: String,
+        pub level: Option<Level>,
         pub location: Location,
         pub target_timestamp: String,
     }
