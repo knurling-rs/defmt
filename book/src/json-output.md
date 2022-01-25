@@ -100,6 +100,8 @@ pub struct ModulePath {
     pub modules: Vec<String>,
     pub function: String,
 }
+
+# mod log { pub struct Level; }
 ```
 
 ... which results in following json schema ...
