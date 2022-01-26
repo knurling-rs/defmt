@@ -2,7 +2,7 @@
 
 > Structured logging for `probe-run`.
 
-As an alternative to it's human-focused output, `probe-run` offers structured json output. There are two use-cases:
+As an alternative to its human-focused output, `probe-run` offers structured JSON output. There are two use-cases:
 - building software on top of `probe-run`
 - storing `probe-run`'s output, in order to analyze it over time
 
@@ -10,7 +10,7 @@ As an alternative to it's human-focused output, `probe-run` offers structured js
 
 😁: Sounds great, how can I use it?
 
-To activate the json output, just add the `--json` flag to your invocation of `probe-run`. If you are using our `app-template` edit `.cargo/config.toml` like this:
+To activate the JSON output, just add the `--json` flag to your invocation of `probe-run`. If you are using our `app-template` edit `.cargo/config.toml` like this:
 
 ```diff
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
@@ -18,7 +18,7 @@ To activate the json output, just add the `--json` flag to your invocation of `p
 + runner = "probe-run --chip $CHIP --json"
 ```
 
-Now `probe-run` will output one line with a json object for each log-statement to `stdout`, and your output will look similar to this:
+Now `probe-run` will output one line with a JSON object for each log-statement to `stdout`, and your output will look similar to this:
 
 ```console
 $ DEFMT_LOG=debug cargo run --bin levels
@@ -39,11 +39,11 @@ $ DEFMT_LOG=debug cargo run --bin levels
 └─ probe_run::backtrace @ src/backtrace/mod.rs:108
 ```
 
-🤯: But wait a moment?! ... That is not only json! How am I supposed to process that?
+🤯: But wait a moment?! ... That is not only JSON! How am I supposed to process that?
 
-That is easy. As mentioned, the json output goes to `stdout`. All the other output, like host logs and backtraces go to `stderr` and therefore can be processed separately.
+That is easy. As mentioned, the JSON output goes to `stdout`. All the other output, like host logs and backtraces go to `stderr` and therefore can be processed separately.
 
-For example, you can redirect the json output to a file and still see the host logs in the terminal:
+For example, you can redirect the JSON output to a file and still see the host logs in the terminal:
 
 ```console
 $ DEFMT_LOG=debug cargo rb levels > levels.json
@@ -76,7 +76,7 @@ It indicates the version of the json format you are using. `probe-run` will alwa
 
 ## JsonFrame
 
-The [`defmt-json-schema`] crate provides a data transfer object `struct JsonFrame` which is used to serialize the log frame to json and can be used to deserialize it back to rust as well.
+The [`defmt-json-schema`] crate provides a data transfer object `struct JsonFrame` which is used to serialize the log frame to JSON and can be used to deserialize it back to rust as well.
 
 The `JsonFrame` is defined like this ...
 
@@ -104,7 +104,7 @@ pub struct ModulePath {
 # mod log { pub struct Level; }
 ```
 
-... which results in following json schema ...
+... which results in following JSON schema ...
 
 ```json
 {
@@ -146,7 +146,7 @@ pub struct ModulePath {
 
 ## SchemaVersion
 
-[`defmt-json-schema`] provides a `SchemaVersion` type as well, which can be used to deserialize the json back to rust:
+[`defmt-json-schema`] provides a `SchemaVersion` type as well, which can be used to deserialize the JSON back to rust:
 
 ```rust
 pub struct SchemaVersion {
