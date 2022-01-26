@@ -8,7 +8,7 @@ As an alternative to its human-focused output, `probe-run` offers structured JSO
 
 ## How to use it?
 
-😁: Sounds great, how can I use it?
+> 😁: Sounds great, how can I use it?
 
 To activate the JSON output, just add the `--json` flag to your invocation of `probe-run`. If you are using our `app-template` edit `.cargo/config.toml` like this:
 
@@ -39,7 +39,7 @@ $ DEFMT_LOG=debug cargo run --bin levels
 └─ probe_run::backtrace @ src/backtrace/mod.rs:108
 ```
 
-🤯: But wait a moment?! ... That is not only JSON! How am I supposed to process that?
+> 🤯: But wait a moment?! ... That is not only JSON! How am I supposed to process that?
 
 That is easy. As mentioned, the JSON output goes to `stdout`. All the other output, like host logs and backtraces go to `stderr` and therefore can be processed separately.
 
@@ -68,17 +68,25 @@ Afterwards `levels.json` looks like this:
 {"data":"println","host_timestamp":1643113389707313290,"level":null,"location":{"file":"src/bin/levels.rs","line":15,"module_path":{"crate_name":"levels","modules":[],"function":"__cortex_m_rt_main"}},"target_timestamp":"4"}
 ```
 
-🤔: That seems convenient, but what is this schema version in the first line?
+> 🤔: That seems convenient, but what is this schema version in the first line?
 
 It indicates the version of the json format you are using. `probe-run` will always output it as a header at the beginning of each stream of logs. We anticipate that the format will slightly change while `probe-run` and `defmt` evolve. Using this version you always know which revision is in use and can act upon that.
 
-🤗: Thank you for the explanation!
+> 🤗: Sounds great!
 
-## JsonFrame
+## Data transfer objects
 
-The [`defmt-json-schema`] crate provides a data transfer object `struct JsonFrame` which is used to serialize the log frame to JSON and can be used to deserialize it back to rust as well.
+> 🤔: So, what can I do with the JSON output?
 
-The `JsonFrame` is defined like this ...
+There really are no boundaries. You can process the JSON with any programming language you like. If you want to do that in rust, we provide some data transfer objects which implement `serde`'s `trait Serialize` and `trait Deserialize`, in the [`defmt-json-schema`] crate.
+
+See how they can be use in [this example](https://github.com/knurling-rs/defmt/blob/b396257be01f477eda2ac16f7e62dece31749963/decoder/defmt-json-schema/examples/simple.rs) and how they are defined below.
+
+### JsonFrame
+
+The most important one is the `struct JsonFrame`. It contains all the information for one log-statement.
+
+It is defined like this:
 
 ```rust
 pub struct JsonFrame {
@@ -144,13 +152,29 @@ pub struct ModulePath {
 }
 ```
 
-## SchemaVersion
+### SchemaVersion
 
-[`defmt-json-schema`] provides a `SchemaVersion` type as well, which can be used to deserialize the JSON back to rust:
+The second type provided, is the `struct SchemaVersion`:
 
 ```rust
 pub struct SchemaVersion {
     pub schema_version: u32,
+}
+```
+
+... which results in following JSON schema ...
+
+```json
+{
+    "schema_version": "number"
+}
+```
+
+... which looks like this, for example:
+
+```json
+{
+    "schema_version": 1
 }
 ```
 
