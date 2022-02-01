@@ -396,12 +396,10 @@ fn test_book() {
                     "build",
                     "-p",
                     "defmt",
+                    "-p",
+                    "defmt-decoder",
                     "--features",
                     "unstable-test",
-                    "-p",
-                    "serde_json",
-                    "-p",
-                    "defmt-json-schema",
                 ],
                 None,
                 &[],
@@ -411,10 +409,25 @@ fn test_book() {
     );
 
     do_test(
+        || run_command("cargo", &["build", "-p", "cortex-m"], Some("firmware"), &[]),
+        "book",
+    );
+
+    do_test(
         || {
             run_command(
                 "mdbook",
-                &["test", "-L", "../target/debug", "-L", "../target/debug/deps"],
+                &[
+                    "test",
+                    "-L",
+                    "../target/debug",
+                    "-L",
+                    "../target/debug/deps",
+                    "-L",
+                    "../firmware/target/debug",
+                    "-L",
+                    "../firmware/target/debug/deps",
+                ],
                 Some("book"),
                 // logging macros need this but mdbook, not being Cargo, doesn't set the env var so
                 // we use a dummy value

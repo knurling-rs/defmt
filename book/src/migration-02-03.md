@@ -88,7 +88,7 @@ The `Logger` trait has seen a couple of big changes, for one the function signat
 
 Let's see what a new implementation of the `Logger` in crate `defmt-itm` looks like compared to the previous implementation in version `0.2`. The following abbreviated example code shows how the `Logger` worked before.
 
-```rust,ignore
+``` rust,ignore
 #[defmt::global_logger]
 struct Logger;
 
@@ -124,10 +124,13 @@ impl defmt::Write for Logger {
 
 And here is how it conceptually works now:
 
-```rust
+``` rust
+# extern crate cortex_m;
 # extern crate defmt;
+#
 # use std::sync::atomic::{AtomicBool,Ordering};
-
+# use cortex_m::{itm,peripheral::ITM};
+#
 #[defmt::global_logger]
 struct Logger;
 
@@ -169,15 +172,6 @@ unsafe impl defmt::Logger for Logger {
 fn do_write(bytes: &[u8]) {
     unsafe { itm::write_all(&mut (*ITM::ptr()).stim[0], bytes) }
 }
-
-# // mock cortex_m-crate
-# mod itm {
-#     pub unsafe fn write_all(a: &mut u8, b: &[u8]) {}
-# }
-# struct ITM { stim: [u8; 1] }
-# impl ITM {
-#     fn ptr() -> *mut ITM { &mut ITM { stim: [0] } as *mut _ }
-# }
 ```
 
 Let us go through the changes step-by-step:
@@ -193,10 +187,11 @@ Let us go through the changes step-by-step:
 - Adapt `fn release`:
   - Call `ENCODER.end_frame(do_write);`, before releasing the lock.
 - Add new method `unsafe fn write` to `impl defmt::Logger for Logger`:
-    ```rust,noplayground
+    ``` rust,noplayground
     # extern crate defmt;
     # static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
     # fn do_write(bytes: &[u8]) {}
+    #
     unsafe fn write(bytes: &[u8]) {
         ENCODER.write(bytes, do_write);
     }
@@ -215,7 +210,7 @@ This functionality is what gets used when calling `defmt::flush`, [whose docs sa
 
 The idea is to ensure that _all data_ is read by the host. Take `defmt-rtt` as an example:
 
-```rust
+``` rust
 # extern crate defmt;
 # use std::sync::atomic::{AtomicUsize,Ordering};
 
@@ -249,7 +244,7 @@ unsafe impl defmt::Logger for Logger {
 
 If your transport doesn't allow to ensure that _all data_ got read, `flush` should at least flush _as much data as possible_. Take `defmt-itm` as an example for this:
 
-```rust
+``` rust
 # extern crate defmt;
 
 # #[defmt::global_logger]

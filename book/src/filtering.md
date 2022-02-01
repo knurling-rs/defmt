@@ -35,7 +35,9 @@ $ DEFMT_LOG=warn cargo run --bin app
 Enabling a logging level also enables higher severity logging levels.
 For example,
 
-``` rust,ignore
+``` rust
+# extern crate defmt;
+#
 defmt::trace!("trace");
 defmt::debug!("debug");
 defmt::info!("info");
@@ -62,7 +64,8 @@ A different logging level filter can be applied to different modules using *logg
 A logging directive has the syntax `krate::module::path=level`.
 `DEFMT_LOG` can contain a list of comma separated logging directives.
 
-``` rust,ignore
+``` rust
+# extern crate defmt;
 // crate-name = app
 
 mod important {
@@ -130,7 +133,8 @@ my-package # package-name = my-package
 
 Logging directives that appear later in the list override preceding instances.
 
-``` rust,ignore
+``` rust
+# extern crate defmt;
 // crate-name = app
 pub fn function() {
     defmt::trace!("root trace");

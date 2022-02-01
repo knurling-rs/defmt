@@ -17,7 +17,7 @@ This produces two symbols with the name "X".
 How can this occur in logging?
 The user may write:
 
-``` rust,no_run,noplayground
+``` rust
 # extern crate defmt;
 fn foo() {
     defmt::info!("foo started ..");
