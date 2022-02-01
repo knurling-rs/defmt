@@ -19,13 +19,18 @@ For example:
 
 <!-- NOTE(ignore) we can't compile this test because the `panic_handler` defined here collides with the one in `std` -->
 
-```rust, ignore
+``` rust,ignore
 #[panic_handler] // built-in ("core") attribute
 fn core_panic(info: &core::panic::PanicInfo) -> ! {
     print(info); // e.g. using RTT
     reset()
 }
+```
 
+``` rust
+# extern crate defmt;
+# fn reset() -> ! { todo!() }
+#
 #[defmt::panic_handler] // defmt's attribute
 fn defmt_panic() -> ! {
     // leave out the printing part here
