@@ -392,7 +392,17 @@ fn test_book() {
         || {
             run_command(
                 "cargo",
-                &["build", "-p", "defmt", "--features", "unstable-test"],
+                &[
+                    "build",
+                    "-p",
+                    "defmt",
+                    "--features",
+                    "unstable-test",
+                    "-p",
+                    "serde_json",
+                    "-p",
+                    "defmt-json-schema",
+                ],
                 None,
                 &[],
             )

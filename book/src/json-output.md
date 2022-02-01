@@ -88,6 +88,9 @@ If you wish to deserialize the entire data back into a Rust program, you will ne
 You can use all of this together with `serde_json` like following:
 
 ```rust
+# extern crate defmt_json_schema;
+# extern crate serde_json;
+
 use defmt_json_schema::{v1, SchemaVersion};
 
 const DATA: &str = r#"{"schema_version":1}
