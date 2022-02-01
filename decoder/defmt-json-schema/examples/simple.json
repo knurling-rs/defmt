@@ -1,5 +1,5 @@
 {"schema_version":1}
-{"data":"I am a PRINTLN-statement","host_timestamp":1642698490360848721,"level":"PRINTLN","location":{"file":"src/bin/hello.rs","line":9,"module_path":{"crate_name":"hello","modules":[],"function":"__cortex_m_rt_main"}},"target_timestamp":"0"}
+{"data":"I am a PRINTLN-statement","host_timestamp":1642698490360848721,"level":null,"location":{"file":"src/bin/hello.rs","line":9,"module_path":{"crate_name":"hello","modules":[],"function":"__cortex_m_rt_main"}},"target_timestamp":"0"}
 {"data":"S { a: 8 }","host_timestamp":1642698490361019228,"level":"TRACE","location":{"file":"src/bin/hello.rs","line":26,"module_path":{"crate_name":"hello","modules":["{impl#0}"],"function":"abc"}},"target_timestamp":"1"}
 {"data":"I am nested in 2 modules.","host_timestamp":1642698490361160422,"level":"WARN","location":{"file":"src/bin/hello.rs","line":33,"module_path":{"crate_name":"hello","modules":["test_m","inner_test_m"],"function":"test_f"}},"target_timestamp":"2"}
 {"data":"panicked at 'P A N I C', src/bin/hello.rs:16:5","host_timestamp":1642698490361317114,"level":"ERROR","location":{"file":"/home/urhengulas/.cargo/registry/src/github.com-1ecc6299db9ec823/panic-probe-0.3.0/src/lib.rs","line":91,"module_path":{"crate_name":"panic_probe","modules":["print_defmt"],"function":"print"}},"target_timestamp":"3"}
