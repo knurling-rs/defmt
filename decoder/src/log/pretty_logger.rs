@@ -111,7 +111,12 @@ impl PrettyLogger {
     }
 
     fn print_println_record(record: DefmtRecord, mut sink: StdoutLock) {
-        writeln!(&mut sink, "{}{}", record.timestamp(), record.args()).ok();
+        let timestamp = match record.timestamp().is_empty() {
+            true => record.timestamp().to_string(),
+            false => format!("{} ", record.timestamp()),
+        };
+
+        writeln!(&mut sink, "{}{}", timestamp, record.args()).ok();
         print_location(
             &mut sink,
             record.file(),
