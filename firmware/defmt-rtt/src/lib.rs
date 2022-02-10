@@ -22,9 +22,7 @@
 
 mod channel;
 
-use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-
-use cortex_m::{interrupt, register};
+use core::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
 
 use crate::channel::Channel;
 
@@ -39,13 +37,12 @@ struct Logger;
 
 /// Global logger lock.
 static TAKEN: AtomicBool = AtomicBool::new(false);
-static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
+static INTERRUPTS_ACTIVE: AtomicU8 = AtomicU8::new(0);
 static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
-        let primask = register::primask::read();
-        interrupt::disable();
+        let token = unsafe { critical_section::acquire() };
 
         if TAKEN.load(Ordering::Relaxed) {
             panic!("defmt logger taken reentrantly")
@@ -54,7 +51,7 @@ unsafe impl defmt::Logger for Logger {
         // no need for CAS because interrupts are disabled
         TAKEN.store(true, Ordering::Relaxed);
 
-        INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
+        INTERRUPTS_ACTIVE.store(token, Ordering::Relaxed);
 
         // safety: accessing the `static mut` is OK because we have disabled interrupts.
         unsafe { ENCODER.start_frame(do_write) }
@@ -70,10 +67,7 @@ unsafe impl defmt::Logger for Logger {
         ENCODER.end_frame(do_write);
 
         TAKEN.store(false, Ordering::Relaxed);
-        if INTERRUPTS_ACTIVE.load(Ordering::Relaxed) {
-            // re-enable interrupts
-            interrupt::enable()
-        }
+        critical_section::release(INTERRUPTS_ACTIVE.load(Ordering::Relaxed));
     }
 
     unsafe fn write(bytes: &[u8]) {
