@@ -150,4 +150,9 @@ INFO ccbbaadd
 INFO log data: 43981
 INFO flush! 🚽
 INFO log more data! 🎉
+INFO Cell: Cell { value: 43981 })
+INFO RefCell: RefCell { value: 43981 }
+INFO borrowed RefCell: RefCell { value: <borrowed> }
+INFO BorrowMutError: BorrowMutError
+INFO BorrowError: BorrowError
 INFO QEMU test finished!
