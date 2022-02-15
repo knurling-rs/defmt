@@ -716,6 +716,22 @@ fn main() -> ! {
     defmt::flush();
     defmt::info!("log more data! 🎉");
 
+    {
+        use core::cell;
+
+        let a = cell::Cell::new(0xABCD);
+        let b = cell::RefCell::new(0xABCD);
+        defmt::info!("Cell: {}", a);
+        defmt::info!("RefCell: {}", b);
+
+        let _c = b.try_borrow_mut().unwrap();
+        let d = b.try_borrow_mut().unwrap_err();
+        let e = b.try_borrow().unwrap_err();
+        defmt::info!("borrowed RefCell: {}", b);
+        defmt::info!("BorrowMutError: {}", d);
+        defmt::info!("BorrowError: {}", e);
+    }
+
     defmt::info!("QEMU test finished!");
 
     loop {
