@@ -34,10 +34,12 @@ pub(crate) fn expand_parsed(args: Args) -> TokenStream2 {
     quote!({
         match (#(&(#formatting_exprs)),*) {
             (#(#patterns),*) => {
-                defmt::export::acquire();
+                // safety: will be released a few lines further down
+                unsafe { defmt::export::acquire(); }
                 defmt::export::header(&#header);
                 #(#exprs;)*
-                defmt::export::release()
+                // safety: acquire() was called a few lines above
+                unsafe { defmt::export::release() }
             }
         }
     })

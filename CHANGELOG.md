@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#640]: use crate [critical-section](https://crates.io/crates/critical-section) in defmt-rtt
+- [#659]: mark extern::acquire() and extern::release() as unsafe
+
+[#640]: https://github.com/knurling-rs/defmt/pull/640
+[#659]: https://github.com/knurling-rs/defmt/pull/659
 
 ## [v0.3.1] - 2021-11-26
 

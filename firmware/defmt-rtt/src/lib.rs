@@ -42,6 +42,7 @@ static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
+        // safety: Must be paired with corresponding call to release(), see below
         let token = unsafe { critical_section::acquire() };
 
         if TAKEN.load(Ordering::Relaxed) {
@@ -67,6 +68,7 @@ unsafe impl defmt::Logger for Logger {
         ENCODER.end_frame(do_write);
 
         TAKEN.store(false, Ordering::Relaxed);
+        // safety: Must be paired with corresponding call to acquire(), see above
         critical_section::release(INTERRUPTS_ACTIVE.load(Ordering::Relaxed));
     }
 

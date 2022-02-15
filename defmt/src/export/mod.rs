@@ -39,28 +39,36 @@ pub fn fetch_bytes() -> Vec<u8> {
     BYTES.with(|b| core::mem::replace(&mut *b.borrow_mut(), Vec::new()))
 }
 
+/// Only to be used by the defmt macros
+/// Safety: must be paired with a later call to release()
 #[cfg(feature = "unstable-test")]
-pub fn acquire() {}
+pub unsafe fn acquire() {}
 
+/// Only to be used by the defmt macros
+/// Safety: must be paired with a later call to release()
 #[cfg(not(feature = "unstable-test"))]
 #[inline(always)]
-pub fn acquire() {
+pub unsafe fn acquire() {
     extern "Rust" {
         fn _defmt_acquire();
     }
-    unsafe { _defmt_acquire() }
+    _defmt_acquire()
 }
 
+/// Only to be used by the defmt macros
+/// Safety: must follow an earlier call to acquire()
 #[cfg(feature = "unstable-test")]
-pub fn release() {}
+pub unsafe fn release() {}
 
+/// Only to be used by the defmt macros
+/// Safety: must follow an earlier call to acquire()
 #[cfg(not(feature = "unstable-test"))]
 #[inline(always)]
-pub fn release() {
+pub unsafe fn release() {
     extern "Rust" {
         fn _defmt_release();
     }
-    unsafe { _defmt_release() }
+    _defmt_release()
 }
 
 #[cfg(feature = "unstable-test")]
