@@ -7,6 +7,7 @@
 
 mod alloc_;
 mod array;
+mod cell;
 mod num;
 mod ops;
 mod slice;
