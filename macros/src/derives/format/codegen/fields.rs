@@ -38,7 +38,10 @@ pub(crate) fn codegen(
 
         let format_opt = get_defmt_format_option(field)?;
         let ty = as_native_type(&field.ty).unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
-        let ident = field.ident.clone().unwrap_or_else(|| format_ident!("arg{}", index));
+        let ident = field
+            .ident
+            .clone()
+            .unwrap_or_else(|| format_ident!("arg{}", index));
 
         if let Some(FormatOption::Debug2Format) = format_opt {
             stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
@@ -106,7 +109,7 @@ fn get_defmt_format_option(field: &Field) -> syn::Result<Option<FormatOption>> {
     };
     if args.len() != 1 {
         return Err(syn::Error::new_spanned(
-            args,
+            attr,
             "expected 1 attribute argument",
         ));
     }
