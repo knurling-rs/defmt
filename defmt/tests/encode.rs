@@ -152,7 +152,7 @@ fn bitfields_assert_range_exclusive() {
 }
 
 #[test]
-fn debug_struct() {
+fn debug_attr_struct() {
     #[derive(Debug)]
     struct DebugOnly {
         _a: i32,
@@ -172,20 +172,40 @@ fn debug_struct() {
             d: DebugOnly { _a: 3 }
         },
         [
-            index, 0b0u8, // y
-            0b1u8, 0b0u8, // Format
-            b'D', b'e', b'b', b'u', b'g', b'O', b'n', b'l', b'y', b' ', b'{', b' ', b'_', b'a',
-            b':', b' ', b'3', b' ', b'}', 0xffu8
+            index,         // "X {{ y: {=bool}, d: {=?} }}"
+            0b0u8,         // y
+            inc(index, 1), // DebugOnly's format string
+            b'D',          // Text of the Debug output
+            b'e',
+            b'b',
+            b'u',
+            b'g',
+            b'O',
+            b'n',
+            b'l',
+            b'y',
+            b' ',
+            b'{',
+            b' ',
+            b'_',
+            b'a',
+            b':',
+            b' ',
+            b'3',
+            b' ',
+            b'}',
+            0xffu8
         ],
     )
 }
 
 #[test]
-fn display_struct() {
+fn display_attr_enum() {
+    use std::fmt;
     struct DisplayOnly {}
 
-    impl std::fmt::Display for DisplayOnly {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl fmt::Display for DisplayOnly {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.write_str("Display")
         }
     }
@@ -201,9 +221,17 @@ fn display_struct() {
     check_format!(
         &X::Display(DisplayOnly {}),
         [
-            index, 0b1u8, // Variant: Display
-            0b1u8, 0b0u8, // Format
-            b'D', b'i', b's', b'p', b'l', b'a', b'y', 0xffu8
+            index,         // "Bool({=bool})|Display({=?})"
+            0b1u8,         // Variant: Display
+            inc(index, 1), // DisplayOnly's format string
+            b'D',          // Text of the Display output
+            b'i',
+            b's',
+            b'p',
+            b'l',
+            b'a',
+            b'y',
+            0xffu8
         ],
     )
 }
@@ -220,7 +248,7 @@ fn boolean_struct() {
     check_format!(
         &X { y: false, z: true },
         [
-            index, // "X {{ x: {=bool}, y: {=bool} }}"
+            index, // "X {{ y: {=bool}, z: {=bool} }}"
             0b0u8, // y
             0b1u8, // z
         ],
@@ -239,7 +267,7 @@ fn single_struct() {
     check_format!(
         &X { y: 1, z: 2 },
         [
-            index, // "X {{ x: {=u8}, y: {=u16} }}"
+            index, // "X {{ y: {=u8}, z: {=u16} }}"
             1u8,   // x
             2u8,   // y.low
             0u8,   // y.high
