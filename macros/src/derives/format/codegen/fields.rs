@@ -36,13 +36,13 @@ pub(crate) fn codegen(
             format_string.push_str(", ");
         }
 
-        let format_opt = get_defmt_format_opt(field)?;
+        let format_opt = get_defmt_format_option(field)?;
         let ty = as_native_type(&field.ty).unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
         let ident = field.ident.clone().unwrap_or_else(|| format_ident!("arg{}", index));
 
-        if let Some(FormatOpt::Debug) = format_opt {
+        if let Some(FormatOption::Debug2Format) = format_opt {
             stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
-        } else if let Some(FormatOpt::Display) = format_opt {
+        } else if let Some(FormatOption::Display2Format) = format_opt {
             stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
         } else if ty == consts::TYPE_FORMAT {
             stmts.push(quote!(defmt::export::fmt(#ident)));
@@ -54,7 +54,7 @@ pub(crate) fn codegen(
         if field.ident.is_some() {
             // Named field.
             write!(format_string, "{}: {{={}:?}}", ident, ty).ok();
-            
+
             patterns.push(quote!( #ident ));
         } else {
             // Unnamed (tuple) field.
@@ -75,15 +75,15 @@ pub(crate) fn codegen(
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-enum FormatOpt {
-    Debug,
-    Display,
+enum FormatOption {
+    Debug2Format,
+    Display2Format,
 }
 
-/// If the field has a valid defmt attribute (e.g. `#[defmt(Debug2Format)]`), returns `Ok(Some(FormatOpt))`.
+/// If the field has a valid defmt attribute (e.g. `#[defmt(Debug2Format)]`), returns `Ok(Some(FormatOption))`.
 /// Returns `Err` if we can't parse a valid defmt attribute.
 /// Returns `Ok(None)` if there are no `defmt` attributes on the field.
-fn get_defmt_format_opt(field: &Field) -> syn::Result<Option<FormatOpt>> {
+fn get_defmt_format_option(field: &Field) -> syn::Result<Option<FormatOption>> {
     use syn::Error;
     let attrs = field
         .attrs
@@ -120,9 +120,9 @@ fn get_defmt_format_opt(field: &Field) -> syn::Result<Option<FormatOpt>> {
         }
     };
     if arg.is_ident("Debug2Format") {
-        Ok(Some(FormatOpt::Debug))
+        Ok(Some(FormatOption::Debug2Format))
     } else if arg.is_ident("Display2Format") {
-        Ok(Some(FormatOpt::Display))
+        Ok(Some(FormatOption::Display2Format))
     } else {
         Err(syn::Error::new_spanned(
             arg,
