@@ -7,12 +7,12 @@ use crate::construct;
 
 use super::EncodeData;
 
-pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> EncodeData {
+pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> {
     if data.variants.is_empty() {
-        return EncodeData {
+        return Ok(EncodeData {
             stmts: vec![quote!(match *self {})],
             format_tag: construct::interned_string("!", "derived", false),
-        };
+        });
     }
 
     let mut format_string = String::new();
@@ -33,7 +33,7 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> EncodeData {
 
         let mut field_patterns = vec![];
         let encode_fields_stmts =
-            super::fields::codegen(&variant.fields, &mut format_string, &mut field_patterns);
+            super::fields::codegen(&variant.fields, &mut format_string, &mut field_patterns)?;
         let pattern = quote!( { #(#field_patterns),* } );
 
         let encode_discriminant_stmt = discriminant_encoder.encode(index);
@@ -51,7 +51,7 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> EncodeData {
         #(#match_arms)*
     })];
 
-    EncodeData { format_tag, stmts }
+    Ok(EncodeData { format_tag, stmts })
 }
 
 enum DiscriminantEncoder {

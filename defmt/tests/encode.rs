@@ -152,6 +152,63 @@ fn bitfields_assert_range_exclusive() {
 }
 
 #[test]
+fn debug_struct() {
+    #[derive(Debug)]
+    struct DebugOnly {
+        _a: i32,
+    }
+
+    #[derive(Format)]
+    struct X {
+        y: bool,
+        #[defmt(Debug2Format)]
+        d: DebugOnly,
+    }
+
+    let index = fetch_string_index();
+    check_format!(
+        &X {
+            y: false,
+            d: DebugOnly { _a: 3 }
+        },
+        [
+            index, 0b0u8, // y
+            0b1u8, 0b0u8, // Format
+            b'D', b'e', b'b', b'u', b'g', b'O', b'n', b'l', b'y', b' ', b'{', b' ', b'_', b'a',
+            b':', b' ', b'3', b' ', b'}', 0xffu8
+        ],
+    )
+}
+
+#[test]
+fn display_struct() {
+    struct DisplayOnly {}
+
+    impl std::fmt::Display for DisplayOnly {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("Display")
+        }
+    }
+
+    #[derive(Format)]
+    enum X {
+        #[allow(dead_code)]
+        Bool(bool),
+        Display(#[defmt(Display2Format)] DisplayOnly),
+    }
+
+    let index = fetch_string_index();
+    check_format!(
+        &X::Display(DisplayOnly {}),
+        [
+            index, 0b1u8, // Variant: Display
+            0b1u8, 0b0u8, // Format
+            b'D', b'i', b's', b'p', b'l', b'a', b'y', 0xffu8
+        ],
+    )
+}
+
+#[test]
 fn boolean_struct() {
     #[derive(Format)]
     struct X {

@@ -2,7 +2,7 @@ use std::fmt::Write as _;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{Fields, Index, Type};
+use syn::{Attribute, Fields, Index, Meta, NestedMeta, Type};
 
 use crate::consts;
 
@@ -10,15 +10,15 @@ pub(crate) fn codegen(
     fields: &Fields,
     format_string: &mut String,
     patterns: &mut Vec<TokenStream2>,
-) -> Vec<TokenStream2> {
+) -> syn::Result<Vec<TokenStream2>> {
     let (fields, fields_are_named) = match fields {
         Fields::Named(named) => (&named.named, true),
-        Fields::Unit => return vec![],
+        Fields::Unit => return Ok(vec![]),
         Fields::Unnamed(unnamed) => (&unnamed.unnamed, false),
     };
 
     if fields.is_empty() {
-        return vec![];
+        return Ok(vec![]);
     }
 
     if fields_are_named {
@@ -36,11 +36,32 @@ pub(crate) fn codegen(
             format_string.push_str(", ");
         }
 
+        let format_opt = field
+            .attrs
+            .iter()
+            .map(get_defmt_format_opt)
+            .collect::<syn::Result<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<FormatOpt>>();
+        let format_opt = if format_opt.len() > 1 {
+            return Err(syn::Error::new_spanned(
+                field,
+                "expected 1 attribute argument",
+            ));
+        } else {
+            format_opt.get(0)
+        };
+
         let ty = as_native_type(&field.ty).unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
         if let Some(ident) = field.ident.as_ref() {
             write!(format_string, "{}: {{={}:?}}", ident, ty).ok();
 
-            if ty == consts::TYPE_FORMAT {
+            if let Some(FormatOpt::Debug) = format_opt {
+                stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
+            } else if let Some(FormatOpt::Display) = format_opt {
+                stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
+            } else if ty == consts::TYPE_FORMAT {
                 stmts.push(quote!(defmt::export::fmt(#ident)));
             } else {
                 let method = format_ident!("{}", ty);
@@ -54,7 +75,11 @@ pub(crate) fn codegen(
             write!(format_string, "{{={}}}", ty).ok();
 
             let ident = format_ident!("arg{}", index);
-            if ty == consts::TYPE_FORMAT {
+            if let Some(FormatOpt::Debug) = format_opt {
+                stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
+            } else if let Some(FormatOpt::Display) = format_opt {
+                stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
+            } else if ty == consts::TYPE_FORMAT {
                 stmts.push(quote!(defmt::export::fmt(#ident)));
             } else {
                 let method = format_ident!("{}", ty);
@@ -72,7 +97,49 @@ pub(crate) fn codegen(
         format_string.push(')');
     }
 
-    stmts
+    Ok(stmts)
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+enum FormatOpt {
+    Debug,
+    Display,
+}
+
+fn get_defmt_format_opt(attr: &Attribute) -> syn::Result<Option<FormatOpt>> {
+    let list = if attr.path.is_ident("defmt") {
+        match attr.parse_meta()? {
+            Meta::List(list) => list.nested,
+            bad => return Err(syn::Error::new_spanned(bad, "unrecognized attribute")),
+        }
+    } else {
+        return Ok(None);
+    };
+    if list.len() != 1 {
+        return Err(syn::Error::new_spanned(
+            list,
+            "expected 1 attribute argument",
+        ));
+    }
+    let arg = match &list[0] {
+        NestedMeta::Meta(Meta::Path(arg)) => arg,
+        bad => {
+            return Err(syn::Error::new_spanned(
+                bad,
+                "expected `Debug2Format` or `Display2Format`",
+            ))
+        }
+    };
+    if arg.is_ident("Debug2Format") {
+        Ok(Some(FormatOpt::Debug))
+    } else if arg.is_ident("Display2Format") {
+        Ok(Some(FormatOpt::Display))
+    } else {
+        Err(syn::Error::new_spanned(
+            arg,
+            "expected `Debug2Format` or `Display2Format`",
+        ))
+    }
 }
 
 /// Returns `Some` if `ty` refers to a builtin Rust type that has native support from defmt and does

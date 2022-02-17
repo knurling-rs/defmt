@@ -34,7 +34,7 @@ pub fn panic_handler(args: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /* # Derives */
-#[proc_macro_derive(Format)]
+#[proc_macro_derive(Format, attributes(defmt))]
 #[proc_macro_error]
 pub fn format(input: TokenStream) -> TokenStream {
     derives::format::expand(input)
