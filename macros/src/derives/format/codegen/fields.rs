@@ -38,37 +38,27 @@ pub(crate) fn codegen(
 
         let format_opt = get_defmt_format_opt(field)?;
         let ty = as_native_type(&field.ty).unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
-        if let Some(ident) = field.ident.as_ref() {
+        let ident = field.ident.clone().unwrap_or_else(|| format_ident!("arg{}", index));
+
+        if let Some(FormatOpt::Debug) = format_opt {
+            stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
+        } else if let Some(FormatOpt::Display) = format_opt {
+            stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
+        } else if ty == consts::TYPE_FORMAT {
+            stmts.push(quote!(defmt::export::fmt(#ident)));
+        } else {
+            let method = format_ident!("{}", ty);
+            stmts.push(quote!(defmt::export::#method(#ident)));
+        }
+
+        if field.ident.is_some() {
+            // Named field.
             write!(format_string, "{}: {{={}:?}}", ident, ty).ok();
-
-            if let Some(FormatOpt::Debug) = format_opt {
-                stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
-            } else if let Some(FormatOpt::Display) = format_opt {
-                stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
-            } else if ty == consts::TYPE_FORMAT {
-                stmts.push(quote!(defmt::export::fmt(#ident)));
-            } else {
-                let method = format_ident!("{}", ty);
-                stmts.push(quote!(defmt::export::#method(#ident)));
-            }
-
+            
             patterns.push(quote!( #ident ));
         } else {
             // Unnamed (tuple) field.
-
             write!(format_string, "{{={}}}", ty).ok();
-
-            let ident = format_ident!("arg{}", index);
-            if let Some(FormatOpt::Debug) = format_opt {
-                stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
-            } else if let Some(FormatOpt::Display) = format_opt {
-                stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
-            } else if ty == consts::TYPE_FORMAT {
-                stmts.push(quote!(defmt::export::fmt(#ident)));
-            } else {
-                let method = format_ident!("{}", ty);
-                stmts.push(quote!(defmt::export::#method(#ident)));
-            }
 
             let index = Index::from(index);
             patterns.push(quote!( #index: #ident ));
