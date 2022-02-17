@@ -83,12 +83,22 @@ When using `#[derive(Format)]` you may use the `#[defmt()]` attribute on specifi
 Example below:
 
 ``` rust
+# extern crate defmt;
+# use defmt::Format;
+# mod serde_json {
+#     #[derive(Debug)]
+#     pub enum Error {}
+# }
 #[derive(Format)]
 enum Error {
     Serde(#[defmt(Debug2Format)] serde_json::Error),
     ResponseTooLarge,
 }
 
+# struct Celsius();
+# impl std::fmt::Display for Celsius {
+#     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) }
+# }
 #[derive(Format)]
 struct Reading {
     #[defmt(Display2Format)]
