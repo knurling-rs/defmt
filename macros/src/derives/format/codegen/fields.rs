@@ -2,7 +2,7 @@ use std::fmt::Write as _;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{Attribute, Fields, Index, Meta, NestedMeta, Type};
+use syn::{Field, Fields, Index, Meta, NestedMeta, Type};
 
 use crate::consts;
 
@@ -36,23 +36,7 @@ pub(crate) fn codegen(
             format_string.push_str(", ");
         }
 
-        let format_opt = field
-            .attrs
-            .iter()
-            .map(get_defmt_format_opt)
-            .collect::<syn::Result<Vec<_>>>()?
-            .into_iter()
-            .flatten()
-            .collect::<Vec<FormatOpt>>();
-        let format_opt = if format_opt.len() > 1 {
-            return Err(syn::Error::new_spanned(
-                field,
-                "expected 1 attribute argument",
-            ));
-        } else {
-            format_opt.get(0)
-        };
-
+        let format_opt = get_defmt_format_opt(field)?;
         let ty = as_native_type(&field.ty).unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
         if let Some(ident) = field.ident.as_ref() {
             write!(format_string, "{}: {{={}:?}}", ident, ty).ok();
@@ -106,22 +90,37 @@ enum FormatOpt {
     Display,
 }
 
-fn get_defmt_format_opt(attr: &Attribute) -> syn::Result<Option<FormatOpt>> {
-    let list = if attr.path.is_ident("defmt") {
-        match attr.parse_meta()? {
-            Meta::List(list) => list.nested,
-            bad => return Err(syn::Error::new_spanned(bad, "unrecognized attribute")),
-        }
-    } else {
+/// If the field has a valid defmt attribute (e.g. `#[defmt(Debug2Format)]`), returns `Ok(Some(FormatOpt))`.
+/// Returns `Err` if we can't parse a valid defmt attribute.
+/// Returns `Ok(None)` if there are no `defmt` attributes on the field.
+fn get_defmt_format_opt(field: &Field) -> syn::Result<Option<FormatOpt>> {
+    use syn::Error;
+    let attrs = field
+        .attrs
+        .iter()
+        .filter(|a| a.path.is_ident("defmt"))
+        .map(|a| a.parse_meta())
+        .collect::<syn::Result<Vec<_>>>()?;
+    if attrs.len() == 0 {
         return Ok(None);
+    } else if attrs.len() > 1 {
+        return Err(Error::new_spanned(
+            field,
+            "multiple `defmt` attributes not supported",
+        ));
+    } // else attrs.len() == 1
+    let attr = &attrs[0];
+    let args = match attr {
+        Meta::List(list) => &list.nested,
+        bad => return Err(syn::Error::new_spanned(bad, "unrecognized attribute")),
     };
-    if list.len() != 1 {
+    if args.len() != 1 {
         return Err(syn::Error::new_spanned(
-            list,
+            args,
             "expected 1 attribute argument",
         ));
     }
-    let arg = match &list[0] {
+    let arg = match &args[0] {
         NestedMeta::Meta(Meta::Path(arg)) => arg,
         bad => {
             return Err(syn::Error::new_spanned(
