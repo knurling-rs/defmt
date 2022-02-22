@@ -14,13 +14,13 @@ pub(crate) struct EncodeData {
     pub(crate) stmts: Vec<TokenStream2>,
 }
 
-pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> EncodeData {
+pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> syn::Result<EncodeData> {
     let mut format_string = ident.to_string();
     let mut stmts = vec![];
     let mut field_patterns = vec![];
 
     let encode_fields_stmts =
-        fields::codegen(&data.fields, &mut format_string, &mut field_patterns);
+        fields::codegen(&data.fields, &mut format_string, &mut field_patterns)?;
 
     stmts.push(quote!(match self {
         Self { #(#field_patterns),* } => {
@@ -29,7 +29,7 @@ pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> EncodeData
     }));
 
     let format_tag = construct::interned_string(&format_string, "derived", false);
-    EncodeData { format_tag, stmts }
+    Ok(EncodeData { format_tag, stmts })
 }
 
 pub(crate) struct Generics<'a> {

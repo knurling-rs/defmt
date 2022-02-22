@@ -9,10 +9,15 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as DeriveInput);
 
     let ident = &input.ident;
-    let codegen::EncodeData { format_tag, stmts } = match &input.data {
+    let encode_data = match &input.data {
         Data::Enum(data) => codegen::encode_enum_data(ident, data),
         Data::Struct(data) => codegen::encode_struct_data(ident, data),
         Data::Union(_) => abort_call_site!("`#[derive(Format)]` does not support unions"),
+    };
+
+    let codegen::EncodeData { format_tag, stmts } = match encode_data {
+        Ok(data) => data,
+        Err(e) => return e.into_compile_error().into(),
     };
 
     let codegen::Generics {
