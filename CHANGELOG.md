@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- [#662]: `#[derive(Format)]` now accepts attribute fields to format fields using the `Debug2Format` adapter instead of a `Format` implementation.
+- [#656] implement `Format` for `Cell` and `RefCell`
+- [#661] add tests for Cell types
+
+[#662]: https://github.com/knurling-rs/defmt/pull/662
+[#656]: https://github.com/knurling-rs/defmt/pull/656
+
+### Changed
+
 - [#640]: use crate [critical-section](https://crates.io/crates/critical-section) in defmt-rtt
-- [#659]: mark extern::acquire() and extern::release() as unsafe
+- [#659]: mark extern::acquire() and extern::release() as unsafe. this is not a breaking change; this is an internal API
 
 [#640]: https://github.com/knurling-rs/defmt/pull/640
 [#659]: https://github.com/knurling-rs/defmt/pull/659
@@ -35,7 +46,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#610]: `defmt-print`: Log if malformed frame gets skipped
 - [#547]: Migration guide `v0.2.x` to `v0.3.0`
 - [#604]: defmt-test: `#[cfg(test)]` the `#[defmt_test::tests]` module
-- [#616]: Update user guide part of the book 
+- [#616]: Update user guide part of the book
 - [#615]: Document how to deal with backward compatibility breakage
 - [#614]: Bugfix: decoder breaks with pipe symbol
 - [#605]: Properly handle the `off` pseudo-level in presence of nested logging directives
@@ -305,7 +316,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - rename `mod logger` to `log`
   - make `fn parse_*`, `fn get_locations`, `fn decode` methods of `struct Table`
   - various simplifications and restructuring of internal code
-- [#387] CI: bump timeout to 20 minutes 
+- [#387] CI: bump timeout to 20 minutes
 - [#389] defmt_decoder: Bump deps `object` and `gimli`
 
 ### Fixed
