@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - [#662]: `#[derive(Format)]` now accepts attribute fields to format fields using the `Debug2Format` adapter instead of a `Format` implementation.
-- [#656] implement `Format` for `Cell` and `RefCell`
-- [#661] add tests for Cell types
+- [#656]: implement `Format` for `Cell` and `RefCell`
+- [#661]: add tests for Cell types
 
 [#662]: https://github.com/knurling-rs/defmt/pull/662
+[#661]: https://github.com/knurling-rs/defmt/pull/661
 [#656]: https://github.com/knurling-rs/defmt/pull/656
 
 ### Changed
