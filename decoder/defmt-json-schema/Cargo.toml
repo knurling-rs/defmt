@@ -1,9 +1,13 @@
 [package]
-name = "defmt-json-schema"
-version = "0.1.0"
+authors = ["The Knurling-rs developers"]
+description = "defmt JSON schema"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["knurling", "defmt"]
+license = "MIT OR Apache-2.0"
+name = "defmt-json-schema"
+readme = "../../README.md"
+repository = "https://github.com/knurling-rs/defmt"
+version = "0.1.0"
 
 [dependencies]
 log = { version = "0.4", features = ["serde"] }
