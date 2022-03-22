@@ -18,7 +18,7 @@ The fastest way to get started with `defmt` is to use our [app-template] to set 
 
 To include `defmt` in your existing project, follow our [Application Setup guide].
 
-[Application Setup guide]: https://defmt.ferrous-systems.com/setup-app.html
+[Application Setup guide]: https://defmt.ferrous-systems.com/setup.html
 
 ## MSRV
 `defmt` always compiles on the [latest `stable` rust release](https://github.com/rust-lang/rust/releases/latest). This is enforced by our CI building and testing against this version.
