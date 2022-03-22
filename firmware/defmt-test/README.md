@@ -12,12 +12,25 @@ For a full list of defmt-test's capabilities, please refer to the documentation 
 
 ## Basic usage
 
-Start from the [`app-template`] and then run `cargo test -p testsuite` to run the unit tests:
+Start from the [`app-template`] and then execute `cargo test --lib` to run library unit tests, i.e. `#[test]` functions in the library crate (`src/lib.rs`).
 
 [`app-template`]: https://github.com/knurling-rs/app-template
 
 ``` console
-$ cargo test -p testsuite
+$ cargo test --lib
+(..)
+(1/1) running `it_works`...
+└─ app::unit_tests::__defmt_test_entry @ src/lib.rs:33
+all tests passed!
+└─ app::unit_tests::__defmt_test_entry @ src/lib.rs:28
+(..)
+(HOST) INFO  device halted without error
+```
+
+Execute `cargo test --test integration` to run integration tests, i.e. the `tests/integration.rs` file.
+
+``` console
+$ cargo test --test integration
 (..)
 0.000000 INFO  (1/2) running `assert_true`...
 └─ test::tests::__defmt_test_entry @ tests/test.rs:7
@@ -47,7 +60,7 @@ stack backtrace:
         at (..omitted..)
 ```
 
-NOTE unit tests will be executed sequentially
+NOTE all `#[test]` functions within a file are guaranteed to run sequentially
 
 ## Adding state
 
