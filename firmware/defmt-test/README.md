@@ -10,9 +10,10 @@ For a full list of defmt-test's capabilities, please refer to the documentation 
 
 [rust-analyzer]: https://rust-analyzer.github.io
 
-## Basic usage
+## Using `defmt-test` in a new project
 
-Start from the [`app-template`] and then execute `cargo test --lib` to run library unit tests, i.e. `#[test]` functions in the library crate (`src/lib.rs`).
+We suggest you start from the [`app-template`].
+From there you can execute `cargo test --lib` to run library unit tests, i.e. `#[test]` functions in the library crate (`src/lib.rs`).
 
 [`app-template`]: https://github.com/knurling-rs/app-template
 
@@ -27,7 +28,7 @@ all tests passed!
 (HOST) INFO  device halted without error
 ```
 
-Execute `cargo test --test integration` to run integration tests, i.e. the `tests/integration.rs` file.
+And execute `cargo test --test integration` to run integration tests, i.e. the `tests/integration.rs` file.
 
 ``` console
 $ cargo test --test integration
@@ -61,6 +62,65 @@ stack backtrace:
 ```
 
 NOTE all `#[test]` functions within a file are guaranteed to run sequentially
+
+## Adding `defmt-test` to an existing project
+
+If you want to add `defmt-test` to an existing Cargo project / package, for each *crate* that you want to test you need to do these changes in `Cargo.toml`:
+
+- add `defmt-test` as a `dev-dependency`
+- for each crate that you want to test, set `harness` to `false` to disable the default test harness, the `test` crate which depends on `std`. examples below
+
+``` toml
+# Cargo.toml
+
+# for the library crate (src/lib.rs)
+[lib]
+harness = false
+
+# for each crate in the `tests` directory
+[[test]]
+name = "test-name" # tests/test-name.rs
+harness = false
+
+[[test]]
+name = "second" # tests/second.rs
+harness = false
+```
+
+The other thing to be aware is that `cargo test` will compile *all* crates in the package, or workspace.
+This may include crates that you don't want to test, like `src/main.rs` or each crate in `src/bin` or `examples`.
+To identify which crates are being compiled by `cargo test`, run `cargo test -j1 -v` and look for the `--crate-name` flag passed to each `rustc` invocation.
+
+To test only a subset of the crates in the package / workspace you have two options:
+
+- you can specify each crate when you invoke `cargo test`. for example, `cargo test --lib --test integration` tests two crates: the library crate (`src/lib.rs`) and `tests/integration.rs`
+- you can disable tests for the crates that you don't want to test -- example below -- and then you can use `cargo test` to test all crates that were not disabled.
+
+if you have this project structure
+
+``` console
+$ tree .
+.
+├── Cargo.toml
+├── src
+│  ├── lib.rs
+│  └── main.rs
+└── tests
+   └── integration.rs
+```
+
+and have `src/lib.rs` set up for tests but don't want to test `src/main.rs` you'll need to disable tests for `src/main.rs`
+
+``` toml
+# Cargo.toml
+[package]
+# ..
+name = "app"
+
+[[bin]] # <- add this section
+name = "app" # src/main.rs
+test = false
+```
 
 ## Adding state
 
