@@ -6,6 +6,9 @@ As an alternative to its human-focused output, `probe-run` offers structured JSO
 - building software on top of `probe-run`
 - storing `probe-run`'s output, in order to analyze it over time
 
+⚠️ `probe-run` v0.3.3+ is necessary to use this feature!
+
+
 ## How to use it?
 
 > 😁: Sounds great, how can I use it?
@@ -71,6 +74,47 @@ Afterwards `levels.json` looks like this:
 > 🤔: That seems convenient, but what is this schema version in the first line?
 
 It indicates the version of the json format you are using. `probe-run` will always output it as a header at the beginning of each stream of logs. We anticipate that the format will slightly change while `probe-run` and `defmt` evolve. Using this version you always know which revision is in use and can act upon that.
+
+> 🤔: What if I want formatted output?
+
+You can use `probe-run --chip some-chip --json my-elf | my-formatter`, with for example `jq` on Linux. It will give you this output.
+
+```json
+{
+  "data": "I am a PRINTLN-statement",
+  "host_timestamp": 1647942992494142200,
+  "level": null,
+  "location": {
+    "file": "src/bin/hello.rs",
+    "line": 9,
+    "module_path": {
+      "crate_name": "hello",
+      "modules": [],
+      "function": "__cortex_m_rt_main"
+    }
+  },
+  "target_timestamp": ""
+}
+{
+  "data": "panicked at 'P A N I C', src/bin/hello.rs:16:5",
+  "host_timestamp": 1647942992494198500,
+  "level": "ERROR",
+  "location": {
+    "file": "/home/user/.cargo/registry/src/github.com-.../panic-probe-0.3.0/src/lib.rs",
+    "line": 91,
+    "module_path": {
+      "crate_name": "panic_probe",
+      "modules": [
+        "print_defmt"
+      ],
+      "function": "print"
+    }
+  },
+  "target_timestamp": ""
+}
+
+```
+
 
 > 🤗: Sounds great!
 
