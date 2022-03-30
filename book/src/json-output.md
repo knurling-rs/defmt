@@ -71,13 +71,7 @@ Afterwards `levels.json` looks like this:
 {"data":"println","host_timestamp":1643113389707313290,"level":null,"location":{"file":"src/bin/levels.rs","line":15,"module_path":{"crate_name":"levels","modules":[],"function":"__cortex_m_rt_main"}},"target_timestamp":"4"}
 ```
 
-> 🤔: That seems convenient, but what is this schema version in the first line?
-
-It indicates the version of the json format you are using. `probe-run` will always output it as a header at the beginning of each stream of logs. We anticipate that the format will slightly change while `probe-run` and `defmt` evolve. Using this version you always know which revision is in use and can act upon that.
-
-> 🤔: What if I want formatted output?
-
-You can use `probe-run --chip some-chip --json my-elf | my-formatter`, with for example `jq` on Linux. It will give you this output.
+One use case is changing the human readable output with a piped command. 
 
 ```json
 {
@@ -85,36 +79,14 @@ You can use `probe-run --chip some-chip --json my-elf | my-formatter`, with for 
   "host_timestamp": 1647942992494142200,
   "level": null,
   "location": {
-    "file": "src/bin/hello.rs",
-    "line": 9,
-    "module_path": {
-      "crate_name": "hello",
-      "modules": [],
-      "function": "__cortex_m_rt_main"
+    //...
     }
   },
-  "target_timestamp": ""
 }
-{
-  "data": "panicked at 'P A N I C', src/bin/hello.rs:16:5",
-  "host_timestamp": 1647942992494198500,
-  "level": "ERROR",
-  "location": {
-    "file": "/home/user/.cargo/registry/src/github.com-.../panic-probe-0.3.0/src/lib.rs",
-    "line": 91,
-    "module_path": {
-      "crate_name": "panic_probe",
-      "modules": [
-        "print_defmt"
-      ],
-      "function": "print"
-    }
-  },
-  "target_timestamp": ""
-}
-
 ```
+> 🤔: That seems convenient, but what is this schema version in the first line?
 
+It indicates the version of the json format you are using. `probe-run` will always output it as a header at the beginning of each stream of logs. We anticipate that the format will slightly change while `probe-run` and `defmt` evolve. Using this version you always know which revision is in use and can act upon that.
 
 > 🤗: Sounds great!
 
