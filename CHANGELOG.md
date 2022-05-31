@@ -7,36 +7,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [0.3.2] - 2022-03-10
+## [0.3.2] - 2022-05-31
+
+- [#675] Release `defmt 0.3.2` and fix `defmt-macros`-releated compile-error
+- [#669] Refine docs for `--json` flag
+
+## [0.3.1] - 2022-03-10
 
 ### Added
 
 - [#662]: `#[derive(Format)]` now accepts attribute fields to format fields using the `Debug2Format` adapter instead of a `Format` implementation.
-- [#656]: implement `Format` for `Cell` and `RefCell`
-- [#661]: add tests for Cell types
+- [#661]: Add tests for Cell types
+- [#656]: Implement `defmt::Format` for `Cell` and `RefCell`
+- [#630]: Add test instructions to README.md
 
 [#662]: https://github.com/knurling-rs/defmt/pull/662
 [#661]: https://github.com/knurling-rs/defmt/pull/661
 [#656]: https://github.com/knurling-rs/defmt/pull/656
+[#630]: https://github.com/knurling-rs/defmt/pull/630
 
 ### Changed
 
-- [#640]: use crate [critical-section](https://crates.io/crates/critical-section) in defmt-rtt
 - [#659]: mark extern::acquire() and extern::release() as unsafe. this is not a breaking change; this is an internal API
-
-[#640]: https://github.com/knurling-rs/defmt/pull/640
-[#659]: https://github.com/knurling-rs/defmt/pull/659
-
-## [v0.3.1] - 2021-11-26
-
+- [#640]: use crate [critical-section](https://crates.io/crates/critical-section) in defmt-rtt
 - [#634]: update ELF parsing dependencies
 - [#633]: make RTT buffer size configurable
-- [#630]: Add test instructions to README.md
 - [#626]: Make errror message more meaningful in case of version-mismatch
 
+[#659]: https://github.com/knurling-rs/defmt/pull/659
+[#640]: https://github.com/knurling-rs/defmt/pull/640
 [#634]: https://github.com/knurling-rs/defmt/pull/634
 [#633]: https://github.com/knurling-rs/defmt/pull/633
-[#630]: https://github.com/knurling-rs/defmt/pull/630
 [#626]: https://github.com/knurling-rs/defmt/pull/626
 
 ## [v0.3.0] - 2021-11-09
