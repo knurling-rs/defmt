@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2022-05-31
+
+- [#675] Release `defmt 0.3.2` and fix `defmt-macros`-releated compile-error
+- [#669] Refine docs for `--json` flag
+
 ## [0.3.2] - 2022-03-10
 
 ### Added
