@@ -1,10 +1,12 @@
+use std::io::{Stdin, StdinLock};
+use std::net::TcpStream;
 use std::{
     env, fs,
     io::{self, Read},
     path::{Path, PathBuf},
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use clap::Parser;
 use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
 
@@ -26,6 +28,26 @@ struct Opts {
 
     #[arg(short = 'V', long)]
     version: bool,
+
+    #[command(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(Parser)]
+enum Command {
+    Stdin {},
+    Tcp {
+        #[structopt(short, long, env = "RTT_HOST")]
+        host: String,
+
+        #[structopt(short, long, env = "RTT_PORT")]
+        port: u16,
+    },
+}
+
+enum Source<'a> {
+    Stdin(StdinLock<'a>),
+    Tcp(TcpStream),
 }
 
 const READ_BUFFER_SIZE: usize = 1024;
@@ -37,6 +59,7 @@ fn main() -> anyhow::Result<()> {
         show_skipped_frames,
         verbose,
         version,
+        command,
     } = Opts::parse();
 
     if version {
@@ -64,15 +87,29 @@ fn main() -> anyhow::Result<()> {
     let mut stream_decoder = table.new_stream_decoder();
 
     let current_dir = env::current_dir()?;
-    let mut stdin = io::stdin().lock();
+    let stdin = io::stdin();
+
+    let mut source: Source = match command {
+        None => open_stdin(&stdin),
+        Some(Command::Stdin {}) => open_stdin(&stdin),
+        Some(Command::Tcp { host, port }) => open_tcp(host, port),
+    }?;
 
     loop {
-        // read from stdin and push it to the decoder
-        let n = stdin.read(&mut buf)?;
+        // read from stdin or tcpstream and push it to the decoder
+        let (n, eof) = match source {
+            Source::Stdin(ref mut stdin) => {
+                let n = stdin.read(&mut buf)?;
+                (n, n == 0)
+            }
+            Source::Tcp(ref mut tcpstream) => (tcpstream.read(&mut buf)?, false),
+        };
+
         // if 0 bytes where read, we reached EOF, so quit
-        if n == 0 {
+        if eof {
             break Ok(());
         }
+
         stream_decoder.received(&buf[..n]);
 
         // decode the received data
@@ -96,6 +133,17 @@ fn main() -> anyhow::Result<()> {
                 },
             }
         }
+    }
+}
+
+fn open_stdin(stdin: &Stdin) -> Result<Source, Error> {
+    Ok(Source::Stdin(stdin.lock()))
+}
+
+fn open_tcp<'a>(host: String, port: u16) -> Result<Source<'a>, Error> {
+    match TcpStream::connect(format!("{host}:{port}")) {
+        Ok(stream) => Ok(Source::Tcp(stream)),
+        Err(e) => Err(anyhow!(e)),
     }
 }
 
