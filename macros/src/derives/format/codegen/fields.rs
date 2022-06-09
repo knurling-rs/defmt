@@ -94,7 +94,7 @@ fn get_defmt_format_option(field: &Field) -> syn::Result<Option<FormatOption>> {
         .filter(|a| a.path.is_ident("defmt"))
         .map(|a| a.parse_meta())
         .collect::<syn::Result<Vec<_>>>()?;
-    if attrs.len() == 0 {
+    if attrs.is_empty() {
         return Ok(None);
     } else if attrs.len() > 1 {
         return Err(Error::new_spanned(

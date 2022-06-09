@@ -77,7 +77,7 @@ pub trait Format {
 /// - one thread in std environments.
 /// - one interrupt priority level in embedded devices.
 ///
-/// # Safety contract
+/// # Safety
 ///
 /// - `acquire` logically acquires the global logger in the current execution context.
 ///   The acquiring is tracked internally, no Rust object is returned representing ownership.

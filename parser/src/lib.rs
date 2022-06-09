@@ -277,9 +277,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
 
     // First, optional argument index.
     let mut index = None;
-    let index_end = input
-        .find(|c: char| !c.is_digit(10))
-        .unwrap_or_else(|| input.len());
+    let index_end = input.find(|c: char| !c.is_digit(10)).unwrap_or(input.len());
 
     if index_end != 0 {
         index = Some(
@@ -298,7 +296,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         input = &input[TYPE_PREFIX.len()..];
 
         // type is delimited by `HINT_PREFIX` or end-of-string
-        let type_end = input.find(HINT_PREFIX).unwrap_or_else(|| input.len());
+        let type_end = input.find(HINT_PREFIX).unwrap_or(input.len());
         let type_fragment = &input[..type_end];
 
         const FORMAT_ARRAY_START: &str = "[?;";
