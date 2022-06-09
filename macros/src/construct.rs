@@ -22,8 +22,8 @@ pub(crate) fn crate_local_disambiguator() -> u64 {
 pub(crate) fn escaped_expr_string(expr: &Expr) -> String {
     quote!(#expr)
         .to_string()
-        .replace("{", "{{")
-        .replace("}", "}}")
+        .replace('{', "{{")
+        .replace('}', "}}")
 }
 
 pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
