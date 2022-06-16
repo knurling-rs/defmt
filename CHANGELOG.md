@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#679]: Add changelog enforcer
+- [#678]: Satisfy clippy
+
+[#679]: https://github.com/knurling-rs/defmt/pull/679
+[#678]: https://github.com/knurling-rs/defmt/pull/678
+
 ## [0.3.2] - 2022-05-31
 
-- [#675] Release `defmt 0.3.2` and fix `defmt-macros`-releated compile-error
-- [#669] Refine docs for `--json` flag
+- [#675]: Release `defmt 0.3.2` and fix `defmt-macros`-releated compile-error
+- [#669]: Refine docs for `--json` flag
 
 ## [0.3.1] - 2022-03-10
 
