@@ -31,8 +31,7 @@ impl Log for PrettyLogger {
         match DefmtRecord::new(record) {
             Some(record) => {
                 // defmt goes to stdout, since it's the primary output produced by this tool.
-                let stdout = io::stdout();
-                let sink = stdout.lock();
+                let sink = io::stdout().lock();
 
                 match record.level() {
                     Some(level) => self.print_defmt_record(record, level, sink),
@@ -41,9 +40,7 @@ impl Log for PrettyLogger {
             }
             None => {
                 // non-defmt logs go to stderr
-                let stderr = io::stderr();
-                let sink = stderr.lock();
-
+                let sink = io::stderr().lock();
                 self.print_host_record(record, sink);
             }
         }
