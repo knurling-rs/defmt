@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#681]: Make use of i/o locking being static since rust `1.61`.
 - [#679]: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#681]: https://github.com/knurling-rs/defmt/pull/681
 [#679]: https://github.com/knurling-rs/defmt/pull/679
 [#678]: https://github.com/knurling-rs/defmt/pull/678
 
