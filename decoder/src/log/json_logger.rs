@@ -23,17 +23,14 @@ impl Log for JsonLogger {
 
         if let Some(record) = DefmtRecord::new(record) {
             // defmt goes to stdout, since it's the primary output produced by this tool.
-            let stdout = io::stdout();
-            let mut sink = stdout.lock();
+            let mut sink = io::stdout().lock();
 
             let host_timestamp = Utc::now().timestamp_nanos();
             serde_json::to_writer(&mut sink, &create_json_frame(record, host_timestamp)).ok();
             writeln!(sink).ok();
         } else {
             // non-defmt logs go to stderr
-            let stderr = io::stderr();
-            let sink = stderr.lock();
-
+            let sink = io::stderr().lock();
             self.host_logger.print_host_record(record, sink);
         }
     }
@@ -50,8 +47,7 @@ impl JsonLogger {
     }
 
     pub fn print_schema_version() {
-        let stdout = io::stdout();
-        let mut sink = stdout.lock();
+        let mut sink = io::stdout().lock();
         serde_json::to_writer(&mut sink, &SCHEMA_VERSION).ok();
         writeln!(sink).ok();
     }

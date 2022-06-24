@@ -64,8 +64,7 @@ fn main() -> anyhow::Result<()> {
     let mut stream_decoder = table.new_stream_decoder();
 
     let current_dir = env::current_dir()?;
-    let stdin = io::stdin();
-    let mut stdin = stdin.lock();
+    let mut stdin = io::stdin().lock();
 
     loop {
         // read from stdin and push it to the decoder
