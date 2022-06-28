@@ -69,6 +69,10 @@ fn main() -> anyhow::Result<()> {
     loop {
         // read from stdin and push it to the decoder
         let n = stdin.read(&mut buf)?;
+        // if 0 bytes where read, we reached EOF, so quit
+        if n == 0 {
+            break Ok(());
+        }
         stream_decoder.received(&buf[..n]);
 
         // decode the received data
