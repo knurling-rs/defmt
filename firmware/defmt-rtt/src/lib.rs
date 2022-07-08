@@ -111,7 +111,7 @@ unsafe fn handle() -> &'static Channel {
         max_up_channels: 1,
         max_down_channels: 0,
         up_channel: Channel {
-            name: NAME as *const _ as *const u8,
+            name: &NAME as *const _ as *const u8,
             buffer: unsafe { &mut BUFFER as *mut _ as *mut u8 },
             size: BUF_SIZE,
             write: AtomicUsize::new(0),
@@ -124,7 +124,8 @@ unsafe fn handle() -> &'static Channel {
     #[cfg_attr(not(target_os = "macos"), link_section = ".uninit.defmt-rtt.BUFFER")]
     static mut BUFFER: [u8; BUF_SIZE] = [0; BUF_SIZE];
 
-    static NAME: &[u8] = b"defmt\0";
+    #[link_section = ".data"]
+    static NAME: [u8; 6] = *b"defmt\0";
 
     &_SEGGER_RTT.up_channel
 }
