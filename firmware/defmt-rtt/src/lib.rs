@@ -124,6 +124,8 @@ unsafe fn handle() -> &'static Channel {
     #[cfg_attr(not(target_os = "macos"), link_section = ".uninit.defmt-rtt.BUFFER")]
     static mut BUFFER: [u8; BUF_SIZE] = [0; BUF_SIZE];
 
+    // Place NAME in data section, so the whole RTT header can be read from RAM.
+    // This is useful if flash access gets disabled by the firmware at runtime.
     #[link_section = ".data"]
     static NAME: [u8; 6] = *b"defmt\0";
 
