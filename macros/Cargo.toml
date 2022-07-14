@@ -21,7 +21,7 @@ defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.3.1"
 proc-macro-error = "1"
 proc-macro2 = "1"
 quote = "1"
-syn = { version = "1", features = ["full"] }
+syn = { version = "1.0.56", features = ["full"] }
 
 [dev_dependencies]
 maplit = "1"
