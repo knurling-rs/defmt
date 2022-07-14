@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#686]: `CI`: Temporarily disable `qemu-snapshot (nightly)`
 - [#684]: Fix `syn` dependency version in `defmt-macros`.
 - [#682]: defmt-print: exit when stdin is closed
 - [#681]: Make use of i/o locking being static since rust `1.61`.
 - [#679]: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#686]: https://github.com/knurling-rs/defmt/pull/686
 [#684]: https://github.com/knurling-rs/defmt/pull/684
 [#682]: https://github.com/knurling-rs/defmt/pull/682
 [#681]: https://github.com/knurling-rs/defmt/pull/681

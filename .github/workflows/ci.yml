@@ -111,7 +111,7 @@ jobs:
       matrix:
         rust:
           - stable
-          - nightly
+          # - nightly # disabled, see https://github.com/knurling-rs/defmt/issues/685
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
