@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#xxx]: `CI`: Re-enable `qemu-snapshot (nightly)` tests
+- [#687]: `CI`: Re-enable `qemu-snapshot (nightly)` tests
 - [#686]: `CI`: Temporarily disable `qemu-snapshot (nightly)`
 - [#684]: Fix `syn` dependency version in `defmt-macros`.
 - [#683]: defmt-rtt: Make sure the whole RTT structure is in RAM
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: Add changelog enforcer
 - [#678]: Satisfy clippy
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#687]: https://github.com/knurling-rs/defmt/pull/687
 [#686]: https://github.com/knurling-rs/defmt/pull/686
 [#684]: https://github.com/knurling-rs/defmt/pull/684
 [#683]: https://github.com/knurling-rs/defmt/pull/683
