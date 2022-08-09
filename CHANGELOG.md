@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#688]: Release `defmt-decoder 0.3.3`
 - [#687]: `CI`: Re-enable `qemu-snapshot (nightly)` tests
 - [#686]: `CI`: Temporarily disable `qemu-snapshot (nightly)`
 - [#684]: Fix `syn` dependency version in `defmt-macros`.
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#688]: https://github.com/knurling-rs/defmt/pull/688
 [#687]: https://github.com/knurling-rs/defmt/pull/687
 [#686]: https://github.com/knurling-rs/defmt/pull/686
 [#684]: https://github.com/knurling-rs/defmt/pull/684
