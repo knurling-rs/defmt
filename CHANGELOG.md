@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#688]: https://github.com/knurling-rs/defmt/pull/688
 [#687]: https://github.com/knurling-rs/defmt/pull/687
 [#686]: https://github.com/knurling-rs/defmt/pull/686
 [#684]: https://github.com/knurling-rs/defmt/pull/684
