@@ -17,12 +17,25 @@
 //! is because the RTT buffer will fill up and writing will eventually halt the program execution.
 //!
 //! `defmt::flush` would also block forever in that case.
+//!
+//! # Critical section implementation
+//!
+//! This crate uses [`critical-section`](https://github.com/rust-embedded/critical-section) to ensure only one thread
+//! is writing to the buffer at a time. You must import a crate that provides a `critical-section` implementation
+//! suitable for the current target. See the `critical-section` README for details.
+//!
+//! For example, for single-core privileged-mode Cortex-M targets, you can add the following to your Cargo.toml.
+//!
+//! ```toml
+//! [dependencies]
+//! cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}
+//! ```
 
 #![no_std]
 
 mod channel;
 
-use core::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use crate::channel::Channel;
 
@@ -37,13 +50,13 @@ struct Logger;
 
 /// Global logger lock.
 static TAKEN: AtomicBool = AtomicBool::new(false);
-static INTERRUPTS_ACTIVE: AtomicU8 = AtomicU8::new(0);
+static mut CS_RESTORE: critical_section::RestoreState = critical_section::RestoreState::invalid();
 static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
         // safety: Must be paired with corresponding call to release(), see below
-        let token = unsafe { critical_section::acquire() };
+        let restore = unsafe { critical_section::acquire() };
 
         if TAKEN.load(Ordering::Relaxed) {
             panic!("defmt logger taken reentrantly")
@@ -52,9 +65,10 @@ unsafe impl defmt::Logger for Logger {
         // no need for CAS because interrupts are disabled
         TAKEN.store(true, Ordering::Relaxed);
 
-        INTERRUPTS_ACTIVE.store(token, Ordering::Relaxed);
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
+        unsafe { CS_RESTORE = restore };
 
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
         unsafe { ENCODER.start_frame(do_write) }
     }
 
@@ -64,16 +78,20 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn release() {
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
         ENCODER.end_frame(do_write);
 
         TAKEN.store(false, Ordering::Relaxed);
+
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
+        let restore = CS_RESTORE;
+
         // safety: Must be paired with corresponding call to acquire(), see above
-        critical_section::release(INTERRUPTS_ACTIVE.load(Ordering::Relaxed));
+        critical_section::release(restore);
     }
 
     unsafe fn write(bytes: &[u8]) {
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
         ENCODER.write(bytes, do_write);
     }
 }

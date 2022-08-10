@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#689]: defmt-rtt: Update to critical-section 1.0
 - [#692]: Wrap const fn in const item to ensure compile-time-evaluation.
 - [#690]: Satisfy clippy
 - [#688]: Release `defmt-decoder 0.3.3`
