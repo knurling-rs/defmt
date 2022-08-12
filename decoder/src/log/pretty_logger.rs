@@ -288,7 +288,7 @@ fn print_location<W: io::Write>(
         let mod_path = module_path.unwrap();
         let mut loc = file.to_string();
         if let Some(line) = line {
-            loc.push_str(&format!(":{}", line));
+            let _ = write!(loc, ":{}", line);
         }
         writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed())?;
     }

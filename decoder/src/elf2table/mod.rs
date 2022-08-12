@@ -269,7 +269,7 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
     let borrow_section: &dyn for<'a> Fn(
         &'a Cow<[u8]>,
     ) -> gimli::EndianSlice<'a, gimli::RunTimeEndian> =
-        &|section| gimli::EndianSlice::new(&*section, endian);
+        &|section| gimli::EndianSlice::new(section, endian);
 
     let dwarf = dwarf_cow.borrow(&borrow_section);
 

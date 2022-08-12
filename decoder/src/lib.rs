@@ -76,7 +76,7 @@ impl Tag {
 }
 
 /// Entry in [`Table`] combining a format string with its raw symbol
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct TableEntry {
     string: StringEntry,
     raw_symbol: String,
@@ -97,7 +97,7 @@ impl TableEntry {
 }
 
 /// A format string and it's [`Tag`]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct StringEntry {
     tag: Tag,
     string: String,
@@ -118,7 +118,7 @@ struct BitflagsKey {
     disambig: String,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum Encoding {
     Raw,
@@ -147,7 +147,7 @@ impl Encoding {
 }
 
 /// Internal table that holds log levels and maps format strings to indices
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Table {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
