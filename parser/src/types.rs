@@ -1,6 +1,6 @@
 use std::{ops::Range, str::FromStr};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Type {
     BitField(Range<u8>),
     Bool,
