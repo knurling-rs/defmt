@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#xxx]: Wrap const fn in const item to ensure compile-time-evaluation.
 - [#690]: Satisfy clippy
 - [#688]: Release `defmt-decoder 0.3.3`
 - [#687]: `CI`: Re-enable `qemu-snapshot (nightly)` tests
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
 [#690]: https://github.com/knurling-rs/defmt/pull/690
 [#688]: https://github.com/knurling-rs/defmt/pull/688
 [#687]: https://github.com/knurling-rs/defmt/pull/687

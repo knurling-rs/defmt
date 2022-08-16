@@ -112,13 +112,15 @@ impl EnvFilter {
             .collect::<Vec<_>>();
 
         Some(quote!({
-            const fn check() -> bool {
-                let module_path = module_path!().as_bytes();
-                #(#checks)*
-                false
-            }
-
-            check()
+            const CHECK: bool = {
+                const fn check() -> bool {
+                    let module_path = module_path!().as_bytes();
+                    #(#checks)*
+                    false
+                }
+                check()
+            };
+            CHECK
         }))
     }
 
