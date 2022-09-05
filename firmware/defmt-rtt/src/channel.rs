@@ -60,7 +60,7 @@ impl Channel {
     fn nonblocking_write(&self, bytes: &[u8]) -> usize {
         let write = self.write.load(Ordering::Acquire);
 
-        // NOTE truncate atBUF_SIZE to avoid more than one "wrap-around" in a single `write` call
+        // NOTE truncate at BUF_SIZE to avoid more than one "wrap-around" in a single `write` call
         self.write_impl(bytes, write, BUF_SIZE)
     }
 
