@@ -54,22 +54,19 @@ impl Channel {
             return 0;
         }
 
-        let cursor = write;
-        let len = bytes.len().min(available);
-
-        self.write_impl(bytes, cursor, len)
+        self.write_impl(bytes, write, available)
     }
 
     fn nonblocking_write(&self, bytes: &[u8]) -> usize {
         let write = self.write.load(Ordering::Acquire);
-        let cursor = write;
-        // NOTE truncate atBUF_SIZE to avoid more than one "wrap-around" in a single `write` call
-        let len = bytes.len().min(BUF_SIZE);
 
-        self.write_impl(bytes, cursor, len)
+        // NOTE truncate atBUF_SIZE to avoid more than one "wrap-around" in a single `write` call
+        self.write_impl(bytes, write, BUF_SIZE)
     }
 
-    fn write_impl(&self, bytes: &[u8], cursor: usize, len: usize) -> usize {
+    fn write_impl(&self, bytes: &[u8], cursor: usize, available: usize) -> usize {
+        let len = bytes.len().min(available);
+
         // copy `bytes[..len]` to the RTT buffer
         unsafe {
             if cursor + len > BUF_SIZE {
