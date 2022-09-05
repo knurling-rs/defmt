@@ -70,6 +70,7 @@ impl Channel {
     }
 
     fn write_impl(&self, bytes: &[u8], cursor: usize, len: usize) -> usize {
+        // copy `bytes[..len]` to the RTT buffer
         unsafe {
             if cursor + len > BUF_SIZE {
                 // split memcpy
@@ -81,9 +82,12 @@ impl Channel {
                 ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
             }
         }
+
+        // adjust the write pointer, so the host knows that there is new data
         self.write
             .store(cursor.wrapping_add(len) % BUF_SIZE, Ordering::Release);
 
+        // return the number of bytes written
         len
     }
 
