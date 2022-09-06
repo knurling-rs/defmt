@@ -63,7 +63,9 @@ impl ModulePath {
             panic!("DEFMT_LOG env var: module path cannot be an empty string")
         }
 
-        input.split("::").for_each(validate_identifier);
+        let mut a = input.split("::");
+        a.nth(0).map(validate_identifier_ignore_leading_numbers);
+        a.for_each(validate_identifier);
 
         Self {
             segments: input
@@ -94,6 +96,14 @@ fn parse_log_level(input: &str) -> Result<LogLevelOrOff, ()> {
         "warn" => Level::Warn,
         _ => return Err(()),
     }))
+}
+
+/// Validate that `input` is a valid identifier, but skip all leading numbers.
+///
+/// A `crate` is not allowed to start with numbers, but `bin`s and `example`s are.
+/// Therefore this function accepts them.
+fn validate_identifier_ignore_leading_numbers(input: &str) {
+    validate_identifier(input.trim_start_matches(|c| char::is_ascii_digit(&c)))
 }
 
 fn validate_identifier(input: &str) {
