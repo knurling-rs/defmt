@@ -35,6 +35,8 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
     };
 
     let mut init = None;
+    let mut before_each = None;
+    let mut after_each = None;
     let mut tests = vec![];
     let mut untouched_tokens = vec![];
     for item in items {
@@ -50,6 +52,12 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         false
                     } else if attr.path.is_ident("test") {
                         test_kind = Some(Attr::Test);
+                        false
+                    } else if attr.path.is_ident("before_each") {
+                        test_kind = Some(Attr::BeforeEach);
+                        false
+                    } else if attr.path.is_ident("after_each") {
+                        test_kind = Some(Attr::AfterEach);
                         false
                     } else if attr.path.is_ident("should_error") {
                         should_error = true;
@@ -67,7 +75,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                     None => {
                         return Err(parse::Error::new(
                             f.span(),
-                            "function requires `#[init]` or `#[test]` attribute",
+                            "function requires `#[init]`, `#[before_each]`, `#[after_each]`, or `#[test]` attribute",
                         ));
                     }
                 };
@@ -144,6 +152,90 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                             ignore,
                         })
                     }
+                    Attr::BeforeEach => {
+                        if before_each.is_some() {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "only a single `#[before_each]` function can be defined",
+                            ));
+                        }
+
+                        if should_error {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[should_error]` is not allowed on the `#[before_each]` function",
+                            ));
+                        }
+
+                        if ignore {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[ignore]` is not allowed on the `#[before_each]` function",
+                            ));
+                        }
+
+                        let input = if f.sig.inputs.len() == 1 {
+                            let arg = &f.sig.inputs[0];
+
+                            // NOTE we cannot check the argument type matches `init.state` at this
+                            // point
+                            if let Some(ty) = get_mutable_reference_type(arg).cloned() {
+                                Some(Input { ty })
+                            } else {
+                                // was not `&mut T`
+                                return Err(parse::Error::new(
+                                    arg.span(),
+                                    "parameter must be a mutable reference (`&mut $Type`)",
+                                ));
+                            }
+                        } else {
+                            None
+                        };
+
+                        before_each = Some(BeforeEach { func: f, input });
+                    }
+                    Attr::AfterEach => {
+                        if after_each.is_some() {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "only a single `#[after_each]` function can be defined",
+                            ));
+                        }
+
+                        if should_error {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[should_error]` is not allowed on the `#[after_each]` function",
+                            ));
+                        }
+
+                        if ignore {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[ignore]` is not allowed on the `#[after_each]` function",
+                            ));
+                        }
+
+                        let input = if f.sig.inputs.len() == 1 {
+                            let arg = &f.sig.inputs[0];
+
+                            // NOTE we cannot check the argument type matches `init.state` at this
+                            // point
+                            if let Some(ty) = get_mutable_reference_type(arg).cloned() {
+                                Some(Input { ty })
+                            } else {
+                                // was not `&mut T`
+                                return Err(parse::Error::new(
+                                    arg.span(),
+                                    "parameter must be a mutable reference (`&mut $Type`)",
+                                ));
+                            }
+                        } else {
+                            None
+                        };
+
+                        after_each = Some(AfterEach { func: f, input });
+                    }
                 }
             }
 
@@ -165,6 +257,66 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             Some(quote!(#init_func)),
             Some(quote!(#[allow(dead_code)] let mut state = #init_ident();)),
         )
+    } else {
+        (None, None)
+    };
+
+    let (before_each_fn, before_each_call) = if let Some(before_each) = before_each {
+        let before_each_func = &before_each.func;
+        let before_each_ident = &before_each.func.sig.ident;
+        let span = before_each.func.sig.ident.span();
+
+        let call = if let Some(input) = before_each.input.as_ref() {
+            if let Some(state) = &state_ty {
+                if input.ty != **state {
+                    return Err(parse::Error::new(
+                        input.ty.span(),
+                        "this type must match `#[init]`s return type",
+                    ));
+                }
+            } else {
+                return Err(parse::Error::new(
+                    span,
+                    "no state was initialized by `#[init]`; signature must be `fn()`",
+                ));
+            }
+
+            quote!(#before_each_ident(&mut state))
+        } else {
+            quote!(#before_each_ident())
+        };
+
+        (Some(quote!(#before_each_func)), Some(quote!(#call)))
+    } else {
+        (None, None)
+    };
+
+    let (after_each_fn, after_each_call) = if let Some(after_each) = after_each {
+        let after_each_func = &after_each.func;
+        let after_each_ident = &after_each.func.sig.ident;
+        let span = after_each.func.sig.ident.span();
+
+        let call = if let Some(input) = after_each.input.as_ref() {
+            if let Some(state) = &state_ty {
+                if input.ty != **state {
+                    return Err(parse::Error::new(
+                        input.ty.span(),
+                        "this type must match `#[init]`s return type",
+                    ));
+                }
+            } else {
+                return Err(parse::Error::new(
+                    span,
+                    "no state was initialized by `#[init]`; signature must be `fn()`",
+                ));
+            }
+
+            quote!(#after_each_ident(&mut state))
+        } else {
+            quote!(#after_each_ident())
+        };
+
+        (Some(quote!(#after_each_func)), Some(quote!(#call)))
     } else {
         (None, None)
     };
@@ -198,7 +350,9 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             unit_test_calls.push(quote!(let _ = #call;));
         } else {
             unit_test_calls.push(quote!(
+                #before_each_call;
                 #krate::export::check_outcome(#call, #should_error);
+                #after_each_call;
             ));
         }
     }
@@ -258,6 +412,10 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
 
         #init_fn
 
+        #before_each_fn
+
+        #after_each_fn
+
         #(
             #test_functions
         )*
@@ -269,11 +427,23 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
 enum Attr {
     Init,
     Test,
+    BeforeEach,
+    AfterEach,
 }
 
 struct Init {
     func: ItemFn,
     state: Option<Box<Type>>,
+}
+
+struct BeforeEach {
+    func: ItemFn,
+    input: Option<Input>,
+}
+
+struct AfterEach {
+    func: ItemFn,
+    input: Option<Input>,
 }
 
 struct Test {
