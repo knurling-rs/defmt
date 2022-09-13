@@ -153,6 +153,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         })
                     }
                     Attr::BeforeEach => {
+                        
                         if before_each.is_some() {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
@@ -171,6 +172,13 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
                                 "`#[ignore]` is not allowed on the `#[before_each]` function",
+                            ));
+                        }
+
+                        if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[before_each]` function must have signature `fn([&mut Type])` (parameter is optional)",
                             ));
                         }
 
@@ -213,6 +221,13 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
                                 "`#[ignore]` is not allowed on the `#[after_each]` function",
+                            ));
+                        }
+
+                        if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[after_each]` function must have signature `fn([&mut Type])` (parameter is optional)",
                             ));
                         }
 
