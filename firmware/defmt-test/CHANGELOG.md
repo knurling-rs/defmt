@@ -1,6 +1,8 @@
 # [Unreleased]
 
-(no changes)
+- [#696] Add `#[before_each]` and `#[after_each]` attributes
+
+[#696]: https://github.com/knurling-rs/defmt/pull/696
 
 # [v0.2.3]
 
