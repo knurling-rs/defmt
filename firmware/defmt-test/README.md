@@ -143,6 +143,20 @@ mod tests {
         }
     }
 
+    // This function is called before each test case.
+    // It accesses the state created in `init`,
+    // though like with `test`, state access is optional.
+    #[before_each]
+    fn before_each(state: &mut super::MyState) {
+        defmt::println!("State flag before is {}", state.flag);
+    }
+
+    // This function is called after each test
+    #[after_each]
+    fn after_each(state: &mut super::MyState) {
+        defmt::println!("State flag after is {}", state.flag);
+    }
+
     // this unit test doesn't access the state
     #[test]
     fn assert_true() {
@@ -153,18 +167,27 @@ mod tests {
     #[test]
     fn assert_flag(state: &mut super::MyState) {
         assert!(state.flag)
+        state.flag = false;
     }
 }
 ```
 
 ``` console
 $ cargo test -p testsuite
-0.000000 INFO  (1/2) running `assert_true`...
-└─ test::tests::__defmt_test_entry @ tests/test.rs:11
-0.000001 INFO  (2/2) running `assert_flag`...
-└─ test::tests::__defmt_test_entry @ tests/test.rs:11
-0.000002 INFO  all tests passed!
-└─ test::tests::__defmt_test_entry @ tests/test.rs:11
+0.000000 (1/2) running `assert_true`...
+└─ integration::tests::__defmt_test_entry @ tests/integration.rs:37
+0.000001 State flag before is true
+└─ integration::tests::before_each @ tests/integration.rs:26
+0.000002 State flag after is true
+└─ integration::tests::after_each @ tests/integration.rs:32
+0.000003 (2/2) running `assert_flag`...
+└─ integration::tests::__defmt_test_entry @ tests/integration.rs:43
+0.000004 State flag before is true
+└─ integration::tests::before_each @ tests/integration.rs:26
+0.000005 State flag after is false
+└─ integration::tests::after_each @ tests/integration.rs:32
+0.000006 all tests passed!
+└─ integration::tests::__defmt_test_entry @ tests/integration.rs:11
 ```
 
 ## Test Outcome
