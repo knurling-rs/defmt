@@ -122,7 +122,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[test]` function must have signature `fn([&mut Type])` (parameter is optional)",
+                                "`#[test]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
                             ));
                         }
 
@@ -153,7 +153,6 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         })
                     }
                     Attr::BeforeEach => {
-                        
                         if before_each.is_some() {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
@@ -178,7 +177,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[before_each]` function must have signature `fn([&mut Type])` (parameter is optional)",
+                                "`#[before_each]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
                             ));
                         }
 
@@ -227,7 +226,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[after_each]` function must have signature `fn([&mut Type])` (parameter is optional)",
+                                "`#[after_each]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
                             ));
                         }
 
@@ -440,15 +439,15 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
 
 #[derive(Clone, Copy)]
 enum Attr {
+    AfterEach,
+    BeforeEach,
     Init,
     Test,
-    BeforeEach,
-    AfterEach,
 }
 
-struct Init {
+struct AfterEach {
     func: ItemFn,
-    state: Option<Box<Type>>,
+    input: Option<Input>,
 }
 
 struct BeforeEach {
@@ -456,9 +455,9 @@ struct BeforeEach {
     input: Option<Input>,
 }
 
-struct AfterEach {
+struct Init {
     func: ItemFn,
-    input: Option<Input>,
+    state: Option<Box<Type>>,
 }
 
 struct Test {
