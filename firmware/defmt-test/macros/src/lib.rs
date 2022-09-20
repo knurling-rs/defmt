@@ -285,7 +285,10 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 if input.ty != **state {
                     return Err(parse::Error::new(
                         input.ty.span(),
-                        "this type must match `#[init]`s return type",
+                        &format!(
+                            "this type must match `#[init]`s return type: {}",
+                            type_ident(state)
+                        ),
                     ));
                 }
             } else {
@@ -315,7 +318,10 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 if input.ty != **state {
                     return Err(parse::Error::new(
                         input.ty.span(),
-                        "this type must match `#[init]`s return type",
+                        &format!(
+                            "this type must match `#[init]`s return type: {}",
+                            type_ident(state)
+                        ),
                     ));
                 }
             } else {
@@ -346,7 +352,10 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 if input.ty != **state {
                     return Err(parse::Error::new(
                         input.ty.span(),
-                        "this type must match `#[init]`s return type",
+                        &format!(
+                            "this type must match `#[init]`s return type: {}",
+                            type_ident(state)
+                        ),
                     ));
                 }
             } else {
@@ -514,4 +523,12 @@ fn extract_cfgs(attrs: &[Attribute]) -> Vec<Attribute> {
     }
 
     cfgs
+}
+
+fn type_ident(ty: impl AsRef<syn::Type>) -> String {
+    let mut ident = String::new();
+    let ty = ty.as_ref();
+    let ty = format!("{}", quote!(#ty));
+    ty.split_whitespace().for_each(|t| ident.push_str(t));
+    ident
 }
