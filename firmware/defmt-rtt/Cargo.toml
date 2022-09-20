@@ -12,4 +12,4 @@ version = "0.3.2"
 
 [dependencies]
 defmt = { version = "0.3", path = "../../defmt" }
-critical-section = "1.0.0"
+critical-section = "1.1.1"
