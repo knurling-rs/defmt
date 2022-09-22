@@ -16,9 +16,9 @@ defmt-semihosting = { path = "../defmt-semihosting" }
 defmt-test = { path = "../defmt-test" }
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
-cortex-m-semihosting = "0.3"
+cortex-m-semihosting = "0.5"
 alloc-cortex-m = { version = "0.4", optional = true }
-linked_list_allocator = { version = "0.9", optional = true }
+linked_list_allocator = { version = "0.10.2", optional = true }
 
 [features]
 alloc = ["defmt/alloc", "alloc-cortex-m", "linked_list_allocator/const_mut_refs"]

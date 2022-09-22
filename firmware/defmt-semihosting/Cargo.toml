@@ -9,4 +9,4 @@ version = "0.1.0"
 [dependencies]
 defmt = { path = "../../defmt" }
 cortex-m = "0.7"
-cortex-m-semihosting = "0.3"
+cortex-m-semihosting = "0.5"
