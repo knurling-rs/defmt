@@ -1,6 +1,8 @@
 # [Unreleased]
 
-(no changes)
+- [#698] Expose number of tests with `DEFMT_TEST_COUNT` symbol in test artifact for other tools to pick up
+
+[#698]: https://github.com/knurling-rs/defmt/pull/698
 
 # [v0.2.3]
 
