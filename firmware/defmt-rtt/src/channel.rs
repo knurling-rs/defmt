@@ -54,32 +54,20 @@ impl Channel {
             return 0;
         }
 
-        let cursor = write;
-        let len = bytes.len().min(available);
-
-        unsafe {
-            if cursor + len > BUF_SIZE {
-                // split memcpy
-                let pivot = BUF_SIZE - cursor;
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
-                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
-            } else {
-                // single memcpy
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
-            }
-        }
-        self.write
-            .store(write.wrapping_add(len) % BUF_SIZE, Ordering::Release);
-
-        len
+        self.write_impl(bytes, write, available)
     }
 
     fn nonblocking_write(&self, bytes: &[u8]) -> usize {
         let write = self.write.load(Ordering::Acquire);
-        let cursor = write;
-        // NOTE truncate atBUF_SIZE to avoid more than one "wrap-around" in a single `write` call
-        let len = bytes.len().min(BUF_SIZE);
 
+        // NOTE truncate at BUF_SIZE to avoid more than one "wrap-around" in a single `write` call
+        self.write_impl(bytes, write, BUF_SIZE)
+    }
+
+    fn write_impl(&self, bytes: &[u8], cursor: usize, available: usize) -> usize {
+        let len = bytes.len().min(available);
+
+        // copy `bytes[..len]` to the RTT buffer
         unsafe {
             if cursor + len > BUF_SIZE {
                 // split memcpy
@@ -91,9 +79,12 @@ impl Channel {
                 ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
             }
         }
-        self.write
-            .store(write.wrapping_add(len) % BUF_SIZE, Ordering::Release);
 
+        // adjust the write pointer, so the host knows that there is new data
+        self.write
+            .store(cursor.wrapping_add(len) % BUF_SIZE, Ordering::Release);
+
+        // return the number of bytes written
         len
     }
 

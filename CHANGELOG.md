@@ -7,19 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#689]: defmt-rtt: Update to critical-section 1.0
-- [#692]: Wrap const fn in const item to ensure compile-time-evaluation.
+- [#695]: `defmt-rtt`: Refactor rtt [3/2]
+- [#689]: `defmt-rtt`: Update to critical-section 1.0
+- [#692]: `defmt-macros`: Wrap const fn in const item to ensure compile-time-evaluation.
 - [#690]: Satisfy clippy
 - [#688]: Release `defmt-decoder 0.3.3`
 - [#687]: `CI`: Re-enable `qemu-snapshot (nightly)` tests
 - [#686]: `CI`: Temporarily disable `qemu-snapshot (nightly)`
 - [#684]: Fix `syn` dependency version in `defmt-macros`.
-- [#683]: defmt-rtt: Make sure the whole RTT structure is in RAM
-- [#682]: defmt-print: exit when stdin is closed
+- [#683]: `defmt-rtt`: Make sure the whole RTT structure is in RAM
+- [#682]: `defmt-print`: exit when stdin is closed
 - [#681]: Make use of i/o locking being static since rust `1.61`.
-- [#679]: Add changelog enforcer
+- [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#695]: https://github.com/knurling-rs/defmt/pull/695
 [#692]: https://github.com/knurling-rs/defmt/pull/692
 [#690]: https://github.com/knurling-rs/defmt/pull/690
 [#688]: https://github.com/knurling-rs/defmt/pull/688
