@@ -386,7 +386,10 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
         let test_cfgs = test_cfgs.clone();
         quote!(
             // We can't evaluate `#[cfg]`s in the macro, but this works too.
-            const __DEFMT_TEST_COUNT: usize = {
+            // Below value can be used to read the number of tests from the produced ELF.
+            #[used]
+            #[no_mangle]
+            static DEFMT_TEST_COUNT: usize = {
                 let mut counter = 0;
                 #(
                     #(#test_cfgs)*
@@ -405,7 +408,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 test.func.sig.ident
             );
             quote_spanned! {
-                test.func.sig.ident.span() => defmt::println!(#message, __defmt_test_number, __DEFMT_TEST_COUNT);
+                test.func.sig.ident.span() => defmt::println!(#message, __defmt_test_number, DEFMT_TEST_COUNT);
             }
         })
         .collect::<Vec<_>>();

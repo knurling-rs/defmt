@@ -1,7 +1,9 @@
 # [Unreleased]
 
+- [#698] Expose number of tests with `DEFMT_TEST_COUNT` symbol in test artifact for other tools to pick up
 - [#696] Add `#[before_each]` and `#[after_each]` attributes
 
+[#698]: https://github.com/knurling-rs/defmt/pull/698
 [#696]: https://github.com/knurling-rs/defmt/pull/696
 
 # [v0.2.3]
