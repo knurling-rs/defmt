@@ -1,0 +1,5 @@
+error: `#[after_each]` function must have signature `fn(state: &mut Type)` (parameter is optional)
+ --> tests/ui/after_each-has-invalid-function-signature.rs:6:8
+  |
+6 |     fn hello(a: i32, b: i32) -> i32 {
+  |        ^^^^^
