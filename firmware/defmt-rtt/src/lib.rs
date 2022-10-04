@@ -57,7 +57,7 @@ unsafe impl defmt::Logger for Logger {
         critical_section::with(|cs| {
             // safety: accessing the `static mut` is OK because we have acquired a critical section.
             let mut taken = TAKEN.borrow_ref_mut(cs);
-            if *taken == true {
+            if *taken {
                 panic!("defmt logger taken reentrantly")
             }
             *taken = true;
