@@ -36,7 +36,7 @@
 mod channel;
 mod consts;
 
-use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use core::cell::RefCell;
 
 use crate::{channel::Channel, consts::BUF_SIZE};
 
@@ -44,7 +44,8 @@ use crate::{channel::Channel, consts::BUF_SIZE};
 struct Logger;
 
 /// Global logger lock.
-static TAKEN: AtomicBool = AtomicBool::new(false);
+static TAKEN: critical_section::Mutex<RefCell<bool>> =
+    critical_section::Mutex::new(RefCell::new(false));
 static mut CS_RESTORE: critical_section::RestoreState = critical_section::RestoreState::invalid();
 static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
 
@@ -53,13 +54,14 @@ unsafe impl defmt::Logger for Logger {
         // safety: Must be paired with corresponding call to release(), see below
         let restore = unsafe { critical_section::acquire() };
 
-        // safety: accessing the `static mut` is OK because we have acquired a critical section.
-        if TAKEN.load(Ordering::Relaxed) {
-            panic!("defmt logger taken reentrantly")
-        }
-
-        // safety: accessing the `static mut` is OK because we have acquired a critical section.
-        TAKEN.store(true, Ordering::Relaxed);
+        critical_section::with(|cs| {
+            // safety: accessing the `static mut` is OK because we have acquired a critical section.
+            let mut taken = TAKEN.borrow_ref_mut(cs);
+            if *taken == true {
+                panic!("defmt logger taken reentrantly")
+            }
+            *taken = true;
+        });
 
         // safety: accessing the `static mut` is OK because we have acquired a critical section.
         unsafe { CS_RESTORE = restore };
@@ -77,8 +79,7 @@ unsafe impl defmt::Logger for Logger {
         // safety: accessing the `static mut` is OK because we have acquired a critical section.
         ENCODER.end_frame(do_write);
 
-        // safety: accessing the `static mut` is OK because we have acquired a critical section.
-        TAKEN.store(false, Ordering::Relaxed);
+        critical_section::with(|cs| *TAKEN.borrow_ref_mut(cs) = false);
 
         // safety: accessing the `static mut` is OK because we have acquired a critical section.
         let restore = CS_RESTORE;
@@ -129,9 +130,9 @@ unsafe fn handle() -> &'static Channel {
             name: &NAME as *const _ as *const u8,
             buffer: unsafe { &mut BUFFER as *mut _ as *mut u8 },
             size: BUF_SIZE,
-            write: AtomicUsize::new(0),
-            read: AtomicUsize::new(0),
-            flags: AtomicUsize::new(MODE_NON_BLOCKING_TRIM),
+            write: critical_section::Mutex::new(RefCell::new(0)),
+            read: critical_section::Mutex::new(RefCell::new(0)),
+            flags: critical_section::Mutex::new(RefCell::new(MODE_NON_BLOCKING_TRIM)),
         },
     };
 

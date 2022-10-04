@@ -1,7 +1,4 @@
-use core::{
-    ptr,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use core::{cell::RefCell, ptr};
 
 use crate::{consts::BUF_SIZE, MODE_BLOCK_IF_FULL, MODE_MASK};
 
@@ -13,13 +10,13 @@ pub(crate) struct Channel {
     pub buffer: *mut u8,
     pub size: usize,
     /// Written by the target.
-    pub write: AtomicUsize,
+    pub write: critical_section::Mutex<RefCell<usize>>,
     /// Written by the host.
-    pub read: AtomicUsize,
+    pub read: critical_section::Mutex<RefCell<usize>>,
     /// Channel properties.
     ///
     /// Currently, only the lowest 2 bits are used to set the channel mode (see constants below).
-    pub flags: AtomicUsize,
+    pub flags: critical_section::Mutex<RefCell<usize>>,
 }
 
 impl Channel {
@@ -44,9 +41,9 @@ impl Channel {
             return 0;
         }
 
+        let (read, write) = critical_section::with(|cs| (self.read.take(cs), self.write.take(cs)));
+
         // calculate how much space is left in the buffer
-        let read = self.read.load(Ordering::Relaxed);
-        let write = self.write.load(Ordering::Acquire);
         let available = available_buffer_size(read, write);
 
         // abort if buffer is full
@@ -58,7 +55,7 @@ impl Channel {
     }
 
     fn nonblocking_write(&self, bytes: &[u8]) -> usize {
-        let write = self.write.load(Ordering::Acquire);
+        let write = critical_section::with(|cs| self.write.take(cs));
 
         // NOTE truncate at BUF_SIZE to avoid more than one "wrap-around" in a single `write` call
         self.write_impl(bytes, write, BUF_SIZE)
@@ -81,8 +78,9 @@ impl Channel {
         }
 
         // adjust the write pointer, so the host knows that there is new data
-        self.write
-            .store(cursor.wrapping_add(len) % BUF_SIZE, Ordering::Release);
+        critical_section::with(|cs| {
+            *self.write.borrow_ref_mut(cs) = cursor.wrapping_add(len) % BUF_SIZE
+        });
 
         // return the number of bytes written
         len
@@ -95,14 +93,19 @@ impl Channel {
         }
 
         // busy wait, until the read- catches up with the write-pointer
-        let read = || self.read.load(Ordering::Relaxed);
-        let write = || self.write.load(Ordering::Relaxed);
-        while read() != write() {}
+        while {
+            critical_section::with(|cs| {
+                let read = self.read.take(cs);
+                let write = self.write.take(cs);
+                read != write
+            })
+        } {}
     }
 
     fn host_is_connected(&self) -> bool {
         // we assume that a host is connected if we are in blocking-mode. this is what probe-run does.
-        self.flags.load(Ordering::Relaxed) & MODE_MASK == MODE_BLOCK_IF_FULL
+        let flags = critical_section::with(|cs| self.flags.take(cs));
+        flags & MODE_MASK == MODE_BLOCK_IF_FULL
     }
 }
 
