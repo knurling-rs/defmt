@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#699]: `defmt-rtt`: Non atomic RTT
 - [#695]: `defmt-rtt`: Refactor rtt [3/2]
 - [#689]: `defmt-rtt`: Update to critical-section 1.0
 - [#692]: `defmt-macros`: Wrap const fn in const item to ensure compile-time-evaluation.
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#699]: https://github.com/knurling-rs/defmt/pull/699
 [#695]: https://github.com/knurling-rs/defmt/pull/695
 [#692]: https://github.com/knurling-rs/defmt/pull/692
 [#690]: https://github.com/knurling-rs/defmt/pull/690
