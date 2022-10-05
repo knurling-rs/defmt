@@ -34,16 +34,11 @@
 #![no_std]
 
 mod channel;
+mod consts;
 
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
-use crate::channel::Channel;
-
-mod consts;
-
-/// RTT buffer size. Default: 1024; can be customized by setting the `DEFMT_RTT_BUFFER_SIZE` environment variable.
-/// Use a power of 2 for best performance.
-use crate::consts::BUF_SIZE;
+use crate::{channel::Channel, consts::BUF_SIZE};
 
 #[defmt::global_logger]
 struct Logger;
@@ -58,11 +53,12 @@ unsafe impl defmt::Logger for Logger {
         // safety: Must be paired with corresponding call to release(), see below
         let restore = unsafe { critical_section::acquire() };
 
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
         if TAKEN.load(Ordering::Relaxed) {
             panic!("defmt logger taken reentrantly")
         }
 
-        // no need for CAS because interrupts are disabled
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
         TAKEN.store(true, Ordering::Relaxed);
 
         // safety: accessing the `static mut` is OK because we have acquired a critical section.
@@ -73,7 +69,7 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn flush() {
-        // SAFETY: if we get here, the global logger mutex is currently acquired
+        // safety: accessing the `&'static _` is OK because we have acquired a critical section.
         handle().flush();
     }
 
@@ -81,6 +77,7 @@ unsafe impl defmt::Logger for Logger {
         // safety: accessing the `static mut` is OK because we have acquired a critical section.
         ENCODER.end_frame(do_write);
 
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
         TAKEN.store(false, Ordering::Relaxed);
 
         // safety: accessing the `static mut` is OK because we have acquired a critical section.
