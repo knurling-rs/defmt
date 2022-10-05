@@ -36,7 +36,7 @@
 mod channel;
 mod consts;
 
-use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use atomic_polyfill::{AtomicBool, AtomicUsize, Ordering};
 
 use crate::{channel::Channel, consts::BUF_SIZE};
 

@@ -11,5 +11,6 @@ repository = "https://github.com/knurling-rs/defmt"
 version = "0.3.2"
 
 [dependencies]
+atomic-polyfill = "1.0"
 defmt = { version = "0.3", path = "../../defmt" }
-critical-section = "1.1.1"
+critical-section = "1.1"
