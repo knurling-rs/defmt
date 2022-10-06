@@ -5,26 +5,26 @@ use std::{
 };
 
 use anyhow::anyhow;
+use clap::Parser;
 use defmt_decoder::{DecodeError, Frame, Locations, Table};
-use structopt::StructOpt;
 
 /// Prints defmt-encoded logs to stdout
-#[derive(StructOpt)]
-#[structopt(name = "defmt-print")]
+#[derive(Parser)]
+#[command(name = "defmt-print")]
 struct Opts {
-    #[structopt(short, parse(from_os_str), required_unless_one(&["version"]))]
+    #[arg(short, required = true, conflicts_with("version"))]
     elf: Option<PathBuf>,
 
-    #[structopt(long)]
+    #[arg(long)]
     json: bool,
 
-    #[structopt(long)]
+    #[arg(long)]
     show_skipped_frames: bool,
 
-    #[structopt(short, long)]
+    #[arg(short, long)]
     verbose: bool,
 
-    #[structopt(short = "V", long)]
+    #[arg(short = 'V', long)]
     version: bool,
 }
 
@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
         show_skipped_frames,
         verbose,
         version,
-    } = Opts::from_args();
+    } = Opts::parse();
 
     if version {
         return print_version();
