@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#xxx]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: Pre-relase cleanup
 - [#695]: `defmt-rtt`: Refactor rtt [3/2]
 - [#689]: `defmt-rtt`: Update to critical-section 1.0
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
 [#701]: https://github.com/knurling-rs/defmt/pull/701
 [#695]: https://github.com/knurling-rs/defmt/pull/695
 [#692]: https://github.com/knurling-rs/defmt/pull/692
