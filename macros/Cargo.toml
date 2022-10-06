@@ -21,7 +21,8 @@ defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.3.1"
 proc-macro-error = "1"
 proc-macro2 = "1"
 quote = "1"
-syn = { version = "1", features = ["full"] }
+# we require at least 1.0.56; see https://github.com/knurling-rs/defmt/pull/684
+syn = { version = "1.0.101", features = ["full"] }
 
 [dev_dependencies]
 maplit = "1"
