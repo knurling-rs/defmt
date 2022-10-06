@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#xxx]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: Pre-relase cleanup
 - [#695]: `defmt-rtt`: Refactor rtt [3/2]
@@ -16,13 +17,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#688]: Release `defmt-decoder 0.3.3`
 - [#687]: `CI`: Re-enable `qemu-snapshot (nightly)` tests
 - [#686]: `CI`: Temporarily disable `qemu-snapshot (nightly)`
-- [#684]: Fix `syn` dependency version in `defmt-macros`.
+- [#684]: `defmt-macros`: Fix `syn` dependency version.
 - [#683]: `defmt-rtt`: Make sure the whole RTT structure is in RAM
 - [#682]: `defmt-print`: exit when stdin is closed
 - [#681]: Make use of i/o locking being static since rust `1.61`.
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
 [#703]: https://github.com/knurling-rs/defmt/pull/703
 [#701]: https://github.com/knurling-rs/defmt/pull/701
 [#695]: https://github.com/knurling-rs/defmt/pull/695
@@ -38,12 +40,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#679]: https://github.com/knurling-rs/defmt/pull/679
 [#678]: https://github.com/knurling-rs/defmt/pull/678
 
-## [0.3.2] - 2022-05-31
+## [v0.3.2] - 2022-05-31
 
 - [#675]: Release `defmt 0.3.2` and fix `defmt-macros`-releated compile-error
 - [#669]: Refine docs for `--json` flag
 
-## [0.3.1] - 2022-03-10
+## [v0.3.1] - 2022-03-10
 
 ### Added
 
