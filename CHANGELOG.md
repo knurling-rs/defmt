@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#xxx]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
+- [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: Pre-relase cleanup
 - [#695]: `defmt-rtt`: Refactor rtt [3/2]
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#704]: https://github.com/knurling-rs/defmt/pull/704
 [#703]: https://github.com/knurling-rs/defmt/pull/703
 [#701]: https://github.com/knurling-rs/defmt/pull/701
 [#695]: https://github.com/knurling-rs/defmt/pull/695
