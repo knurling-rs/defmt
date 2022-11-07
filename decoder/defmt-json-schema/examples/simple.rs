@@ -21,6 +21,6 @@ fn handle_v1(data: &[&str]) {
 
     for &data in data.iter() {
         let json_frame: JsonFrame = serde_json::from_str(data).unwrap();
-        println!("{:?}", json_frame);
+        println!("{json_frame:?}");
     }
 }

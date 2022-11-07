@@ -348,13 +348,13 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
             Some(a) => a,
             None => match mode {
                 ParserMode::Strict => {
-                    return Err(format!("unknown display hint: {:?}", input).into());
+                    return Err(format!("unknown display hint: {input:?}").into());
                 }
                 ParserMode::ForwardsCompatible => DisplayHint::Unknown(input.to_owned()),
             },
         });
     } else if !input.is_empty() {
-        return Err(format!("unexpected content {:?} in format string", input).into());
+        return Err(format!("unexpected content {input:?} in format string").into());
     }
 
     Ok(Param { index, ty, hint })
@@ -516,7 +516,7 @@ pub fn parse<'f>(
     // Check that argument indices are dense (all arguments must be used).
     for (index, arg) in args.iter().enumerate() {
         if arg.is_none() {
-            return Err(format!("argument {} is not used in this format string", index).into());
+            return Err(format!("argument {index} is not used in this format string").into());
         }
     }
 

@@ -391,7 +391,7 @@ mod tests {
             encoding: Encoding::Raw,
         };
 
-        let frame = table.decode(&bytes).unwrap().0;
+        let frame = table.decode(bytes).unwrap().0;
         assert_eq!(frame.display(false).to_string(), expectation.to_owned());
     }
 

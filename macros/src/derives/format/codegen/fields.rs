@@ -56,12 +56,12 @@ pub(crate) fn codegen(
 
         if field.ident.is_some() {
             // Named field.
-            write!(format_string, "{}: {{={}:?}}", ident, ty).ok();
+            write!(format_string, "{ident}: {{={ty}:?}}").ok();
 
             patterns.push(quote!( #ident ));
         } else {
             // Unnamed (tuple) field.
-            write!(format_string, "{{={}}}", ty).ok();
+            write!(format_string, "{{={ty}}}").ok();
 
             let index = Index::from(index);
             patterns.push(quote!( #index: #ident ));
