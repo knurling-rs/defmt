@@ -35,7 +35,6 @@ static ENABLED: AtomicBool = AtomicBool::new(false);
 pub fn enable(itm: ITM) {
     // enable stimulus port 0
     unsafe { itm.ter[0].write(1) }
-    drop(itm);
     ENABLED.store(true, Ordering::Relaxed);
 }
 
