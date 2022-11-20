@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#707]: `defmt-rtt`: Use `atomic-polyfill`
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: Pre-relase cleanup
