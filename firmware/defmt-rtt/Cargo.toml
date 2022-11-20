@@ -13,3 +13,4 @@ version = "0.4.0"
 [dependencies]
 defmt = { version = "0.3", path = "../../defmt" }
 critical-section = "1.1"
+atomic-polyfill = "1"
