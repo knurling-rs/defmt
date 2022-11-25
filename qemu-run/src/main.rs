@@ -40,7 +40,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     let mut child = KillOnDrop(
         Command::new("qemu-system-arm")
-            .args(&[
+            .args([
                 "-cpu",
                 "cortex-m3",
                 "-machine",

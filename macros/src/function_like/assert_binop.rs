@@ -40,7 +40,7 @@ fn expand(args: TokenStream, binop: BinOp) -> TokenStream {
     };
 
     for val in vals {
-        formatting_args.push(construct::variable(*val));
+        formatting_args.push(construct::variable(val));
     }
 
     let panic_msg = match binop {

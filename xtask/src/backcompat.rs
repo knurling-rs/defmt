@@ -54,12 +54,12 @@ pub fn test() {
 
     println!("🧪 backcompat");
 
-    println!("building old qemu-run.. (git revision: {})", REVISION_UNDER_TEST);
+    println!("building old qemu-run.. (git revision: {REVISION_UNDER_TEST})");
     let qemu_run = match QemuRun::build() {
         Ok(qemu_run) => qemu_run,
         Err(e) => {
             // only print build errors so the user can fix those manually if needed
-            eprintln!("error building old qemu-run: {}", e);
+            eprintln!("error building old qemu-run: {e}");
             ALL_ERRORS
                 .lock()
                 .unwrap()
@@ -130,7 +130,7 @@ fn clone_repo(tempdir: &Path) -> anyhow::Result<()> {
 
     run_silently(
         Command::new("git")
-            .args(&["reset", "--hard", REVISION_UNDER_TEST])
+            .args(["reset", "--hard", REVISION_UNDER_TEST])
             .current_dir(tempdir),
         || anyhow!("`git reset` failed"),
     )?;
@@ -141,7 +141,7 @@ fn clone_repo(tempdir: &Path) -> anyhow::Result<()> {
 fn build_qemu_run(tempdir: &Path) -> anyhow::Result<PathBuf> {
     run_silently(
         Command::new("cargo")
-            .args(&["build", "-p", "qemu-run"])
+            .args(["build", "-p", "qemu-run"])
             .current_dir(tempdir),
         || anyhow!("`cargo build` failed"),
     )?;
@@ -160,7 +160,7 @@ fn run_silently(command: &mut Command, err: impl FnOnce() -> anyhow::Error) -> a
     let output = command.output()?;
 
     if !output.status.success() {
-        let formatted_command = format!("{:?}", command);
+        let formatted_command = format!("{command:?}");
 
         if !output.stdout.is_empty() {
             println!(

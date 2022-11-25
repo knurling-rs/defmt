@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
         true => true,                                          // We display *all* frames.
     });
 
-    let bytes = fs::read(&elf.unwrap())?;
+    let bytes = fs::read(elf.unwrap())?;
 
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
@@ -112,7 +112,7 @@ fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) ->
 
     if let Some(loc) = loc {
         // try to get the relative path, else the full one
-        let path = loc.file.strip_prefix(&current_dir).unwrap_or(&loc.file);
+        let path = loc.file.strip_prefix(current_dir).unwrap_or(&loc.file);
 
         file = Some(path.display().to_string());
         line = Some(loc.line as u32);

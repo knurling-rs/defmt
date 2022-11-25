@@ -69,13 +69,13 @@ pub fn run_command(
 
     let cwd = if let Some(path) = cwd {
         cmd.current_dir(path);
-        format!("{}$ ", path)
+        format!("{path}$ ")
     } else {
         "".to_string()
     };
 
-    let cmdline = format!("{}{} {}", cwd, program, args.join(" "));
-    println!("🏃 {}", cmdline);
+    let cmdline = format!("{cwd}{program} {}", args.join(" "));
+    println!("🏃 {cmdline}");
 
     cmd.status()
         .map_err(|e| anyhow!("could not run '{}': {}", cmdline, e))
@@ -91,6 +91,6 @@ pub fn run_command(
 
 pub fn rustc_is_nightly() -> bool {
     // if this crashes the system is not in a good state, so we'll not pretend to be able to recover
-    let out = run_capturing_stdout(Command::new("rustc").args(&["-V"])).unwrap();
+    let out = run_capturing_stdout(Command::new("rustc").args(["-V"])).unwrap();
     out.contains("nightly")
 }

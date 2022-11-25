@@ -285,7 +285,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 if input.ty != **state {
                     return Err(parse::Error::new(
                         input.ty.span(),
-                        &format!(
+                        format!(
                             "this type must match `#[init]`s return type: {}",
                             type_ident(state)
                         ),
@@ -318,7 +318,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 if input.ty != **state {
                     return Err(parse::Error::new(
                         input.ty.span(),
-                        &format!(
+                        format!(
                             "this type must match `#[init]`s return type: {}",
                             type_ident(state)
                         ),
@@ -352,7 +352,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 if input.ty != **state {
                     return Err(parse::Error::new(
                         input.ty.span(),
-                        &format!(
+                        format!(
                             "this type must match `#[init]`s return type: {}",
                             type_ident(state)
                         ),

@@ -416,7 +416,7 @@ where
                 p.push(&comp_dir.to_string_lossy()?[..]);
             }
         }
-        p.push(&dir);
+        p.push(dir);
     }
 
     p.push(

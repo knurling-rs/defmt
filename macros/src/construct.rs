@@ -57,16 +57,16 @@ pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -
 ///   otherwise:   ".defmt." + prefix + symbol
 pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str) -> String {
     let mut sub_section = if let Some(prefix) = prefix {
-        format!(".{}.{}", prefix, symbol)
+        format!(".{prefix}.{symbol}")
     } else {
-        format!(".{}", symbol)
+        format!(".{symbol}")
     };
 
     if for_macos {
         sub_section = format!(",{:x}", hash(&sub_section));
     }
 
-    format!(".defmt{}", sub_section)
+    format!(".defmt{sub_section}")
 }
 
 pub(crate) fn static_variable(name: &Ident2, data: &str, tag: &str) -> TokenStream2 {

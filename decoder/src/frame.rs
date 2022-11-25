@@ -19,7 +19,7 @@ impl std::fmt::LowerHex for I128Hex {
             Type::I16 => fmt::LowerHex::fmt(&(self.0 as i16), f),
             Type::I32 => fmt::LowerHex::fmt(&(self.0 as i32), f),
             Type::I64 => fmt::LowerHex::fmt(&(self.0 as i64), f),
-            Type::I128 => fmt::LowerHex::fmt(&(self.0 as i128), f),
+            Type::I128 => fmt::LowerHex::fmt(&self.0, f),
             _ => panic!("Unsupported type '{:?}' found.", self.1),
         }
     }
@@ -32,7 +32,7 @@ impl std::fmt::UpperHex for I128Hex {
             Type::I16 => fmt::UpperHex::fmt(&(self.0 as i16), f),
             Type::I32 => fmt::UpperHex::fmt(&(self.0 as i32), f),
             Type::I64 => fmt::UpperHex::fmt(&(self.0 as i64), f),
-            Type::I128 => fmt::UpperHex::fmt(&(self.0 as i128), f),
+            Type::I128 => fmt::UpperHex::fmt(&self.0, f),
             _ => panic!("Unsupported type '{:?}' found.", self.1),
         }
     }
@@ -120,7 +120,7 @@ impl<'t> Frame<'t> {
                     let hint = param.hint.as_ref().or(parent_hint);
 
                     match &args[param.index] {
-                        Arg::Bool(x) => write!(buf, "{}", x)?,
+                        Arg::Bool(x) => write!(buf, "{x}")?,
                         Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
                         Arg::F64(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
                         Arg::Uxx(x) => {
@@ -141,7 +141,7 @@ impl<'t> Frame<'t> {
                                             .collect::<Vec<u8>>();
                                         self.format_bytes(&bstr, hint, &mut buf)?
                                     } else {
-                                        self.format_u128(bitfields as u128, hint, &mut buf)?;
+                                        self.format_u128(bitfields, hint, &mut buf)?;
                                     }
                                 }
                                 _ => match hint {
@@ -149,13 +149,13 @@ impl<'t> Frame<'t> {
                                         self.format_iso8601(*x as u64, precision, &mut buf)?
                                     }
                                     Some(DisplayHint::Debug) => {
-                                        self.format_u128(*x as u128, parent_hint, &mut buf)?
+                                        self.format_u128(*x, parent_hint, &mut buf)?
                                     }
-                                    _ => self.format_u128(*x as u128, hint, &mut buf)?,
+                                    _ => self.format_u128(*x, hint, &mut buf)?,
                                 },
                             }
                         }
-                        Arg::Ixx(x) => self.format_i128(*x as i128, param.ty, hint, &mut buf)?,
+                        Arg::Ixx(x) => self.format_i128(*x, param.ty, hint, &mut buf)?,
                         Arg::Str(x) | Arg::Preformatted(x) => self.format_str(x, hint, &mut buf)?,
                         Arg::IStr(x) => self.format_str(x, hint, &mut buf)?,
                         Arg::Format { format, args } => match parent_hint {
@@ -207,7 +207,7 @@ impl<'t> Frame<'t> {
                             }
                         }
                         Arg::Slice(x) => self.format_bytes(x, hint, &mut buf)?,
-                        Arg::Char(c) => write!(buf, "{}", c)?,
+                        Arg::Char(c) => write!(buf, "{c}")?,
                     }
                 }
             }
@@ -222,28 +222,28 @@ impl<'t> Frame<'t> {
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
         match hint {
-            Some(DisplayHint::NoHint { zero_pad }) => write!(buf, "{:01$}", x, zero_pad)?,
+            Some(DisplayHint::NoHint { zero_pad }) => write!(buf, "{x:0zero_pad$}")?,
             Some(DisplayHint::Binary {
                 alternate,
                 zero_pad,
             }) => match alternate {
-                true => write!(buf, "{:#01$b}", x, zero_pad)?,
-                false => write!(buf, "{:01$b}", x, zero_pad)?,
+                true => write!(buf, "{x:#0zero_pad$b}")?,
+                false => write!(buf, "{x:0zero_pad$b}")?,
             },
             Some(DisplayHint::Hexadecimal {
                 uppercase,
                 alternate,
                 zero_pad,
             }) => match (alternate, uppercase) {
-                (false, false) => write!(buf, "{:01$x}", x, zero_pad)?,
-                (false, true) => write!(buf, "{:01$X}", x, zero_pad)?,
-                (true, false) => write!(buf, "{:#01$x}", x, zero_pad)?,
-                (true, true) => write!(buf, "{:#01$X}", x, zero_pad)?,
+                (false, false) => write!(buf, "{x:0zero_pad$x}")?,
+                (false, true) => write!(buf, "{x:0zero_pad$X}")?,
+                (true, false) => write!(buf, "{x:#0zero_pad$x}")?,
+                (true, true) => write!(buf, "{x:#0zero_pad$X}")?,
             },
             Some(DisplayHint::Microseconds) => {
                 let seconds = x / 1_000_000;
                 let micros = x % 1_000_000;
-                write!(buf, "{}.{:06}", seconds, micros)?;
+                write!(buf, "{seconds}.{micros:06}")?;
             }
             Some(DisplayHint::Bitflags {
                 name,
@@ -278,11 +278,11 @@ impl<'t> Frame<'t> {
                     }
                     None => {
                         // FIXME return an internal error here
-                        write!(buf, "{}", x)?;
+                        write!(buf, "{x}")?;
                     }
                 }
             }
-            _ => write!(buf, "{}", x)?,
+            _ => write!(buf, "{x}")?,
         }
         Ok(())
     }
@@ -295,13 +295,13 @@ impl<'t> Frame<'t> {
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
         match hint {
-            Some(DisplayHint::NoHint { zero_pad }) => write!(buf, "{:01$}", x, zero_pad)?,
+            Some(DisplayHint::NoHint { zero_pad }) => write!(buf, "{x:0zero_pad$}")?,
             Some(DisplayHint::Binary {
                 alternate,
                 zero_pad,
             }) => match alternate {
-                true => write!(buf, "{:#01$b}", x, zero_pad)?,
-                false => write!(buf, "{:01$b}", x, zero_pad)?,
+                true => write!(buf, "{x:#0zero_pad$b}")?,
+                false => write!(buf, "{x:0zero_pad$b}")?,
             },
             Some(DisplayHint::Hexadecimal {
                 uppercase,
@@ -310,13 +310,13 @@ impl<'t> Frame<'t> {
             }) => {
                 let value = I128Hex(x, ty);
                 match (alternate, uppercase) {
-                    (false, false) => write!(buf, "{:01$x}", value, zero_pad)?,
-                    (false, true) => write!(buf, "{:01$X}", value, zero_pad)?,
-                    (true, false) => write!(buf, "{:#01$x}", value, zero_pad)?,
-                    (true, true) => write!(buf, "{:#01$X}", value, zero_pad)?,
+                    (false, false) => write!(buf, "{value:0zero_pad$x}")?,
+                    (false, true) => write!(buf, "{value:0zero_pad$X}")?,
+                    (true, false) => write!(buf, "{value:#0zero_pad$x}")?,
+                    (true, true) => write!(buf, "{value:#0zero_pad$X}")?,
                 }
             }
-            _ => write!(buf, "{}", x)?,
+            _ => write!(buf, "{x}")?,
         }
         Ok(())
     }
@@ -345,7 +345,7 @@ impl<'t> Frame<'t> {
                                 buf.push(*byte as char);
                             } else {
                                 // general escaped form
-                                write!(buf, "\\x{:02x}", byte).ok();
+                                write!(buf, "\\x{byte:02x}").ok();
                             }
                         }
                     }
@@ -367,7 +367,7 @@ impl<'t> Frame<'t> {
                 }
                 buf.push(']');
             }
-            _ => write!(buf, "{:?}", bytes)?,
+            _ => write!(buf, "{bytes:?}")?,
         }
         Ok(())
     }
@@ -379,7 +379,7 @@ impl<'t> Frame<'t> {
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
         if hint == Some(&DisplayHint::Debug) {
-            write!(buf, "{:?}", s)?;
+            write!(buf, "{s:?}")?;
         } else {
             buf.push_str(s);
         }
@@ -460,7 +460,7 @@ impl fmt::Display for DisplayFrame<'_> {
                     Level::Error => "ERROR".to_string(),
                 }
             };
-            format!("{} ", level)
+            format!("{level} ")
         } else {
             "".to_string()
         };
@@ -481,6 +481,6 @@ impl fmt::Display for DisplayFrame<'_> {
             .frame
             .format_args(self.frame.format, &self.frame.args, None);
 
-        write!(f, "{}{}{}", timestamp, level, args)
+        write!(f, "{timestamp}{level}{args}")
     }
 }

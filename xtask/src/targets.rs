@@ -23,7 +23,7 @@ pub fn install() -> anyhow::Result<Vec<String>> {
     // install _all_ required targets; previously installed targets will get updated
     println!("⏳ installing targets");
     let status = Command::new("rustup")
-        .args(&["target", "add"])
+        .args(["target", "add"])
         .args(&required_targets)
         .status()?;
     if !status.success() {
@@ -36,7 +36,7 @@ pub fn install() -> anyhow::Result<Vec<String>> {
 
 /// Get all currently installed compilation targets
 fn get_installed() -> anyhow::Result<HashSet<String>> {
-    let stdout = run_capturing_stdout(Command::new("rustup").args(&["target", "list", "--installed"]))?;
+    let stdout = run_capturing_stdout(Command::new("rustup").args(["target", "list", "--installed"]))?;
     Ok(stdout.lines().map(|s| s.to_string()).collect())
 }
 
@@ -44,7 +44,7 @@ pub fn uninstall(targets: Vec<String>) {
     println!("⏳ uninstalling targets");
 
     let status = Command::new("rustup")
-        .args(&["target", "remove"])
+        .args(["target", "remove"])
         .args(&targets)
         .status()
         .unwrap();

@@ -70,7 +70,7 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
 
             let sym_name = construct::mangled_symbol_name(
                 "bitflags_value",
-                &format!("{}::{}::{}", input.ident(), i, flag.ident()),
+                &format!("{}::{i}::{}", input.ident(), flag.ident()),
             );
 
             quote! {
