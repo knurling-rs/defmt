@@ -1,5 +1,6 @@
-use atomic_polyfill::{AtomicUsize, Ordering};
 use core::ptr;
+
+use atomic_polyfill::{AtomicUsize, Ordering};
 
 use crate::{consts::BUF_SIZE, MODE_BLOCK_IF_FULL, MODE_MASK};
 
