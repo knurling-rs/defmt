@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#709]: Fix deprecated chrono functions 
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: Pre-relase cleanup
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#709]: https://github.com/knurling-rs/defmt/pull/709
 [#704]: https://github.com/knurling-rs/defmt/pull/704
 [#703]: https://github.com/knurling-rs/defmt/pull/703
 [#701]: https://github.com/knurling-rs/defmt/pull/701
