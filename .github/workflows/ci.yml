@@ -22,9 +22,6 @@ jobs:
   host:
     strategy:
       matrix:
-        rust:
-          - stable
-          - nightly
         os:
           - ubuntu-latest
           - macOS-latest
@@ -36,7 +33,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           override: true
       - name: Install C libraries for tooling on ubuntu
         if: matrix.os == 'ubuntu-latest'
@@ -107,18 +104,13 @@ jobs:
         run: cargo xtask test-book
 
   qemu-snapshot:
-    strategy:
-      matrix:
-        rust:
-          - stable
-          - nightly
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           override: true
           target: ${{ env.QEMU_TARGET }}
       - name: Install dependencies
