@@ -397,9 +397,10 @@ impl<'t> Frame<'t> {
             TimePrecision::Seconds => chrono::SecondsFormat::Secs,
         };
         let date_time = match precision {
-            TimePrecision::Millis => chrono::Utc.timestamp_millis(timestamp as i64),
-            TimePrecision::Seconds => chrono::Utc.timestamp(timestamp as i64, 0),
-        };
+            TimePrecision::Millis => chrono::Utc.timestamp_millis_opt(timestamp as i64),
+            TimePrecision::Seconds => chrono::Utc.timestamp_opt(timestamp as i64, 0),
+        }
+        .unwrap();
         write!(buf, "{}", date_time.to_rfc3339_opts(format, true))
     }
 }
