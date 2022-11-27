@@ -137,7 +137,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn do_test(test: impl FnOnce() -> anyhow::Result<()>, context: &str) {
-    test().unwrap_or_else(|e| ALL_ERRORS.lock().unwrap().push(format!("{}: {}", context, e)));
+    test().unwrap_or_else(|e| ALL_ERRORS.lock().unwrap().push(format!("{context}: {e}")));
 }
 
 fn test_host(deny_warnings: bool) {
@@ -372,7 +372,7 @@ fn test_single_snapshot(name: &str, features: &str, overwrite: bool) -> anyhow::
             };
             if let Some((sign, change)) = styled_change {
                 actual_matches_expected = false;
-                eprint!("{}{}", sign, change);
+                eprint!("{sign}{change}");
             }
         }
     }

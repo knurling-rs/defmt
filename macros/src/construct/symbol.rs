@@ -42,7 +42,7 @@ impl<'a> Symbol<'a> {
             // `CARGO_PKG_NAME` is set to the invoking package's name.
             package: cargo::package_name(),
             disambiguator: super::crate_local_disambiguator(),
-            tag: format!("defmt_{}", tag),
+            tag: format!("defmt_{tag}"),
             data,
         }
     }

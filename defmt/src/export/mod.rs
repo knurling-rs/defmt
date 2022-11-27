@@ -36,7 +36,7 @@ pub fn fetch_add_string_index() -> u16 {
 /// Get and clear the logged bytes
 #[cfg(feature = "unstable-test")]
 pub fn fetch_bytes() -> Vec<u8> {
-    BYTES.with(|b| core::mem::replace(&mut *b.borrow_mut(), Vec::new()))
+    BYTES.with(|b| core::mem::take(&mut *b.borrow_mut()))
 }
 
 /// Only to be used by the defmt macros
@@ -198,13 +198,13 @@ pub fn bool(b: &bool) {
 
 /// Implementation detail
 pub fn debug(val: &dyn core::fmt::Debug) {
-    core::write!(FmtWrite, "{:?}", val).ok();
+    core::write!(FmtWrite, "{val:?}").ok();
     write(&[0xff]);
 }
 
 /// Implementation detail
 pub fn display(val: &dyn core::fmt::Display) {
-    core::write!(FmtWrite, "{}", val).ok();
+    core::write!(FmtWrite, "{val}").ok();
     write(&[0xff]);
 }
 

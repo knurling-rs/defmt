@@ -113,7 +113,7 @@ impl PrettyLogger {
             false => format!("{} ", record.timestamp()),
         };
 
-        writeln!(&mut sink, "{}{}", timestamp, record.args()).ok();
+        writeln!(&mut sink, "{timestamp}{}", record.args()).ok();
         print_location(
             &mut sink,
             record.file(),
@@ -288,9 +288,9 @@ fn print_location<W: io::Write>(
         let mod_path = module_path.unwrap();
         let mut loc = file.to_string();
         if let Some(line) = line {
-            let _ = write!(loc, ":{}", line);
+            let _ = write!(loc, ":{line}");
         }
-        writeln!(sink, "{}", format!("└─ {} @ {}", mod_path, loc).dimmed())?;
+        writeln!(sink, "{}", format!("└─ {mod_path} @ {loc}").dimmed())?;
     }
 
     Ok(())

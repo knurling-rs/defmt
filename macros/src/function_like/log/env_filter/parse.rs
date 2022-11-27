@@ -98,7 +98,7 @@ fn parse_log_level(input: &str) -> Result<LogLevelOrOff, ()> {
 
 fn validate_identifier(input: &str) {
     syn::parse_str::<Ident>(input)
-        .unwrap_or_else(|_| panic!("`{}` is not a valid identifier", input));
+        .unwrap_or_else(|_| panic!("`{input}` is not a valid identifier"));
 }
 
 #[cfg(test)]

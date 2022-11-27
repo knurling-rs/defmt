@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - [#710]: Update CI
 - [#707]: `defmt-rtt`: Use `atomic-polyfill`
+- [#706]: Satisfy clippy
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: Pre-relase cleanup
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [#710]: https://github.com/knurling-rs/defmt/pull/710
 [#707]: https://github.com/knurling-rs/defmt/pull/707
+[#706]: https://github.com/knurling-rs/defmt/pull/706
 [#704]: https://github.com/knurling-rs/defmt/pull/704
 [#703]: https://github.com/knurling-rs/defmt/pull/703
 [#701]: https://github.com/knurling-rs/defmt/pull/701
