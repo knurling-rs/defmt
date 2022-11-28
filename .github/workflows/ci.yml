@@ -129,3 +129,15 @@ jobs:
     steps:
       - name: CI succeeded
         run: exit 0
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v3
+      - name: Use the latest stable release
+        run: rustup update stable && rustup default stable
+      - uses: actions-rust-lang/audit@v1
+        name: Audit Rust Dependencies
