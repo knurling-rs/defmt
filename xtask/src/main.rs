@@ -1,10 +1,10 @@
 use std::{process::Command, str::FromStr, sync::Mutex};
 
 use anyhow::{anyhow, Context};
+use clap::{Parser, Subcommand};
 use colored::Colorize;
 use once_cell::sync::Lazy;
 use similar::{ChangeTag, TextDiff};
-use structopt::StructOpt;
 
 mod backcompat;
 mod targets;
@@ -32,7 +32,7 @@ const ALL_SNAPSHOT_TESTS: [&str; 12] = [
     "dbg",
 ];
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Snapshot(String);
 
 impl Snapshot {
@@ -56,19 +56,21 @@ impl FromStr for Snapshot {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 struct Options {
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     cmd: TestCommand,
+
     /// Treat compiler warnings as errors (`RUSTFLAGS="--deny warnings"`)
-    #[structopt(long, short)]
+    #[arg(long, short)]
     deny_warnings: bool,
+
     /// Keep target toolchains that were installed as dependency
-    #[structopt(long, short)]
+    #[arg(long, short)]
     keep_targets: bool,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 #[allow(clippy::enum_variant_names)]
 enum TestCommand {
     TestAll,
@@ -81,16 +83,15 @@ enum TestCommand {
     /// Run snapshot tests or optionally overwrite the expected output
     TestSnapshot {
         /// Overwrite the expected output instead of comparing it.
-        #[structopt(long)]
+        #[arg(long)]
         overwrite: bool,
         /// Runs a single snapshot test in Debug mode
-        #[structopt()]
         single: Option<Snapshot>,
     },
 }
 
 fn main() -> anyhow::Result<()> {
-    let opt: Options = Options::from_args();
+    let opt = Options::parse();
     let mut added_targets = None;
 
     match opt.cmd {

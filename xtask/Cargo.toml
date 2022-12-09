@@ -10,8 +10,8 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = "1"
+clap = { version = "4", features = ["derive"] }
 colored = "2"
 once_cell = "1.14"
 similar = "2.2"
-structopt = "0.3"
 tempfile = "3.3"

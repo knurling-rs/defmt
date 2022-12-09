@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#715]: Update `clap` to version `4`
 - [#710]: Update CI
 - [#706]: Satisfy clippy
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
 
+[#715]: https://github.com/knurling-rs/defmt/pull/715
 [#710]: https://github.com/knurling-rs/defmt/pull/710
 [#706]: https://github.com/knurling-rs/defmt/pull/706
 [#704]: https://github.com/knurling-rs/defmt/pull/704
