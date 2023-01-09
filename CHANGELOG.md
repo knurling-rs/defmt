@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#681]: Make use of i/o locking being static since rust `1.61`.
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
+- [#719]: defmt-print: fix panic 
 
 [#715]: https://github.com/knurling-rs/defmt/pull/715
 [#710]: https://github.com/knurling-rs/defmt/pull/710
@@ -45,6 +46,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#681]: https://github.com/knurling-rs/defmt/pull/681
 [#679]: https://github.com/knurling-rs/defmt/pull/679
 [#678]: https://github.com/knurling-rs/defmt/pull/678
+[#719]: https://github.com/knurling-rs/defmt/pull/719
 
 ## [v0.3.2] - 2022-05-31
 

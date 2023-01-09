@@ -107,10 +107,9 @@ fn forward_to_logger(frame: &Frame, location_info: LocationInfo) {
 fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) -> LocationInfo {
     let (mut file, mut line, mut mod_path) = (None, None, None);
 
-    // NOTE(`[]` indexing) all indices in `table` have been verified to exist in the `locs` map
-    let loc = locs.as_ref().map(|locs| &locs[&frame.index()]);
+    let loc = locs.as_ref().map(|locs| locs.get(&frame.index()));
 
-    if let Some(loc) = loc {
+    if let Some(Some(loc)) = loc {
         // try to get the relative path, else the full one
         let path = loc.file.strip_prefix(current_dir).unwrap_or(&loc.file);
 
