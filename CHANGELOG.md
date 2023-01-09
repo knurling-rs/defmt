@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#681]: https://github.com/knurling-rs/defmt/pull/681
 [#679]: https://github.com/knurling-rs/defmt/pull/679
 [#678]: https://github.com/knurling-rs/defmt/pull/678
-[#719]: https://github.com/knurling-rs/defmt/pull/678
+[#719]: https://github.com/knurling-rs/defmt/pull/719
 
 ## [0.3.2] - 2022-05-31
 
