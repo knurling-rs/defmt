@@ -20,11 +20,14 @@ use crate::Frame;
 const DEFMT_TARGET_MARKER: &str = "defmt@";
 
 /// Logs a defmt frame using the `log` facade.
+/// if you're initializing the logging system using this module's [`init_logger`],
+/// set `logger_is_defmt_aware` to `true`, `false` otherwise.
 pub fn log_defmt(
     frame: &Frame<'_>,
     file: Option<&str>,
     line: Option<u32>,
     module_path: Option<&str>,
+    logger_is_defmt_aware: bool,
 ) {
     let timestamp = frame
         .display_timestamp()
@@ -39,22 +42,36 @@ pub fn log_defmt(
         crate::Level::Error => Level::Error,
     });
 
-    let target = format!(
-        "{}{}",
-        DEFMT_TARGET_MARKER,
-        serde_json::to_value(Payload { timestamp, level }).unwrap()
-    );
+    if logger_is_defmt_aware {
+        let target = format!(
+            "{}{}",
+            DEFMT_TARGET_MARKER,
+            serde_json::to_value(Payload { timestamp, level }).unwrap()
+        );
 
-    log::logger().log(
-        &Record::builder()
-            .args(format_args!("{}", frame.display_message()))
-            // .level(level) // no need to set the level, since it is transferred via payload
-            .target(&target)
-            .module_path(module_path)
-            .file(file)
-            .line(line)
-            .build(),
-    );
+        log::logger().log(
+            &Record::builder()
+                .args(format_args!("{}", frame.display_message()))
+                // .level(level) // no need to set the level, since it is transferred via payload
+                .target(&target)
+                .module_path(module_path)
+                .file(file)
+                .line(line)
+                .build(),
+        );
+    } else {
+        let level = level.unwrap_or(Level::Info);
+        log::logger().log(
+            &Record::builder()
+                .args(format_args!("{}", frame.display_message()))
+                .level(level) // no need to set the level, since it is transferred via payload
+                .target(&timestamp)
+                .module_path(module_path)
+                .file(file)
+                .line(line)
+                .build(),
+        );
+    }
 }
 
 /// Determines whether `metadata` belongs to a log record produced by [`log_defmt`].

@@ -101,7 +101,7 @@ type LocationInfo = (Option<String>, Option<u32>, Option<String>);
 
 fn forward_to_logger(frame: &Frame, location_info: LocationInfo) {
     let (file, line, mod_path) = location_info;
-    defmt_decoder::log::log_defmt(frame, file.as_deref(), line, mod_path.as_deref());
+    defmt_decoder::log::log_defmt(frame, file.as_deref(), line, mod_path.as_deref(), true);
 }
 
 fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) -> LocationInfo {
