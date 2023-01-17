@@ -60,12 +60,13 @@ pub fn log_defmt(
                 .build(),
         );
     } else {
-        let level = level.unwrap_or(Level::Info);
+        let mut builder = Record::builder();
+        if let Some(level) = level {
+            builder.level(level);
+        }
         log::logger().log(
-            &Record::builder()
+            &builder
                 .args(format_args!("{}", frame.display_message()))
-                .level(level)
-                .target(&timestamp)
                 .module_path(module_path)
                 .file(file)
                 .line(line)
