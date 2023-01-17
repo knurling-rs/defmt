@@ -64,7 +64,7 @@ pub fn log_defmt(
         log::logger().log(
             &Record::builder()
                 .args(format_args!("{}", frame.display_message()))
-                .level(level) // no need to set the level, since it is transferred via payload
+                .level(level)
                 .target(&timestamp)
                 .module_path(module_path)
                 .file(file)
