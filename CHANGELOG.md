@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- `defmt-decoder`: add support for loggers that aren't `defmt` aware
+- `defmt-decoder`: preserve log levels with loggers that aren't `defmt` aware
 - [#715]: Update `clap` to version `4`
 - [#710]: Update CI
 - [#706]: Satisfy clippy
