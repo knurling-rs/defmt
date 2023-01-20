@@ -5,9 +5,9 @@ use std::{
 };
 
 use crate::{Arg, BitflagsKey, Table};
-use chrono::TimeZone;
 use colored::Colorize;
 use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, TimePrecision, Type};
+use time::{macros::format_description, OffsetDateTime};
 
 /// Used to convert a `i128` value into right target type in hex
 struct I128Hex(i128, Type);
@@ -393,15 +393,23 @@ impl<'t> Frame<'t> {
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
         let format = match precision {
-            TimePrecision::Millis => chrono::SecondsFormat::Millis,
-            TimePrecision::Seconds => chrono::SecondsFormat::Secs,
+            TimePrecision::Millis => format_description!(
+                "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
+            ),
+            TimePrecision::Seconds => {
+                format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]Z")
+            }
         };
         let date_time = match precision {
-            TimePrecision::Millis => chrono::Utc.timestamp_millis_opt(timestamp as i64),
-            TimePrecision::Seconds => chrono::Utc.timestamp_opt(timestamp as i64, 0),
-        }
-        .unwrap();
-        write!(buf, "{}", date_time.to_rfc3339_opts(format, true))
+            TimePrecision::Millis => {
+                OffsetDateTime::from_unix_timestamp_nanos(timestamp as i128 * 1_000_000).unwrap()
+            }
+            TimePrecision::Seconds => {
+                OffsetDateTime::from_unix_timestamp_nanos(timestamp as i128 * 1_000_000_000)
+                    .unwrap()
+            }
+        };
+        write!(buf, "{}", date_time.format(format).unwrap())
     }
 }
 

@@ -1,6 +1,6 @@
-use chrono::Utc;
 use defmt_json_schema::v1::{JsonFrame, Location, ModulePath, SCHEMA_VERSION};
 use log::{Log, Metadata, Record};
+use time::OffsetDateTime;
 
 use std::io::{self, Write};
 
@@ -25,7 +25,9 @@ impl Log for JsonLogger {
             // defmt goes to stdout, since it's the primary output produced by this tool.
             let mut sink = io::stdout().lock();
 
-            let host_timestamp = Utc::now().timestamp_nanos();
+            let host_timestamp = OffsetDateTime::now_utc()
+                .unix_timestamp_nanos()
+                .min(i64::MAX as i128) as i64;
             serde_json::to_writer(&mut sink, &create_json_frame(record, host_timestamp)).ok();
             writeln!(sink).ok();
         } else {
