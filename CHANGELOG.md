@@ -26,7 +26,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#681]: Make use of i/o locking being static since rust `1.61`.
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
-- [#719]: defmt-print: fix panic 
+- [#719]: defmt-print: fix panic
+- [#726]: `defmt-decoder`: Remove difference in favor of dissimilar
 
 [#715]: https://github.com/knurling-rs/defmt/pull/715
 [#710]: https://github.com/knurling-rs/defmt/pull/710
@@ -240,7 +241,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - [#488] Structure `impl Format`s into multiple files
-- [#496] Bump build-dep `semver` to  `1.0`
+- [#496] Bump build-dep `semver` to `1.0`
 - [#489] Structure lib
 - [#500] book: fix leftover old formatting syntax; typos
 - [#510] `CI`: Don't install MacOS dependency which is included by default
@@ -498,7 +499,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...main
+[unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...main
 [v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.1...defmt-v0.3.2
 [v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...defmt-v0.3.1
 [v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...defmt-v0.3.0

@@ -19,7 +19,7 @@ ryu = "1"
 chrono = { version = "0.4", default-features = false, features = ["alloc", "clock"] }
 
 # logger
-difference = "2"
+dissimilar = "1"
 log = { version = "0.4", features = ["std"] }
 defmt-json-schema = { version = "0.1", path = "./defmt-json-schema" }
 
