@@ -1,5 +1,5 @@
 use colored::{Color, Colorize};
-use difference::{Changeset, Difference};
+use dissimilar::Chunk;
 use log::{Level, Log, Metadata, Record};
 
 use std::{
@@ -223,7 +223,7 @@ fn color_diff(text: String) -> String {
             let mut buf = lines[..nlines - 2].join("\n").bold().to_string();
             buf.push('\n');
 
-            let changeset = Changeset::new(left, right, "");
+            let diffs = dissimilar::diff(left, right);
 
             writeln!(
                 buf,
@@ -234,13 +234,13 @@ fn color_diff(text: String) -> String {
             )
             .ok();
             write!(buf, "{}", "<".red()).ok();
-            for diff in &changeset.diffs {
+            for diff in &diffs {
                 match diff {
-                    Difference::Same(s) => {
+                    Chunk::Equal(s) => {
                         write!(buf, "{}", s.red()).ok();
                     }
-                    Difference::Add(_) => continue,
-                    Difference::Rem(s) => {
+                    Chunk::Insert(_) => continue,
+                    Chunk::Delete(s) => {
                         write!(buf, "{}", s.red().bold()).ok();
                     }
                 }
@@ -248,13 +248,13 @@ fn color_diff(text: String) -> String {
             buf.push('\n');
 
             write!(buf, "{}", ">".green()).ok();
-            for diff in &changeset.diffs {
+            for diff in &diffs {
                 match diff {
-                    Difference::Same(s) => {
+                    Chunk::Equal(s) => {
                         write!(buf, "{}", s.green()).ok();
                     }
-                    Difference::Rem(_) => continue,
-                    Difference::Add(s) => {
+                    Chunk::Delete(_) => continue,
+                    Chunk::Insert(s) => {
                         write!(buf, "{}", s.green().bold()).ok();
                     }
                 }
