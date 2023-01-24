@@ -400,15 +400,11 @@ impl<'t> Frame<'t> {
                 format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]Z")
             }
         };
-        let date_time = match precision {
-            TimePrecision::Millis => {
-                OffsetDateTime::from_unix_timestamp_nanos(timestamp as i128 * 1_000_000).unwrap()
-            }
-            TimePrecision::Seconds => {
-                OffsetDateTime::from_unix_timestamp_nanos(timestamp as i128 * 1_000_000_000)
-                    .unwrap()
-            }
-        };
+        let date_time = OffsetDateTime::from_unix_timestamp_nanos(match precision {
+            TimePrecision::Millis => timestamp as i128 * 1_000_000,
+            TimePrecision::Seconds => timestamp as i128 * 1_000_000_000,
+        })
+        .unwrap();
         write!(buf, "{}", date_time.format(format).unwrap())
     }
 }
