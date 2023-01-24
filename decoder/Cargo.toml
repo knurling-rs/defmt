@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 name = "defmt-decoder"
 readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.3"
+version = "0.3.4"
 
 [dependencies]
 defmt-parser = { version = "=0.3.1", path = "../parser", features = [
