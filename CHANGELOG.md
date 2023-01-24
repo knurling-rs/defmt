@@ -9,12 +9,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## defmt-decoder v0.3.4, defmt-print v0.3.4
 
+- [#729]: Release `defmt-decoder v0.3.4`, `defmt-print v0.3.4`
 - [#726]: `defmt-decoder`: Remove difference in favor of dissimilar
 - [#725]: `defmt-decoder`: Replace chrono with time
 - [#719]: `defmt-print`: Fix panic
 - [#715]: `xtask`: Update `clap` to version `4`
 - [#710]: `CI`: Update CI
 - [#706]: `defmt`, `defmt-decoder`, `defmt-itm`, `defmt-macros`, `defmt-parser`, `defmt-print`, `defmt-test-macros`: Satisfy clippy
+
+[#729]: https://github.com/knurling-rs/defmt/pull/729
+[#726]: https://github.com/knurling-rs/defmt/pull/726
+[#725]: https://github.com/knurling-rs/defmt/pull/725
+[#715]: https://github.com/knurling-rs/defmt/pull/715
+[#710]: https://github.com/knurling-rs/defmt/pull/710
+[#706]: https://github.com/knurling-rs/defmt/pull/706
 
 ## defmt-decoder v0.3.3, defmt-macros v0.3.3, defmt-print v0.3.3, vdefmt-rtt 0.4.0
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
@@ -34,11 +42,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: `defmt`, `defmt-decoder`, `defmt-macros`, `defmt-parser`: Satisfy clippy
 
-[#726]: https://github.com/knurling-rs/defmt/pull/726
-[#725]: https://github.com/knurling-rs/defmt/pull/725
-[#715]: https://github.com/knurling-rs/defmt/pull/715
-[#710]: https://github.com/knurling-rs/defmt/pull/710
-[#706]: https://github.com/knurling-rs/defmt/pull/706
 [#704]: https://github.com/knurling-rs/defmt/pull/704
 [#703]: https://github.com/knurling-rs/defmt/pull/703
 [#701]: https://github.com/knurling-rs/defmt/pull/701
