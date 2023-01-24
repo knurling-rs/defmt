@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#726]: `defmt-decoder`: Remove difference in favor of dissimilar
+- [#725]: `defmt-decoder`: Replace chrono with time
+- [#719]: defmt-print: fix panic
 - [#715]: Update `clap` to version `4`
 - [#710]: Update CI
 - [#706]: Satisfy clippy
@@ -27,9 +29,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#681]: Make use of i/o locking being static since rust `1.61`.
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
-- [#719]: defmt-print: fix panic 
 
 [#726]: https://github.com/knurling-rs/defmt/pull/726
+[#725]: https://github.com/knurling-rs/defmt/pull/725
 [#715]: https://github.com/knurling-rs/defmt/pull/715
 [#710]: https://github.com/knurling-rs/defmt/pull/710
 [#706]: https://github.com/knurling-rs/defmt/pull/706
@@ -242,7 +244,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - [#488] Structure `impl Format`s into multiple files
-- [#496] Bump build-dep `semver` to  `1.0`
+- [#496] Bump build-dep `semver` to `1.0`
 - [#489] Structure lib
 - [#500] book: fix leftover old formatting syntax; typos
 - [#510] `CI`: Don't install MacOS dependency which is included by default
