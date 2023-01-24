@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## defmt-decoder 0.3.4
+## defmt-decoder v0.3.4, defmt-print v0.3.4
 
 - [#726]: `defmt-decoder`: Remove difference in favor of dissimilar
 - [#725]: `defmt-decoder`: Replace chrono with time
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#710]: `CI`: Update CI
 - [#706]: `defmt`, `defmt-decoder`, `defmt-itm`, `defmt-macros`, `defmt-parser`, `defmt-print`, `defmt-test-macros`: Satisfy clippy
 
-## defmt-decoder 0.3.3, defmt-macros 0.3.3, defmt-print 0.3.3, defmt-rtt 0.4.0
+## defmt-decoder v0.3.3, defmt-macros v0.3.3, defmt-print v0.3.3, vdefmt-rtt 0.4.0
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: `defmt-rtt`: Pre-relase cleanup
