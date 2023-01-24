@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#726]: `defmt-decoder`: Remove difference in favor of dissimilar
+- [#725]: `defmt-decoder`: Replace chrono with time
+- [#719]: defmt-print: fix panic
 - [#715]: Update `clap` to version `4`
 - [#710]: Update CI
 - [#706]: Satisfy clippy
@@ -27,10 +29,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#681]: Make use of i/o locking being static since rust `1.61`.
 - [#679]: `CI`: Add changelog enforcer
 - [#678]: Satisfy clippy
-- [#719]: defmt-print: fix panic
-- [#725]: `defmt-decoder`: Replace chrono with time
 
 [#726]: https://github.com/knurling-rs/defmt/pull/726
+[#725]: https://github.com/knurling-rs/defmt/pull/725
 [#715]: https://github.com/knurling-rs/defmt/pull/715
 [#710]: https://github.com/knurling-rs/defmt/pull/710
 [#706]: https://github.com/knurling-rs/defmt/pull/706
@@ -501,7 +502,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...main
 [v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.1...defmt-v0.3.2
 [v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...defmt-v0.3.1
 [v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...defmt-v0.3.0
