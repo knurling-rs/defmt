@@ -8,4 +8,6 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = "1"
-defmt-decoder = { path = "../decoder", features = ["unstable"], version = "=0.3.3" }
+defmt-decoder = { version = "=0.3.4", path = "../decoder", features = [
+    "unstable",
+] }
