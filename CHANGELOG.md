@@ -7,28 +7,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## defmt-decoder 0.3.4
+
 - [#726]: `defmt-decoder`: Remove difference in favor of dissimilar
 - [#725]: `defmt-decoder`: Replace chrono with time
-- [#719]: defmt-print: fix panic
-- [#715]: Update `clap` to version `4`
-- [#710]: Update CI
-- [#706]: Satisfy clippy
+- [#719]: `defmt-print`: Fix panic
+- [#715]: `xtask`: Update `clap` to version `4`
+- [#710]: `CI`: Update CI
+- [#706]: `defmt`, `defmt-decoder`, `defmt-itm`, `defmt-macros`, `defmt-parser`, `defmt-print`, `defmt-test-macros`: Satisfy clippy
+
+## defmt-decoder 0.3.3, defmt-macros 0.3.3, defmt-print 0.3.3, defmt-rtt 0.4.0
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
-- [#701]: Pre-relase cleanup
+- [#701]: `defmt-rtt`: Pre-relase cleanup
 - [#695]: `defmt-rtt`: Refactor rtt [3/2]
 - [#689]: `defmt-rtt`: Update to critical-section 1.0
 - [#692]: `defmt-macros`: Wrap const fn in const item to ensure compile-time-evaluation.
-- [#690]: Satisfy clippy
+- [#690]: `defmt-decoder`, `defmt-parser`: Satisfy clippy
 - [#688]: Release `defmt-decoder 0.3.3`
 - [#687]: `CI`: Re-enable `qemu-snapshot (nightly)` tests
 - [#686]: `CI`: Temporarily disable `qemu-snapshot (nightly)`
 - [#684]: `defmt-macros`: Fix `syn` dependency version.
 - [#683]: `defmt-rtt`: Make sure the whole RTT structure is in RAM
 - [#682]: `defmt-print`: exit when stdin is closed
-- [#681]: Make use of i/o locking being static since rust `1.61`.
+- [#681]: `defmt-decoder`, `defmt-parser`:Make use of i/o locking being static since rust `1.61`.
 - [#679]: `CI`: Add changelog enforcer
-- [#678]: Satisfy clippy
+- [#678]: `defmt`, `defmt-decoder`, `defmt-macros`, `defmt-parser`: Satisfy clippy
 
 [#726]: https://github.com/knurling-rs/defmt/pull/726
 [#725]: https://github.com/knurling-rs/defmt/pull/725
