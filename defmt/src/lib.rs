@@ -14,6 +14,7 @@
 // NOTE if you change this URL you'll also need to update all other crates in this repo
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 #![warn(missing_docs)]
+#![cfg_attr(feature = "ip_in_core", feature(ip_in_core))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

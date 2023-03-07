@@ -19,6 +19,7 @@ version = "0.3.2"
 
 [features]
 alloc = []
+ip_in_core = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #
