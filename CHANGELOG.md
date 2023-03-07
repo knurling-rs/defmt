@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#733]: `defmt`: Add formatting for `core::net` with the `ip_in_core` feature
+
+[#733]: https://github.com/knurling-rs/defmt/pull/733
+
 ## defmt-decoder v0.3.4, defmt-print v0.3.4
 
 - [#729]: Release `defmt-decoder v0.3.4`, `defmt-print v0.3.4`
