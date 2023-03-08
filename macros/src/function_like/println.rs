@@ -16,7 +16,20 @@ pub(crate) fn expand_parsed(args: Args) -> TokenStream2 {
     let format_string = args.format_string.value();
     let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
         Ok(args) => args,
-        Err(e) => abort!(args.format_string, "{}", e),
+        Err(e) => {
+            match &e {
+                defmt_parser::Error::UnknownDisplayHint(_s) => {
+                    abort!(
+                        args.format_string, "{}", e;
+                        help = "`defmt` uses a slightly different syntax than regular formatting in Rust. See https://defmt.ferrous-systems.com/macros.html for more details.";
+                    );
+                }
+                _ => {
+                    // No extra help
+                    abort!(args.format_string, "{}", e);
+                }
+            }
+        }
     };
 
     let formatting_exprs = args
