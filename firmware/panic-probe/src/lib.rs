@@ -29,8 +29,6 @@ mod imp {
     use core::panic::PanicInfo;
     use core::sync::atomic::{AtomicBool, Ordering};
 
-    use cortex_m::asm;
-
     #[cfg(feature = "print-rtt")]
     use crate::print_rtt::print;
 
@@ -53,24 +51,39 @@ mod imp {
             print(info);
         }
 
-        // Trigger a `HardFault` via `udf` instruction.
-
-        // If `UsageFault` is enabled, we disable that first, since otherwise `udf` will cause that
-        // exception instead of `HardFault`.
-        #[cfg(not(any(armv6m, armv8m_base)))]
-        {
-            const SHCSR: *mut u32 = 0xE000ED24usize as _;
-            const USGFAULTENA: usize = 18;
-
-            unsafe {
-                let mut shcsr = core::ptr::read_volatile(SHCSR);
-                shcsr &= !(1 << USGFAULTENA);
-                core::ptr::write_volatile(SHCSR, shcsr);
-            }
-        }
-
-        asm::udf();
+        crate::hard_fault();
     }
+}
+
+/// Trigger a `HardFault` via `udf` instruction.
+///
+/// This function may be used to as `defmt::panic_handler` to avoid double prints.
+///
+/// # Examples
+///
+/// ```
+/// #[defmt::panic_handler]
+/// fn panic() -> ! {
+///     panic_probe::hard_fault();
+/// }
+/// ```
+#[cfg(target_os = "none")]
+pub fn hard_fault() -> ! {
+    // If `UsageFault` is enabled, we disable that first, since otherwise `udf` will cause that
+    // exception instead of `HardFault`.
+    #[cfg(not(any(armv6m, armv8m_base)))]
+    {
+        const SHCSR: *mut u32 = 0xE000ED24usize as _;
+        const USGFAULTENA: usize = 18;
+
+        unsafe {
+            let mut shcsr = core::ptr::read_volatile(SHCSR);
+            shcsr &= !(1 << USGFAULTENA);
+            core::ptr::write_volatile(SHCSR, shcsr);
+        }
+    }
+
+    cortex_m::asm::udf();
 }
 
 #[cfg(feature = "print-rtt")]
