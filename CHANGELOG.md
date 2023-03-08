@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#737]: `panic-probe`: Add `hard_fault()` for use in `defmt::panic_handler`
 - [#733]: `defmt`: Add formatting for `core::net` with the `ip_in_core` feature
 
+[#737]: https://github.com/knurling-rs/defmt/pull/737
 [#733]: https://github.com/knurling-rs/defmt/pull/733
 
 ## defmt-decoder v0.3.4, defmt-print v0.3.4
