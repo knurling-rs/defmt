@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#733]: `defmt`: Add formatting for `core::net` with the `ip_in_core` feature
+- [#603]: `defmt`: Raw pointers now print as `0x1234` instead of `1234`
 
 [#733]: https://github.com/knurling-rs/defmt/pull/733
+[#603]: https://github.com/knurling-rs/defmt/pull/734
 
 ## defmt-decoder v0.3.4, defmt-print v0.3.4
 
