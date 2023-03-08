@@ -122,8 +122,8 @@ INFO b"Hi"
 INFO [45054, 49406]
 INFO [Data { name: b"Hi", value: true }]
 INFO true true
-INFO aabbccdd
-INFO ddccbbaa
+INFO 0xaabbccdd
+INFO 0xddccbbaa
 INFO 1..2
 INFO 1..
 INFO ..2
@@ -146,7 +146,7 @@ INFO 1
 INFO 1
 INFO 1
 INFO 1
-INFO ccbbaadd
+INFO 0xccbbaadd
 INFO log data: 43981
 INFO flush! 🚽
 INFO log more data! 🎉
