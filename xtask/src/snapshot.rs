@@ -67,11 +67,15 @@ fn test_all_snapshots(overwrite: bool) {
     let mut tests = ALL_SNAPSHOT_TESTS.to_vec();
 
     if rustc_is_nightly() {
-        tests.push("alloc");
+        tests.extend(["alloc", "net"]);
     }
 
     for test in tests {
-        let features = if test == "alloc" { "alloc" } else { "" };
+        let features = match test {
+            "alloc" => "alloc",
+            "net" => "ip_in_core",
+            _ => "",
+        };
 
         do_test(
             || test_single_snapshot(test, features, overwrite),
@@ -85,10 +89,9 @@ fn test_single_snapshot(name: &str, features: &str, overwrite: bool) -> anyhow::
 
     let is_test = name.contains("test");
 
-    let mut args = if is_test {
-        vec!["-q", "tt", name]
-    } else {
-        vec!["-q", "rb", name]
+    let mut args = match is_test {
+        true => vec!["-q", "tt", name],
+        false => vec!["-q", "rb", name],
     };
 
     if !features.is_empty() {

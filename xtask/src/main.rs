@@ -123,6 +123,11 @@ fn test_host(deny_warnings: bool) {
     );
 
     do_test(
+        || run_command("cargo", &["check", "--features", "ip_in_core"], None, &env),
+        "host",
+    );
+
+    do_test(
         || run_command("cargo", &["test", "--features", "unstable-test"], None, &[]),
         "host",
     );
@@ -151,6 +156,25 @@ fn test_cross() {
                 run_command(
                     "cargo",
                     &["check", "--target", target, "-p", "defmt", "--features", "alloc"],
+                    None,
+                    &[],
+                )
+            },
+            "cross",
+        );
+        do_test(
+            || {
+                run_command(
+                    "cargo",
+                    &[
+                        "check",
+                        "--target",
+                        target,
+                        "-p",
+                        "defmt",
+                        "--features",
+                        "ip_in_core",
+                    ],
                     None,
                     &[],
                 )
