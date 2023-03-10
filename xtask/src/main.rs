@@ -414,8 +414,10 @@ fn test_lint() {
         || run_command("cargo", &["fmt", "--", "--check"], None, &[]),
         "lint",
     );
-
-    do_test(|| run_command("cargo", &["clippy"], None, &[]), "lint");
+    do_test(
+        || run_command("cargo", &["clippy", "--", "-D", "warnings"], None, &[]),
+        "lint",
+    );
 }
 
 fn test_ui() {
