@@ -16,6 +16,35 @@ use std::{borrow::Cow, ops::Range, str::FromStr};
 
 pub use crate::types::Type;
 
+/// The kinds of error this library can return
+#[derive(thiserror::Error, Debug, PartialEq, Eq, Clone)]
+pub enum Error {
+    #[error("invalid type specifier `{0:?}`")]
+    InvalidTypeSpecifier(String),
+    #[error("unable to parse given integer")]
+    InvalidInteger(#[from] std::num::ParseIntError),
+    #[error("invalid array specifier (missing length)")]
+    InvalidArraySpecifierMissingLength,
+    #[error("invalid array specifier (missing `]`")]
+    InvalidArraySpecifierMissingBracket,
+    #[error("trailing data after bitfield range")]
+    TrailingDataAfterBitfieldRange,
+    #[error("malformed format string (missing display hint after ':')")]
+    MalformedFormatString,
+    #[error("unknown display hint: {0:?}")]
+    UnknownDisplayHint(String),
+    #[error("unexpected content `{0:?}` in format string")]
+    UnexpectedContentInFormatString(String),
+    #[error("unmatched `{{` in format string")]
+    UnmatchedOpenBracket,
+    #[error("unmatched `}}` in format string")]
+    UnmatchedCloseBracket,
+    #[error("conflicting types for argument {0}: used as {1:?} and {2:?}")]
+    ConflictingTypes(usize, Type, Type),
+    #[error("argument {0} is not used in this format string")]
+    UnusedArgument(usize),
+}
+
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Parameter {
@@ -237,23 +266,23 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
     Some((start..end, start_digits + end_digits + 2))
 }
 
-fn parse_array(mut s: &str) -> Result<usize, Cow<'static, str>> {
+fn parse_array(mut s: &str) -> Result<usize, Error> {
     // skip spaces
     let len_pos = s
         .find(|c: char| c != ' ')
-        .ok_or("invalid array specifier (missing length)")?;
+        .ok_or(Error::InvalidArraySpecifierMissingLength)?;
     s = &s[len_pos..];
 
     // consume length
     let after_len = s
         .find(|c: char| !c.is_ascii_digit())
-        .ok_or("invalid array specifier (missing `]`)")?;
-    let len = s[..after_len].parse::<usize>().map_err(|e| e.to_string())?;
+        .ok_or(Error::InvalidArraySpecifierMissingBracket)?;
+    let len = s[..after_len].parse::<usize>()?;
     s = &s[after_len..];
 
     // consume final `]`
     if s != "]" {
-        return Err("invalid array specifier (missing `]`)".into());
+        return Err(Error::InvalidArraySpecifierMissingBracket);
     }
 
     Ok(len)
@@ -271,7 +300,7 @@ pub enum ParserMode {
 /// Parse `Param` from `&str`
 ///
 /// * example `input`: `0=Type:hint` (note: no curly braces)
-fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, str>> {
+fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
     const TYPE_PREFIX: &str = "=";
     const HINT_PREFIX: &str = ":";
 
@@ -282,11 +311,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         .unwrap_or(input.len());
 
     if index_end != 0 {
-        index = Some(
-            input[..index_end]
-                .parse::<usize>()
-                .map_err(|e| e.to_string())?,
-        );
+        index = Some(input[..index_end].parse::<usize>()?);
     }
 
     // Then, optional type
@@ -318,15 +343,11 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
             _ => match parse_range(type_fragment) {
                 // Check for bitfield syntax.
                 Some((_, used)) if used != type_fragment.len() => {
-                    return Err("trailing data after bitfield range".into());
+                    return Err(Error::TrailingDataAfterBitfieldRange);
                 }
                 Some((range, _)) => Type::BitField(range),
                 None => {
-                    return Err(format!(
-                        "malformed format string (invalid type specifier `{}`)",
-                        input
-                    )
-                    .into());
+                    return Err(Error::InvalidTypeSpecifier(input.to_owned()));
                 }
             },
         };
@@ -341,29 +362,26 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Cow<'static, 
         // skip the prefix
         input = &input[HINT_PREFIX.len()..];
         if input.is_empty() {
-            return Err("malformed format string (missing display hint after ':')".into());
+            return Err(Error::MalformedFormatString);
         }
 
         hint = Some(match parse_display_hint(input) {
             Some(a) => a,
             None => match mode {
                 ParserMode::Strict => {
-                    return Err(format!("unknown display hint: {input:?}").into());
+                    return Err(Error::UnknownDisplayHint(input.to_owned()));
                 }
                 ParserMode::ForwardsCompatible => DisplayHint::Unknown(input.to_owned()),
             },
         });
     } else if !input.is_empty() {
-        return Err(format!("unexpected content {input:?} in format string").into());
+        return Err(Error::UnexpectedContentInFormatString(input.to_owned()));
     }
 
     Ok(Param { index, ty, hint })
 }
 
-fn push_literal<'f>(
-    frag: &mut Vec<Fragment<'f>>,
-    unescaped_literal: &'f str,
-) -> Result<(), Cow<'static, str>> {
+fn push_literal<'f>(frag: &mut Vec<Fragment<'f>>, unescaped_literal: &'f str) -> Result<(), Error> {
     // Replace `{{` with `{` and `}}` with `}`. Single braces are errors.
 
     // Scan for single braces first. The rest is trivial.
@@ -375,10 +393,10 @@ fn push_literal<'f>(
             '}' => last_close = !last_close,
             _ => {
                 if last_open {
-                    return Err("unmatched `{` in format string".into());
+                    return Err(Error::UnmatchedOpenBracket);
                 }
                 if last_close {
-                    return Err("unmatched `}` in format string".into());
+                    return Err(Error::UnmatchedCloseBracket);
                 }
             }
         }
@@ -386,10 +404,10 @@ fn push_literal<'f>(
 
     // Handle trailing unescaped `{` or `}`.
     if last_open {
-        return Err("unmatched `{` in format string".into());
+        return Err(Error::UnmatchedOpenBracket);
     }
     if last_close {
-        return Err("unmatched `}` in format string".into());
+        return Err(Error::UnmatchedCloseBracket);
     }
 
     // FIXME: This always allocates a `String`, so the `Cow` is useless.
@@ -426,10 +444,7 @@ where
     }
 }
 
-pub fn parse<'f>(
-    format_string: &'f str,
-    mode: ParserMode,
-) -> Result<Vec<Fragment<'f>>, Cow<'static, str>> {
+pub fn parse<'f>(format_string: &'f str, mode: ParserMode) -> Result<Vec<Fragment<'f>>, Error> {
     let mut fragments = Vec::new();
 
     // Index after the `}` of the last format specifier.
@@ -462,7 +477,7 @@ pub fn parse<'f>(
         let len = chars
             .as_str()
             .find('}')
-            .ok_or("missing `}` in format string")?;
+            .ok_or(Error::UnmatchedOpenBracket)?;
         end_pos = brace_pos + 1 + len + 1;
 
         // Parse the contents inside the braces.
@@ -501,11 +516,7 @@ pub fn parse<'f>(
                     // FIXME: Bitfield range shouldn't be part of the type.
                     (Type::BitField(_), Type::BitField(_)) => {}
                     (a, b) if a != b => {
-                        return Err(format!(
-                            "conflicting types for argument {}: used as {:?} and {:?}",
-                            index, a, ty
-                        )
-                        .into());
+                        return Err(Error::ConflictingTypes(*index, a.clone(), ty.clone()));
                     }
                     _ => {}
                 },
@@ -516,7 +527,7 @@ pub fn parse<'f>(
     // Check that argument indices are dense (all arguments must be used).
     for (index, arg) in args.iter().enumerate() {
         if arg.is_none() {
-            return Err(format!("argument {index} is not used in this format string").into());
+            return Err(Error::UnusedArgument(index));
         }
     }
 
@@ -1092,31 +1103,37 @@ mod tests {
     fn error_msg() {
         assert_eq!(
             parse("{=dunno}", ParserMode::Strict),
-            Err("malformed format string (invalid type specifier `dunno`)".into())
+            Err(Error::InvalidTypeSpecifier(String::from("dunno")))
         );
 
         assert_eq!(
             parse("{dunno}", ParserMode::Strict),
-            Err("unexpected content \"dunno\" in format string".into())
+            Err(Error::UnexpectedContentInFormatString(String::from(
+                "dunno"
+            )))
         );
 
         assert_eq!(
             parse("{=u8;x}", ParserMode::Strict),
-            Err("malformed format string (invalid type specifier `u8;x`)".into())
+            Err(Error::InvalidTypeSpecifier(String::from("u8;x")))
         );
 
         assert_eq!(
             parse("{dunno=u8:x}", ParserMode::Strict),
-            Err("unexpected content \"dunno=u8:x\" in format string".into())
+            Err(Error::UnexpectedContentInFormatString(String::from(
+                "dunno=u8:x"
+            )))
         );
 
         assert_eq!(
             parse("{0dunno}", ParserMode::Strict),
-            Err("unexpected content \"dunno\" in format string".into())
+            Err(Error::UnexpectedContentInFormatString(String::from(
+                "dunno"
+            )))
         );
         assert_eq!(
             parse("{:}", ParserMode::Strict),
-            Err("malformed format string (missing display hint after ':')".into())
+            Err(Error::MalformedFormatString)
         );
     }
 

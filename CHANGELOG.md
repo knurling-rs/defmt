@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - [#733]: `defmt`: Add formatting for `core::net` with the `ip_in_core` feature
 - [#603]: `defmt`: Raw pointers now print as `0x1234` instead of `1234`
+- [#536]: `defmt-parser`: Switch to using an enum for errors, and add some help text pointing you to the defmt docs if you use the wrong type specifier in a format string.
 
 [#733]: https://github.com/knurling-rs/defmt/pull/733
 [#603]: https://github.com/knurling-rs/defmt/pull/734
+[#536]: https://github.com/knurling-rs/defmt/pull/735
 
 ## defmt-decoder v0.3.4, defmt-print v0.3.4
 
