@@ -104,38 +104,24 @@ fn do_test(test: impl FnOnce() -> anyhow::Result<()>, context: &str) {
 fn test_host(deny_warnings: bool) {
     println!("🧪 host");
 
-    let env = if deny_warnings {
-        vec![("RUSTFLAGS", "--deny warnings")]
-    } else {
-        vec![]
+    let env = match deny_warnings {
+        true => vec![("RUSTFLAGS", "--deny warnings")],
+        false => vec![],
     };
 
-    do_test(|| run_command("cargo", &["check"], None, &env), "host");
+    for feat in ["", "unstable-test", "alloc", "ip_in_core"] {
+        do_test(
+            || run_command("cargo", &["check", "--features", feat], None, &env),
+            "host",
+        );
+    }
 
-    do_test(
-        || run_command("cargo", &["check", "--features", "unstable-test"], None, &env),
-        "host",
-    );
-
-    do_test(
-        || run_command("cargo", &["check", "--features", "alloc"], None, &env),
-        "host",
-    );
-
-    do_test(
-        || run_command("cargo", &["check", "--features", "ip_in_core"], None, &env),
-        "host",
-    );
-
-    do_test(
-        || run_command("cargo", &["test", "--features", "unstable-test"], None, &[]),
-        "host",
-    );
-
-    do_test(
-        || run_command("cargo", &["test", "--features", "unstable-test,alloc"], None, &[]),
-        "host",
-    );
+    for feat in ["unstable-test", "unstable-test,alloc"] {
+        do_test(
+            || run_command("cargo", &["test", "--features", feat], None, &env),
+            "host",
+        );
+    }
 }
 
 fn test_cross() {
