@@ -78,7 +78,7 @@ where
     T: ?Sized,
 {
     fn format(&self, fmt: Formatter) {
-        crate::write!(fmt, "{:x}", *self as *const () as usize);
+        crate::write!(fmt, "0x{:x}", *self as *const () as usize);
     }
 }
 
