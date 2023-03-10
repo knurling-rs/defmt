@@ -207,6 +207,7 @@ fn test_cross() {
                     "check",
                     "--target",
                     "thumbv6m-none-eabi",
+                    "--workspace",
                     "--exclude",
                     "defmt-itm",
                     "--exclude",
@@ -265,7 +266,19 @@ fn test_cross() {
             )
         },
         "cross",
-    )
+    );
+
+    do_test(
+        || {
+            run_command(
+                "cargo",
+                &["clippy", "--target", "thumbv7m-none-eabi", "--", "-D", "warnings"],
+                Some("firmware/"),
+                &[],
+            )
+        },
+        "lint",
+    );
 }
 
 fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
@@ -409,11 +422,16 @@ fn test_book() {
 
 fn test_lint() {
     println!("🧪 lint");
-    do_test(|| run_command("cargo", &["clean"], None, &[]), "lint");
-    do_test(
-        || run_command("cargo", &["fmt", "--", "--check"], None, &[]),
-        "lint",
-    );
+
+    // rustfmt
+    for cwd in [None, Some("firmware/")] {
+        do_test(
+            || run_command("cargo", &["fmt", "--", "--check"], cwd, &[]),
+            "lint",
+        );
+    }
+
+    // clippy
     do_test(
         || run_command("cargo", &["clippy", "--", "-D", "warnings"], None, &[]),
         "lint",
