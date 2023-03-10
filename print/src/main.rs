@@ -85,6 +85,8 @@ fn main() -> anyhow::Result<()> {
                     false => return Err(DecodeError::Malformed.into()),
                     // if recovery is possible, skip the current frame and continue with new data
                     true => {
+                        // bug: https://github.com/rust-lang/rust-clippy/issues/9810
+                        #[allow(clippy::print_literal)]
                         if show_skipped_frames || verbose {
                             println!("(HOST) malformed frame skipped");
                             println!("└─ {} @ {}:{}", env!("CARGO_PKG_NAME"), file!(), line!());

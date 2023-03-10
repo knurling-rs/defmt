@@ -150,56 +150,25 @@ fn test_host(deny_warnings: bool) {
         vec![]
     };
 
+    do_test(|| run_command("cargo", &["check"], None, &env), "host");
+
     do_test(
-        || run_command("cargo", &["check", "--workspace"], None, &env),
+        || run_command("cargo", &["check", "--features", "unstable-test"], None, &env),
         "host",
     );
 
     do_test(
-        || {
-            run_command(
-                "cargo",
-                &["check", "--workspace", "--features", "unstable-test"],
-                None,
-                &env,
-            )
-        },
+        || run_command("cargo", &["check", "--features", "alloc"], None, &env),
         "host",
     );
 
     do_test(
-        || {
-            run_command(
-                "cargo",
-                &["check", "--workspace", "--features", "alloc"],
-                None,
-                &env,
-            )
-        },
+        || run_command("cargo", &["test", "--features", "unstable-test"], None, &[]),
         "host",
     );
 
     do_test(
-        || {
-            run_command(
-                "cargo",
-                &["test", "--workspace", "--features", "unstable-test"],
-                None,
-                &[],
-            )
-        },
-        "host",
-    );
-
-    do_test(
-        || {
-            run_command(
-                "cargo",
-                &["test", "--workspace", "--features", "unstable-test,alloc"],
-                None,
-                &[],
-            )
-        },
+        || run_command("cargo", &["test", "--features", "unstable-test,alloc"], None, &[]),
         "host",
     );
 }
@@ -255,7 +224,7 @@ fn test_cross() {
         || {
             run_command(
                 "cargo",
-                &["check", "--target", "thumbv7em-none-eabi", "--workspace"],
+                &["check", "--target", "thumbv7em-none-eabi"],
                 Some("firmware"),
                 &[],
             )
@@ -297,7 +266,19 @@ fn test_cross() {
             )
         },
         "cross",
-    )
+    );
+
+    do_test(
+        || {
+            run_command(
+                "cargo",
+                &["clippy", "--target", "thumbv7m-none-eabi", "--", "-D", "warnings"],
+                Some("firmware/"),
+                &[],
+            )
+        },
+        "lint",
+    );
 }
 
 fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
@@ -441,14 +422,18 @@ fn test_book() {
 
 fn test_lint() {
     println!("🧪 lint");
-    do_test(|| run_command("cargo", &["clean"], None, &[]), "lint");
-    do_test(
-        || run_command("cargo", &["fmt", "--all", "--", "--check"], None, &[]),
-        "lint",
-    );
 
+    // rustfmt
+    for cwd in [None, Some("firmware/")] {
+        do_test(
+            || run_command("cargo", &["fmt", "--", "--check"], cwd, &[]),
+            "lint",
+        );
+    }
+
+    // clippy
     do_test(
-        || run_command("cargo", &["clippy", "--workspace"], None, &[]),
+        || run_command("cargo", &["clippy", "--", "-D", "warnings"], None, &[]),
         "lint",
     );
 }

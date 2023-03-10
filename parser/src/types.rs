@@ -1,6 +1,6 @@
 use std::{ops::Range, str::FromStr};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub enum Type {
     BitField(Range<u8>),
     Bool,
@@ -15,6 +15,7 @@ pub enum Type {
     F64,
 
     /// `{=?}` OR `{}`
+    #[default] // when not specified in the format string, this type is assumed
     Format,
     FormatArray(usize), // FIXME: This `usize` is not the target's `usize`; use `u64` instead?
     /// `{=[?]}`
@@ -76,12 +77,5 @@ impl FromStr for Type {
             "char" => Type::Char,
             _ => return Err(()),
         })
-    }
-}
-
-// when not specified in the format string, this type is assumed
-impl Default for Type {
-    fn default() -> Self {
-        Type::Format
     }
 }
