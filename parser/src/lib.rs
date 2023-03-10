@@ -444,7 +444,7 @@ where
     }
 }
 
-pub fn parse<'f>(format_string: &'f str, mode: ParserMode) -> Result<Vec<Fragment<'f>>, Error> {
+pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>, Error> {
     let mut fragments = Vec::new();
 
     // Index after the `}` of the last format specifier.
