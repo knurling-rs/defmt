@@ -10,7 +10,7 @@ use clap::{Parser, Subcommand};
 
 use crate::{
     snapshot::{test_snapshot, Snapshot, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY},
-    utils::{run_capturing_stdout, run_command},
+    utils::{run_capturing_stdout, run_command, rustc_is_nightly},
 };
 
 static ALL_ERRORS: Mutex<Vec<String>> = Mutex::new(Vec::new());
@@ -64,13 +64,13 @@ fn main() -> anyhow::Result<()> {
         cmd => {
             added_targets = Some(targets::install().expect("Error while installing required targets"));
             match cmd {
-                TestCommand::TestCross => test_cross(),
+                TestCommand::TestCross => test_cross(opt.deny_warnings),
                 TestCommand::TestSnapshot { overwrite, single } => {
                     test_snapshot(overwrite, single);
                 }
                 TestCommand::TestAll => {
                     test_host(opt.deny_warnings);
-                    test_cross();
+                    test_cross(opt.deny_warnings);
                     test_snapshot(false, None);
                     backcompat::test();
                     test_book();
@@ -108,7 +108,7 @@ fn test_host(deny_warnings: bool) {
         false => vec![],
     };
 
-    for feat in ["", "unstable-test", "alloc", "ip_in_core"] {
+    for feat in ["", "unstable-test", "alloc"] {
         do_test(
             || run_command("cargo", &["check", "--features", feat], None, &env),
             "host",
@@ -123,7 +123,7 @@ fn test_host(deny_warnings: bool) {
     }
 }
 
-fn test_cross() {
+fn test_cross(deny_warnings: bool) {
     println!("🧪 cross");
     let targets = [
         "thumbv6m-none-eabi",
@@ -131,9 +131,14 @@ fn test_cross() {
         "riscv32i-unknown-none-elf",
     ];
 
+    let env = match deny_warnings {
+        true => vec![("RUSTFLAGS", "--deny warnings")],
+        false => vec![],
+    };
+
     for target in &targets {
         do_test(
-            || run_command("cargo", &["check", "--target", target, "-p", "defmt"], None, &[]),
+            || run_command("cargo", &["check", "--target", target, "-p", "defmt"], None, &env),
             "cross",
         );
         do_test(
@@ -142,30 +147,33 @@ fn test_cross() {
                     "cargo",
                     &["check", "--target", target, "-p", "defmt", "--features", "alloc"],
                     None,
-                    &[],
+                    &env,
                 )
             },
             "cross",
         );
-        do_test(
-            || {
-                run_command(
-                    "cargo",
-                    &[
-                        "check",
-                        "--target",
-                        target,
-                        "-p",
-                        "defmt",
-                        "--features",
-                        "ip_in_core",
-                    ],
-                    None,
-                    &[],
-                )
-            },
-            "cross",
-        );
+
+        if rustc_is_nightly() {
+            do_test(
+                || {
+                    run_command(
+                        "cargo",
+                        &[
+                            "check",
+                            "--target",
+                            target,
+                            "-p",
+                            "defmt",
+                            "--features",
+                            "ip_in_core",
+                        ],
+                        None,
+                        &env,
+                    )
+                },
+                "cross",
+            );
+        }
     }
 
     do_test(
@@ -183,7 +191,7 @@ fn test_cross() {
                     "firmware",
                 ],
                 Some("firmware"),
-                &[],
+                &env,
             )
         },
         "cross",
@@ -195,7 +203,7 @@ fn test_cross() {
                 "cargo",
                 &["check", "--target", "thumbv7em-none-eabi"],
                 Some("firmware"),
-                &[],
+                &env,
             )
         },
         "cross",
@@ -213,7 +221,7 @@ fn test_cross() {
                     "print-defmt",
                 ],
                 Some("firmware/panic-probe"),
-                &[],
+                &env,
             )
         },
         "cross",
@@ -231,7 +239,7 @@ fn test_cross() {
                     "print-rtt",
                 ],
                 Some("firmware/panic-probe"),
-                &[],
+                &env,
             )
         },
         "cross",
@@ -243,11 +251,18 @@ fn test_cross() {
                 "cargo",
                 &["clippy", "--target", "thumbv7m-none-eabi", "--", "-D", "warnings"],
                 Some("firmware/"),
-                &[],
+                &env,
             )
         },
         "lint",
     );
+
+    if rustc_is_nightly() {
+        do_test(
+            || run_command("cargo", &["check", "--features", "ip_in_core"], None, &env),
+            "cross",
+        );
+    }
 }
 
 fn test_book() {

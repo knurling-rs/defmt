@@ -40,8 +40,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
-      - name: Install NO_STD_TARGET
-        run: rustup target add ${{ env.NO_STD_TARGET }}
       - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
         run: cargo xtask test-cross
 
@@ -85,11 +83,16 @@ jobs:
         run: cargo xtask test-book
 
   qemu-snapshot:
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - nightly # some tests use unstable features
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Use the latest stable release
-        run: rustup update stable && rustup default stable
+        run: rustup update stable && rustup default ${{ matrix.toolchain }}
       - name: Install QEMU_TARGET
         run: rustup target add ${{ env.QEMU_TARGET }}
       - name: Install dependencies
