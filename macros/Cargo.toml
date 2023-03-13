@@ -17,14 +17,16 @@ proc-macro = true
 unstable-test = []
 
 [dependencies]
-defmt-parser = { path = "../parser", features = ["unstable"], version = "=0.3.1" }
+defmt-parser = { version = "0.3.1", path = "../parser", features = [
+    "unstable",
+] }
 proc-macro-error = "1"
 proc-macro2 = "1"
 quote = "1"
 # we require at least 1.0.56; see https://github.com/knurling-rs/defmt/pull/684
 syn = { version = "1.0.101", features = ["full"] }
 
-[dev_dependencies]
+[dev-dependencies]
 maplit = "1"
 pretty_assertions = "1"
-rstest = "0.15"
+rstest = { version = "0.16", default-features = false }
