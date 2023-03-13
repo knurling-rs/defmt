@@ -7,14 +7,13 @@ use std::sync::Mutex;
 
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
-use once_cell::sync::Lazy;
 
 use crate::{
     snapshot::{test_snapshot, Snapshot, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY},
     utils::{run_capturing_stdout, run_command},
 };
 
-static ALL_ERRORS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(vec![]));
+static ALL_ERRORS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
 #[derive(Debug, Parser)]
 struct Options {

@@ -12,6 +12,5 @@ version = "0.1.0"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 colored = "2"
-once_cell = "1.14"
 similar = "2.2"
 tempfile = "3.3"
