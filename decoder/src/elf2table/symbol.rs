@@ -22,6 +22,10 @@ pub struct Symbol {
 
     /// Symbol data for use by the host tooling. Interpretation depends on `tag`.
     data: String,
+
+    /// https://github.com/knurling-rs/defmt/issues/532
+    /// TODO BM: Write proper description
+    crate_name: String,
 }
 
 pub enum SymbolTag<'a> {
@@ -67,5 +71,9 @@ impl Symbol {
 
     pub fn disambiguator(&self) -> &str {
         &self.disambiguator
+    }
+
+    pub fn crate_name(&self) -> &str {
+        &self.crate_name
     }
 }

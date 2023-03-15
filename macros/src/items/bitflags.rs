@@ -16,11 +16,12 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     // Encode package and disambiguator to provide the decoder with all info it needs (even if
     // technically redundant, since it's also stored in the symbol we create).
     let format_string = format!(
-        "{{={}:__internal_bitflags_{}@{}@{}}}",
+        "{{={}:__internal_bitflags_{}@{}@{}@{}}}",
         input.ty().to_token_stream(),
         input.ident(),
         cargo::package_name(),
         construct::crate_local_disambiguator(),
+        cargo::crate_name(),
     );
     let format_tag = construct::interned_string(&format_string, "bitflags", false);
 

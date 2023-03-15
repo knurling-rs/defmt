@@ -34,6 +34,8 @@ struct Symbol<'a> {
 
     /// Symbol data for use by the host tooling. Interpretation depends on `tag`.
     data: &'a str,
+
+    crate_name: String,
 }
 
 impl<'a> Symbol<'a> {
@@ -44,16 +46,18 @@ impl<'a> Symbol<'a> {
             disambiguator: super::crate_local_disambiguator(),
             tag: format!("defmt_{tag}"),
             data,
+            crate_name: cargo::crate_name(),
         }
     }
 
     fn mangle(&self) -> String {
         format!(
-            r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}"}}"#,
+            r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}", "crate_name":"{}"}}"#,
             json_escape(&self.package),
             json_escape(&self.tag),
             json_escape(self.data),
             self.disambiguator,
+            json_escape(&self.crate_name),
         )
     }
 }
