@@ -52,7 +52,7 @@ impl<'a> Symbol<'a> {
 
     fn mangle(&self) -> String {
         format!(
-            r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}", "crate_name":"{}"}}"#,
+            r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}","crate_name":"{}"}}"#,
             json_escape(&self.package),
             json_escape(&self.tag),
             json_escape(self.data),
