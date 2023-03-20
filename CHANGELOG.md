@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#743]: `defmt-parser`: Simplify tests with `rstest`
 - [#741]: `defmt-macros`: Disable default-features for `rstest`
 - [#740]: Snapshot tests for `core::net`
 - [#739]: `xtask`: Clean up
@@ -15,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#603]: `defmt`: Raw pointers now print as `0x1234` instead of `1234`
 - [#536]: `defmt-parser`: Switch to using an enum for errors, and add some help text pointing you to the defmt docs if you use the wrong type specifier in a format string.
 
+[#743]: https://github.com/knurling-rs/defmt/pull/743
 [#741]: https://github.com/knurling-rs/defmt/pull/741
 [#740]: https://github.com/knurling-rs/defmt/pull/740
 [#739]: https://github.com/knurling-rs/defmt/pull/739
