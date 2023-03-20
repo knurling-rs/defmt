@@ -716,42 +716,27 @@ mod tests {
         assert!(parse(input, ParserMode::Strict).is_err());
     }
 
-    #[test]
-    fn arrays() {
+    #[rstest]
+    #[case("{=[u8; 0]}", 0)]
+    #[case::space_is_optional("{=[u8;42]}", 42)]
+    #[case::multiple_spaces_are_ok("{=[u8;    257]}", 257)]
+    fn arrays(#[case] input: &str, #[case] length: usize) {
         assert_eq!(
-            parse("{=[u8; 0]}", ParserMode::Strict),
+            parse(input, ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
-                ty: Type::U8Array(0),
+                ty: Type::U8Array(length),
                 hint: None,
             })])
         );
+    }
 
-        // Space is optional.
-        assert_eq!(
-            parse("{=[u8;42]}", ParserMode::Strict),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U8Array(42),
-                hint: None,
-            })])
-        );
-
-        // Multiple spaces are ok.
-        assert_eq!(
-            parse("{=[u8;    257]}", ParserMode::Strict),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U8Array(257),
-                hint: None,
-            })])
-        );
-
-        // No tabs or other whitespace.
-        assert!(parse("{=[u8; \t 3]}", ParserMode::Strict).is_err());
-        assert!(parse("{=[u8; \n 3]}", ParserMode::Strict).is_err());
-        // Too large.
-        assert!(parse("{=[u8; 9999999999999999999999999]}", ParserMode::Strict).is_err());
+    #[rstest]
+    #[case::no_tabs("{=[u8; \t 3]}")]
+    #[case::no_linebreaks("{=[u8; \n 3]}")]
+    #[case::too_large("{=[u8; 9999999999999999999999999]}")]
+    fn arrays_err(#[case] input: &str) {
+        assert!(parse(input, ParserMode::Strict).is_err());
     }
 
     #[rstest]
