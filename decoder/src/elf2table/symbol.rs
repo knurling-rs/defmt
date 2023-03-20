@@ -23,8 +23,7 @@ pub struct Symbol {
     /// Symbol data for use by the host tooling. Interpretation depends on `tag`.
     data: String,
 
-    /// https://github.com/knurling-rs/defmt/issues/532
-    /// TODO BM: Write proper description
+    /// Crate name obtained via CARGO_CRATE_NAME (added since a Cargo package can contain many crates).
     crate_name: String,
 }
 
