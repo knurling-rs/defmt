@@ -663,17 +663,23 @@ mod tests {
         assert!(parse(input, ParserMode::Strict).is_err());
     }
 
-    #[test]
-    fn range() {
+    #[rstest]
+    #[case("{=0..4}", 0..4)]
+    #[case::just_inside_128bit_range_1("{=0..128}", 0..128)]
+    #[case::just_inside_128bit_range_2("{=127..128}", 127..128)]
+    fn range(#[case] input: &str, #[case] bit_field: Range<u8>) {
         assert_eq!(
-            parse("{=0..4}", ParserMode::Strict),
+            parse(input, ParserMode::Strict),
             Ok(vec![Fragment::Parameter(Parameter {
                 index: 0,
-                ty: Type::BitField(0..4),
+                ty: Type::BitField(bit_field),
                 hint: None,
             })])
         );
+    }
 
+    #[test]
+    fn multiple_ranges() {
         assert_eq!(
             parse("{0=30..31}{1=0..4}{1=2..6}", ParserMode::Strict),
             Ok(vec![
@@ -694,24 +700,20 @@ mod tests {
                 }),
             ])
         );
+    }
 
-        // empty range
-        assert!(parse("{=0..0}", ParserMode::Strict).is_err());
-        // start > end
-        assert!(parse("{=1..0}", ParserMode::Strict).is_err());
-        // out of 128-bit range
-        assert!(parse("{=0..129}", ParserMode::Strict).is_err());
-        assert!(parse("{=128..128}", ParserMode::Strict).is_err());
-        // just inside 128-bit range
-        assert!(parse("{=0..128}", ParserMode::Strict).is_ok());
-        assert!(parse("{=127..128}", ParserMode::Strict).is_ok());
-
-        // missing parts
-        assert!(parse("{=0..4", ParserMode::Strict).is_err());
-        assert!(parse("{=0..}", ParserMode::Strict).is_err());
-        assert!(parse("{=..4}", ParserMode::Strict).is_err());
-        assert!(parse("{=0.4}", ParserMode::Strict).is_err());
-        assert!(parse("{=0...4}", ParserMode::Strict).is_err());
+    #[rstest]
+    #[case::empty_range("{=0..0}")]
+    #[case::start_gt_end("{=1..0}")]
+    #[case::out_of_128bit_range_1("{=0..129}")]
+    #[case::out_of_128bit_range_2("{=128..128}")]
+    #[case::missing_parts_1("{=0..4")]
+    #[case::missing_parts_2("{=0..}")]
+    #[case::missing_parts_3("{=..4}")]
+    #[case::missing_parts_4("{=0.4}")]
+    #[case::missing_parts_5("{=0...4}")]
+    fn range_err(#[case] input: &str) {
+        assert!(parse(input, ParserMode::Strict).is_err());
     }
 
     #[test]
