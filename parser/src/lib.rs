@@ -268,6 +268,9 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
     Some((start..end, start_digits + end_digits + 2))
 }
 
+/// Parse and consume an array at the beginning of `s`.
+///
+/// Return the length of the array.
 fn parse_array(mut s: &str) -> Result<usize, Error> {
     // skip spaces
     let len_pos = s
