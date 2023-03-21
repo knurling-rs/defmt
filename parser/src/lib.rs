@@ -17,7 +17,6 @@ mod types;
 
 use std::{borrow::Cow, ops::Range};
 
-use crate::display_hint::parse_display_hint;
 pub use crate::{
     display_hint::{DisplayHint, TimePrecision},
     types::Type,
@@ -249,7 +248,7 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
             return Err(Error::MalformedFormatString);
         }
 
-        hint = match (parse_display_hint(input), mode) {
+        hint = match (DisplayHint::parse(input), mode) {
             (Some(a), _) => Some(a),
             (None, ParserMode::Strict) => return Err(Error::UnknownDisplayHint(input.to_owned())),
             (None, ParserMode::ForwardsCompatible) => Some(DisplayHint::Unknown(input.to_owned())),
