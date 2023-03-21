@@ -335,27 +335,21 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
         const U8_ARRAY_START: &str = "[u8;";
 
         // what comes next is the type
-        ty = match type_fragment.parse() {
-            Ok(ty) => ty,
-            _ if input.starts_with(U8_ARRAY_START) => {
-                let len = parse_array(&type_fragment[U8_ARRAY_START.len()..])?;
-                Type::U8Array(len)
+        ty = if let Ok(ty) = type_fragment.parse() {
+            Ok(ty)
+        } else if let Some(s) = type_fragment.strip_prefix(U8_ARRAY_START) {
+            Ok(Type::U8Array(parse_array(s)?))
+        } else if let Some(s) = type_fragment.strip_prefix(FORMAT_ARRAY_START) {
+            Ok(Type::FormatArray(parse_array(s)?))
+        } else if let Some((range, used)) = parse_range(type_fragment) {
+            // Check for bitfield syntax.
+            match used != type_fragment.len() {
+                true => Err(Error::TrailingDataAfterBitfieldRange),
+                false => Ok(Type::BitField(range)),
             }
-            _ if input.starts_with(FORMAT_ARRAY_START) => {
-                let len = parse_array(&type_fragment[FORMAT_ARRAY_START.len()..])?;
-                Type::FormatArray(len)
-            }
-            _ => match parse_range(type_fragment) {
-                // Check for bitfield syntax.
-                Some((_, used)) if used != type_fragment.len() => {
-                    return Err(Error::TrailingDataAfterBitfieldRange);
-                }
-                Some((range, _)) => Type::BitField(range),
-                None => {
-                    return Err(Error::InvalidTypeSpecifier(input.to_owned()));
-                }
-            },
-        };
+        } else {
+            Err(Error::InvalidTypeSpecifier(input.to_owned()))
+        }?;
 
         input = &input[type_end..];
     }
@@ -370,15 +364,11 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
             return Err(Error::MalformedFormatString);
         }
 
-        hint = Some(match parse_display_hint(input) {
-            Some(a) => a,
-            None => match mode {
-                ParserMode::Strict => {
-                    return Err(Error::UnknownDisplayHint(input.to_owned()));
-                }
-                ParserMode::ForwardsCompatible => DisplayHint::Unknown(input.to_owned()),
-            },
-        });
+        hint = match (parse_display_hint(input), mode) {
+            (Some(a), _) => Some(a),
+            (None, ParserMode::Strict) => return Err(Error::UnknownDisplayHint(input.to_owned())),
+            (None, ParserMode::ForwardsCompatible) => Some(DisplayHint::Unknown(input.to_owned())),
+        };
     } else if !input.is_empty() {
         return Err(Error::UnexpectedContentInFormatString(input.to_owned()));
     }
