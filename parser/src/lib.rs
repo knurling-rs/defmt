@@ -393,22 +393,16 @@ fn push_literal<'f>(frag: &mut Vec<Fragment<'f>>, unescaped_literal: &'f str) ->
         match c {
             '{' => last_open = !last_open,
             '}' => last_close = !last_close,
-            _ => {
-                if last_open {
-                    return Err(Error::UnmatchedOpenBracket);
-                }
-                if last_close {
-                    return Err(Error::UnmatchedCloseBracket);
-                }
-            }
+            _ if last_open => return Err(Error::UnmatchedOpenBracket),
+            _ if last_close => return Err(Error::UnmatchedCloseBracket),
+            _ => {}
         }
     }
 
     // Handle trailing unescaped `{` or `}`.
     if last_open {
         return Err(Error::UnmatchedOpenBracket);
-    }
-    if last_close {
+    } else if last_close {
         return Err(Error::UnmatchedCloseBracket);
     }
 
