@@ -169,6 +169,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                         ident: bitflags_name.into(),
                         package: sym.package().into(),
                         disambig: sym.disambiguator().into(),
+                        crate_name: sym.crate_name().into(),
                     };
 
                     bitflags_map.entry(key).or_insert_with(Vec::new).push((

@@ -23,7 +23,6 @@ impl EnvFilter {
         let defmt_log = env::var("DEFMT_LOG").ok();
         let cargo_crate_name = env::var("CARGO_CRATE_NAME")
             .unwrap_or_else(|_| abort_call_site!("`CARGO_CRATE_NAME` env var is not set"));
-
         Self::new(defmt_log.as_deref(), &cargo_crate_name)
     }
 

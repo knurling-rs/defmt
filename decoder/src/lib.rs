@@ -116,6 +116,7 @@ struct BitflagsKey {
     ident: String,
     package: String,
     disambig: String,
+    crate_name: String,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

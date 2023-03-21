@@ -94,6 +94,7 @@ pub enum DisplayHint {
         name: String,
         package: String,
         disambiguator: String,
+        crate_name: String,
     },
     /// Display hints currently not supported / understood
     Unknown(String),
@@ -123,11 +124,12 @@ fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
     if let Some(stripped) = s.strip_prefix(BITFLAGS_HINT_START) {
         let parts = stripped.split('@').collect::<Vec<_>>();
         match *parts {
-            [bitflags_name, package, disambiguator] => {
+            [bitflags_name, package, disambiguator, crate_name] => {
                 return Some(DisplayHint::Bitflags {
                     name: bitflags_name.into(),
                     package: package.into(),
                     disambiguator: disambiguator.into(),
+                    crate_name: crate_name.into(),
                 });
             }
             _ => {

@@ -22,6 +22,9 @@ pub struct Symbol {
 
     /// Symbol data for use by the host tooling. Interpretation depends on `tag`.
     data: String,
+
+    /// Crate name obtained via CARGO_CRATE_NAME (added since a Cargo package can contain many crates).
+    crate_name: String,
 }
 
 pub enum SymbolTag<'a> {
@@ -67,5 +70,9 @@ impl Symbol {
 
     pub fn disambiguator(&self) -> &str {
         &self.disambiguator
+    }
+
+    pub fn crate_name(&self) -> &str {
+        &self.crate_name
     }
 }
