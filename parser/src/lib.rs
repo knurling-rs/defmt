@@ -540,7 +540,7 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case::no__param("", None, Type::Format, None)]
+    #[case::noo_param("", None, Type::Format, None)]
     #[case::one_param_type("=u8", None, Type::U8, None)]
     #[case::one_param_hint(":a", None, Type::Format, Some(DisplayHint::Ascii))]
     #[case::one_param_index("1", Some(1), Type::Format, None)]
