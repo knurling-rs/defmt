@@ -44,8 +44,8 @@ impl DisplayHint {
 
         // The `#` comes before any padding hints (I think this matches core::fmt).
         // It is ignored for types that don't have an alternate representation.
-        let alternate = if matches!(s.chars().next(), Some('#')) {
-            s = &s[1..]; // '#' is always 1 byte
+        let alternate = if let Some(rest) = s.strip_prefix('#') {
+            s = rest;
             true
         } else {
             false
@@ -70,9 +70,7 @@ impl DisplayHint {
                         crate_name: crate_name.into(),
                     });
                 }
-                _ => {
-                    return Some(DisplayHint::Unknown(s.into()));
-                }
+                _ => return Some(DisplayHint::Unknown(s.into())),
             }
         }
 
