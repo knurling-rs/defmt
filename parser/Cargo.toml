@@ -12,6 +12,9 @@ version = "0.3.1"
 [dependencies]
 thiserror = "1.0"
 
+[dev-dependencies]
+rstest = { version = "0.16", default-features = false }
+
 [features]
 unstable = []
 
