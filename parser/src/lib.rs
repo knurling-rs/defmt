@@ -497,15 +497,12 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
                 args.resize(*index + 1, None);
             }
 
-            match &mut args[*index] {
-                none @ None => {
-                    *none = Some(ty.clone());
-                }
+            match &args[*index] {
+                None => args[*index] = Some(ty.clone()),
                 Some(other_ty) => match (other_ty, ty) {
-                    // FIXME: Bitfield range shouldn't be part of the type.
-                    (Type::BitField(_), Type::BitField(_)) => {}
+                    (Type::BitField(_), Type::BitField(_)) => {} // FIXME: Bitfield range shouldn't be part of the type.
                     (a, b) if a != b => {
-                        return Err(Error::ConflictingTypes(*index, a.clone(), ty.clone()));
+                        return Err(Error::ConflictingTypes(*index, a.clone(), b.clone()))
                     }
                     _ => {}
                 },
