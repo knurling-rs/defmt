@@ -162,20 +162,6 @@ fn multiple_ranges() {
 }
 
 #[rstest]
-#[case::empty_range("{=0..0}")]
-#[case::start_gt_end("{=1..0}")]
-#[case::out_of_128bit_range_1("{=0..129}")]
-#[case::out_of_128bit_range_2("{=128..128}")]
-#[case::missing_parts_1("{=0..4")]
-#[case::missing_parts_2("{=0..}")]
-#[case::missing_parts_3("{=..4}")]
-#[case::missing_parts_4("{=0.4}")]
-#[case::missing_parts_5("{=0...4}")]
-fn range_err(#[case] input: &str) {
-    assert!(parse(input, ParserMode::Strict).is_err());
-}
-
-#[rstest]
 #[case("{=[u8; 0]}", 0)]
 #[case::space_is_optional("{=[u8;42]}", 42)]
 #[case::multiple_spaces_are_ok("{=[u8;    257]}", 257)]
@@ -209,6 +195,15 @@ fn arrays_err(#[case] input: &str) {
 #[case::stray_braces_2("{string", Error::UnmatchedOpenBracket)]
 #[case::stray_braces_3("}", Error::UnmatchedCloseBracket)]
 #[case::stray_braces_4("{", Error::UnmatchedOpenBracket)]
+#[case::range_empty("{=0..0}", Error::InvalidTypeSpecifier("0..0".to_string()))]
+#[case::range_start_gt_end("{=1..0}", Error::InvalidTypeSpecifier("1..0".to_string()))]
+#[case::range_out_of_128bit_1("{=0..129}", Error::InvalidTypeSpecifier("0..129".to_string()))]
+#[case::range_out_of_128bit_2("{=128..128}", Error::InvalidTypeSpecifier("128..128".to_string()))]
+#[case::range_missing_parts_1("{=0..4", Error::UnmatchedOpenBracket)]
+#[case::range_missing_parts_2("{=0..}", Error::InvalidTypeSpecifier("0..".to_string()))]
+#[case::range_missing_parts_3("{=..4}", Error::InvalidTypeSpecifier("..4".to_string()))]
+#[case::range_missing_parts_4("{=0.4}", Error::InvalidTypeSpecifier("0.4".to_string()))]
+#[case::range_missing_parts_5("{=0...4}", Error::InvalidTypeSpecifier("0...4".to_string()))]
 fn error_msg(#[case] input: &str, #[case] err: Error) {
     assert_eq!(parse(input, ParserMode::Strict), Err(err));
 }
