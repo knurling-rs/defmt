@@ -113,16 +113,6 @@ fn index(#[case] input: &str, #[case] params: [(usize, Type); 2]) {
 }
 
 #[rstest]
-#[case::different_types_for_same_index("{0=u8}{0=u16}")]
-#[case::same_thing_except_bool_is_autoassigned_index_0("Hello {1=u16} {0=u8} {=bool}")]
-#[case::omitted_index_0("{1=u8}")]
-#[case::index_1_is_missing("{2=u8}{=u16}")]
-#[case::index_0_is_missing("{2=u8}{1=u16}")]
-fn index_err(#[case] input: &str) {
-    assert!(parse(input, ParserMode::Strict).is_err());
-}
-
-#[rstest]
 #[case("{=0..4}", 0..4)]
 #[case::just_inside_128bit_range_1("{=0..128}", 0..128)]
 #[case::just_inside_128bit_range_2("{=127..128}", 127..128)]
@@ -204,6 +194,17 @@ fn arrays_err(#[case] input: &str) {
 #[case::range_missing_parts_3("{=..4}", Error::InvalidTypeSpecifier("..4".to_string()))]
 #[case::range_missing_parts_4("{=0.4}", Error::InvalidTypeSpecifier("0.4".to_string()))]
 #[case::range_missing_parts_5("{=0...4}", Error::InvalidTypeSpecifier("0...4".to_string()))]
+#[case::index_with_different_types(
+    "{0=u8}{0=u16}",
+    Error::ConflictingTypes(0, Type::U8, Type::U16)
+)]
+#[case::index_with_different_types_bool_is_autoassigned_index_0(
+    "Hello {1=u16} {0=u8} {=bool}",
+    Error::ConflictingTypes(0, Type::U8, Type::Bool)
+)]
+#[case::index_0_is_omitted("{1=u8}", Error::UnusedArgument(0))]
+#[case::index_1_is_missing("{2=u8}{=u16}", Error::UnusedArgument(1))]
+#[case::index_0_is_missing("{2=u8}{1=u16}", Error::UnusedArgument(0))]
 fn error_msg(#[case] input: &str, #[case] err: Error) {
     assert_eq!(parse(input, ParserMode::Strict), Err(err));
 }
