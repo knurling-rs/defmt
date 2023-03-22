@@ -205,17 +205,12 @@ fn arrays_err(#[case] input: &str) {
 #[case("{dunno=u8:x}", Error::UnexpectedContentInFormatString("dunno=u8:x".to_string()))]
 #[case("{0dunno}", Error::UnexpectedContentInFormatString("dunno".to_string()))]
 #[case("{:}", Error::MalformedFormatString)]
+#[case::stray_braces_1("}string", Error::UnmatchedCloseBracket)]
+#[case::stray_braces_2("{string", Error::UnmatchedOpenBracket)]
+#[case::stray_braces_3("}", Error::UnmatchedCloseBracket)]
+#[case::stray_braces_4("{", Error::UnmatchedOpenBracket)]
 fn error_msg(#[case] input: &str, #[case] err: Error) {
     assert_eq!(parse(input, ParserMode::Strict), Err(err));
-}
-
-#[rstest]
-#[case("}string")]
-#[case("{string")]
-#[case("}")]
-#[case("{")]
-fn stray_braces(#[case] input: &str) {
-    assert!(parse(input, ParserMode::Strict).is_err());
 }
 
 #[rstest]
