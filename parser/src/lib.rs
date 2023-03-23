@@ -10,11 +10,17 @@
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
+mod display_hint;
+#[cfg(test)]
+mod tests;
 mod types;
 
-use std::{borrow::Cow, ops::Range, str::FromStr};
+use std::{borrow::Cow, ops::Range};
 
-pub use crate::types::Type;
+pub use crate::{
+    display_hint::{DisplayHint, TimePrecision},
+    types::Type,
+};
 
 /// The kinds of error this library can return
 #[derive(thiserror::Error, Debug, PartialEq, Eq, Clone)]
@@ -54,113 +60,6 @@ pub struct Parameter {
     pub ty: Type,
     /// The display hint, e.g. ':x', ':b', ':a'.
     pub hint: Option<DisplayHint>,
-}
-
-/// Precision of ISO8601 datetime
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum TimePrecision {
-    Millis,
-    Seconds,
-}
-
-/// All display hints
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DisplayHint {
-    NoHint {
-        zero_pad: usize,
-    },
-    /// `:x` OR `:X`
-    Hexadecimal {
-        alternate: bool,
-        uppercase: bool,
-        zero_pad: usize,
-    },
-    /// `:b`
-    Binary {
-        alternate: bool,
-        zero_pad: usize,
-    },
-    /// `:a`
-    Ascii,
-    /// `:?`
-    Debug,
-    /// `:us`, formats integers as timestamps in microseconds
-    Microseconds,
-    /// `:iso8601{ms,s}`, formats integers as timestamp in ISO8601 date time format
-    ISO8601(TimePrecision),
-    /// `__internal_bitflags_NAME` instructs the decoder to print the flags that are set, instead of
-    /// the raw value.
-    Bitflags {
-        name: String,
-        package: String,
-        disambiguator: String,
-        crate_name: String,
-    },
-    /// Display hints currently not supported / understood
-    Unknown(String),
-}
-
-/// Parses the display hint (e.g. the `#x` in `{=u8:#x}`)
-fn parse_display_hint(mut s: &str) -> Option<DisplayHint> {
-    const BITFLAGS_HINT_START: &str = "__internal_bitflags_";
-
-    // The `#` comes before any padding hints (I think this matches core::fmt).
-    // It is ignored for types that don't have an alternate representation.
-    let alternate = if matches!(s.chars().next(), Some('#')) {
-        s = &s[1..]; // '#' is always 1 byte
-        true
-    } else {
-        false
-    };
-
-    let zero_pad = if let Some(rest) = s.strip_prefix('0') {
-        let (rest, columns) = parse_integer::<usize>(rest)?;
-        s = rest;
-        columns
-    } else {
-        0 // default behavior is the same as no zero-padding.
-    };
-
-    if let Some(stripped) = s.strip_prefix(BITFLAGS_HINT_START) {
-        let parts = stripped.split('@').collect::<Vec<_>>();
-        match *parts {
-            [bitflags_name, package, disambiguator, crate_name] => {
-                return Some(DisplayHint::Bitflags {
-                    name: bitflags_name.into(),
-                    package: package.into(),
-                    disambiguator: disambiguator.into(),
-                    crate_name: crate_name.into(),
-                });
-            }
-            _ => {
-                return Some(DisplayHint::Unknown(s.into()));
-            }
-        }
-    }
-
-    Some(match s {
-        "" => DisplayHint::NoHint { zero_pad },
-        "us" => DisplayHint::Microseconds,
-        "a" => DisplayHint::Ascii,
-        "b" => DisplayHint::Binary {
-            alternate,
-            zero_pad,
-        },
-        "x" => DisplayHint::Hexadecimal {
-            alternate,
-            uppercase: false,
-            zero_pad,
-        },
-        "X" => DisplayHint::Hexadecimal {
-            alternate,
-            uppercase: true,
-            zero_pad,
-        },
-        "iso8601ms" => DisplayHint::ISO8601(TimePrecision::Millis),
-        "iso8601s" => DisplayHint::ISO8601(TimePrecision::Seconds),
-        "?" => DisplayHint::Debug,
-        _ => return None,
-    })
 }
 
 /// A part of a format string.
@@ -222,21 +121,6 @@ impl Level {
     }
 }
 
-/// Parses an integer at the beginning of `s`.
-///
-/// Returns the integer and remaining text, if `s` started with an integer. Any errors parsing the
-/// number (which we already know only contains digits) are silently ignored.
-fn parse_integer<T: FromStr>(s: &str) -> Option<(&str, usize)> {
-    let start_digits = s
-        .as_bytes()
-        .iter()
-        .copied()
-        .take_while(|b| b.is_ascii_digit())
-        .count();
-    let num = s[..start_digits].parse().ok()?;
-    Some((&s[start_digits..], num))
-}
-
 fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
     // consume first number
     let start_digits = s
@@ -268,6 +152,9 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
     Some((start..end, start_digits + end_digits + 2))
 }
 
+/// Parse and consume an array at the beginning of `s`.
+///
+/// Return the length of the array.
 fn parse_array(mut s: &str) -> Result<usize, Error> {
     // skip spaces
     let len_pos = s
@@ -332,27 +219,21 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
         const U8_ARRAY_START: &str = "[u8;";
 
         // what comes next is the type
-        ty = match type_fragment.parse() {
-            Ok(ty) => ty,
-            _ if input.starts_with(U8_ARRAY_START) => {
-                let len = parse_array(&type_fragment[U8_ARRAY_START.len()..])?;
-                Type::U8Array(len)
+        ty = if let Ok(ty) = type_fragment.parse() {
+            Ok(ty)
+        } else if let Some(s) = type_fragment.strip_prefix(U8_ARRAY_START) {
+            Ok(Type::U8Array(parse_array(s)?))
+        } else if let Some(s) = type_fragment.strip_prefix(FORMAT_ARRAY_START) {
+            Ok(Type::FormatArray(parse_array(s)?))
+        } else if let Some((range, used)) = parse_range(type_fragment) {
+            // Check for bitfield syntax.
+            match used != type_fragment.len() {
+                true => Err(Error::TrailingDataAfterBitfieldRange),
+                false => Ok(Type::BitField(range)),
             }
-            _ if input.starts_with(FORMAT_ARRAY_START) => {
-                let len = parse_array(&type_fragment[FORMAT_ARRAY_START.len()..])?;
-                Type::FormatArray(len)
-            }
-            _ => match parse_range(type_fragment) {
-                // Check for bitfield syntax.
-                Some((_, used)) if used != type_fragment.len() => {
-                    return Err(Error::TrailingDataAfterBitfieldRange);
-                }
-                Some((range, _)) => Type::BitField(range),
-                None => {
-                    return Err(Error::InvalidTypeSpecifier(input.to_owned()));
-                }
-            },
-        };
+        } else {
+            Err(Error::InvalidTypeSpecifier(input.to_owned()))
+        }?;
 
         input = &input[type_end..];
     }
@@ -367,15 +248,11 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
             return Err(Error::MalformedFormatString);
         }
 
-        hint = Some(match parse_display_hint(input) {
-            Some(a) => a,
-            None => match mode {
-                ParserMode::Strict => {
-                    return Err(Error::UnknownDisplayHint(input.to_owned()));
-                }
-                ParserMode::ForwardsCompatible => DisplayHint::Unknown(input.to_owned()),
-            },
-        });
+        hint = match (DisplayHint::parse(input), mode) {
+            (Some(a), _) => Some(a),
+            (None, ParserMode::Strict) => return Err(Error::UnknownDisplayHint(input.to_owned())),
+            (None, ParserMode::ForwardsCompatible) => Some(DisplayHint::Unknown(input.to_owned())),
+        };
     } else if !input.is_empty() {
         return Err(Error::UnexpectedContentInFormatString(input.to_owned()));
     }
@@ -393,22 +270,16 @@ fn push_literal<'f>(frag: &mut Vec<Fragment<'f>>, unescaped_literal: &'f str) ->
         match c {
             '{' => last_open = !last_open,
             '}' => last_close = !last_close,
-            _ => {
-                if last_open {
-                    return Err(Error::UnmatchedOpenBracket);
-                }
-                if last_close {
-                    return Err(Error::UnmatchedCloseBracket);
-                }
-            }
+            _ if last_open => return Err(Error::UnmatchedOpenBracket),
+            _ if last_close => return Err(Error::UnmatchedCloseBracket),
+            _ => {}
         }
     }
 
     // Handle trailing unescaped `{` or `}`.
     if last_open {
         return Err(Error::UnmatchedOpenBracket);
-    }
-    if last_close {
+    } else if last_close {
         return Err(Error::UnmatchedCloseBracket);
     }
 
@@ -510,15 +381,12 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
                 args.resize(*index + 1, None);
             }
 
-            match &mut args[*index] {
-                none @ None => {
-                    *none = Some(ty.clone());
-                }
+            match &args[*index] {
+                None => args[*index] = Some(ty.clone()),
                 Some(other_ty) => match (other_ty, ty) {
-                    // FIXME: Bitfield range shouldn't be part of the type.
-                    (Type::BitField(_), Type::BitField(_)) => {}
+                    (Type::BitField(_), Type::BitField(_)) => {} // FIXME: Bitfield range shouldn't be part of the type.
                     (a, b) if a != b => {
-                        return Err(Error::ConflictingTypes(*index, a.clone(), ty.clone()));
+                        return Err(Error::ConflictingTypes(*index, a.clone(), b.clone()))
                     }
                     _ => {}
                 },
@@ -534,240 +402,4 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
     }
 
     Ok(fragments)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::rstest;
-
-    #[rstest]
-    #[case::noo_param("", None, Type::Format, None)]
-    #[case::one_param_type("=u8", None, Type::U8, None)]
-    #[case::one_param_hint(":a", None, Type::Format, Some(DisplayHint::Ascii))]
-    #[case::one_param_index("1", Some(1), Type::Format, None)]
-    #[case::two_param_type_hint("=u8:x", None, Type::U8, Some(DisplayHint::Hexadecimal {alternate: false, uppercase: false, zero_pad: 0}))]
-    #[case::two_param_index_type("0=u8", Some(0), Type::U8, None)]
-    #[case::two_param_index_hint("0:a", Some(0), Type::Format, Some(DisplayHint::Ascii))]
-    #[case::all_param("1=u8:b", Some(1), Type::U8, Some(DisplayHint::Binary { alternate: false, zero_pad: 0}))]
-    fn all_parse_param_cases(
-        #[case] input: &str,
-        #[case] index: Option<usize>,
-        #[case] ty: Type,
-        #[case] hint: Option<DisplayHint>,
-    ) {
-        assert_eq!(
-            parse_param(input, ParserMode::Strict),
-            Ok(Param { index, ty, hint })
-        );
-    }
-
-    #[rstest]
-    #[case(":a", DisplayHint::Ascii)]
-    #[case(":b", DisplayHint::Binary { alternate: false, zero_pad: 0 })]
-    #[case(":#b", DisplayHint::Binary { alternate: true, zero_pad: 0 })]
-    #[case(":x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 0 })]
-    #[case(":#x", DisplayHint::Hexadecimal { alternate: true, uppercase: false, zero_pad: 0 })]
-    #[case(":X", DisplayHint::Hexadecimal { alternate: false, uppercase: true, zero_pad: 0 })]
-    #[case(":#X", DisplayHint::Hexadecimal { alternate: true, uppercase: true, zero_pad: 0 })]
-    #[case(":iso8601ms", DisplayHint::ISO8601(TimePrecision::Millis))]
-    #[case(":iso8601s", DisplayHint::ISO8601(TimePrecision::Seconds))]
-    #[case(":?", DisplayHint::Debug)]
-    #[case(":02", DisplayHint::NoHint { zero_pad: 2 })]
-    fn all_display_hints(#[case] input: &str, #[case] hint: DisplayHint) {
-        assert_eq!(
-            parse_param(input, ParserMode::Strict),
-            Ok(Param {
-                index: None,
-                ty: Type::Format,
-                hint: Some(hint),
-            })
-        );
-    }
-
-    #[test]
-    // separate test, because of `ParserMode::ForwardsCompatible`
-    fn display_hint_unknown() {
-        assert_eq!(
-            parse_param(":unknown", ParserMode::ForwardsCompatible),
-            Ok(Param {
-                index: None,
-                ty: Type::Format,
-                hint: Some(DisplayHint::Unknown("unknown".to_string())),
-            })
-        );
-    }
-
-    #[rstest]
-    #[case("=i8", Type::I8)]
-    #[case("=i16", Type::I16)]
-    #[case("=i32", Type::I32)]
-    #[case("=i64", Type::I64)]
-    #[case("=i128", Type::I128)]
-    #[case("=isize", Type::Isize)]
-    #[case("=u8", Type::U8)]
-    #[case("=u16", Type::U16)]
-    #[case("=u32", Type::U32)]
-    #[case("=u64", Type::U64)]
-    #[case("=u128", Type::U128)]
-    #[case("=usize", Type::Usize)]
-    #[case("=f32", Type::F32)]
-    #[case("=f64", Type::F64)]
-    #[case("=bool", Type::Bool)]
-    #[case("=?", Type::Format)]
-    #[case("=str", Type::Str)]
-    #[case("=[u8]", Type::U8Slice)]
-    fn all_types(#[case] input: &str, #[case] ty: Type) {
-        assert_eq!(
-            parse_param(input, ParserMode::Strict),
-            Ok(Param {
-                index: None,
-                ty,
-                hint: None,
-            })
-        );
-    }
-
-    #[rstest]
-    #[case::implicit("{=u8}{=u16}", [(0, Type::U8), (1, Type::U16)])]
-    #[case::single_parameter_formatted_twice("{=u8}{0=u8}", [(0, Type::U8), (0, Type::U8)])]
-    #[case::explicit_index("{=u8}{1=u16}", [(0, Type::U8), (1, Type::U16)])]
-    #[case::reversed_order("{1=u8}{0=u16}", [(1, Type::U8), (0, Type::U16)])]
-    fn index(#[case] input: &str, #[case] params: [(usize, Type); 2]) {
-        assert_eq!(
-            parse(input, ParserMode::Strict),
-            Ok(vec![
-                Fragment::Parameter(Parameter {
-                    index: params[0].0,
-                    ty: params[0].1.clone(),
-                    hint: None,
-                }),
-                Fragment::Parameter(Parameter {
-                    index: params[1].0,
-                    ty: params[1].1.clone(),
-                    hint: None,
-                }),
-            ])
-        );
-    }
-
-    #[rstest]
-    #[case::different_types_for_same_index("{0=u8}{0=u16}")]
-    #[case::same_thing_except_bool_is_autoassigned_index_0("Hello {1=u16} {0=u8} {=bool}")]
-    #[case::omitted_index_0("{1=u8}")]
-    #[case::index_1_is_missing("{2=u8}{=u16}")]
-    #[case::index_0_is_missing("{2=u8}{1=u16}")]
-    fn index_err(#[case] input: &str) {
-        assert!(parse(input, ParserMode::Strict).is_err());
-    }
-
-    #[rstest]
-    #[case("{=0..4}", 0..4)]
-    #[case::just_inside_128bit_range_1("{=0..128}", 0..128)]
-    #[case::just_inside_128bit_range_2("{=127..128}", 127..128)]
-    fn range(#[case] input: &str, #[case] bit_field: Range<u8>) {
-        assert_eq!(
-            parse(input, ParserMode::Strict),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::BitField(bit_field),
-                hint: None,
-            })])
-        );
-    }
-
-    #[test]
-    fn multiple_ranges() {
-        assert_eq!(
-            parse("{0=30..31}{1=0..4}{1=2..6}", ParserMode::Strict),
-            Ok(vec![
-                Fragment::Parameter(Parameter {
-                    index: 0,
-                    ty: Type::BitField(30..31),
-                    hint: None,
-                }),
-                Fragment::Parameter(Parameter {
-                    index: 1,
-                    ty: Type::BitField(0..4),
-                    hint: None,
-                }),
-                Fragment::Parameter(Parameter {
-                    index: 1,
-                    ty: Type::BitField(2..6),
-                    hint: None,
-                }),
-            ])
-        );
-    }
-
-    #[rstest]
-    #[case::empty_range("{=0..0}")]
-    #[case::start_gt_end("{=1..0}")]
-    #[case::out_of_128bit_range_1("{=0..129}")]
-    #[case::out_of_128bit_range_2("{=128..128}")]
-    #[case::missing_parts_1("{=0..4")]
-    #[case::missing_parts_2("{=0..}")]
-    #[case::missing_parts_3("{=..4}")]
-    #[case::missing_parts_4("{=0.4}")]
-    #[case::missing_parts_5("{=0...4}")]
-    fn range_err(#[case] input: &str) {
-        assert!(parse(input, ParserMode::Strict).is_err());
-    }
-
-    #[rstest]
-    #[case("{=[u8; 0]}", 0)]
-    #[case::space_is_optional("{=[u8;42]}", 42)]
-    #[case::multiple_spaces_are_ok("{=[u8;    257]}", 257)]
-    fn arrays(#[case] input: &str, #[case] length: usize) {
-        assert_eq!(
-            parse(input, ParserMode::Strict),
-            Ok(vec![Fragment::Parameter(Parameter {
-                index: 0,
-                ty: Type::U8Array(length),
-                hint: None,
-            })])
-        );
-    }
-
-    #[rstest]
-    #[case::no_tabs("{=[u8; \t 3]}")]
-    #[case::no_linebreaks("{=[u8; \n 3]}")]
-    #[case::too_large("{=[u8; 9999999999999999999999999]}")]
-    fn arrays_err(#[case] input: &str) {
-        assert!(parse(input, ParserMode::Strict).is_err());
-    }
-
-    #[rstest]
-    #[case("{=dunno}", Error::InvalidTypeSpecifier("dunno".to_string()))]
-    #[case("{dunno}", Error::UnexpectedContentInFormatString("dunno".to_string()))]
-    #[case("{=u8;x}", Error::InvalidTypeSpecifier("u8;x".to_string()))]
-    #[case("{dunno=u8:x}", Error::UnexpectedContentInFormatString("dunno=u8:x".to_string()))]
-    #[case("{0dunno}", Error::UnexpectedContentInFormatString("dunno".to_string()))]
-    #[case("{:}", Error::MalformedFormatString)]
-    fn error_msg(#[case] input: &str, #[case] err: Error) {
-        assert_eq!(parse(input, ParserMode::Strict), Err(err));
-    }
-
-    #[rstest]
-    #[case("}string")]
-    #[case("{string")]
-    #[case("}")]
-    #[case("{")]
-    fn stray_braces(#[case] input: &str) {
-        assert!(parse(input, ParserMode::Strict).is_err());
-    }
-
-    #[rstest]
-    #[case("}}", "}")]
-    #[case("{{", "{")]
-    #[case("literal{{literal", "literal{literal")]
-    #[case("literal}}literal", "literal}literal")]
-    #[case("{{}}", "{}")]
-    #[case("}}{{", "}{")]
-    fn escaped_braces(#[case] input: &str, #[case] literal: &str) {
-        assert_eq!(
-            parse(input, ParserMode::Strict),
-            Ok(vec![Fragment::Literal(literal.into())])
-        );
-    }
 }
