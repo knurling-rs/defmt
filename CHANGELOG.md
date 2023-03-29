@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.3] - 2023-03-29
+
+- [#745]: Release `defmt-v0.3.3`, `defmt-decoder-v0.3.5`, `defmt-macros v0.3.4`, `defmt-parser v0.3.2`, `defmt-print v0.3.5` and `panic-probe v0.3.1`
 - [#744]: `defmt-parser`: Clean and simplify
 - [#742]: `defmt-decoder`: Include crate name in symbol name
 - [#743]: `defmt-parser`: Simplify tests with `rstest`
@@ -18,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#603]: `defmt`: Raw pointers now print as `0x1234` instead of `1234`
 - [#536]: `defmt-parser`: Switch to using an enum for errors, and add some help text pointing you to the defmt docs if you use the wrong type specifier in a format string.
 
+[#745]: https://github.com/knurling-rs/defmt/pull/745
 [#744]: https://github.com/knurling-rs/defmt/pull/744
 [#742]: https://github.com/knurling-rs/defmt/pull/742
 [#743]: https://github.com/knurling-rs/defmt/pull/743
@@ -531,7 +535,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...main
+[v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...defmt-v0.3.3
 [v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.1...defmt-v0.3.2
 [v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...defmt-v0.3.1
 [v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...defmt-v0.3.0
