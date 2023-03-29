@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#843]: `defmt`: Sort IDs of log msgs by severity to allow runtime filtering by severity
 - [#822]: `CI`: Run `cargo semver-checks` on every PR
 - [#856]: `defmt`: Add a `Format` impl for `PanicInfo` and related types.
+- [#746]: Update to `bitflags v2.0`
 
 [#859]: https://github.com/knurling-rs/defmt/pull/859
 [#858]: https://github.com/knurling-rs/defmt/pull/858
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#843]: https://github.com/knurling-rs/defmt/pull/843
 [#822]: https://github.com/knurling-rs/defmt/pull/822
 [#856]: https://github.com/knurling-rs/defmt/pull/856
+[#746]: https://github.com/knurling-rs/defmt/pull/746
 
 ## [v0.3.8] - 2024-05-17
 

@@ -9,6 +9,7 @@ use defmt::{bitflags, Debug2Format};
 use defmt_semihosting as _; // global logger
 
 bitflags! {
+    #[derive(Debug)]
     struct Flags: u8 {
         #[cfg(not(never))]
         const FLAG_0 = 0b00;
@@ -16,7 +17,7 @@ bitflags! {
         const FLAG_2 = 0b10;
         const FLAG_7 = 1 << 7;
 
-        const FLAG_7_COPY = Self::FLAG_7.bits;
+        const FLAG_7_COPY = Self::FLAG_7.bits();
 
         #[cfg(never)]
         const CFGD_OUT = 1;
@@ -24,6 +25,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Debug)]
     struct LargeFlags: u128 {
         const MSB = 1 << 127;
         const ALL = !0;
