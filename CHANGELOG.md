@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.4] - 2023-04-05
+
+- [#748]: Release `defmt-v0.3.4`, `defmt-decoder-v0.3.6`, `defmt-print-v0.3.4` and yank previous
 - [#747]: Bump wire version
 
+[#748]: https://github.com/knurling-rs/defmt/pull/748
 [#747]: https://github.com/knurling-rs/defmt/pull/747
 
-## [v0.3.3] - 2023-03-29
+## [v0.3.3] - 2023-03-29 (yanked)
 
 - [#745]: Release `defmt-v0.3.3`, `defmt-decoder-v0.3.5`, `defmt-macros v0.3.4`, `defmt-parser v0.3.2`, `defmt-print v0.3.5` and `panic-probe v0.3.1`
 - [#744]: `defmt-parser`: Clean and simplify
@@ -539,8 +543,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...main
-[v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...defmt-v0.3.3
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...main
+[v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...defmt-v0.3.4
+[v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...defmt-v0.3.3
 [v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.1...defmt-v0.3.2
 [v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...defmt-v0.3.1
 [v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...defmt-v0.3.0
