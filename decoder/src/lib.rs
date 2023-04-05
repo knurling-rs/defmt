@@ -10,7 +10,7 @@
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-pub const DEFMT_VERSION: &str = "3";
+pub const DEFMT_VERSION: &str = "4";
 
 mod decoder;
 mod elf2table;
