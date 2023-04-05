@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#747]: Bump wire version
+
+[#747]: https://github.com/knurling-rs/defmt/pull/747
+
 ## [v0.3.3] - 2023-03-29
 
 - [#745]: Release `defmt-v0.3.3`, `defmt-decoder-v0.3.5`, `defmt-macros v0.3.4`, `defmt-parser v0.3.2`, `defmt-print v0.3.5` and `panic-probe v0.3.1`
