@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- Add support for decoding wire format version 3
+
 ## [v0.3.4] - 2023-04-05
 
 - [#748]: Release `defmt-v0.3.4`, `defmt-decoder-v0.3.6`, `defmt-print-v0.3.4` and yank previous

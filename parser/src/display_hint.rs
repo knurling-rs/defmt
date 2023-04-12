@@ -31,7 +31,7 @@ pub enum DisplayHint {
         name: String,
         package: String,
         disambiguator: String,
-        crate_name: String,
+        crate_name: Option<String>,
     },
     /// Display hints currently not supported / understood
     Unknown(String),
@@ -67,7 +67,15 @@ impl DisplayHint {
                         name: bitflags_name.into(),
                         package: package.into(),
                         disambiguator: disambiguator.into(),
-                        crate_name: crate_name.into(),
+                        crate_name: Some(crate_name.into()),
+                    });
+                }
+                [bitflags_name, package, disambiguator] => {
+                    return Some(DisplayHint::Bitflags {
+                        name: bitflags_name.into(),
+                        package: package.into(),
+                        disambiguator: disambiguator.into(),
+                        crate_name: None,
                     });
                 }
                 _ => return Some(DisplayHint::Unknown(s.into())),
