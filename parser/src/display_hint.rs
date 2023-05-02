@@ -61,25 +61,15 @@ impl DisplayHint {
 
         if let Some(stripped) = s.strip_prefix(BITFLAGS_HINT_START) {
             let parts = stripped.split('@').collect::<Vec<_>>();
-            match *parts {
-                [bitflags_name, package, disambiguator, crate_name] => {
-                    return Some(DisplayHint::Bitflags {
-                        name: bitflags_name.into(),
-                        package: package.into(),
-                        disambiguator: disambiguator.into(),
-                        crate_name: Some(crate_name.into()),
-                    });
-                }
-                [bitflags_name, package, disambiguator] => {
-                    return Some(DisplayHint::Bitflags {
-                        name: bitflags_name.into(),
-                        package: package.into(),
-                        disambiguator: disambiguator.into(),
-                        crate_name: None,
-                    });
-                }
-                _ => return Some(DisplayHint::Unknown(s.into())),
+            if parts.len() < 3 || parts.len() > 4 {
+                return Some(DisplayHint::Unknown(s.into()));
             }
+            return Some(DisplayHint::Bitflags {
+                name: parts[0].into(),
+                package: parts[1].into(),
+                disambiguator: parts[2].into(),
+                crate_name: parts.get(3).map(|&s| s.to_string()),
+            });
         }
 
         Some(match s {
