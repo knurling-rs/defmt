@@ -109,7 +109,7 @@ pub enum TimePrecision {
 ///
 /// Returns the integer and remaining text, if `s` started with an integer. Any errors parsing the
 /// number (which we already know only contains digits) are silently ignored.
-fn parse_integer<T: FromStr>(s: &str) -> Option<(&str, usize)> {
+fn parse_integer<T: FromStr>(s: &str) -> Option<(&str, T)> {
     let start_digits = s
         .as_bytes()
         .iter()
