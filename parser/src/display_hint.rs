@@ -68,6 +68,7 @@ impl DisplayHint {
                 name: parts[0].into(),
                 package: parts[1].into(),
                 disambiguator: parts[2].into(),
+                // crate_name was added in wire format version 4
                 crate_name: parts.get(3).map(|&s| s.to_string()),
             });
         }
