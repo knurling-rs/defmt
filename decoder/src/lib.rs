@@ -10,7 +10,10 @@
 #![cfg_attr(docsrs, doc(cfg(unstable)))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-pub const DEFMT_VERSION: &str = "4";
+pub const DEFMT_VERSIONS: &[&str] = &["3", "4"];
+// To avoid a breaking change, still provide `DEFMT_VERSION`.
+#[deprecated = "Please use DEFMT_VERSIONS instead"]
+pub const DEFMT_VERSION: &str = DEFMT_VERSIONS[1];
 
 mod decoder;
 mod elf2table;
@@ -116,7 +119,7 @@ struct BitflagsKey {
     ident: String,
     package: String,
     disambig: String,
-    crate_name: String,
+    crate_name: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

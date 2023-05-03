@@ -24,7 +24,7 @@ pub struct Symbol {
     data: String,
 
     /// Crate name obtained via CARGO_CRATE_NAME (added since a Cargo package can contain many crates).
-    crate_name: String,
+    crate_name: Option<String>,
 }
 
 pub enum SymbolTag<'a> {
@@ -72,7 +72,7 @@ impl Symbol {
         &self.disambiguator
     }
 
-    pub fn crate_name(&self) -> &str {
-        &self.crate_name
+    pub fn crate_name(&self) -> Option<&str> {
+        self.crate_name.as_deref()
     }
 }

@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::anyhow;
 use clap::Parser;
-use defmt_decoder::{DecodeError, Frame, Locations, Table};
+use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
 
 /// Prints defmt-encoded logs to stdout
 #[derive(Parser)]
@@ -129,6 +129,10 @@ fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) ->
 #[allow(clippy::unnecessary_wraps)]
 fn print_version() -> anyhow::Result<()> {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-    println!("supported defmt version: {}", defmt_decoder::DEFMT_VERSION);
+    println!(
+        "supported defmt version{}: {}",
+        if DEFMT_VERSIONS.len() > 1 { "s" } else { "" },
+        DEFMT_VERSIONS.join(", ")
+    );
     Ok(())
 }

@@ -31,7 +31,7 @@ pub enum DisplayHint {
         name: String,
         package: String,
         disambiguator: String,
-        crate_name: String,
+        crate_name: Option<String>,
     },
     /// Display hints currently not supported / understood
     Unknown(String),
@@ -61,17 +61,16 @@ impl DisplayHint {
 
         if let Some(stripped) = s.strip_prefix(BITFLAGS_HINT_START) {
             let parts = stripped.split('@').collect::<Vec<_>>();
-            match *parts {
-                [bitflags_name, package, disambiguator, crate_name] => {
-                    return Some(DisplayHint::Bitflags {
-                        name: bitflags_name.into(),
-                        package: package.into(),
-                        disambiguator: disambiguator.into(),
-                        crate_name: crate_name.into(),
-                    });
-                }
-                _ => return Some(DisplayHint::Unknown(s.into())),
+            if parts.len() < 3 || parts.len() > 4 {
+                return Some(DisplayHint::Unknown(s.into()));
             }
+            return Some(DisplayHint::Bitflags {
+                name: parts[0].into(),
+                package: parts[1].into(),
+                disambiguator: parts[2].into(),
+                // crate_name was added in wire format version 4
+                crate_name: parts.get(3).map(|&s| s.to_string()),
+            });
         }
 
         Some(match s {
@@ -111,7 +110,7 @@ pub enum TimePrecision {
 ///
 /// Returns the integer and remaining text, if `s` started with an integer. Any errors parsing the
 /// number (which we already know only contains digits) are silently ignored.
-fn parse_integer<T: FromStr>(s: &str) -> Option<(&str, usize)> {
+fn parse_integer<T: FromStr>(s: &str) -> Option<(&str, T)> {
     let start_digits = s
         .as_bytes()
         .iter()
