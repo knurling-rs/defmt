@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - [#750]: Add support for decoding wire format version 3
 
-[#750]: https://github.com/knurling-rs/defmt/pull/748
+[#750]: https://github.com/knurling-rs/defmt/pull/750
 
 ## [v0.3.4] - 2023-04-05
 
