@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#753]: Add `defmt::Format` impls for `core::ptr::NonNull` and `fn(Args...) -> Ret` (up to 12 arguments)
+
+[#753]: https://github.com/knurling-rs/defmt/pull/753
+
 ## [v0.3.5] - 2023-05-05
 
 - [#xxx]: Release `defmt-decoder v0.3.7`, `defmt-macros v0.3.5`, `defmt-parser v0.3.3`, `defmt-print v0.3.7`
