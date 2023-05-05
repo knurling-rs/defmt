@@ -12,6 +12,7 @@ mod cell;
 mod net;
 mod num;
 mod ops;
+mod ptr;
 mod slice;
 
 use super::*;
