@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.5] - 2023-05-05
+
+- [#xxx]: Release `defmt-decoder v0.3.7`, `defmt-macros v0.3.5`, `defmt-parser v0.3.3`, `defmt-print v0.3.7`
 - [#750]: Add support for decoding wire format version 3
 
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
 [#750]: https://github.com/knurling-rs/defmt/pull/750
 
 ## [v0.3.4] - 2023-04-05
@@ -547,7 +551,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...main
+[v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...defmt-v0.3.5
 [v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...defmt-v0.3.4
 [v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...defmt-v0.3.3
 [v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.1...defmt-v0.3.2
