@@ -731,6 +731,52 @@ fn main() -> ! {
         defmt::info!("BorrowMutError: {}", d);
         defmt::info!("BorrowError: {}", e);
     }
+    // core::ptr
+    {
+        let ptr_addr: usize = 0xCCBBAADD;
+        defmt::info!(
+            "NonNull: {}",
+            core::ptr::NonNull::new(ptr_addr as *mut NotFormatType).unwrap()
+        );
+        // fn pointers
+        // no params
+        let rust_fn: fn() -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        let c_fn: extern "C" fn() -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        let unsafe_rust_fn: unsafe fn() -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        let unsafe_c_fn: unsafe extern "C" fn() -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        defmt::info!("fn() -> i32: {}", rust_fn);
+        defmt::info!("extern \"C\" fn() -> i32: {}", c_fn);
+        defmt::info!("unsafe fn() -> i32: {}", unsafe_rust_fn);
+        defmt::info!("unsafe extern \"C\" fn() -> i32: {}", unsafe_c_fn);
+        // 1 param
+        let rust_fn: fn(i32) -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        let c_fn: extern "C" fn(i32) -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        let unsafe_rust_fn: unsafe fn(i32) -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        let unsafe_c_fn: unsafe extern "C" fn(i32) -> i32 =
+            unsafe { core::mem::transmute(ptr_addr) };
+        defmt::info!("fn(i32) -> i32: {}", rust_fn);
+        defmt::info!("extern \"C\" fn(i32) -> i32: {}", c_fn);
+        defmt::info!("unsafe fn(i32) -> i32: {}", unsafe_rust_fn);
+        defmt::info!("unsafe extern \"C\" fn(i32) -> i32: {}", unsafe_c_fn);
+        // 5 params
+        let rust_fn: fn(i32, i32, i32, i32, i32) -> i32 = unsafe { core::mem::transmute(ptr_addr) };
+        let c_fn: extern "C" fn(i32, i32, i32, i32, i32) -> i32 =
+            unsafe { core::mem::transmute(ptr_addr) };
+        let unsafe_rust_fn: unsafe fn(i32, i32, i32, i32, i32) -> i32 =
+            unsafe { core::mem::transmute(ptr_addr) };
+        let unsafe_c_fn: unsafe extern "C" fn(i32, i32, i32, i32, i32) -> i32 =
+            unsafe { core::mem::transmute(ptr_addr) };
+        defmt::info!("fn(i32, i32, i32, i32, i32) -> i32: {}", rust_fn);
+        defmt::info!("extern \"C\" fn(i32, i32, i32, i32, i32) -> i32: {}", c_fn);
+        defmt::info!(
+            "unsafe fn(i32, i32, i32, i32, i32) -> i32: {}",
+            unsafe_rust_fn
+        );
+        defmt::info!(
+            "unsafe extern \"C\" fn(i32, i32, i32, i32, i32) -> i32: {}",
+            unsafe_c_fn
+        );
+    }
 
     defmt::info!("QEMU test finished!");
 
