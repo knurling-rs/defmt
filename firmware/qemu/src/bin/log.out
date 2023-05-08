@@ -155,4 +155,17 @@ INFO RefCell: RefCell { value: 43981 }
 INFO borrowed RefCell: RefCell { value: <borrowed> }
 INFO BorrowMutError: BorrowMutError
 INFO BorrowError: BorrowError
+INFO NonNull: 0xccbbaadd
+INFO fn() -> i32: 0xccbbaadd
+INFO extern "C" fn() -> i32: 0xccbbaadd
+INFO unsafe fn() -> i32: 0xccbbaadd
+INFO unsafe extern "C" fn() -> i32: 0xccbbaadd
+INFO fn(i32) -> i32: 0xccbbaadd
+INFO extern "C" fn(i32) -> i32: 0xccbbaadd
+INFO unsafe fn(i32) -> i32: 0xccbbaadd
+INFO unsafe extern "C" fn(i32) -> i32: 0xccbbaadd
+INFO fn(i32, i32, i32, i32, i32) -> i32: 0xccbbaadd
+INFO extern "C" fn(i32, i32, i32, i32, i32) -> i32: 0xccbbaadd
+INFO unsafe fn(i32, i32, i32, i32, i32) -> i32: 0xccbbaadd
+INFO unsafe extern "C" fn(i32, i32, i32, i32, i32) -> i32: 0xccbbaadd
 INFO QEMU test finished!
