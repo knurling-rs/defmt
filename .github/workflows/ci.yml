@@ -1,13 +1,12 @@
 name: CI
 
 on:
-  push:
-    branches: [main, staging, trying]
   pull_request:
     branches: [main]
   schedule:
     # runs 1 min after 2 or 1 AM (summer/winter) berlin time
     - cron: "1 0 * * *"
+  merge_group:
 
 env:
   CARGO_TERM_COLOR: always
@@ -114,21 +113,3 @@ jobs:
         run: sudo apt-get update && sudo apt-get install qemu qemu-system-arm
       - name: Run backward compatibility test
         run: cargo xtask test-backcompat
-
-  # Refs: https://github.com/rust-lang/crater/blob/9ab6f9697c901c4a44025cf0a39b73ad5b37d198/.github/workflows/bors.yml#L125-L149
-  # bors.tech integration
-  ci-success:
-    name: ci
-    if: ${{ success() }}
-    needs:
-      - host
-      - cross
-      - lint
-      - mdbook
-      - qemu-snapshot
-      - backcompat
-      - ui
-    runs-on: ubuntu-20.04
-    steps:
-      - name: CI succeeded
-        run: exit 0
