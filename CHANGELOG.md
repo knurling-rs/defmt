@@ -7,10 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#xxx] Switch from bors to merge queue
+- [#756] Switch from bors to merge queue
 - [#753]: Add `defmt::Format` impls for `core::ptr::NonNull` and `fn(Args...) -> Ret` (up to 12 arguments)
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#756]: https://github.com/knurling-rs/defmt/pull/756
 [#753]: https://github.com/knurling-rs/defmt/pull/753
 
 ## [v0.3.5] - 2023-05-05
