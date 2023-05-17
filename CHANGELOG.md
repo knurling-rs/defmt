@@ -7,16 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#756] Switch from bors to merge queue
 - [#753]: Add `defmt::Format` impls for `core::ptr::NonNull` and `fn(Args...) -> Ret` (up to 12 arguments)
 
+[#756]: https://github.com/knurling-rs/defmt/pull/756
 [#753]: https://github.com/knurling-rs/defmt/pull/753
 
 ## [v0.3.5] - 2023-05-05
 
-- [#xxx]: Release `defmt-decoder v0.3.7`, `defmt-macros v0.3.5`, `defmt-parser v0.3.3`, `defmt-print v0.3.7`
+- [#754]: Release `defmt-decoder v0.3.7`, `defmt-macros v0.3.5`, `defmt-parser v0.3.3`, `defmt-print v0.3.7`
 - [#750]: Add support for decoding wire format version 3
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#754]: https://github.com/knurling-rs/defmt/pull/754
 [#750]: https://github.com/knurling-rs/defmt/pull/750
 
 ## [v0.3.4] - 2023-04-05
