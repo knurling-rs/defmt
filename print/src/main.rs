@@ -1,13 +1,12 @@
-use std::io::{Stdin, StdinLock};
-use std::net::TcpStream;
 use std::{
     env, fs,
-    io::{self, Read},
+    io::{self, Read, Stdin, StdinLock},
+    net::TcpStream,
     path::{Path, PathBuf},
 };
 
 use anyhow::{anyhow, Error};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
 
 /// Prints defmt-encoded logs to stdout
@@ -33,14 +32,14 @@ struct Opts {
     command: Option<Command>,
 }
 
-#[derive(Parser)]
+#[derive(Subcommand)]
 enum Command {
-    Stdin {},
+    Stdin,
     Tcp {
-        #[structopt(short, long, env = "RTT_HOST")]
+        #[arg(short, long, env = "RTT_HOST")]
         host: String,
 
-        #[structopt(short, long, env = "RTT_PORT")]
+        #[arg(short, long, env = "RTT_PORT")]
         port: u16,
     },
 }
@@ -91,7 +90,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut source: Source = match command {
         None => open_stdin(&stdin),
-        Some(Command::Stdin {}) => open_stdin(&stdin),
+        Some(Command::Stdin) => open_stdin(&stdin),
         Some(Command::Tcp { host, port }) => open_tcp(host, port),
     }?;
 
