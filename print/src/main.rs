@@ -51,6 +51,19 @@ enum Source<'a> {
     Tcp(TcpStream),
 }
 
+impl Source<'_> {
+    fn stdin(stdin: &Stdin) -> Result<Self, Error> {
+        Ok(Source::Stdin(stdin.lock()))
+    }
+
+    fn tcp(host: IpAddr, port: u16) -> Result<Self, Error> {
+        match TcpStream::connect(SocketAddr::new(host, port)) {
+            Ok(stream) => Ok(Source::Tcp(stream)),
+            Err(e) => Err(anyhow!(e)),
+        }
+    }
+}
+
 const READ_BUFFER_SIZE: usize = 1024;
 
 fn main() -> anyhow::Result<()> {
@@ -90,10 +103,10 @@ fn main() -> anyhow::Result<()> {
     let current_dir = env::current_dir()?;
     let stdin = io::stdin();
 
-    let mut source: Source = match command {
-        None => open_stdin(&stdin),
-        Some(Command::Stdin) => open_stdin(&stdin),
-        Some(Command::Tcp { host, port }) => open_tcp(host, port),
+    let mut source = match command {
+        None => Source::stdin(&stdin),
+        Some(Command::Stdin) => Source::stdin(&stdin),
+        Some(Command::Tcp { host, port }) => Source::tcp(host, port),
     }?;
 
     loop {
@@ -134,17 +147,6 @@ fn main() -> anyhow::Result<()> {
                 },
             }
         }
-    }
-}
-
-fn open_stdin(stdin: &Stdin) -> Result<Source, Error> {
-    Ok(Source::Stdin(stdin.lock()))
-}
-
-fn open_tcp<'a>(host: IpAddr, port: u16) -> Result<Source<'a>, Error> {
-    match TcpStream::connect(SocketAddr::new(host, port)) {
-        Ok(stream) => Ok(Source::Tcp(stream)),
-        Err(e) => Err(anyhow!(e)),
     }
 }
 
