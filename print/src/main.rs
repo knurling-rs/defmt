@@ -1,7 +1,7 @@
 use std::{
     env, fs,
     io::{self, Read, Stdin, StdinLock},
-    net::TcpStream,
+    net::{IpAddr, SocketAddr, TcpStream},
     path::{Path, PathBuf},
 };
 
@@ -39,7 +39,7 @@ enum Command {
     /// Read defmt frames from tcp
     Tcp {
         #[arg(long, env = "RTT_HOST", default_value = "127.0.0.1")]
-        host: String,
+        host: IpAddr,
 
         #[arg(long, env = "RTT_PORT", default_value_t = 19021)]
         port: u16,
@@ -141,8 +141,8 @@ fn open_stdin(stdin: &Stdin) -> Result<Source, Error> {
     Ok(Source::Stdin(stdin.lock()))
 }
 
-fn open_tcp<'a>(host: String, port: u16) -> Result<Source<'a>, Error> {
-    match TcpStream::connect(format!("{host}:{port}")) {
+fn open_tcp<'a>(host: IpAddr, port: u16) -> Result<Source<'a>, Error> {
+    match TcpStream::connect(SocketAddr::new(host, port)) {
         Ok(stream) => Ok(Source::Tcp(stream)),
         Err(e) => Err(anyhow!(e)),
     }
