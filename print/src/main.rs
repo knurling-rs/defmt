@@ -34,7 +34,9 @@ struct Opts {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Read defmt frames from stdin
     Stdin,
+    /// Read defmt frames from tcp
     Tcp {
         #[arg(long, env = "RTT_HOST")]
         host: String,
