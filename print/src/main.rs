@@ -62,6 +62,16 @@ impl Source<'_> {
             Err(e) => Err(anyhow!(e)),
         }
     }
+
+    fn read(&mut self, buf: &mut [u8]) -> Result<(usize, bool), Error> {
+        match self {
+            Source::Stdin(stdin) => {
+                let n = stdin.read(buf)?;
+                Ok((n, n == 0))
+            }
+            Source::Tcp(tcpstream) => Ok((tcpstream.read(buf)?, false)),
+        }
+    }
 }
 
 const READ_BUFFER_SIZE: usize = 1024;
@@ -111,13 +121,7 @@ fn main() -> anyhow::Result<()> {
 
     loop {
         // read from stdin or tcpstream and push it to the decoder
-        let (n, eof) = match source {
-            Source::Stdin(ref mut stdin) => {
-                let n = stdin.read(&mut buf)?;
-                (n, n == 0)
-            }
-            Source::Tcp(ref mut tcpstream) => (tcpstream.read(&mut buf)?, false),
-        };
+        let (n, eof) = source.read(&mut buf)?;
 
         // if 0 bytes where read, we reached EOF, so quit
         if eof {
