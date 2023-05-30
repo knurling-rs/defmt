@@ -36,10 +36,10 @@ struct Opts {
 enum Command {
     Stdin,
     Tcp {
-        #[arg(short, long, env = "RTT_HOST")]
+        #[arg(long, env = "RTT_HOST")]
         host: String,
 
-        #[arg(short, long, env = "RTT_PORT")]
+        #[arg(long, env = "RTT_PORT")]
         port: u16,
     },
 }
