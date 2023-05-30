@@ -38,10 +38,10 @@ enum Command {
     Stdin,
     /// Read defmt frames from tcp
     Tcp {
-        #[arg(long, env = "RTT_HOST")]
+        #[arg(long, env = "RTT_HOST", default_value = "127.0.0.1")]
         host: String,
 
-        #[arg(long, env = "RTT_PORT")]
+        #[arg(long, env = "RTT_PORT", default_value_t = 19021)]
         port: u16,
     },
 }
