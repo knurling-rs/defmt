@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    io::{self, Read, Stdin, StdinLock},
+    io::{self, Read, StdinLock},
     net::{IpAddr, TcpStream},
     path::{Path, PathBuf},
 };
@@ -46,14 +46,14 @@ enum Command {
     },
 }
 
-enum Source<'a> {
-    Stdin(StdinLock<'a>),
+enum Source {
+    Stdin(StdinLock<'static>),
     Tcp(TcpStream),
 }
 
-impl Source<'_> {
-    fn stdin(stdin: &Stdin) -> Self {
-        Source::Stdin(stdin.lock())
+impl Source {
+    fn stdin() -> Self {
+        Source::Stdin(io::stdin().lock())
     }
 
     fn tcp(host: IpAddr, port: u16) -> anyhow::Result<Self> {
@@ -111,11 +111,10 @@ fn main() -> anyhow::Result<()> {
     let mut stream_decoder = table.new_stream_decoder();
 
     let current_dir = env::current_dir()?;
-    let stdin = io::stdin();
 
     let mut source = match command {
-        None => Source::stdin(&stdin),
-        Some(Command::Stdin) => Source::stdin(&stdin),
+        None => Source::stdin(),
+        Some(Command::Stdin) => Source::stdin(),
         Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
     };
 
