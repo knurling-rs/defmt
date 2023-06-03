@@ -1,7 +1,7 @@
 use std::{
     env, fs,
     io::{self, Read, Stdin, StdinLock},
-    net::{IpAddr, SocketAddr, TcpStream},
+    net::{IpAddr, TcpStream},
     path::{Path, PathBuf},
 };
 
@@ -57,7 +57,7 @@ impl Source<'_> {
     }
 
     fn tcp(host: IpAddr, port: u16) -> Result<Self, Error> {
-        match TcpStream::connect(SocketAddr::new(host, port)) {
+        match TcpStream::connect((host, port)) {
             Ok(stream) => Ok(Source::Tcp(stream)),
             Err(e) => Err(anyhow!(e)),
         }
