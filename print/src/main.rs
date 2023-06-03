@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, Error};
+use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
 
@@ -52,18 +52,18 @@ enum Source<'a> {
 }
 
 impl Source<'_> {
-    fn stdin(stdin: &Stdin) -> Result<Self, Error> {
-        Ok(Source::Stdin(stdin.lock()))
+    fn stdin(stdin: &Stdin) -> Self {
+        Source::Stdin(stdin.lock())
     }
 
-    fn tcp(host: IpAddr, port: u16) -> Result<Self, Error> {
+    fn tcp(host: IpAddr, port: u16) -> anyhow::Result<Self> {
         match TcpStream::connect((host, port)) {
             Ok(stream) => Ok(Source::Tcp(stream)),
             Err(e) => Err(anyhow!(e)),
         }
     }
 
-    fn read(&mut self, buf: &mut [u8]) -> Result<(usize, bool), Error> {
+    fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
         match self {
             Source::Stdin(stdin) => {
                 let n = stdin.read(buf)?;
@@ -116,8 +116,8 @@ fn main() -> anyhow::Result<()> {
     let mut source = match command {
         None => Source::stdin(&stdin),
         Some(Command::Stdin) => Source::stdin(&stdin),
-        Some(Command::Tcp { host, port }) => Source::tcp(host, port),
-    }?;
+        Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
+    };
 
     loop {
         // read from stdin or tcpstream and push it to the decoder
