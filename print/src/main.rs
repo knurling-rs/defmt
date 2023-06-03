@@ -34,7 +34,7 @@ struct Opts {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Read defmt frames from stdin
+    /// Read defmt frames from stdin (default)
     Stdin,
     /// Read defmt frames from tcp
     Tcp {
