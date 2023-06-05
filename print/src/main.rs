@@ -1,7 +1,7 @@
 use std::{
     env, fs,
     io::{self, Read, StdinLock},
-    net::{IpAddr, TcpStream},
+    net::TcpStream,
     path::{Path, PathBuf},
 };
 
