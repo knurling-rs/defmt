@@ -38,8 +38,8 @@ enum Command {
     Stdin,
     /// Read defmt frames from tcp
     Tcp {
-        #[arg(long, env = "RTT_HOST", default_value = "127.0.0.1")]
-        host: IpAddr,
+        #[arg(long, env = "RTT_HOST", default_value = "localhost")]
+        host: String,
 
         #[arg(long, env = "RTT_PORT", default_value_t = 19021)]
         port: u16,
@@ -56,7 +56,7 @@ impl Source {
         Source::Stdin(io::stdin().lock())
     }
 
-    fn tcp(host: IpAddr, port: u16) -> anyhow::Result<Self> {
+    fn tcp(host: String, port: u16) -> anyhow::Result<Self> {
         match TcpStream::connect((host, port)) {
             Ok(stream) => Ok(Source::Tcp(stream)),
             Err(e) => Err(anyhow!(e)),
