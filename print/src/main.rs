@@ -1,11 +1,12 @@
 use std::{
     env, fs,
-    io::{self, Read},
+    io::{self, Read, StdinLock},
+    net::TcpStream,
     path::{Path, PathBuf},
 };
 
 use anyhow::anyhow;
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
 
 /// Prints defmt-encoded logs to stdout
@@ -26,6 +27,51 @@ struct Opts {
 
     #[arg(short = 'V', long)]
     version: bool,
+
+    #[command(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Read defmt frames from stdin (default)
+    Stdin,
+    /// Read defmt frames from tcp
+    Tcp {
+        #[arg(long, env = "RTT_HOST", default_value = "localhost")]
+        host: String,
+
+        #[arg(long, env = "RTT_PORT", default_value_t = 19021)]
+        port: u16,
+    },
+}
+
+enum Source {
+    Stdin(StdinLock<'static>),
+    Tcp(TcpStream),
+}
+
+impl Source {
+    fn stdin() -> Self {
+        Source::Stdin(io::stdin().lock())
+    }
+
+    fn tcp(host: String, port: u16) -> anyhow::Result<Self> {
+        match TcpStream::connect((host, port)) {
+            Ok(stream) => Ok(Source::Tcp(stream)),
+            Err(e) => Err(anyhow!(e)),
+        }
+    }
+
+    fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
+        match self {
+            Source::Stdin(stdin) => {
+                let n = stdin.read(buf)?;
+                Ok((n, n == 0))
+            }
+            Source::Tcp(tcpstream) => Ok((tcpstream.read(buf)?, false)),
+        }
+    }
 }
 
 const READ_BUFFER_SIZE: usize = 1024;
@@ -37,6 +83,7 @@ fn main() -> anyhow::Result<()> {
         show_skipped_frames,
         verbose,
         version,
+        command,
     } = Opts::parse();
 
     if version {
@@ -64,15 +111,22 @@ fn main() -> anyhow::Result<()> {
     let mut stream_decoder = table.new_stream_decoder();
 
     let current_dir = env::current_dir()?;
-    let mut stdin = io::stdin().lock();
+
+    let mut source = match command {
+        None => Source::stdin(),
+        Some(Command::Stdin) => Source::stdin(),
+        Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
+    };
 
     loop {
-        // read from stdin and push it to the decoder
-        let n = stdin.read(&mut buf)?;
+        // read from stdin or tcpstream and push it to the decoder
+        let (n, eof) = source.read(&mut buf)?;
+
         // if 0 bytes where read, we reached EOF, so quit
-        if n == 0 {
+        if eof {
             break Ok(());
         }
+
         stream_decoder.received(&buf[..n]);
 
         // decode the received data
