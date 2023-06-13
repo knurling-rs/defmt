@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.3.5] - 2023-06-13
 
-- [#xxx]: `defmt-print`: Tidy up
+- [#758]: `defmt-print`: Tidy up
 - [#757]: `defmt-print`: Allow reading from a tcp port
 - [#756]: `CI`: Switch from bors to merge queue
 - [#753]: `demft` Add `Format` impls for `core::ptr::NonNull` and `fn(Args...) -> Ret` (up to 12 arguments)
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#758]: https://github.com/knurling-rs/defmt/pull/758
 [#757]: https://github.com/knurling-rs/defmt/pull/757
 [#756]: https://github.com/knurling-rs/defmt/pull/756
 [#753]: https://github.com/knurling-rs/defmt/pull/753
