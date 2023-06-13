@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.5] - 2023-06-13
+
 - [#xxx]: `defmt-print`: Tidy up
 - [#757]: `defmt-print`: Allow reading from a tcp port
 - [#756]: `CI`: Switch from bors to merge queue
@@ -18,7 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#753]: https://github.com/knurling-rs/defmt/pull/753
 
 
-## [v0.3.5] - 2023-05-05
+## defmt-decoder v0.3.7, defmt-macros v0.3.5, defmt-parser v0.3.3, defmt-print v0.3.7 - 2023-05-05
 
 - [#754]: Release `defmt-decoder v0.3.7`, `defmt-macros v0.3.5`, `defmt-parser v0.3.3`, `defmt-print v0.3.7`
 - [#750]: Add support for decoding wire format version 3
