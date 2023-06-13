@@ -95,11 +95,12 @@ fn main() -> anyhow::Result<()> {
         true => true,                                          // We display *all* frames.
     });
 
+    // read and parse elf file
     let bytes = fs::read(elf.unwrap())?;
-
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
 
+    // check if the locations info contains all the indicies
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
         Some(locs)
     } else {
@@ -109,12 +110,10 @@ fn main() -> anyhow::Result<()> {
 
     let mut buf = [0; READ_BUFFER_SIZE];
     let mut stream_decoder = table.new_stream_decoder();
-
     let current_dir = env::current_dir()?;
 
     let mut source = match command {
-        None => Source::stdin(),
-        Some(Command::Stdin) => Source::stdin(),
+        None | Some(Command::Stdin) => Source::stdin(),
         Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
     };
 
@@ -183,10 +182,7 @@ fn location_info(locs: &Option<Locations>, frame: &Frame, current_dir: &Path) ->
 #[allow(clippy::unnecessary_wraps)]
 fn print_version() -> anyhow::Result<()> {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-    println!(
-        "supported defmt version{}: {}",
-        if DEFMT_VERSIONS.len() > 1 { "s" } else { "" },
-        DEFMT_VERSIONS.join(", ")
-    );
+    let s = if DEFMT_VERSIONS.len() > 1 { "s" } else { "" };
+    println!("supported defmt version{s}: {}", DEFMT_VERSIONS.join(", "));
     Ok(())
 }
