@@ -46,7 +46,7 @@ fn check_for_attribute_conflicts(
     reject_list: &[&str],
 ) {
     for attr in attrs_to_check {
-        if let Some(ident) = attr.path.get_ident() {
+        if let Some(ident) = attr.path().get_ident() {
             let ident = ident.to_string();
 
             if reject_list.contains(&ident.as_str()) {

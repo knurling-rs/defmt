@@ -2,7 +2,7 @@ use std::fmt::Write as _;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{Field, Fields, Index, Meta, NestedMeta, Type};
+use syn::{punctuated::Punctuated, token::Comma, Field, Fields, Index, Meta, Path, Type};
 
 use crate::consts;
 
@@ -91,9 +91,9 @@ fn get_defmt_format_option(field: &Field) -> syn::Result<Option<FormatOption>> {
     let attrs = field
         .attrs
         .iter()
-        .filter(|a| a.path.is_ident("defmt"))
-        .map(|a| a.parse_meta())
-        .collect::<syn::Result<Vec<_>>>()?;
+        .filter(|a| a.path().is_ident("defmt"))
+        .map(|a| &a.meta)
+        .collect::<Vec<_>>();
     if attrs.is_empty() {
         return Ok(None);
     } else if attrs.len() > 1 {
@@ -104,7 +104,7 @@ fn get_defmt_format_option(field: &Field) -> syn::Result<Option<FormatOption>> {
     } // else attrs.len() == 1
     let attr = &attrs[0];
     let args = match attr {
-        Meta::List(list) => &list.nested,
+        Meta::List(list) => list.parse_args_with(Punctuated::<Path, Comma>::parse_terminated)?,
         bad => return Err(syn::Error::new_spanned(bad, "unrecognized attribute")),
     };
     if args.len() != 1 {
@@ -113,15 +113,7 @@ fn get_defmt_format_option(field: &Field) -> syn::Result<Option<FormatOption>> {
             "expected 1 attribute argument",
         ));
     }
-    let arg = match &args[0] {
-        NestedMeta::Meta(Meta::Path(arg)) => arg,
-        bad => {
-            return Err(syn::Error::new_spanned(
-                bad,
-                "expected `Debug2Format` or `Display2Format`",
-            ))
-        }
-    };
+    let arg = &args[0];
     if arg.is_ident("Debug2Format") {
         Ok(Some(FormatOption::Debug2Format))
     } else if arg.is_ident("Display2Format") {
