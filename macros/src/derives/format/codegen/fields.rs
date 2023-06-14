@@ -2,7 +2,7 @@ use std::fmt::Write as _;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{punctuated::Punctuated, token::Comma, Field, Fields, Index, Meta, Path, Type};
+use syn::{Field, Fields, Index, Type};
 
 use crate::consts;
 
@@ -87,43 +87,47 @@ enum FormatOption {
 /// Returns `Err` if we can't parse a valid defmt attribute.
 /// Returns `Ok(None)` if there are no `defmt` attributes on the field.
 fn get_defmt_format_option(field: &Field) -> syn::Result<Option<FormatOption>> {
-    use syn::Error;
-    let attrs = field
-        .attrs
-        .iter()
-        .filter(|a| a.path().is_ident("defmt"))
-        .map(|a| &a.meta)
-        .collect::<Vec<_>>();
-    if attrs.is_empty() {
-        return Ok(None);
-    } else if attrs.len() > 1 {
-        return Err(Error::new_spanned(
-            field,
-            "multiple `defmt` attributes not supported",
-        ));
-    } // else attrs.len() == 1
-    let attr = &attrs[0];
-    let args = match attr {
-        Meta::List(list) => list.parse_args_with(Punctuated::<Path, Comma>::parse_terminated)?,
-        bad => return Err(syn::Error::new_spanned(bad, "unrecognized attribute")),
-    };
-    if args.len() != 1 {
-        return Err(syn::Error::new_spanned(
-            attr,
-            "expected 1 attribute argument",
-        ));
+    let mut format_option = None;
+
+    for attr in &field.attrs {
+        if attr.path().is_ident("defmt") {
+            if format_option.is_some() {
+                return Err(syn::Error::new_spanned(
+                    field,
+                    "multiple `defmt` attributes not supported",
+                ));
+            }
+
+            let mut parsed_format = None;
+
+            attr.parse_nested_meta(|meta| {
+                // #[defmt(Debug2Format)]
+                if meta.path.is_ident("Debug2Format") {
+                    parsed_format = Some(FormatOption::Debug2Format);
+                    return Ok(());
+                }
+
+                // #[defmt(Display2Format)]
+                if meta.path.is_ident("Display2Format") {
+                    parsed_format = Some(FormatOption::Display2Format);
+                    return Ok(());
+                }
+
+                Err(meta.error("expected `Debug2Format` or `Display2Format`"))
+            })?;
+
+            if parsed_format.is_none() {
+                return Err(syn::Error::new_spanned(
+                    &attr.meta,
+                    "expected 1 attribute argument",
+                ));
+            }
+
+            format_option = parsed_format;
+        }
     }
-    let arg = &args[0];
-    if arg.is_ident("Debug2Format") {
-        Ok(Some(FormatOption::Debug2Format))
-    } else if arg.is_ident("Display2Format") {
-        Ok(Some(FormatOption::Display2Format))
-    } else {
-        Err(syn::Error::new_spanned(
-            arg,
-            "expected `Debug2Format` or `Display2Format`",
-        ))
-    }
+
+    Ok(format_option)
 }
 
 /// Returns `Some` if `ty` refers to a builtin Rust type that has native support from defmt and does
