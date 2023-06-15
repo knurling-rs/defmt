@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#760]: `defmt-macros`: Upgrade to syn 2
 - [#758]: `defmt-print`: Tidy up
 - [#757]: `defmt-print`: Allow reading from a tcp port
 - [#756]: `CI`: Switch from bors to merge queue
 - [#753]: `demft` Add `Format` impls for `core::ptr::NonNull` and `fn(Args...) -> Ret` (up to 12 arguments)
 
+[#760]: https://github.com/knurling-rs/defmt/pull/760
 [#758]: https://github.com/knurling-rs/defmt/pull/758
 [#757]: https://github.com/knurling-rs/defmt/pull/757
 [#756]: https://github.com/knurling-rs/defmt/pull/756
