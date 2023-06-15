@@ -84,7 +84,7 @@ fn extract_cfgs(attrs: &[Attribute]) -> Vec<Attribute> {
     let mut cfgs = vec![];
 
     for attr in attrs {
-        if attr.path.is_ident("cfg") {
+        if attr.path().is_ident("cfg") {
             cfgs.push(attr.clone());
         }
     }

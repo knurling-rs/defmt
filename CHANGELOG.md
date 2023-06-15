@@ -9,18 +9,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.3.5] - 2023-06-13
 
+- [#760]: `defmt-macros`: Upgrade to syn 2
 - [#759]: Release `defmt v0.3.5` and `defmt-print 0.3.8`
 - [#758]: `defmt-print`: Tidy up
 - [#757]: `defmt-print`: Allow reading from a tcp port
 - [#756]: `CI`: Switch from bors to merge queue
 - [#753]: `demft` Add `Format` impls for `core::ptr::NonNull` and `fn(Args...) -> Ret` (up to 12 arguments)
 
+[#760]: https://github.com/knurling-rs/defmt/pull/760
 [#759]: https://github.com/knurling-rs/defmt/pull/759
 [#758]: https://github.com/knurling-rs/defmt/pull/758
 [#757]: https://github.com/knurling-rs/defmt/pull/757
 [#756]: https://github.com/knurling-rs/defmt/pull/756
 [#753]: https://github.com/knurling-rs/defmt/pull/753
-
 
 ## defmt-decoder v0.3.7, defmt-macros v0.3.5, defmt-parser v0.3.3, defmt-print v0.3.7 - 2023-05-05
 
