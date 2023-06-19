@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [v0.3.5] - 2023-06-13
+## [v0.3.5] - 2023-06-19
 
 - [#760]: `defmt-macros`: Upgrade to syn 2
 - [#759]: Release `defmt v0.3.5` and `defmt-print 0.3.8`
