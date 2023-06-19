@@ -579,5 +579,5 @@ Initial release
 [v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...defmt-v0.2.1
 [v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...defmt-v0.2.0
 [v0.1.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...defmt-v0.1.3
-[v0.1.2]: https://github.com/knurling-rs/defmt/compare/v0.1.1...defmt-v0.1.2
-[v0.1.1]: https://github.com/knurling-rs/defmt/compare/v0.1.0...v0.1.1
+[v0.1.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.1...defmt-v0.1.2
+[v0.1.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.0...defmt-v0.1.1
