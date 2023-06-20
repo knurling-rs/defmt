@@ -90,7 +90,7 @@ fn main() -> anyhow::Result<()> {
         return print_version();
     }
 
-    defmt_decoder::log::init_logger(verbose, json, move |metadata| match verbose {
+    defmt_decoder::log::init_logger(false, verbose, json, move |metadata| match verbose {
         false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
         true => true,                                          // We display *all* frames.
     });

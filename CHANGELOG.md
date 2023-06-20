@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.3.5] - 2023-06-19
 
+- [#762]: `defmt-decoder`: Make logging location optional for defmt frames
 - [#760]: `defmt-macros`: Upgrade to syn 2
 - [#759]: Release `defmt v0.3.5`, `defmt-macros 0.3.6` and `defmt-print 0.3.8`
 - [#758]: `defmt-print`: Tidy up

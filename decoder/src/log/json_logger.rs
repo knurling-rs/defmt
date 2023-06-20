@@ -44,7 +44,7 @@ impl JsonLogger {
     pub fn new(should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static) -> Box<Self> {
         Box::new(Self {
             should_log: Box::new(should_log),
-            host_logger: PrettyLogger::new_unboxed(true, |_| true),
+            host_logger: PrettyLogger::new_unboxed(false, true, |_| true),
         })
     }
 

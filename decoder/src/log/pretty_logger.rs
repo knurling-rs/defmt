@@ -11,6 +11,7 @@ use std::{
 use super::DefmtRecord;
 
 pub(crate) struct PrettyLogger {
+    include_location: bool,
     always_include_location: bool,
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
     /// Number of characters used by the timestamp. This may increase over time and is used to align
@@ -51,17 +52,24 @@ impl Log for PrettyLogger {
 
 impl PrettyLogger {
     pub fn new(
+        include_location: bool,
         always_include_location: bool,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
-        Box::new(Self::new_unboxed(always_include_location, should_log))
+        Box::new(Self::new_unboxed(
+            include_location,
+            always_include_location,
+            should_log,
+        ))
     }
 
     pub fn new_unboxed(
+        include_location: bool,
         always_include_location: bool,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {
         Self {
+            include_location,
             always_include_location,
             should_log: Box::new(should_log),
             timing_align: AtomicUsize::new(0),
@@ -74,7 +82,7 @@ impl PrettyLogger {
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
         Printer::new(&record, level)
-            .include_location(true) // always include location for defmt output
+            .include_location(self.include_location)
             .min_timestamp_width(min_timestamp_width)
             .print_colored(&mut sink)
             .ok();
@@ -96,7 +104,7 @@ impl PrettyLogger {
         )
         .ok();
 
-        if self.always_include_location {
+        if self.include_location && self.always_include_location {
             print_location(
                 &mut sink,
                 record.file(),

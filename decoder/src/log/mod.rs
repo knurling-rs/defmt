@@ -119,16 +119,19 @@ impl<'a> DefmtRecord<'a> {
 /// The caller has to provide a `should_log` closure that determines whether a log record should be
 /// printed.
 ///
-/// If `always_include_location` is `true`, a second line containing location information will be
-/// printed for *all* records, not just for defmt frames (defmt frames always get location info
-/// included if it is available, regardless of this setting).
+/// If `include_location` is `true`, a second line containing location information will be
+/// printed for defmt frames.
+///
+/// If `always_include_location` is also `true`, the second line containing location information
+/// will be printed for *all* records and not just for defmt frames.
 pub fn init_logger(
+    include_location: bool,
     always_include_location: bool,
     json: bool,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
 ) {
     log::set_boxed_logger(match json {
-        false => PrettyLogger::new(always_include_location, should_log),
+        false => PrettyLogger::new(include_location, always_include_location, should_log),
         true => {
             JsonLogger::print_schema_version();
             JsonLogger::new(should_log)
