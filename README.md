@@ -31,6 +31,14 @@ The following diagram illustrates the user-facing and internal crates of the def
 
 ![defmt crates structure](assets/defmt.png)
 
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
 ## Developer Information
 
 ### Running Tests
