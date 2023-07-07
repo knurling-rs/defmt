@@ -29,8 +29,6 @@ It still might work on older rust versions, but this isn't ensured.
 
 The following diagram illustrates the user-facing and internal crates of the defmt framework.
 
-![defmt crates structure](assets/defmt.png)
-
 ```mermaid
 %%{ init: { 'flowchart': { 'curve': 'step', "defaultRenderer": "elk" } } }%%
 graph TD;
