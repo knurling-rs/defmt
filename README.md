@@ -32,11 +32,38 @@ The following diagram illustrates the user-facing and internal crates of the def
 ![defmt crates structure](assets/defmt.png)
 
 ```mermaid
+%%{ init: { 'flowchart': { 'curve': 'step', "defaultRenderer": "elk" } } }%%
 graph TD;
-    A-->B;
-    A-->C;
-    B-->D;
-    C-->D;
+    A[[defmt]]
+    B[defmt-decoder]
+    C[defmt-itm]
+    D[defmt-macros]
+    E[defmt-parser]
+    F[defmt-print]
+    G[defmt-rtt]
+    H(defmt-semihosting)
+    I[[defmt-test]]
+    J[defmt-test-macros]
+    K[[flip-link]]
+    L[panic-probe]
+    M[[probe-run]]
+    N(qemu-run)
+
+    A --> D
+    B & D --o E
+    C & G & H & I & L --> A
+    F & M & N --o B
+    I --o J
+
+    subgraph Legend
+    O[[user facing crate]]
+    P[internal crate]
+    Q(unreleased crate)
+    O -- dependency --> P
+    Q -- pinned dependency --o P
+    end
+
+    J ~~~ Legend
 ```
 
 ## Developer Information
