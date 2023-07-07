@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#764]: Use mermaid for "defmt ecosystem" diagram
+
+[#764]: https://github.com/knurling-rs/defmt/pull/764
+
 ## [v0.3.5] - 2023-06-19
 
 - [#760]: `defmt-macros`: Upgrade to syn 2
