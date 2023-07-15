@@ -1,11 +1,11 @@
-use nom::IResult;
+use nom::branch::alt;
 use nom::bytes::complete::{take, take_till1};
 use nom::character::complete::char;
-use nom::combinator::{map_res, map};
+use nom::combinator::{map, map_res};
 use nom::error::{FromExternalError, ParseError};
 use nom::multi::many0;
 use nom::sequence::delimited;
-use nom::branch::alt;
+use nom::IResult;
 use nom::Parser;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -25,35 +25,41 @@ pub enum LogSegment {
 pub struct InvalidArgument;
 
 fn parse_argument<'a, E>(input: &'a str) -> IResult<&'a str, LogSegment, E>
-where E: ParseError<&'a str> + FromExternalError<&'a str, InvalidArgument>, {
+where
+    E: ParseError<&'a str> + FromExternalError<&'a str, InvalidArgument>,
+{
     let parse_enclosed = delimited(char('{'), take(1u32), char('}'));
-    let mut parse_type = map_res(parse_enclosed, move |s| {
-        match s {
-            "t" => Ok(LogSegment::Timestamp),
-            "f" => Ok(LogSegment::FileName),
-            "F" => Ok(LogSegment::FilePath),
-            "m" => Ok(LogSegment::ModulePath),
-            "l" => Ok(LogSegment::LineNumber),
-            "L" => Ok(LogSegment::LogLevel),
-            "s" => Ok(LogSegment::Log),
-            _ => Err(InvalidArgument),
-        }
+    let mut parse_type = map_res(parse_enclosed, move |s| match s {
+        "t" => Ok(LogSegment::Timestamp),
+        "f" => Ok(LogSegment::FileName),
+        "F" => Ok(LogSegment::FilePath),
+        "m" => Ok(LogSegment::ModulePath),
+        "l" => Ok(LogSegment::LineNumber),
+        "L" => Ok(LogSegment::LogLevel),
+        "s" => Ok(LogSegment::Log),
+        _ => Err(InvalidArgument),
     });
 
     parse_type.parse(input)
 }
 
 fn parse_string_segment<'a, E>(input: &'a str) -> IResult<&'a str, LogSegment, E>
-where E: ParseError<&'a str>, {
-    map(take_till1(|c| c == '{'),|s: &str| LogSegment::String(s.to_string())).parse(input)
+where
+    E: ParseError<&'a str>,
+{
+    map(take_till1(|c| c == '{'), |s: &str| {
+        LogSegment::String(s.to_string())
+    })
+    .parse(input)
 }
 
 pub fn parse(input: &str) -> Result<Vec<LogSegment>, String> {
     let mut parse_all = many0(alt((parse_argument::<()>, parse_string_segment)));
 
-    parse_all(input).map(|(_, output)| output).map_err(|e| e.to_string())
+    parse_all(input)
+        .map(|(_, output)| output)
+        .map_err(|e| e.to_string())
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -6,9 +6,9 @@
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
 
+mod format;
 mod json_logger;
 mod stdout_logger;
-mod format;
 
 use log::{Level, LevelFilter, Metadata, Record};
 use serde::{Deserialize, Serialize};
@@ -116,10 +116,10 @@ impl<'a> DefmtRecord<'a> {
 /// Initializes a `log` sink that handles defmt frames.
 ///
 /// Defmt frames will be printed to stdout, other logs to stderr.
-/// 
+///
 /// The caller has to provide a `should_log` closure that determines whether a log record should be
 /// printed.
-/// 
+///
 /// An optional `log_format` string can be provided to format the way
 /// logs are printed. A format string could look as follows:
 /// "{t} [{L}] Location<{f}:{l}> {s}"
@@ -133,7 +133,7 @@ impl<'a> DefmtRecord<'a> {
 /// - {l} : line number
 /// - {L} : log level (e.g. "INFO", "DEBUG", etc)
 /// - {s} : the actual log
-/// 
+///
 /// For example, with the log format shown above, a log would look like this:
 /// "23124 [INFO] Location<main.rs:23> Hello, world!"
 pub fn init_logger(

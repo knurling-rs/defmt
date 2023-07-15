@@ -5,11 +5,12 @@ use log::{Level, Log, Metadata, Record as LogRecord};
 use std::{
     fmt::Write as _,
     io::{self, StderrLock, StdoutLock},
-    sync::atomic::{AtomicUsize, Ordering}, path::Path,
+    path::Path,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
-use super::{DefmtRecord, format::LogSegment};
 use super::format;
+use super::{format::LogSegment, DefmtRecord};
 
 enum Record<'a> {
     Defmt(&'a DefmtRecord<'a>),
@@ -88,9 +89,9 @@ impl StdoutLogger {
     pub(super) fn print_host_record(&self, record: &LogRecord, mut sink: StderrLock) {
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
         Printer::new(Record::Host(record), &self.format)
-        .min_timestamp_width(min_timestamp_width)
-        .print_frame(&mut sink)
-        .ok();
+            .min_timestamp_width(min_timestamp_width)
+            .print_frame(&mut sink)
+            .ok();
     }
 }
 
@@ -143,12 +144,8 @@ impl<'a> Printer<'a> {
             Record::Defmt(record) => record.timestamp().to_string(),
             Record::Host(_) => String::from("(HOST)"),
         };
-        
-        write!(
-            sink,
-            "{timestamp:>0$}",
-            self.min_timestamp_width,
-        )
+
+        write!(sink, "{timestamp:>0$}", self.min_timestamp_width,)
     }
 
     fn print_log_level<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
@@ -156,10 +153,13 @@ impl<'a> Printer<'a> {
             Record::Defmt(record) => record.level(),
             Record::Host(record) => Some(record.level()),
         };
-    
+
         let level = if let Some(level) = level {
             // TODO: Should the color be customizable via the format too?
-            level.to_string().color(color_for_log_level(level)).to_string()
+            level
+                .to_string()
+                .color(color_for_log_level(level))
+                .to_string()
         } else {
             String::from("level")
         };
@@ -171,7 +171,8 @@ impl<'a> Printer<'a> {
         let file_path = match self.record {
             Record::Defmt(record) => record.file(),
             Record::Host(record) => record.file(),
-        }.unwrap_or("<file>");
+        }
+        .unwrap_or("<file>");
 
         write!(sink, "{file_path}")
     }
@@ -181,7 +182,7 @@ impl<'a> Printer<'a> {
             Record::Defmt(record) => record.file(),
             Record::Host(record) => record.file(),
         };
-        
+
         let file_name = if let Some(file) = file {
             let file_name = Path::new(file).file_name();
             if let Some(file_name) = file_name {
@@ -200,7 +201,8 @@ impl<'a> Printer<'a> {
         let module_path = match self.record {
             Record::Defmt(record) => record.module_path(),
             Record::Host(record) => record.module_path(),
-        }.unwrap_or("<mod path>");
+        }
+        .unwrap_or("<mod path>");
 
         write!(sink, "{module_path}")
     }
@@ -209,7 +211,8 @@ impl<'a> Printer<'a> {
         let line_number = match self.record {
             Record::Defmt(record) => record.line(),
             Record::Host(record) => record.line(),
-        }.unwrap_or(0);
+        }
+        .unwrap_or(0);
 
         write!(sink, "{line_number}")
     }
@@ -220,13 +223,8 @@ impl<'a> Printer<'a> {
             Record::Host(record) => record.args(),
         };
 
-        write!(
-            sink,
-            "{log}",
-            log = color_diff(args.to_string()),
-        )
+        write!(sink, "{log}", log = color_diff(args.to_string()),)
     }
-
 }
 
 // color the output of `defmt::assert_eq`
