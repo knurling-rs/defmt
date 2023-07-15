@@ -1,20 +1,26 @@
 use colored::{Color, Colorize};
 use dissimilar::Chunk;
-use log::{Level, Log, Metadata, Record};
+use log::{Level, Log, Metadata, Record as LogRecord};
 
 use std::{
     fmt::Write as _,
-    io::{self, StderrLock, StdoutLock, Write},
-    sync::atomic::{AtomicUsize, Ordering},
+    io::{self, StderrLock, StdoutLock},
+    sync::atomic::{AtomicUsize, Ordering}, path::Path,
 };
 
-use super::DefmtRecord;
+use super::{DefmtRecord, format::LogSegment};
+use super::format;
+
+enum Record<'a> {
+    Defmt(&'a DefmtRecord<'a>),
+    Host(&'a LogRecord<'a>),
+}
 
 pub(crate) struct StdoutLogger {
-    always_include_location: bool,
+    format: Vec<LogSegment>,
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
-    /// Number of characters used by the timestamp. This may increase over time and is used to align
-    /// messages.
+    /// Number of characters used by the timestamp.
+    /// This may increase over time and is used to align messages.
     timing_align: AtomicUsize,
 }
 
@@ -23,7 +29,7 @@ impl Log for StdoutLogger {
         (self.should_log)(metadata)
     }
 
-    fn log(&self, record: &Record) {
+    fn log(&self, record: &LogRecord) {
         if !self.enabled(record.metadata()) {
             return;
         }
@@ -32,11 +38,7 @@ impl Log for StdoutLogger {
             Some(record) => {
                 // defmt goes to stdout, since it's the primary output produced by this tool.
                 let sink = io::stdout().lock();
-
-                match record.level() {
-                    Some(level) => self.print_defmt_record(record, level, sink),
-                    None => Self::print_println_record(record, sink),
-                };
+                self.print_defmt_record(record, sink);
             }
             None => {
                 // non-defmt logs go to stderr
@@ -50,106 +52,62 @@ impl Log for StdoutLogger {
 }
 
 impl StdoutLogger {
-    pub fn new(
-        always_include_location: bool,
+    pub fn new<'a>(
+        log_format: Option<&'a str>,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
-        Box::new(Self::new_unboxed(always_include_location, should_log))
+        Box::new(Self::new_unboxed(log_format, should_log))
     }
 
-    pub fn new_unboxed(
-        always_include_location: bool,
+    pub fn new_unboxed<'a>(
+        log_format: Option<&'a str>,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {
+        let format = log_format.unwrap_or("{t} [{L}] {s}\n└─ {m} @ {F}:{l}");
+
+        // TODO: Handle errors
+        let format = format::parse(format).unwrap();
         Self {
-            always_include_location,
+            format,
             should_log: Box::new(should_log),
             timing_align: AtomicUsize::new(0),
         }
     }
 
-    fn print_defmt_record(&self, record: DefmtRecord, level: Level, mut sink: StdoutLock) {
+    fn print_defmt_record(&self, record: DefmtRecord, mut sink: StdoutLock) {
         let len = record.timestamp().len();
         self.timing_align.fetch_max(len, Ordering::Relaxed);
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
-        Printer::new(&record, level)
-            .include_location(true) // always include location for defmt output
+        Printer::new(Record::Defmt(&record), &self.format)
             .min_timestamp_width(min_timestamp_width)
-            .print_colored(&mut sink)
+            .print_frame(&mut sink)
             .ok();
     }
 
-    pub(super) fn print_host_record(&self, record: &Record, mut sink: StderrLock) {
+    pub(super) fn print_host_record(&self, record: &LogRecord, mut sink: StderrLock) {
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
-
-        writeln!(
-            sink,
-            "{timestamp:>0$} {level:5} {args}",
-            min_timestamp_width,
-            timestamp = "(HOST)",
-            level = record
-                .level()
-                .to_string()
-                .color(color_for_log_level(record.level())),
-            args = record.args()
-        )
-        .ok();
-
-        if self.always_include_location {
-            print_location(
-                &mut sink,
-                record.file(),
-                record.line(),
-                record.module_path(),
-            )
-            .ok();
-        }
-    }
-
-    fn print_println_record(record: DefmtRecord, mut sink: StdoutLock) {
-        let timestamp = match record.timestamp().is_empty() {
-            true => record.timestamp().to_string(),
-            false => format!("{} ", record.timestamp()),
-        };
-
-        writeln!(&mut sink, "{timestamp}{}", record.args()).ok();
-        print_location(
-            &mut sink,
-            record.file(),
-            record.line(),
-            record.module_path(),
-        )
+        Printer::new(Record::Host(&record), &self.format)
+        .min_timestamp_width(min_timestamp_width)
+        .print_frame(&mut sink)
         .ok();
     }
 }
 
 /// Printer for `DefmtRecord`s.
-pub struct Printer<'a> {
-    record: &'a DefmtRecord<'a>,
-    include_location: bool,
-    level: Level,
+struct Printer<'a> {
+    record: Record<'a>,
+    format: &'a [LogSegment],
     min_timestamp_width: usize,
 }
 
 impl<'a> Printer<'a> {
-    pub fn new(record: &'a DefmtRecord, level: Level) -> Self {
+    pub fn new(record: Record<'a>, format: &'a [LogSegment]) -> Self {
         Self {
             record,
-            include_location: false,
-            level,
+            format,
             min_timestamp_width: 0,
         }
-    }
-
-    /// Configure whether to include location info (file, line) in the output.
-    ///
-    /// If `true`, an additional line will be included in the output that contains file and line
-    /// information of the logging statement.
-    /// By default, this is `false`.
-    pub fn include_location(&mut self, include_location: bool) -> &mut Self {
-        self.include_location = include_location;
-        self
     }
 
     /// Pads the defmt timestamp to take up at least the given number of characters.
@@ -158,44 +116,117 @@ impl<'a> Printer<'a> {
         self
     }
 
-    /// Prints the colored log frame to `sink`.
-    ///
-    /// The format is as follows (this is not part of the stable API and may change):
-    ///
-    /// ```text
-    /// <timestamp> <level> <args>
-    /// └─ <module> @ <file>:<line>
-    /// ```
-    pub fn print_colored<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
-        writeln!(
-            sink,
-            "{timestamp:>0$}{spacing}{level:5} {args}",
-            self.min_timestamp_width,
-            timestamp = self.record.timestamp(),
-            spacing = if self.record.timestamp().is_empty() {
-                ""
-            } else {
-                " "
-            },
-            level = self
-                .level
-                .to_string()
-                .color(color_for_log_level(self.level)),
-            args = color_diff(self.record.args().to_string()),
-        )?;
-
-        if self.include_location {
-            let log_record = self.record.log_record;
-            print_location(
-                sink,
-                log_record.file(),
-                log_record.line(),
-                log_record.module_path(),
-            )?;
+    /// Prints the formatted log frame to `sink`.
+    pub fn print_frame<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        for segment in self.format {
+            match segment {
+                LogSegment::String(s) => self.print_string(sink, &s),
+                LogSegment::Timestamp => self.print_timestamp(sink),
+                LogSegment::FileName => self.print_file_name(sink),
+                LogSegment::FilePath => self.print_file_path(sink),
+                LogSegment::ModulePath => self.print_module_path(sink),
+                LogSegment::LineNumber => self.print_line_number(sink),
+                LogSegment::LogLevel => self.print_log_level(sink),
+                LogSegment::Log => self.print_log(sink),
+            }?;
         }
-
+        writeln!(sink)?;
         Ok(())
     }
+
+    fn print_string<W: io::Write>(&self, sink: &mut W, s: &str) -> io::Result<()> {
+        write!(sink, "{s}")
+    }
+
+    fn print_timestamp<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        let timestamp = match self.record {
+            Record::Defmt(record) => record.timestamp().to_string(),
+            Record::Host(_) => String::from("(HOST)"),
+        };
+        
+        write!(
+            sink,
+            "{timestamp:>0$}",
+            self.min_timestamp_width,
+        )
+    }
+
+    fn print_log_level<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        let level = match self.record {
+            Record::Defmt(record) => record.level(),
+            Record::Host(record) => Some(record.level()),
+        };
+    
+        let level = if let Some(level) = level {
+            // TODO: Should the color be customizable via the format too?
+            level.to_string().color(color_for_log_level(level)).to_string()
+        } else {
+            String::from("level")
+        };
+
+        write!(sink, "{level:5}")
+    }
+
+    fn print_file_path<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        let file_path = match self.record {
+            Record::Defmt(record) => record.file(),
+            Record::Host(record) => record.file(),
+        }.unwrap_or("<file>");
+
+        write!(sink, "{file_path}")
+    }
+
+    fn print_file_name<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        let file = match self.record {
+            Record::Defmt(record) => record.file(),
+            Record::Host(record) => record.file(),
+        };
+        
+        let file_name = if let Some(file) = file {
+            let file_name = Path::new(file).file_name();
+            if let Some(file_name) = file_name {
+                file_name.to_str().unwrap_or("<file>")
+            } else {
+                "<file>"
+            }
+        } else {
+            "<file>"
+        };
+
+        write!(sink, "{file_name}")
+    }
+
+    fn print_module_path<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        let module_path = match self.record {
+            Record::Defmt(record) => record.module_path(),
+            Record::Host(record) => record.module_path(),
+        }.unwrap_or("<mod path>");
+
+        write!(sink, "{module_path}")
+    }
+
+    fn print_line_number<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        let line_number = match self.record {
+            Record::Defmt(record) => record.line(),
+            Record::Host(record) => record.line(),
+        }.unwrap_or(0);
+
+        write!(sink, "{line_number}")
+    }
+
+    fn print_log<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+        let args = match self.record {
+            Record::Defmt(record) => record.args(),
+            Record::Host(record) => record.args(),
+        };
+
+        write!(
+            sink,
+            "{log}",
+            log = color_diff(args.to_string()),
+        )
+    }
+
 }
 
 // color the output of `defmt::assert_eq`
@@ -275,23 +306,4 @@ fn color_for_log_level(level: Level) -> Color {
         Level::Debug => Color::BrightWhite,
         Level::Trace => Color::BrightBlack,
     }
-}
-
-fn print_location<W: io::Write>(
-    sink: &mut W,
-    file: Option<&str>,
-    line: Option<u32>,
-    module_path: Option<&str>,
-) -> io::Result<()> {
-    if let Some(file) = file {
-        // NOTE will always be `Some` if `file` is `Some`
-        let mod_path = module_path.unwrap();
-        let mut loc = file.to_string();
-        if let Some(line) = line {
-            let _ = write!(loc, ":{line}");
-        }
-        writeln!(sink, "{}", format!("└─ {mod_path} @ {loc}").dimmed())?;
-    }
-
-    Ok(())
 }

@@ -8,6 +8,7 @@
 
 mod json_logger;
 mod stdout_logger;
+mod format;
 
 use log::{Level, LevelFilter, Metadata, Record};
 use serde::{Deserialize, Serialize};
@@ -115,23 +116,36 @@ impl<'a> DefmtRecord<'a> {
 /// Initializes a `log` sink that handles defmt frames.
 ///
 /// Defmt frames will be printed to stdout, other logs to stderr.
-///
+/// 
 /// The caller has to provide a `should_log` closure that determines whether a log record should be
 /// printed.
+/// 
+/// An optional `log_format` string can be provided to format the way
+/// logs are printed. A format string could look as follows:
+/// "{t} [{L}] Location<{f}:{l}> {s}"
 ///
-/// If `always_include_location` is `true`, a second line containing location information will be
-/// printed for *all* records, not just for defmt frames (defmt frames always get location info
-/// included if it is available, regardless of this setting).
-pub fn init_logger(
-    always_include_location: bool,
+/// The arguments between curly braces are placeholders for log metadata.
+/// The following arguments are supported:
+/// - {t} : log timestamp
+/// - {f} : file name (e.g. "main.rs")
+/// - {F} : file path (e.g. "home/app/main.rs")
+/// - {m} : module path (e.g. "foo/bar/some_function")
+/// - {l} : line number
+/// - {L} : log level (e.g. "INFO", "DEBUG", etc)
+/// - {s} : the actual log
+/// 
+/// For example, with the log format shown above, a log would look like this:
+/// "23124 [INFO] Location<main.rs:23> Hello, world!"
+pub fn init_logger<'a>(
+    log_format: Option<&'a str>,
     json: bool,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
 ) {
     log::set_boxed_logger(match json {
-        false => StdoutLogger::new(always_include_location, should_log),
+        false => StdoutLogger::new(log_format, should_log),
         true => {
             JsonLogger::print_schema_version();
-            JsonLogger::new(should_log)
+            JsonLogger::new(log_format, should_log)
         }
     })
     .unwrap();
