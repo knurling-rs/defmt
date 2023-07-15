@@ -41,7 +41,7 @@ impl Log for JsonLogger {
 }
 
 impl JsonLogger {
-    pub fn new<'a>(log_format: Option<&'a str>, should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static) -> Box<Self> {
+    pub fn new(log_format: Option<&str>, should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static) -> Box<Self> {
         Box::new(Self {
             should_log: Box::new(should_log),
             host_logger: StdoutLogger::new_unboxed(log_format, |_| true),

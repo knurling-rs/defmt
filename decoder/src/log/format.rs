@@ -48,7 +48,7 @@ where E: ParseError<&'a str>, {
     map(take_till1(|c| c == '{'),|s: &str| LogSegment::String(s.to_string())).parse(input)
 }
 
-pub fn parse<'a>(input: &'a str) -> Result<Vec<LogSegment>, String> {
+pub fn parse(input: &str) -> Result<Vec<LogSegment>, String> {
     let mut parse_all = many0(alt((parse_argument::<()>, parse_string_segment)));
 
     parse_all(input).map(|(_, output)| output).map_err(|e| e.to_string())

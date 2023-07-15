@@ -52,15 +52,15 @@ impl Log for StdoutLogger {
 }
 
 impl StdoutLogger {
-    pub fn new<'a>(
-        log_format: Option<&'a str>,
+    pub fn new(
+        log_format: Option<&str>,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
         Box::new(Self::new_unboxed(log_format, should_log))
     }
 
-    pub fn new_unboxed<'a>(
-        log_format: Option<&'a str>,
+    pub fn new_unboxed(
+        log_format: Option<&str>,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {
         let format = log_format.unwrap_or("{t} [{L}] {s}\n└─ {m} @ {F}:{l}");
@@ -87,7 +87,7 @@ impl StdoutLogger {
 
     pub(super) fn print_host_record(&self, record: &LogRecord, mut sink: StderrLock) {
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
-        Printer::new(Record::Host(&record), &self.format)
+        Printer::new(Record::Host(record), &self.format)
         .min_timestamp_width(min_timestamp_width)
         .print_frame(&mut sink)
         .ok();
@@ -120,7 +120,7 @@ impl<'a> Printer<'a> {
     pub fn print_frame<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         for segment in self.format {
             match segment {
-                LogSegment::String(s) => self.print_string(sink, &s),
+                LogSegment::String(s) => self.print_string(sink, s),
                 LogSegment::Timestamp => self.print_timestamp(sink),
                 LogSegment::FileName => self.print_file_name(sink),
                 LogSegment::FilePath => self.print_file_path(sink),

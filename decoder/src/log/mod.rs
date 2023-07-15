@@ -136,8 +136,8 @@ impl<'a> DefmtRecord<'a> {
 /// 
 /// For example, with the log format shown above, a log would look like this:
 /// "23124 [INFO] Location<main.rs:23> Hello, world!"
-pub fn init_logger<'a>(
-    log_format: Option<&'a str>,
+pub fn init_logger(
+    log_format: Option<&str>,
     json: bool,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
 ) {
