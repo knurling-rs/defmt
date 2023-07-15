@@ -131,8 +131,7 @@ impl<'a> Printer<'a> {
                 LogSegment::Log => self.print_log(sink),
             }?;
         }
-        writeln!(sink)?;
-        Ok(())
+        writeln!(sink)
     }
 
     fn print_string<W: io::Write>(&self, sink: &mut W, s: &str) -> io::Result<()> {
