@@ -20,6 +20,9 @@ struct Opts {
     json: bool,
 
     #[arg(long)]
+    log_format: Option<String>,
+
+    #[arg(long)]
     show_skipped_frames: bool,
 
     #[arg(short, long)]
@@ -80,6 +83,7 @@ fn main() -> anyhow::Result<()> {
     let Opts {
         elf,
         json,
+        log_format,
         show_skipped_frames,
         verbose,
         version,
@@ -90,7 +94,9 @@ fn main() -> anyhow::Result<()> {
         return print_version();
     }
 
-    defmt_decoder::log::init_logger(verbose, json, move |metadata| match verbose {
+    let log_format = log_format.as_ref().map(|s| s.as_str());
+
+    defmt_decoder::log::init_logger(log_format, json, move |metadata| match verbose {
         false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
         true => true,                                          // We display *all* frames.
     });
