@@ -64,10 +64,14 @@ impl StdoutLogger {
         log_format: Option<&str>,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {
-        let format = log_format.unwrap_or("{t} [{L}] {s}\n└─ {m} @ {F}:{l}");
+        const DEFAULT_LOG_FORMAT: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
+        
+        let format = log_format.unwrap_or(DEFAULT_LOG_FORMAT);
+        let format = format::parse(format).unwrap_or_else(|_| {
+            // Use the default format if the user-provided format is invalid
+            format::parse(DEFAULT_LOG_FORMAT).unwrap()
+        });
 
-        // TODO: Handle errors
-        let format = format::parse(format).unwrap();
         Self {
             format,
             should_log: Box::new(should_log),
@@ -160,7 +164,7 @@ impl<'a> Printer<'a> {
                 .color(color_for_log_level(level))
                 .to_string()
         } else {
-            String::from("level")
+            String::from("<lvl>")
         };
 
         write!(sink, "{level:5}")
