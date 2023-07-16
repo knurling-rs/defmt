@@ -110,7 +110,6 @@ mod tests {
     #[test]
     fn test_parse_invalid_argument() {
         let result = parse_argument::<()>("{foo}");
-        let result = dbg!(result);
         assert_eq!(result, Result::Err(nom::Err::Error(())));
     }
 }
