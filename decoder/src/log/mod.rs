@@ -129,7 +129,7 @@ impl<'a> DefmtRecord<'a> {
 /// - {t} : log timestamp
 /// - {f} : file name (e.g. "main.rs")
 /// - {F} : file path (e.g. "home/app/main.rs")
-/// - {m} : module path (e.g. "foo/bar/some_function")
+/// - {m} : module path (e.g. "foo::bar::some_function")
 /// - {l} : line number
 /// - {L} : log level (e.g. "INFO", "DEBUG", etc)
 /// - {s} : the actual log
