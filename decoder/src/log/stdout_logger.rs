@@ -65,7 +65,7 @@ impl StdoutLogger {
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {
         const DEFAULT_LOG_FORMAT: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
-        
+
         let format = log_format.unwrap_or(DEFAULT_LOG_FORMAT);
         let format = format::parse(format).unwrap_or_else(|_| {
             // Use the default format if the user-provided format is invalid
