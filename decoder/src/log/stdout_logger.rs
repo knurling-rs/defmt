@@ -20,7 +20,8 @@ enum Record<'a> {
 }
 
 pub(crate) struct StdoutLogger {
-    format: Vec<LogSegment>,
+    log_format: Vec<LogSegment>,
+    host_log_format: Vec<LogSegment>,
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
     /// Number of characters used by the timestamp.
     /// This may increase over time and is used to align messages.
@@ -57,25 +58,29 @@ impl Log for StdoutLogger {
 impl StdoutLogger {
     pub fn new(
         log_format: Option<&str>,
+        host_log_format: Option<&str>,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
-        Box::new(Self::new_unboxed(log_format, should_log))
+        Box::new(Self::new_unboxed(log_format, host_log_format, should_log))
     }
 
     pub fn new_unboxed(
         log_format: Option<&str>,
+        host_log_format: Option<&str>,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {
         const DEFAULT_LOG_FORMAT: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
+        const DEFAULT_HOST_LOG_FORMAT: &str = "(HOST) {L} {s}";
 
-        let format = log_format.unwrap_or(DEFAULT_LOG_FORMAT);
-        let format = format::parse(format).unwrap_or_else(|_| {
-            // Use the default format if the user-provided format is invalid
-            format::parse(DEFAULT_LOG_FORMAT).unwrap()
-        });
+        let log_format = log_format.unwrap_or(DEFAULT_LOG_FORMAT);
+        let log_format = format::parse(log_format).unwrap();
+
+        let host_log_format = host_log_format.unwrap_or(DEFAULT_HOST_LOG_FORMAT);
+        let host_log_format = format::parse(host_log_format).unwrap();
 
         Self {
-            format,
+            log_format,
+            host_log_format,
             should_log: Box::new(should_log),
             timing_align: AtomicUsize::new(0),
         }
@@ -86,7 +91,7 @@ impl StdoutLogger {
         self.timing_align.fetch_max(len, Ordering::Relaxed);
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
 
-        Printer::new(Record::Defmt(&record), &self.format)
+        Printer::new(Record::Defmt(&record), &self.log_format)
             .min_timestamp_width(min_timestamp_width)
             .print_frame(&mut sink)
             .ok();
@@ -94,7 +99,7 @@ impl StdoutLogger {
 
     pub(super) fn print_host_record(&self, record: &LogRecord, mut sink: StderrLock) {
         let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
-        Printer::new(Record::Host(record), &self.format)
+        Printer::new(Record::Host(record), &self.host_log_format)
             .min_timestamp_width(min_timestamp_width)
             .print_frame(&mut sink)
             .ok();
@@ -147,7 +152,8 @@ impl<'a> Printer<'a> {
     fn print_timestamp<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         let timestamp = match self.record {
             Record::Defmt(record) => record.timestamp().to_string(),
-            Record::Host(_) => String::from("(HOST)"),
+            // TODO: Is there a timestamp for host messages?
+            Record::Host(_) => String::from("<time>"),
         };
 
         write!(sink, "{timestamp:>0$}", self.min_timestamp_width,)

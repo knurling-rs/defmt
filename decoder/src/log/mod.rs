@@ -138,14 +138,15 @@ impl<'a> DefmtRecord<'a> {
 /// "23124 [INFO] Location<main.rs:23> Hello, world!"
 pub fn init_logger(
     log_format: Option<&str>,
+    host_log_format: Option<&str>,
     json: bool,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
 ) {
     log::set_boxed_logger(match json {
-        false => StdoutLogger::new(log_format, should_log),
+        false => StdoutLogger::new(log_format, host_log_format, should_log),
         true => {
             JsonLogger::print_schema_version();
-            JsonLogger::new(log_format, should_log)
+            JsonLogger::new(log_format, host_log_format, should_log)
         }
     })
     .unwrap();
