@@ -9,8 +9,10 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use super::format;
-use super::{format::LogSegment, DefmtRecord};
+use super::{
+    format::{self, LogSegment},
+    DefmtRecord,
+};
 
 enum Record<'a> {
     Defmt(&'a DefmtRecord<'a>),
