@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#xxx] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
+- [#766] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#766]: https://github.com/knurling-rs/defmt/pull/766
 
 ## [v0.3.5] - 2023-06-19
 
