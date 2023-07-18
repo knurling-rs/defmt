@@ -4,11 +4,11 @@ use time::OffsetDateTime;
 
 use std::io::{self, Write};
 
-use super::{pretty_logger::PrettyLogger, DefmtRecord};
+use super::{DefmtRecord, StdoutLogger};
 
 pub(crate) struct JsonLogger {
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
-    host_logger: PrettyLogger,
+    host_logger: StdoutLogger,
 }
 
 impl Log for JsonLogger {
@@ -44,7 +44,7 @@ impl JsonLogger {
     pub fn new(should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static) -> Box<Self> {
         Box::new(Self {
             should_log: Box::new(should_log),
-            host_logger: PrettyLogger::new_unboxed(true, |_| true),
+            host_logger: StdoutLogger::new_unboxed(true, |_| true),
         })
     }
 
