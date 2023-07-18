@@ -7,14 +7,14 @@
 //! [`defmt`]: https://crates.io/crates/defmt
 
 mod json_logger;
-mod pretty_logger;
+mod stdout_logger;
 
 use log::{Level, LevelFilter, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
-use self::{json_logger::JsonLogger, pretty_logger::PrettyLogger};
+use self::{json_logger::JsonLogger, stdout_logger::StdoutLogger};
 use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
@@ -128,7 +128,7 @@ pub fn init_logger(
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
 ) {
     log::set_boxed_logger(match json {
-        false => PrettyLogger::new(always_include_location, should_log),
+        false => StdoutLogger::new(always_include_location, should_log),
         true => {
             JsonLogger::print_schema_version();
             JsonLogger::new(should_log)

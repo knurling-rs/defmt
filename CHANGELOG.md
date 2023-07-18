@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#766] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
+
+[#766]: https://github.com/knurling-rs/defmt/pull/766
+
 ## [v0.3.5] - 2023-06-19
 
 - [#760]: `defmt-macros`: Upgrade to syn 2
