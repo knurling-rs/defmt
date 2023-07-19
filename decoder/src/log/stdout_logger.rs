@@ -42,7 +42,11 @@ impl Log for StdoutLogger {
             Some(record) => {
                 // defmt goes to stdout, since it's the primary output produced by this tool.
                 let sink = io::stdout().lock();
-                self.print_defmt_record(record, sink);
+                if record.level().is_some() {
+                    self.print_defmt_record(record, sink);
+                } else {
+                    self.print_defmt_record_without_format(record, sink);
+                }
             }
             None => {
                 // non-defmt logs go to stderr
@@ -93,6 +97,17 @@ impl StdoutLogger {
 
         Printer::new(Record::Defmt(&record), &self.log_format)
             .min_timestamp_width(min_timestamp_width)
+            .print_frame(&mut sink)
+            .ok();
+    }
+
+    pub(super) fn print_defmt_record_without_format(
+        &self,
+        record: DefmtRecord,
+        mut sink: StdoutLock,
+    ) {
+        const RAW_FORMAT: &[LogSegment] = &[LogSegment::Log];
+        Printer::new(Record::Defmt(&record), RAW_FORMAT)
             .print_frame(&mut sink)
             .ok();
     }
