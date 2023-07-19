@@ -249,12 +249,12 @@ impl<'a> Printer<'a> {
     }
 
     fn print_log<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
-        let args = match self.record {
-            Record::Defmt(record) => record.args(),
-            Record::Host(record) => record.args(),
+        let log = match self.record {
+            Record::Defmt(record) => color_diff(record.args().to_string()),
+            Record::Host(record) => record.args().to_string(),
         };
 
-        write!(sink, "{log}", log = color_diff(args.to_string()),)
+        write!(sink, "{log}")
     }
 }
 
