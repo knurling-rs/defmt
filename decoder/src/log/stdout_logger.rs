@@ -166,9 +166,14 @@ impl<'a> Printer<'a> {
 
     fn print_timestamp<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         let timestamp = match self.record {
-            Record::Defmt(record) => record.timestamp().to_string(),
-            // TODO: Is there a timestamp for host messages?
-            Record::Host(_) => String::from("<time>"),
+            Record::Defmt(record) => {
+                if record.timestamp().is_empty() {
+                    String::from("0")
+                } else {
+                    record.timestamp().to_string()
+                }
+            }
+            Record::Host(_) => String::from("0"),
         };
 
         write!(sink, "{timestamp:>0$}", self.min_timestamp_width,)
