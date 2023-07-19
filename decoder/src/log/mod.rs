@@ -126,13 +126,13 @@ impl<'a> DefmtRecord<'a> {
 ///
 /// The arguments between curly braces are placeholders for log metadata.
 /// The following arguments are supported:
-/// - {t} : log timestamp
 /// - {f} : file name (e.g. "main.rs")
-/// - {F} : file path (e.g. "home/app/main.rs")
-/// - {m} : module path (e.g. "foo::bar::some_function")
+/// - {F} : file path (e.g. "src/bin/main.rs")
 /// - {l} : line number
 /// - {L} : log level (e.g. "INFO", "DEBUG", etc)
+/// - {m} : module path (e.g. "foo::bar::some_function")
 /// - {s} : the actual log
+/// - {t} : log timestamp
 ///
 /// For example, with the log format shown above, a log would look like this:
 /// "23124 [INFO] Location<main.rs:23> Hello, world!"
