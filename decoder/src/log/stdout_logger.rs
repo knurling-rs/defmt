@@ -1,4 +1,4 @@
-use colored::{Color, Colorize};
+use colored::{Color, ColoredString, Colorize};
 use dissimilar::Chunk;
 use log::{Level, Log, Metadata, Record as LogRecord};
 
@@ -190,9 +190,8 @@ impl<'a> Printer<'a> {
             level
                 .to_string()
                 .color(color_for_log_level(level))
-                .to_string()
         } else {
-            String::from("<lvl>")
+            ColoredString::from("<lvl>")
         };
 
         write!(sink, "{level:5}")
