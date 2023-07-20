@@ -187,9 +187,7 @@ impl<'a> Printer<'a> {
 
         let level = if let Some(level) = level {
             // TODO: Should the color be customizable via the format too?
-            level
-                .to_string()
-                .color(color_for_log_level(level))
+            level.to_string().color(color_for_log_level(level))
         } else {
             ColoredString::from("<lvl>")
         };
