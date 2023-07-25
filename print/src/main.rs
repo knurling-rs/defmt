@@ -8,6 +8,7 @@ use std::{
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
+use serialport::SerialPort;
 
 /// Prints defmt-encoded logs to stdout
 #[derive(Parser)]
@@ -34,8 +35,13 @@ struct Opts {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Read defmt frames from stdin (default)
+    /// Read defmt frames from stdin (the default)
     Stdin,
+    /// Read defmt frames from serial
+    Serial {
+        #[arg(long, env = "SERIAL_PATH")]
+        path: String,
+    },
     /// Read defmt frames from tcp
     Tcp {
         #[arg(long, env = "RTT_HOST", default_value = "localhost")]
@@ -48,6 +54,7 @@ enum Command {
 
 enum Source {
     Stdin(StdinLock<'static>),
+    Serial(Box<dyn SerialPort>),
     Tcp(TcpStream),
 }
 
@@ -68,6 +75,15 @@ impl Source {
             Source::Stdin(stdin) => {
                 let n = stdin.read(buf)?;
                 Ok((n, n == 0))
+            }
+            Source::Serial(port) => {
+                match port.read(buf) {
+                    Ok(n) => {
+                        Ok((n, n == 0))
+                    },
+                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => Ok((0, false)),
+                    Err(e) => Err(anyhow!(e)),
+                }
             }
             Source::Tcp(tcpstream) => Ok((tcpstream.read(buf)?, false)),
         }
@@ -114,6 +130,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut source = match command {
         None | Some(Command::Stdin) => Source::stdin(),
+        Some(Command::Serial { path }) => Source::Serial(serialport::new(path, 115_200).timeout(std::time::Duration::from_millis(10)).open().unwrap()),
         Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
     };
 

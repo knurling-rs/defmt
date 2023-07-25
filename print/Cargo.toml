@@ -19,3 +19,4 @@ defmt-decoder = { version = "=0.3.7", path = "../decoder", features = [
     "unstable",
 ] }
 log = "0.4"
+serialport = "4.2.1"
