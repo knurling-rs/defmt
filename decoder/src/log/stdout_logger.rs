@@ -11,7 +11,7 @@ use std::{
 
 use super::{
     format::{self, LogSegment},
-    DefmtRecord,
+    DefmtLoggerInfo, DefmtRecord,
 };
 
 enum Record<'a> {
@@ -88,6 +88,11 @@ impl StdoutLogger {
             should_log: Box::new(should_log),
             timing_align: AtomicUsize::new(0),
         }
+    }
+
+    pub fn info(&self) -> DefmtLoggerInfo {
+        let has_timestamp = self.log_format.contains(&LogSegment::Timestamp);
+        DefmtLoggerInfo { has_timestamp }
     }
 
     fn print_defmt_record(&self, record: DefmtRecord, mut sink: StdoutLock) {

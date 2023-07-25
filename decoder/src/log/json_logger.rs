@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 
 use std::io::{self, Write};
 
-use super::{DefmtRecord, StdoutLogger};
+use super::{DefmtLoggerInfo, DefmtRecord, StdoutLogger};
 
 pub(crate) struct JsonLogger {
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
@@ -56,6 +56,10 @@ impl JsonLogger {
         let mut sink = io::stdout().lock();
         serde_json::to_writer(&mut sink, &SCHEMA_VERSION).ok();
         writeln!(sink).ok();
+    }
+
+    pub fn info(&self) -> DefmtLoggerInfo {
+        self.host_logger.info()
     }
 }
 

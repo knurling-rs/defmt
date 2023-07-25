@@ -271,6 +271,10 @@ impl Table {
     pub fn encoding(&self) -> Encoding {
         self.encoding
     }
+
+    pub fn has_timestamp(&self) -> bool {
+        self.timestamp.is_some()
+    }
 }
 
 // NOTE follows `parser::Type`

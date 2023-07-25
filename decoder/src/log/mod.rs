@@ -10,7 +10,7 @@ mod format;
 mod json_logger;
 mod stdout_logger;
 
-use log::{Level, LevelFilter, Metadata, Record};
+use log::{Level, LevelFilter, Log, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
 use std::fmt;
@@ -141,14 +141,32 @@ pub fn init_logger(
     host_log_format: Option<&str>,
     json: bool,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
-) {
-    log::set_boxed_logger(match json {
-        false => StdoutLogger::new(log_format, host_log_format, should_log),
+) -> DefmtLoggerInfo {
+    let (logger, info): (Box<dyn Log>, DefmtLoggerInfo) = match json {
+        false => {
+            let logger = StdoutLogger::new(log_format, host_log_format, should_log);
+            let info = logger.info();
+            (logger, info)
+        }
         true => {
             JsonLogger::print_schema_version();
-            JsonLogger::new(log_format, host_log_format, should_log)
+            let logger = JsonLogger::new(log_format, host_log_format, should_log);
+            let info = logger.info();
+            (logger, info)
         }
-    })
-    .unwrap();
+    };
+    log::set_boxed_logger(logger).unwrap();
     log::set_max_level(LevelFilter::Trace);
+    info
+}
+
+#[derive(Clone, Copy)]
+pub struct DefmtLoggerInfo {
+    has_timestamp: bool,
+}
+
+impl DefmtLoggerInfo {
+    pub fn has_timestamp(&self) -> bool {
+        self.has_timestamp
+    }
 }
