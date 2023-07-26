@@ -173,12 +173,12 @@ impl<'a> Printer<'a> {
         let timestamp = match self.record {
             Record::Defmt(record) => {
                 if record.timestamp().is_empty() {
-                    String::from("0")
+                    String::from("<time>")
                 } else {
                     record.timestamp().to_string()
                 }
             }
-            Record::Host(_) => String::from("0"),
+            Record::Host(_) => String::from("<time>"),
         };
 
         write!(sink, "{timestamp:>0$}", self.min_timestamp_width,)
