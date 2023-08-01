@@ -6,10 +6,11 @@
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
 
+mod format;
 mod json_logger;
 mod stdout_logger;
 
-use log::{Level, LevelFilter, Metadata, Record};
+use log::{Level, LevelFilter, Log, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
 use std::fmt;
@@ -119,21 +120,53 @@ impl<'a> DefmtRecord<'a> {
 /// The caller has to provide a `should_log` closure that determines whether a log record should be
 /// printed.
 ///
-/// If `always_include_location` is `true`, a second line containing location information will be
-/// printed for *all* records, not just for defmt frames (defmt frames always get location info
-/// included if it is available, regardless of this setting).
+/// An optional `log_format` string can be provided to format the way
+/// logs are printed. A format string could look as follows:
+/// "{t} [{L}] Location<{f}:{l}> {s}"
+///
+/// The arguments between curly braces are placeholders for log metadata.
+/// The following arguments are supported:
+/// - {f} : file name (e.g. "main.rs")
+/// - {F} : file path (e.g. "src/bin/main.rs")
+/// - {l} : line number
+/// - {L} : log level (e.g. "INFO", "DEBUG", etc)
+/// - {m} : module path (e.g. "foo::bar::some_function")
+/// - {s} : the actual log
+/// - {t} : log timestamp
+///
+/// For example, with the log format shown above, a log would look like this:
+/// "23124 [INFO] Location<main.rs:23> Hello, world!"
 pub fn init_logger(
-    always_include_location: bool,
+    log_format: Option<&str>,
+    host_log_format: Option<&str>,
     json: bool,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
-) {
-    log::set_boxed_logger(match json {
-        false => StdoutLogger::new(always_include_location, should_log),
+) -> DefmtLoggerInfo {
+    let (logger, info): (Box<dyn Log>, DefmtLoggerInfo) = match json {
+        false => {
+            let logger = StdoutLogger::new(log_format, host_log_format, should_log);
+            let info = logger.info();
+            (logger, info)
+        }
         true => {
             JsonLogger::print_schema_version();
-            JsonLogger::new(should_log)
+            let logger = JsonLogger::new(log_format, host_log_format, should_log);
+            let info = logger.info();
+            (logger, info)
         }
-    })
-    .unwrap();
+    };
+    log::set_boxed_logger(logger).unwrap();
     log::set_max_level(LevelFilter::Trace);
+    info
+}
+
+#[derive(Clone, Copy)]
+pub struct DefmtLoggerInfo {
+    has_timestamp: bool,
+}
+
+impl DefmtLoggerInfo {
+    pub fn has_timestamp(&self) -> bool {
+        self.has_timestamp
+    }
 }

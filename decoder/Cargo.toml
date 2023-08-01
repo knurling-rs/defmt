@@ -14,6 +14,7 @@ byteorder = "1"
 colored = "2"
 defmt-parser = { version = "=0.3.3", path = "../parser", features = ["unstable"] }
 ryu = "1"
+nom = "7"
 
 # display
 time = { version = "0.3", default-features = false, features = [

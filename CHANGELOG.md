@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#766] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
+- [#765]: `defmt-decoder`: Add support for customizable logger formatting
 - [#764]: Use mermaid for "defmt ecosystem" diagram
 
 [#766]: https://github.com/knurling-rs/defmt/pull/766
+[#765]: https://github.com/knurling-rs/defmt/pull/765
 [#764]: https://github.com/knurling-rs/defmt/pull/764
 
 ## [v0.3.5] - 2023-06-19
