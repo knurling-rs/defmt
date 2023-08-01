@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#769]: `defmt-decoder`: Add support for color, style, width and alignment to format
+
+[#769]: https://github.com/knurling-rs/defmt/pull/769
+
 ## defmt-decoder v0.3.8, defmt-print v0.3.8 - 2023-08-01
 
 - [#766] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
