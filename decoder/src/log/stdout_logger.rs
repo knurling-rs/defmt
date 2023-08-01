@@ -200,8 +200,10 @@ impl<'a> Printer<'a> {
             String::from("<lvl>")
         };
 
+        let color = format.color.unwrap_or(LogColor::SeverityLevel);
+
         let level = ColoredString::from(level.as_str());
-        let level = apply_color(level, format.color, self.record_log_level());
+        let level = apply_color(level, Some(color), self.record_log_level());
         let level = apply_style(level, format.style);
         let alignment = format.alignment.unwrap_or(Alignment::Left);
         let width = format.width.unwrap_or(5);
