@@ -1,16 +1,16 @@
 use nom::{
     branch::alt,
-    bytes::complete::{take, take_till1},
-    character::complete::char,
-    combinator::{map, map_res},
-    multi::many0,
+    bytes::complete::{take_till1, take_while},
+    character::complete::{char, digit1, one_of},
+    combinator::{map, map_res, opt},
+    multi::{many0, separated_list1},
     sequence::delimited,
     IResult, Parser,
 };
 
 #[derive(Debug, PartialEq, Clone)]
 #[non_exhaustive]
-pub(super) enum LogSegment {
+pub(super) enum LogMetadata {
     FileName,
     FilePath,
     LineNumber,
@@ -21,25 +21,252 @@ pub(super) enum LogSegment {
     Timestamp,
 }
 
-fn parse_argument(input: &str) -> IResult<&str, LogSegment, ()> {
-    let parse_enclosed = delimited(char('{'), take(1u32), char('}'));
-    let mut parse_type = map_res(parse_enclosed, move |s| match s {
-        "f" => Ok(LogSegment::FileName),
-        "F" => Ok(LogSegment::FilePath),
-        "l" => Ok(LogSegment::LineNumber),
-        "s" => Ok(LogSegment::Log),
-        "L" => Ok(LogSegment::LogLevel),
-        "m" => Ok(LogSegment::ModulePath),
-        "t" => Ok(LogSegment::Timestamp),
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub(super) enum LogColor {
+    Black,
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Cyan,
+    White,
+    BrightBlack,
+    BrightRed,
+    BrightGreen,
+    BrightYellow,
+    BrightBlue,
+    BrightMagenta,
+    BrightCyan,
+    BrightWhite,
+
+    /// Color matching the default color for the log level
+    SeverityLevel,
+
+    /// Color matching the default color for the log level,
+    /// but only if the log level is WARN or ERROR
+    WarnError,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub(super) enum LogStyle {
+    Bold,
+    Italic,
+    Underline,
+    Strikethrough,
+    Dimmed,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub(super) enum Alignment {
+    Center,
+    Left,
+    Right,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub(super) struct LogSegment {
+    pub(super) metadata: LogMetadata,
+    pub(super) format: LogFormat,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub(super) struct LogFormat {
+    pub(super) width: Option<usize>,
+    pub(super) color: Option<LogColor>,
+    pub(super) style: Option<LogStyle>,
+    pub(super) alignment: Option<Alignment>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+enum IntermediateOutput {
+    Metadata(LogMetadata),
+    WidthAndAlignment((usize, Option<Alignment>)),
+    Color(LogColor),
+    Style(LogStyle),
+}
+
+impl LogSegment {
+    pub(super) const fn new(metadata: LogMetadata) -> Self {
+        Self {
+            metadata,
+            format: LogFormat {
+                color: None,
+                style: None,
+                width: None,
+                alignment: None,
+            },
+        }
+    }
+
+    #[allow(dead_code)]
+    const fn with_color(mut self, color: LogColor) -> Self {
+        self.format.color = Some(color);
+        self
+    }
+
+    #[allow(dead_code)]
+    const fn with_style(mut self, style: LogStyle) -> Self {
+        self.format.style = Some(style);
+        self
+    }
+
+    #[allow(dead_code)]
+    const fn with_width(mut self, width: usize) -> Self {
+        self.format.width = Some(width);
+        self
+    }
+
+    #[allow(dead_code)]
+    const fn with_alignment(mut self, alignment: Alignment) -> Self {
+        self.format.alignment = Some(alignment);
+        self
+    }
+}
+
+fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
+        "f" => Ok(IntermediateOutput::Metadata(LogMetadata::FileName)),
+        "F" => Ok(IntermediateOutput::Metadata(LogMetadata::FilePath)),
+        "l" => Ok(IntermediateOutput::Metadata(LogMetadata::LineNumber)),
+        "s" => Ok(IntermediateOutput::Metadata(LogMetadata::Log)),
+        "L" => Ok(IntermediateOutput::Metadata(LogMetadata::LogLevel)),
+        "m" => Ok(IntermediateOutput::Metadata(LogMetadata::ModulePath)),
+        "t" => Ok(IntermediateOutput::Metadata(LogMetadata::Timestamp)),
         _ => Err(()),
     });
 
     parse_type.parse(input)
 }
 
+fn parse_color(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
+        "black" => Ok(IntermediateOutput::Color(LogColor::Black)),
+        "red" => Ok(IntermediateOutput::Color(LogColor::Red)),
+        "green" => Ok(IntermediateOutput::Color(LogColor::Green)),
+        "yellow" => Ok(IntermediateOutput::Color(LogColor::Yellow)),
+        "blue" => Ok(IntermediateOutput::Color(LogColor::Blue)),
+        "magenta" => Ok(IntermediateOutput::Color(LogColor::Magenta)),
+        "cyan" => Ok(IntermediateOutput::Color(LogColor::Cyan)),
+        "white" => Ok(IntermediateOutput::Color(LogColor::White)),
+        "brightblack" => Ok(IntermediateOutput::Color(LogColor::BrightBlack)),
+        "brightred" => Ok(IntermediateOutput::Color(LogColor::BrightRed)),
+        "brightgreen" => Ok(IntermediateOutput::Color(LogColor::BrightGreen)),
+        "brightyellow" => Ok(IntermediateOutput::Color(LogColor::BrightYellow)),
+        "brightblue" => Ok(IntermediateOutput::Color(LogColor::BrightBlue)),
+        "brightmagenta" => Ok(IntermediateOutput::Color(LogColor::BrightMagenta)),
+        "brightcyan" => Ok(IntermediateOutput::Color(LogColor::BrightCyan)),
+        "brightwhite" => Ok(IntermediateOutput::Color(LogColor::BrightWhite)),
+        "severity" => Ok(IntermediateOutput::Color(LogColor::SeverityLevel)),
+        "werror" => Ok(IntermediateOutput::Color(LogColor::WarnError)),
+        _ => Err(()),
+    });
+
+    parse_type.parse(input)
+}
+
+fn parse_style(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
+        "bold" => Ok(IntermediateOutput::Style(LogStyle::Bold)),
+        "italic" => Ok(IntermediateOutput::Style(LogStyle::Italic)),
+        "underline" => Ok(IntermediateOutput::Style(LogStyle::Underline)),
+        "strike" => Ok(IntermediateOutput::Style(LogStyle::Strikethrough)),
+        "dimmed" => Ok(IntermediateOutput::Style(LogStyle::Dimmed)),
+        _ => Err(()),
+    });
+
+    parse_type.parse(input)
+}
+
+fn parse_width_and_alignment(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    let (input, alignment) = opt(map_res(one_of("<^>"), move |c| match c {
+        '^' => Ok(Alignment::Center),
+        '<' => Ok(Alignment::Left),
+        '>' => Ok(Alignment::Right),
+        _ => Err(()),
+    }))(input)?;
+
+    let (input, width) = map_res(digit1, move |s: &str| s.parse::<usize>())(input)?;
+
+    Ok((
+        input,
+        IntermediateOutput::WidthAndAlignment((width, alignment)),
+    ))
+}
+
+fn parse_log_segment(input: &str) -> IResult<&str, LogSegment, ()> {
+    let (input, output) = separated_list1(
+        char(':'),
+        alt((
+            parse_metadata,
+            parse_color,
+            parse_style,
+            parse_width_and_alignment,
+        )),
+    )(input)?;
+
+    let mut metadata = None;
+    let mut color = None;
+    let mut style = None;
+    let mut width_and_alignment = None;
+    for item in output {
+        match item {
+            IntermediateOutput::Metadata(m) => {
+                if metadata.is_some() {
+                    return Err(nom::Err::Error(()));
+                }
+                metadata = Some(m);
+            }
+            IntermediateOutput::Color(c) => {
+                if color.is_some() {
+                    return Err(nom::Err::Error(()));
+                }
+                color = Some(c);
+            }
+            IntermediateOutput::Style(s) => {
+                if style.is_some() {
+                    return Err(nom::Err::Error(()));
+                }
+                style = Some(s);
+            }
+            IntermediateOutput::WidthAndAlignment(w) => {
+                if width_and_alignment.is_some() {
+                    return Err(nom::Err::Error(()));
+                }
+                width_and_alignment = Some(w);
+            }
+        }
+    }
+
+    let Some(metadata) = metadata else {
+        return Err(nom::Err::Error(()));
+    };
+
+    let (width, alignment) = width_and_alignment
+        .map(|(w, a)| (Some(w), a))
+        .unwrap_or((None, None));
+
+    let log_segment = LogSegment {
+        metadata,
+        format: LogFormat {
+            color,
+            style,
+            width,
+            alignment,
+        },
+    };
+
+    Ok((input, log_segment))
+}
+
+fn parse_argument(input: &str) -> IResult<&str, LogSegment, ()> {
+    let mut parse_enclosed = delimited(char('{'), parse_log_segment, char('}'));
+    parse_enclosed.parse(input)
+}
+
 fn parse_string_segment(input: &str) -> IResult<&str, LogSegment, ()> {
     map(take_till1(|c| c == '{'), |s: &str| {
-        LogSegment::String(s.to_string())
+        LogSegment::new(LogMetadata::String(s.to_string()))
     })
     .parse(input)
 }
@@ -61,17 +288,17 @@ mod tests {
         let log_template = "{t} [{L}] {s}\n└─ {m} @ {F}:{l}";
 
         let expected_output = vec![
-            LogSegment::Timestamp,
-            LogSegment::String(" [".to_string()),
-            LogSegment::LogLevel,
-            LogSegment::String("] ".to_string()),
-            LogSegment::Log,
-            LogSegment::String("\n└─ ".to_string()),
-            LogSegment::ModulePath,
-            LogSegment::String(" @ ".to_string()),
-            LogSegment::FilePath,
-            LogSegment::String(":".to_string()),
-            LogSegment::LineNumber,
+            LogSegment::new(LogMetadata::Timestamp),
+            LogSegment::new(LogMetadata::String(" [".to_string())),
+            LogSegment::new(LogMetadata::LogLevel),
+            LogSegment::new(LogMetadata::String("] ".to_string())),
+            LogSegment::new(LogMetadata::Log),
+            LogSegment::new(LogMetadata::String("\n└─ ".to_string())),
+            LogSegment::new(LogMetadata::ModulePath),
+            LogSegment::new(LogMetadata::String(" @ ".to_string())),
+            LogSegment::new(LogMetadata::FilePath),
+            LogSegment::new(LogMetadata::String(":".to_string())),
+            LogSegment::new(LogMetadata::LineNumber),
         ];
 
         let result = parse(log_template);
@@ -83,7 +310,10 @@ mod tests {
         let result = parse_string_segment("Log: {t}");
         let (input, output) = result.unwrap();
         assert_eq!(input, "{t}");
-        assert_eq!(output, LogSegment::String("Log: ".to_string()));
+        assert_eq!(
+            output,
+            LogSegment::new(LogMetadata::String("Log: ".to_string()))
+        );
     }
 
     #[test]
@@ -95,12 +325,96 @@ mod tests {
     #[test]
     fn test_parse_timestamp_argument() {
         let result = parse_argument("{t}");
-        assert_eq!(result, Ok(("", LogSegment::Timestamp)));
+        assert_eq!(result, Ok(("", LogSegment::new(LogMetadata::Timestamp))));
+    }
+
+    #[test]
+    fn test_parse_argument_with_color() {
+        let result = parse_log_segment("t:werror");
+        let expected_output =
+            LogSegment::new(LogMetadata::Timestamp).with_color(LogColor::WarnError);
+        assert_eq!(result, Ok(("", expected_output)));
+    }
+
+    #[test]
+    fn test_parse_argument_with_extra_format_parameters_width_first() {
+        let result = parse_argument("{t:>8:white}");
+        let expected_output = LogSegment::new(LogMetadata::Timestamp)
+            .with_width(8)
+            .with_alignment(Alignment::Right)
+            .with_color(LogColor::White);
+        assert_eq!(result, Ok(("", expected_output)));
+    }
+
+    #[test]
+    fn test_parse_argument_with_extra_format_parameters_color_first() {
+        let result = parse_argument("{f:werror:<25}");
+        let expected_output = LogSegment::new(LogMetadata::FileName)
+            .with_width(25)
+            .with_alignment(Alignment::Left)
+            .with_color(LogColor::WarnError);
+        assert_eq!(result, Ok(("", expected_output)));
     }
 
     #[test]
     fn test_parse_invalid_argument() {
         let result = parse_argument("{foo}");
         assert_eq!(result, Result::Err(nom::Err::Error(())));
+    }
+
+    #[test]
+    fn test_parse_width_no_alignment() {
+        let result = parse_width_and_alignment("12");
+        assert_eq!(
+            result,
+            Ok(("", IntermediateOutput::WidthAndAlignment((12, None))))
+        );
+    }
+
+    #[test]
+    fn test_parse_width_and_alignment() {
+        let result = parse_width_and_alignment(">12");
+        assert_eq!(
+            result,
+            Ok((
+                "",
+                IntermediateOutput::WidthAndAlignment((12, Some(Alignment::Right)))
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_color() {
+        let result = parse_color("blue");
+        assert_eq!(result, Ok(("", IntermediateOutput::Color(LogColor::Blue))));
+    }
+
+    #[test]
+    fn test_parse_log_template_with_color_style_width_and_alignment() {
+        let log_template = "T{t:>8} [{L:severity:bold}] {f:white:underline}:{l:white:3} {s:werror}";
+
+        let expected_output = vec![
+            LogSegment::new(LogMetadata::String("T".to_string())),
+            LogSegment::new(LogMetadata::Timestamp)
+                .with_width(8)
+                .with_alignment(Alignment::Right),
+            LogSegment::new(LogMetadata::String(" [".to_string())),
+            LogSegment::new(LogMetadata::LogLevel)
+                .with_color(LogColor::SeverityLevel)
+                .with_style(LogStyle::Bold),
+            LogSegment::new(LogMetadata::String("] ".to_string())),
+            LogSegment::new(LogMetadata::FileName)
+                .with_color(LogColor::White)
+                .with_style(LogStyle::Underline),
+            LogSegment::new(LogMetadata::String(":".to_string())),
+            LogSegment::new(LogMetadata::LineNumber)
+                .with_color(LogColor::White)
+                .with_width(3),
+            LogSegment::new(LogMetadata::String(" ".to_string())),
+            LogSegment::new(LogMetadata::Log).with_color(LogColor::WarnError),
+        ];
+
+        let result = parse(log_template);
+        assert_eq!(result, Ok(expected_output));
     }
 }
