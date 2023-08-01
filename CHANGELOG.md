@@ -6,13 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
-- [#765]: `defmt-decoder`: Add support for customizable logger formatting
-
-[#765]: https://github.com/knurling-rs/defmt/pull/765
 
 - [#766] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
+- [#765]: `defmt-decoder`: Add support for customizable logger formatting
 
 [#766]: https://github.com/knurling-rs/defmt/pull/766
+[#765]: https://github.com/knurling-rs/defmt/pull/765
 
 ## [v0.3.5] - 2023-06-19
 
