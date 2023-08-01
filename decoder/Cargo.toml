@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 name = "defmt-decoder"
 readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.7"
+version = "0.3.8"
 
 [dependencies]
 byteorder = "1"
@@ -35,7 +35,7 @@ gimli = { version = "0.27", default-features = false, features = [
     "read",
     "std",
 ] }
-object = { version = "0.30", default-features = false, features = [
+object = { version = "0.31", default-features = false, features = [
     "read_core",
     "elf",
     "std",
