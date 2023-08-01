@@ -10,7 +10,7 @@ use std::{
 
 use super::DefmtRecord;
 
-pub(crate) struct PrettyLogger {
+pub(crate) struct StdoutLogger {
     always_include_location: bool,
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
     /// Number of characters used by the timestamp. This may increase over time and is used to align
@@ -18,7 +18,7 @@ pub(crate) struct PrettyLogger {
     timing_align: AtomicUsize,
 }
 
-impl Log for PrettyLogger {
+impl Log for StdoutLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         (self.should_log)(metadata)
     }
@@ -49,7 +49,7 @@ impl Log for PrettyLogger {
     fn flush(&self) {}
 }
 
-impl PrettyLogger {
+impl StdoutLogger {
     pub fn new(
         always_include_location: bool,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
