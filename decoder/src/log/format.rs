@@ -8,6 +8,8 @@ use nom::{
     IResult, Parser,
 };
 
+use std::str::FromStr;
+
 #[derive(Debug, PartialEq, Clone)]
 #[non_exhaustive]
 pub(super) enum LogMetadata {
@@ -23,22 +25,8 @@ pub(super) enum LogMetadata {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub(super) enum LogColor {
-    Black,
-    Red,
-    Green,
-    Yellow,
-    Blue,
-    Magenta,
-    Cyan,
-    White,
-    BrightBlack,
-    BrightRed,
-    BrightGreen,
-    BrightYellow,
-    BrightBlue,
-    BrightMagenta,
-    BrightCyan,
-    BrightWhite,
+    /// User-defined color
+    Color(colored::Color),
 
     /// Color matching the default color for the log level
     SeverityLevel,
@@ -46,15 +34,6 @@ pub(super) enum LogColor {
     /// Color matching the default color for the log level,
     /// but only if the log level is WARN or ERROR
     WarnError,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub(super) enum LogStyle {
-    Bold,
-    Italic,
-    Underline,
-    Strikethrough,
-    Dimmed,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -74,7 +53,7 @@ pub(super) struct LogSegment {
 pub(super) struct LogFormat {
     pub(super) width: Option<usize>,
     pub(super) color: Option<LogColor>,
-    pub(super) style: Option<LogStyle>,
+    pub(super) style: Option<colored::Styles>,
     pub(super) alignment: Option<Alignment>,
 }
 
@@ -83,7 +62,7 @@ enum IntermediateOutput {
     Metadata(LogMetadata),
     WidthAndAlignment((usize, Option<Alignment>)),
     Color(LogColor),
-    Style(LogStyle),
+    Style(colored::Styles),
 }
 
 impl LogSegment {
@@ -106,7 +85,7 @@ impl LogSegment {
     }
 
     #[allow(dead_code)]
-    const fn with_style(mut self, style: LogStyle) -> Self {
+    const fn with_style(mut self, style: colored::Styles) -> Self {
         self.format.style = Some(style);
         self
     }
@@ -141,25 +120,9 @@ fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
 
 fn parse_color(input: &str) -> IResult<&str, IntermediateOutput, ()> {
     let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
-        "black" => Ok(IntermediateOutput::Color(LogColor::Black)),
-        "red" => Ok(IntermediateOutput::Color(LogColor::Red)),
-        "green" => Ok(IntermediateOutput::Color(LogColor::Green)),
-        "yellow" => Ok(IntermediateOutput::Color(LogColor::Yellow)),
-        "blue" => Ok(IntermediateOutput::Color(LogColor::Blue)),
-        "magenta" => Ok(IntermediateOutput::Color(LogColor::Magenta)),
-        "cyan" => Ok(IntermediateOutput::Color(LogColor::Cyan)),
-        "white" => Ok(IntermediateOutput::Color(LogColor::White)),
-        "brightblack" => Ok(IntermediateOutput::Color(LogColor::BrightBlack)),
-        "brightred" => Ok(IntermediateOutput::Color(LogColor::BrightRed)),
-        "brightgreen" => Ok(IntermediateOutput::Color(LogColor::BrightGreen)),
-        "brightyellow" => Ok(IntermediateOutput::Color(LogColor::BrightYellow)),
-        "brightblue" => Ok(IntermediateOutput::Color(LogColor::BrightBlue)),
-        "brightmagenta" => Ok(IntermediateOutput::Color(LogColor::BrightMagenta)),
-        "brightcyan" => Ok(IntermediateOutput::Color(LogColor::BrightCyan)),
-        "brightwhite" => Ok(IntermediateOutput::Color(LogColor::BrightWhite)),
         "severity" => Ok(IntermediateOutput::Color(LogColor::SeverityLevel)),
         "werror" => Ok(IntermediateOutput::Color(LogColor::WarnError)),
-        _ => Err(()),
+        s => colored::Color::from_str(s).map(|c| IntermediateOutput::Color(LogColor::Color(c))),
     });
 
     parse_type.parse(input)
@@ -167,11 +130,11 @@ fn parse_color(input: &str) -> IResult<&str, IntermediateOutput, ()> {
 
 fn parse_style(input: &str) -> IResult<&str, IntermediateOutput, ()> {
     let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
-        "bold" => Ok(IntermediateOutput::Style(LogStyle::Bold)),
-        "italic" => Ok(IntermediateOutput::Style(LogStyle::Italic)),
-        "underline" => Ok(IntermediateOutput::Style(LogStyle::Underline)),
-        "strike" => Ok(IntermediateOutput::Style(LogStyle::Strikethrough)),
-        "dimmed" => Ok(IntermediateOutput::Style(LogStyle::Dimmed)),
+        "bold" => Ok(IntermediateOutput::Style(colored::Styles::Bold)),
+        "italic" => Ok(IntermediateOutput::Style(colored::Styles::Italic)),
+        "underline" => Ok(IntermediateOutput::Style(colored::Styles::Underline)),
+        "strike" => Ok(IntermediateOutput::Style(colored::Styles::Strikethrough)),
+        "dimmed" => Ok(IntermediateOutput::Style(colored::Styles::Dimmed)),
         _ => Err(()),
     });
 
@@ -342,7 +305,7 @@ mod tests {
         let expected_output = LogSegment::new(LogMetadata::Timestamp)
             .with_width(8)
             .with_alignment(Alignment::Right)
-            .with_color(LogColor::White);
+            .with_color(LogColor::Color(colored::Color::White));
         assert_eq!(result, Ok(("", expected_output)));
     }
 
@@ -386,7 +349,13 @@ mod tests {
     #[test]
     fn test_parse_color() {
         let result = parse_color("blue");
-        assert_eq!(result, Ok(("", IntermediateOutput::Color(LogColor::Blue))));
+        assert_eq!(
+            result,
+            Ok((
+                "",
+                IntermediateOutput::Color(LogColor::Color(colored::Color::Blue))
+            ))
+        );
     }
 
     #[test]
@@ -401,14 +370,14 @@ mod tests {
             LogSegment::new(LogMetadata::String(" [".to_string())),
             LogSegment::new(LogMetadata::LogLevel)
                 .with_color(LogColor::SeverityLevel)
-                .with_style(LogStyle::Bold),
+                .with_style(colored::Styles::Bold),
             LogSegment::new(LogMetadata::String("] ".to_string())),
             LogSegment::new(LogMetadata::FileName)
-                .with_color(LogColor::White)
-                .with_style(LogStyle::Underline),
+                .with_color(LogColor::Color(colored::Color::White))
+                .with_style(colored::Styles::Underline),
             LogSegment::new(LogMetadata::String(":".to_string())),
             LogSegment::new(LogMetadata::LineNumber)
-                .with_color(LogColor::White)
+                .with_color(LogColor::Color(colored::Color::White))
                 .with_width(3),
             LogSegment::new(LogMetadata::String(" ".to_string())),
             LogSegment::new(LogMetadata::Log).with_color(LogColor::WarnError),

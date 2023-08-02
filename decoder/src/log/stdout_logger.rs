@@ -1,4 +1,4 @@
-use colored::{Color, ColoredString, Colorize};
+use colored::{Color, ColoredString, Colorize, Styles};
 use dissimilar::Chunk;
 use log::{Level, Log, Metadata, Record as LogRecord};
 
@@ -10,7 +10,7 @@ use std::{
 };
 
 use super::{
-    format::{self, Alignment, LogColor, LogFormat, LogMetadata, LogSegment, LogStyle},
+    format::{self, Alignment, LogColor, LogFormat, LogMetadata, LogSegment},
     DefmtLoggerInfo, DefmtRecord,
 };
 
@@ -399,22 +399,7 @@ fn apply_color(
 ) -> ColoredString {
     if let Some(log_color) = log_color {
         match log_color {
-            LogColor::Black => s.black(),
-            LogColor::Red => s.red(),
-            LogColor::Green => s.green(),
-            LogColor::Yellow => s.yellow(),
-            LogColor::Blue => s.blue(),
-            LogColor::Magenta => s.magenta(),
-            LogColor::Cyan => s.cyan(),
-            LogColor::White => s.white(),
-            LogColor::BrightBlack => s.bright_black(),
-            LogColor::BrightRed => s.bright_red(),
-            LogColor::BrightGreen => s.bright_green(),
-            LogColor::BrightYellow => s.bright_yellow(),
-            LogColor::BrightBlue => s.bright_blue(),
-            LogColor::BrightMagenta => s.bright_magenta(),
-            LogColor::BrightCyan => s.bright_cyan(),
-            LogColor::BrightWhite => s.bright_white(),
+            LogColor::Color(color) => s.color(color),
             LogColor::SeverityLevel => {
                 if let Some(level) = level {
                     let color = color_for_log_level(level);
@@ -437,14 +422,18 @@ fn apply_color(
     }
 }
 
-fn apply_style(s: ColoredString, log_style: Option<LogStyle>) -> ColoredString {
+fn apply_style(s: ColoredString, log_style: Option<Styles>) -> ColoredString {
     if let Some(log_style) = log_style {
         match log_style {
-            LogStyle::Bold => s.bold(),
-            LogStyle::Italic => s.italic(),
-            LogStyle::Underline => s.underline(),
-            LogStyle::Strikethrough => s.strikethrough(),
-            LogStyle::Dimmed => s.dimmed(),
+            Styles::Bold => s.bold(),
+            Styles::Italic => s.italic(),
+            Styles::Underline => s.underline(),
+            Styles::Strikethrough => s.strikethrough(),
+            Styles::Dimmed => s.dimmed(),
+            Styles::Clear => s.clear(),
+            Styles::Reversed => s.reversed(),
+            Styles::Blink => s.blink(),
+            Styles::Hidden => s.hidden(),
         }
     } else {
         s
