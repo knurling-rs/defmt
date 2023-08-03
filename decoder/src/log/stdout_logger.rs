@@ -184,13 +184,15 @@ impl<'a> Printer<'a> {
             Record::Host(_) => String::from("<time>"),
         };
 
-        let timestamp = ColoredString::from(timestamp.as_str());
-        let timestamp = apply_color(timestamp, format.color, self.record_log_level());
-        let timestamp = apply_style(timestamp, format.style);
-        let alignment = format.alignment.unwrap_or(Alignment::Left);
+        let timestamp = apply_format(
+            timestamp.as_str(),
+            format.color,
+            format.style,
+            self.record_log_level(),
+        );
         let width = format.width.unwrap_or(self.min_timestamp_width);
 
-        write_string(timestamp, sink, width, alignment)
+        write_string(timestamp, sink, width, format.alignment)
     }
 
     fn print_log_level<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
@@ -201,14 +203,15 @@ impl<'a> Printer<'a> {
         };
 
         let color = format.color.unwrap_or(LogColor::SeverityLevel);
-
-        let level = ColoredString::from(level.as_str());
-        let level = apply_color(level, Some(color), self.record_log_level());
-        let level = apply_style(level, format.style);
-        let alignment = format.alignment.unwrap_or(Alignment::Left);
+        let level = apply_format(
+            level.as_str(),
+            Some(color),
+            format.style,
+            self.record_log_level(),
+        );
         let width = format.width.unwrap_or(5);
 
-        write_string(level, sink, width, alignment)
+        write_string(level, sink, width, format.alignment)
     }
 
     fn print_file_path<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
@@ -218,13 +221,15 @@ impl<'a> Printer<'a> {
         }
         .unwrap_or("<file>");
 
-        let file_path = ColoredString::from(file_path);
-        let file_path = apply_color(file_path, format.color, self.record_log_level());
-        let file_path = apply_style(file_path, format.style);
-        let alignment = format.alignment.unwrap_or(Alignment::Left);
+        let file_path = apply_format(
+            file_path,
+            format.color,
+            format.style,
+            self.record_log_level(),
+        );
         let width = format.width.unwrap_or(0);
 
-        write_string(file_path, sink, width, alignment)
+        write_string(file_path, sink, width, format.alignment)
     }
 
     fn print_file_name<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
@@ -244,13 +249,15 @@ impl<'a> Printer<'a> {
             "<file>"
         };
 
-        let file_name = ColoredString::from(file_name);
-        let file_name = apply_color(file_name, format.color, self.record_log_level());
-        let file_name = apply_style(file_name, format.style);
-        let alignment = format.alignment.unwrap_or(Alignment::Left);
+        let file_name = apply_format(
+            file_name,
+            format.color,
+            format.style,
+            self.record_log_level(),
+        );
         let width = format.width.unwrap_or(0);
 
-        write_string(file_name, sink, width, alignment)
+        write_string(file_name, sink, width, format.alignment)
     }
 
     fn print_module_path<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
@@ -260,13 +267,15 @@ impl<'a> Printer<'a> {
         }
         .unwrap_or("<mod path>");
 
-        let module_path = ColoredString::from(module_path);
-        let module_path = apply_color(module_path, format.color, self.record_log_level());
-        let module_path = apply_style(module_path, format.style);
-        let alignment = format.alignment.unwrap_or(Alignment::Left);
+        let module_path = apply_format(
+            module_path,
+            format.color,
+            format.style,
+            self.record_log_level(),
+        );
         let width = format.width.unwrap_or(0);
 
-        write_string(module_path, sink, width, alignment)
+        write_string(module_path, sink, width, format.alignment)
     }
 
     fn print_line_number<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
@@ -277,13 +286,15 @@ impl<'a> Printer<'a> {
         .unwrap_or(0)
         .to_string();
 
-        let line_number = ColoredString::from(line_number.as_str());
-        let line_number = apply_color(line_number, format.color, self.record_log_level());
-        let line_number = apply_style(line_number, format.style);
-        let alignment = format.alignment.unwrap_or(Alignment::Left);
+        let line_number = apply_format(
+            line_number.as_str(),
+            format.color,
+            format.style,
+            self.record_log_level(),
+        );
         let width = format.width.unwrap_or(4);
 
-        write_string(line_number, sink, width, alignment)
+        write_string(line_number, sink, width, format.alignment)
     }
 
     fn print_log<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
@@ -291,12 +302,14 @@ impl<'a> Printer<'a> {
             Record::Defmt(record) => match color_diff(record.args().to_string()) {
                 Ok(s) => write!(sink, "{s}"),
                 Err(s) => {
-                    let log = ColoredString::from(s.as_str());
-                    let log = apply_color(log, format.color, self.record_log_level());
-                    let log = apply_style(log, format.style);
-                    let alignment = format.alignment.unwrap_or(Alignment::Left);
+                    let log = apply_format(
+                        s.as_str(),
+                        format.color,
+                        format.style,
+                        self.record_log_level(),
+                    );
                     let width = format.width.unwrap_or(0);
-                    write_string(log, sink, width, alignment)
+                    write_string(log, sink, width, format.alignment)
                 }
             },
             Record::Host(record) => {
@@ -392,6 +405,18 @@ fn color_for_log_level(level: Level) -> Color {
     }
 }
 
+fn apply_format(
+    s: &str,
+    color: Option<LogColor>,
+    style: Option<Styles>,
+    level: Option<Level>,
+) -> ColoredString {
+    let s = ColoredString::from(s);
+    let s = apply_color(s, color, level);
+    let s = apply_style(s, style);
+    s
+}
+
 fn apply_color(
     s: ColoredString,
     log_color: Option<LogColor>,
@@ -434,9 +459,9 @@ fn write_string<W: io::Write>(
     s: ColoredString,
     sink: &mut W,
     width: usize,
-    alignment: Alignment,
+    alignment: Option<Alignment>,
 ) -> io::Result<()> {
-    match alignment {
+    match alignment.unwrap_or(Alignment::Left) {
         Alignment::Left => write!(sink, "{s:<0$}", width),
         Alignment::Center => write!(sink, "{s:^0$}", width),
         Alignment::Right => write!(sink, "{s:>0$}", width),
