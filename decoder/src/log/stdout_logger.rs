@@ -413,8 +413,7 @@ fn apply_format(
 ) -> ColoredString {
     let s = ColoredString::from(s);
     let s = apply_color(s, color, level);
-    let s = apply_style(s, style);
-    s
+    apply_style(s, style)
 }
 
 fn apply_color(
