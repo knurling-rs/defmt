@@ -397,34 +397,25 @@ fn apply_color(
     log_color: Option<LogColor>,
     level: Option<Level>,
 ) -> ColoredString {
-    if let Some(log_color) = log_color {
-        match log_color {
-            LogColor::Color(color) => s.color(color),
-            LogColor::SeverityLevel => {
-                if let Some(level) = level {
-                    let color = color_for_log_level(level);
-                    s.color(color)
-                } else {
-                    s
-                }
-            }
-            LogColor::WarnError => {
-                if level.is_some_and(|l| l == Level::Warn || l == Level::Error) {
-                    let color = color_for_log_level(level.unwrap());
-                    s.color(color)
-                } else {
-                    s
-                }
-            }
-        }
-    } else {
-        s
+    match log_color {
+        Some(color) => match color {
+            LogColor::Color(c) => s.color(c),
+            LogColor::SeverityLevel => match level {
+                Some(level) => s.color(color_for_log_level(level)),
+                None => s,
+            },
+            LogColor::WarnError => match level {
+                Some(level @ (Level::Warn | Level::Error)) => s.color(color_for_log_level(level)),
+                _ => s,
+            },
+        },
+        None => s,
     }
 }
 
 fn apply_style(s: ColoredString, log_style: Option<Styles>) -> ColoredString {
-    if let Some(log_style) = log_style {
-        match log_style {
+    match log_style {
+        Some(log_style) => match log_style {
             Styles::Bold => s.bold(),
             Styles::Italic => s.italic(),
             Styles::Underline => s.underline(),
@@ -434,9 +425,8 @@ fn apply_style(s: ColoredString, log_style: Option<Styles>) -> ColoredString {
             Styles::Reversed => s.reversed(),
             Styles::Blink => s.blink(),
             Styles::Hidden => s.hidden(),
-        }
-    } else {
-        s
+        },
+        None => s,
     }
 }
 
@@ -447,14 +437,8 @@ fn write_string<W: io::Write>(
     alignment: Alignment,
 ) -> io::Result<()> {
     match alignment {
-        Alignment::Left => {
-            write!(sink, "{s:<0$}", width)
-        }
-        Alignment::Center => {
-            write!(sink, "{s:^0$}", width)
-        }
-        Alignment::Right => {
-            write!(sink, "{s:>0$}", width)
-        }
+        Alignment::Left => write!(sink, "{s:<0$}", width),
+        Alignment::Center => write!(sink, "{s:^0$}", width),
+        Alignment::Right => write!(sink, "{s:>0$}", width),
     }
 }

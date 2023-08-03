@@ -78,25 +78,25 @@ impl LogSegment {
         }
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     const fn with_color(mut self, color: LogColor) -> Self {
         self.format.color = Some(color);
         self
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     const fn with_style(mut self, style: colored::Styles) -> Self {
         self.format.style = Some(style);
         self
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     const fn with_width(mut self, width: usize) -> Self {
         self.format.width = Some(width);
         self
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     const fn with_alignment(mut self, alignment: Alignment) -> Self {
         self.format.alignment = Some(alignment);
         self
@@ -104,38 +104,50 @@ impl LogSegment {
 }
 
 fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
-        "f" => Ok(IntermediateOutput::Metadata(LogMetadata::FileName)),
-        "F" => Ok(IntermediateOutput::Metadata(LogMetadata::FilePath)),
-        "l" => Ok(IntermediateOutput::Metadata(LogMetadata::LineNumber)),
-        "s" => Ok(IntermediateOutput::Metadata(LogMetadata::Log)),
-        "L" => Ok(IntermediateOutput::Metadata(LogMetadata::LogLevel)),
-        "m" => Ok(IntermediateOutput::Metadata(LogMetadata::ModulePath)),
-        "t" => Ok(IntermediateOutput::Metadata(LogMetadata::Timestamp)),
-        _ => Err(()),
+    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
+        let metadata = match s {
+            "f" => LogMetadata::FileName,
+            "F" => LogMetadata::FilePath,
+            "l" => LogMetadata::LineNumber,
+            "s" => LogMetadata::Log,
+            "L" => LogMetadata::LogLevel,
+            "m" => LogMetadata::ModulePath,
+            "t" => LogMetadata::Timestamp,
+            _ => return Err(()),
+        };
+        Ok(IntermediateOutput::Metadata(metadata))
     });
 
     parse_type.parse(input)
 }
 
 fn parse_color(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
-        "severity" => Ok(IntermediateOutput::Color(LogColor::SeverityLevel)),
-        "werror" => Ok(IntermediateOutput::Color(LogColor::WarnError)),
-        s => colored::Color::from_str(s).map(|c| IntermediateOutput::Color(LogColor::Color(c))),
+    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
+        let color = match s {
+            "severity" => LogColor::SeverityLevel,
+            "werror" => LogColor::WarnError,
+            s => match colored::Color::from_str(s) {
+                Ok(c) => LogColor::Color(c),
+                Err(()) => return Err(()),
+            },
+        };
+        Ok(IntermediateOutput::Color(color))
     });
 
     parse_type.parse(input)
 }
 
 fn parse_style(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| match s {
-        "bold" => Ok(IntermediateOutput::Style(colored::Styles::Bold)),
-        "italic" => Ok(IntermediateOutput::Style(colored::Styles::Italic)),
-        "underline" => Ok(IntermediateOutput::Style(colored::Styles::Underline)),
-        "strike" => Ok(IntermediateOutput::Style(colored::Styles::Strikethrough)),
-        "dimmed" => Ok(IntermediateOutput::Style(colored::Styles::Dimmed)),
-        _ => Err(()),
+    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
+        let style = match s {
+            "bold" => colored::Styles::Bold,
+            "italic" => colored::Styles::Italic,
+            "underline" => colored::Styles::Underline,
+            "strike" => colored::Styles::Strikethrough,
+            "dimmed" => colored::Styles::Dimmed,
+            _ => return Err(()),
+        };
+        Ok(IntermediateOutput::Style(style))
     });
 
     parse_type.parse(input)
@@ -174,30 +186,13 @@ fn parse_log_segment(input: &str) -> IResult<&str, LogSegment, ()> {
     let mut width_and_alignment = None;
     for item in output {
         match item {
-            IntermediateOutput::Metadata(m) => {
-                if metadata.is_some() {
-                    return Err(nom::Err::Error(()));
-                }
-                metadata = Some(m);
+            IntermediateOutput::Metadata(m) if metadata.is_none() => metadata = Some(m),
+            IntermediateOutput::Color(c) if color.is_none() => color = Some(c),
+            IntermediateOutput::Style(s) if style.is_none() => style = Some(s),
+            IntermediateOutput::WidthAndAlignment(w) if width_and_alignment.is_none() => {
+                width_and_alignment = Some(w)
             }
-            IntermediateOutput::Color(c) => {
-                if color.is_some() {
-                    return Err(nom::Err::Error(()));
-                }
-                color = Some(c);
-            }
-            IntermediateOutput::Style(s) => {
-                if style.is_some() {
-                    return Err(nom::Err::Error(()));
-                }
-                style = Some(s);
-            }
-            IntermediateOutput::WidthAndAlignment(w) => {
-                if width_and_alignment.is_some() {
-                    return Err(nom::Err::Error(()));
-                }
-                width_and_alignment = Some(w);
-            }
+            _ => return Err(nom::Err::Error(())),
         }
     }
 
