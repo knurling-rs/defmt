@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#771]: `defmt-macros`: Ignore empty items in DEFMT_LOG
+
+[#771]: https://github.com/knurling-rs/defmt/pull/771
+
+## defmt-decoder v0.3.8, defmt-print v0.3.8 - 2023-08-01
+
 - [#766] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
+- [#765]: `defmt-decoder`: Add support for customizable logger formatting
 
 [#766]: https://github.com/knurling-rs/defmt/pull/766
+[#765]: https://github.com/knurling-rs/defmt/pull/765
 
 ## [v0.3.5] - 2023-06-19
 
