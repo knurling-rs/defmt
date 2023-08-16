@@ -3,6 +3,7 @@ use std::{
     io::{self, Read, StdinLock},
     net::TcpStream,
     path::{Path, PathBuf},
+    time::Duration,
 };
 
 use anyhow::anyhow;
