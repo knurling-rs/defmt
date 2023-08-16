@@ -82,15 +82,11 @@ impl Source {
                 let n = stdin.read(buf)?;
                 Ok((n, n == 0))
             }
-            Source::Serial(port) => {
-                match port.read(buf) {
-                    Ok(n) => {
-                        Ok((n, n == 0))
-                    },
-                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => Ok((0, false)),
-                    Err(e) => Err(anyhow!(e)),
-                }
-            }
+            Source::Serial(port) => match port.read(buf) {
+                Ok(n) => Ok((n, n == 0)),
+                Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => Ok((0, false)),
+                Err(e) => Err(anyhow!(e)),
+            },
             Source::Tcp(tcpstream) => Ok((tcpstream.read(buf)?, false)),
         }
     }
@@ -143,7 +139,11 @@ fn main() -> anyhow::Result<()> {
 
     let mut source = match command {
         None | Some(Command::Stdin) => Source::stdin(),
-        Some(Command::Serial { path }) => Source::Serial(serialport::new(path, 115_200).timeout(Duration::from_millis(10)).open()?),
+        Some(Command::Serial { path }) => Source::Serial(
+            serialport::new(path, 115_200)
+                .timeout(Duration::from_millis(10))
+                .open()?,
+        ),
         Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
     };
 
