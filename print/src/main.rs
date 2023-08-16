@@ -130,7 +130,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut source = match command {
         None | Some(Command::Stdin) => Source::stdin(),
-        Some(Command::Serial { path }) => Source::Serial(serialport::new(path, 115_200).timeout(std::time::Duration::from_millis(10)).open().unwrap()),
+        Some(Command::Serial { path }) => Source::Serial(serialport::new(path, 115_200).timeout(Duration::from_millis(10)).open()?),
         Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
     };
 
