@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#771]: `defmt-macros`: Ignore empty items in DEFMT_LOG
+- [#767]: `defmt-print`: Add serialport support for logs over UART
 
 [#771]: https://github.com/knurling-rs/defmt/pull/771
+[#767]: https://github.com/knurling-rs/defmt/pull/767
 
 ## defmt-decoder v0.3.8, defmt-print v0.3.8 - 2023-08-01
 
