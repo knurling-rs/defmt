@@ -16,6 +16,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         quote!({ defmt::export::fetch_add_string_index() as u16 })
     } else {
         quote!({
+            #[doc(hidden)]
             #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
             #[cfg_attr(not(target_os = "macos"), link_section = #section)]
             #[export_name = #sym_name]
