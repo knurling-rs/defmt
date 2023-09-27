@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![allow(clippy::bad_bit_mask)]
 
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;

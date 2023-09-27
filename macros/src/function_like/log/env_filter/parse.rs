@@ -15,27 +15,30 @@ pub(crate) struct ModulePath {
 
 /// Parses the contents of the `DEFMT_LOG` env var
 pub(crate) fn defmt_log(input: &str) -> impl Iterator<Item = Entry> + '_ {
-    input.rsplit(',').map(|entry| {
-        if let Some((path, log_level)) = entry.rsplit_once('=') {
-            let module_path = ModulePath::parse(path);
-            let log_level = parse_log_level(log_level).unwrap_or_else(|_| {
-                panic!(
-                    "unknown log level `{}` in DEFMT_LOG env var. \
+    input
+        .rsplit(',')
+        .filter(|entry| !entry.is_empty())
+        .map(|entry| {
+            if let Some((path, log_level)) = entry.rsplit_once('=') {
+                let module_path = ModulePath::parse(path);
+                let log_level = parse_log_level(log_level).unwrap_or_else(|_| {
+                    panic!(
+                        "unknown log level `{}` in DEFMT_LOG env var. \
                      expected one of: off, error, info, warn, debug, trace",
-                    log_level
-                )
-            });
+                        log_level
+                    )
+                });
 
-            Entry::ModulePathLogLevel {
-                module_path,
-                log_level,
+                Entry::ModulePathLogLevel {
+                    module_path,
+                    log_level,
+                }
+            } else if let Ok(log_level) = parse_log_level(entry) {
+                Entry::LogLevel(log_level)
+            } else {
+                Entry::ModulePath(ModulePath::parse(entry))
             }
-        } else if let Ok(log_level) = parse_log_level(entry) {
-            Entry::LogLevel(log_level)
-        } else {
-            Entry::ModulePath(ModulePath::parse(entry))
-        }
-    })
+        })
 }
 
 #[derive(Debug, PartialEq)]

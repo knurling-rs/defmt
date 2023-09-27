@@ -108,12 +108,20 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     let mut bitflags_map = HashMap::new();
     let mut timestamp = None;
     for entry in elf.symbols() {
-        // Skipping symbols with empty string names, as they may be added by
-        // `objcopy`, and breaks JSON demangling
-        let name = match entry.name() {
-            Ok(name) if !name.is_empty() => name,
-            _ => continue,
+        let Ok(name) = entry.name() else {
+            continue;
         };
+
+        if name.is_empty() {
+            // Skipping symbols with empty string names, as they may be added by
+            // `objcopy`, and breaks JSON demangling
+            continue;
+        }
+
+        if name == "$d" || name.starts_with("$d.") {
+            // Skip AArch64 mapping symbols
+            continue;
+        }
 
         if name.starts_with("_defmt") || name.starts_with("__DEFMT_MARKER") {
             // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
