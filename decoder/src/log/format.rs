@@ -53,7 +53,7 @@ pub(super) struct LogSegment {
 pub(super) struct LogFormat {
     pub(super) width: Option<usize>,
     pub(super) color: Option<LogColor>,
-    pub(super) style: Option<colored::Styles>,
+    pub(super) style: Option<Vec<colored::Styles>>,
     pub(super) alignment: Option<Alignment>,
 }
 
@@ -85,8 +85,10 @@ impl LogSegment {
     }
 
     #[cfg(test)]
-    const fn with_style(mut self, style: colored::Styles) -> Self {
-        self.format.style = Some(style);
+    fn with_style(mut self, style: colored::Styles) -> Self {
+        let mut styles = self.format.style.unwrap_or_default();
+        styles.push(style);
+        self.format.style = Some(styles);
         self
     }
 
@@ -188,16 +190,26 @@ fn parse_log_segment(input: &str) -> IResult<&str, LogSegment, ()> {
         match item {
             IntermediateOutput::Metadata(m) if metadata.is_none() => metadata = Some(m),
             IntermediateOutput::Color(c) if color.is_none() => color = Some(c),
-            IntermediateOutput::Style(s) if style.is_none() => style = Some(s),
+            IntermediateOutput::Style(s) => {
+                let mut styles: Vec<colored::Styles> = style.unwrap_or_default();
+
+                // A format with repeated style specifiers is not valid
+                if styles.contains(&s) {
+                    return Err(nom::Err::Failure(()));
+                }
+
+                styles.push(s);
+                style = Some(styles);
+            }
             IntermediateOutput::WidthAndAlignment(w) if width_and_alignment.is_none() => {
                 width_and_alignment = Some(w)
             }
-            _ => return Err(nom::Err::Error(())),
+            _ => return Err(nom::Err::Failure(())),
         }
     }
 
     let Some(metadata) = metadata else {
-        return Err(nom::Err::Error(()));
+        return Err(nom::Err::Failure(()));
     };
 
     let (width, alignment) = width_and_alignment
@@ -380,5 +392,26 @@ mod tests {
 
         let result = parse(log_template);
         assert_eq!(result, Ok(expected_output));
+    }
+
+    #[test]
+    fn test_parse_log_with_multiple_different_styles() {
+        let log_template = "{s:bold:underline:italic:dimmed}";
+
+        let expected_output = vec![LogSegment::new(LogMetadata::Log)
+            .with_style(colored::Styles::Bold)
+            .with_style(colored::Styles::Underline)
+            .with_style(colored::Styles::Italic)
+            .with_style(colored::Styles::Dimmed)];
+
+        let result = parse(log_template);
+        assert_eq!(result, Ok(expected_output));
+    }
+
+    #[test]
+    fn test_parse_log_with_repeated_styles() {
+        let log_template = "{s:bold:bold}";
+        let result = parse(log_template);
+        assert!(result.is_err());
     }
 }

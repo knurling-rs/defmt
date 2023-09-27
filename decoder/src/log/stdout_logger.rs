@@ -187,7 +187,7 @@ impl<'a> Printer<'a> {
         let timestamp = apply_format(
             timestamp.as_str(),
             format.color,
-            format.style,
+            format.style.as_ref(),
             self.record_log_level(),
         );
         let width = format.width.unwrap_or(self.min_timestamp_width);
@@ -206,7 +206,7 @@ impl<'a> Printer<'a> {
         let level = apply_format(
             level.as_str(),
             Some(color),
-            format.style,
+            format.style.as_ref(),
             self.record_log_level(),
         );
         let width = format.width.unwrap_or(5);
@@ -224,7 +224,7 @@ impl<'a> Printer<'a> {
         let file_path = apply_format(
             file_path,
             format.color,
-            format.style,
+            format.style.as_ref(),
             self.record_log_level(),
         );
         let width = format.width.unwrap_or(0);
@@ -252,7 +252,7 @@ impl<'a> Printer<'a> {
         let file_name = apply_format(
             file_name,
             format.color,
-            format.style,
+            format.style.as_ref(),
             self.record_log_level(),
         );
         let width = format.width.unwrap_or(0);
@@ -270,7 +270,7 @@ impl<'a> Printer<'a> {
         let module_path = apply_format(
             module_path,
             format.color,
-            format.style,
+            format.style.as_ref(),
             self.record_log_level(),
         );
         let width = format.width.unwrap_or(0);
@@ -289,7 +289,7 @@ impl<'a> Printer<'a> {
         let line_number = apply_format(
             line_number.as_str(),
             format.color,
-            format.style,
+            format.style.as_ref(),
             self.record_log_level(),
         );
         let width = format.width.unwrap_or(4);
@@ -305,7 +305,7 @@ impl<'a> Printer<'a> {
                     let log = apply_format(
                         s.as_str(),
                         format.color,
-                        format.style,
+                        format.style.as_ref(),
                         self.record_log_level(),
                     );
                     let width = format.width.unwrap_or(0);
@@ -408,12 +408,12 @@ fn color_for_log_level(level: Level) -> Color {
 fn apply_format(
     s: &str,
     color: Option<LogColor>,
-    style: Option<Styles>,
+    styles: Option<&Vec<Styles>>,
     level: Option<Level>,
 ) -> ColoredString {
     let s = ColoredString::from(s);
     let s = apply_color(s, color, level);
-    apply_style(s, style)
+    apply_styles(s, styles)
 }
 
 fn apply_color(
@@ -437,21 +437,27 @@ fn apply_color(
     }
 }
 
-fn apply_style(s: ColoredString, log_style: Option<Styles>) -> ColoredString {
-    match log_style {
-        Some(log_style) => match log_style {
-            Styles::Bold => s.bold(),
-            Styles::Italic => s.italic(),
-            Styles::Underline => s.underline(),
-            Styles::Strikethrough => s.strikethrough(),
-            Styles::Dimmed => s.dimmed(),
-            Styles::Clear => s.clear(),
-            Styles::Reversed => s.reversed(),
-            Styles::Blink => s.blink(),
-            Styles::Hidden => s.hidden(),
-        },
-        None => s,
+fn apply_styles(s: ColoredString, log_style: Option<&Vec<Styles>>) -> ColoredString {
+    let Some(log_styles) =  log_style else {
+        return s;
+    };
+
+    let mut stylized_string = s;
+    for style in log_styles {
+        stylized_string = match style {
+            Styles::Bold => stylized_string.bold(),
+            Styles::Italic => stylized_string.italic(),
+            Styles::Underline => stylized_string.underline(),
+            Styles::Strikethrough => stylized_string.strikethrough(),
+            Styles::Dimmed => stylized_string.dimmed(),
+            Styles::Clear => stylized_string.clear(),
+            Styles::Reversed => stylized_string.reversed(),
+            Styles::Blink => stylized_string.blink(),
+            Styles::Hidden => stylized_string.hidden(),
+        };
     }
+
+    stylized_string
 }
 
 fn write_string<W: io::Write>(
