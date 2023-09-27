@@ -438,7 +438,7 @@ fn apply_color(
 }
 
 fn apply_styles(s: ColoredString, log_style: Option<&Vec<Styles>>) -> ColoredString {
-    let Some(log_styles) =  log_style else {
+    let Some(log_styles) = log_style else {
         return s;
     };
 
