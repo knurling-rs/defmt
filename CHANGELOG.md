@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - [#775]: `defmt-decoder`: Ignore AArch64 mapping symbols
 - [#771]: `defmt-macros`: Ignore empty items in DEFMT_LOG
+- [#769]: `defmt-decoder`: Add support for color, style, width and alignment to format
 
 [#775]: https://github.com/knurling-rs/defmt/pull/775
 [#771]: https://github.com/knurling-rs/defmt/pull/771
+[#769]: https://github.com/knurling-rs/defmt/pull/769
 
 ## defmt-decoder v0.3.8, defmt-print v0.3.8 - 2023-08-01
 

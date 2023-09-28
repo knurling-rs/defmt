@@ -1,4 +1,4 @@
-use colored::{Color, ColoredString, Colorize};
+use colored::{Color, ColoredString, Colorize, Styles};
 use dissimilar::Chunk;
 use log::{Level, Log, Metadata, Record as LogRecord};
 
@@ -10,7 +10,7 @@ use std::{
 };
 
 use super::{
-    format::{self, LogSegment},
+    format::{self, Alignment, LogColor, LogFormat, LogMetadata, LogSegment},
     DefmtLoggerInfo, DefmtRecord,
 };
 
@@ -91,7 +91,10 @@ impl StdoutLogger {
     }
 
     pub fn info(&self) -> DefmtLoggerInfo {
-        let has_timestamp = self.log_format.contains(&LogSegment::Timestamp);
+        let has_timestamp = self
+            .log_format
+            .iter()
+            .any(|s| s.metadata == LogMetadata::Timestamp);
         DefmtLoggerInfo { has_timestamp }
     }
 
@@ -111,7 +114,7 @@ impl StdoutLogger {
         record: DefmtRecord,
         mut sink: StdoutLock,
     ) {
-        const RAW_FORMAT: &[LogSegment] = &[LogSegment::Log];
+        const RAW_FORMAT: &[LogSegment] = &[LogSegment::new(LogMetadata::Log)];
         Printer::new(Record::Defmt(&record), RAW_FORMAT)
             .print_frame(&mut sink)
             .ok();
@@ -151,15 +154,15 @@ impl<'a> Printer<'a> {
     /// Prints the formatted log frame to `sink`.
     pub fn print_frame<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         for segment in self.format {
-            match segment {
-                LogSegment::String(s) => self.print_string(sink, s),
-                LogSegment::Timestamp => self.print_timestamp(sink),
-                LogSegment::FileName => self.print_file_name(sink),
-                LogSegment::FilePath => self.print_file_path(sink),
-                LogSegment::ModulePath => self.print_module_path(sink),
-                LogSegment::LineNumber => self.print_line_number(sink),
-                LogSegment::LogLevel => self.print_log_level(sink),
-                LogSegment::Log => self.print_log(sink),
+            match &segment.metadata {
+                LogMetadata::String(s) => self.print_string(sink, s),
+                LogMetadata::Timestamp => self.print_timestamp(sink, &segment.format),
+                LogMetadata::FileName => self.print_file_name(sink, &segment.format),
+                LogMetadata::FilePath => self.print_file_path(sink, &segment.format),
+                LogMetadata::ModulePath => self.print_module_path(sink, &segment.format),
+                LogMetadata::LineNumber => self.print_line_number(sink, &segment.format),
+                LogMetadata::LogLevel => self.print_log_level(sink, &segment.format),
+                LogMetadata::Log => self.print_log(sink, &segment.format),
             }?;
         }
         writeln!(sink)
@@ -169,7 +172,7 @@ impl<'a> Printer<'a> {
         write!(sink, "{s}")
     }
 
-    fn print_timestamp<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+    fn print_timestamp<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
         let timestamp = match self.record {
             Record::Defmt(record) => {
                 if record.timestamp().is_empty() {
@@ -181,36 +184,55 @@ impl<'a> Printer<'a> {
             Record::Host(_) => String::from("<time>"),
         };
 
-        write!(sink, "{timestamp:>0$}", self.min_timestamp_width,)
+        let timestamp = apply_format(
+            timestamp.as_str(),
+            format.color,
+            format.style.as_ref(),
+            self.record_log_level(),
+        );
+        let width = format.width.unwrap_or(self.min_timestamp_width);
+
+        write_string(timestamp, sink, width, format.alignment)
     }
 
-    fn print_log_level<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
-        let level = match self.record {
-            Record::Defmt(record) => record.level(),
-            Record::Host(record) => Some(record.level()),
-        };
-
-        let level = if let Some(level) = level {
-            // TODO: Should the color be customizable via the format too?
-            level.to_string().color(color_for_log_level(level))
+    fn print_log_level<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+        let level = if let Some(level) = self.record_log_level() {
+            level.to_string()
         } else {
-            ColoredString::from("<lvl>")
+            String::from("<lvl>")
         };
 
-        write!(sink, "{level:5}")
+        let color = format.color.unwrap_or(LogColor::SeverityLevel);
+        let level = apply_format(
+            level.as_str(),
+            Some(color),
+            format.style.as_ref(),
+            self.record_log_level(),
+        );
+        let width = format.width.unwrap_or(5);
+
+        write_string(level, sink, width, format.alignment)
     }
 
-    fn print_file_path<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+    fn print_file_path<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
         let file_path = match self.record {
             Record::Defmt(record) => record.file(),
             Record::Host(record) => record.file(),
         }
         .unwrap_or("<file>");
 
-        write!(sink, "{file_path}")
+        let file_path = apply_format(
+            file_path,
+            format.color,
+            format.style.as_ref(),
+            self.record_log_level(),
+        );
+        let width = format.width.unwrap_or(0);
+
+        write_string(file_path, sink, width, format.alignment)
     }
 
-    fn print_file_name<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+    fn print_file_name<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
         let file = match self.record {
             Record::Defmt(record) => record.file(),
             Record::Host(record) => record.file(),
@@ -227,43 +249,88 @@ impl<'a> Printer<'a> {
             "<file>"
         };
 
-        write!(sink, "{file_name}")
+        let file_name = apply_format(
+            file_name,
+            format.color,
+            format.style.as_ref(),
+            self.record_log_level(),
+        );
+        let width = format.width.unwrap_or(0);
+
+        write_string(file_name, sink, width, format.alignment)
     }
 
-    fn print_module_path<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+    fn print_module_path<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
         let module_path = match self.record {
             Record::Defmt(record) => record.module_path(),
             Record::Host(record) => record.module_path(),
         }
         .unwrap_or("<mod path>");
 
-        write!(sink, "{module_path}")
+        let module_path = apply_format(
+            module_path,
+            format.color,
+            format.style.as_ref(),
+            self.record_log_level(),
+        );
+        let width = format.width.unwrap_or(0);
+
+        write_string(module_path, sink, width, format.alignment)
     }
 
-    fn print_line_number<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
+    fn print_line_number<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
         let line_number = match self.record {
             Record::Defmt(record) => record.line(),
             Record::Host(record) => record.line(),
         }
-        .unwrap_or(0);
+        .unwrap_or(0)
+        .to_string();
 
-        write!(sink, "{line_number}")
+        let line_number = apply_format(
+            line_number.as_str(),
+            format.color,
+            format.style.as_ref(),
+            self.record_log_level(),
+        );
+        let width = format.width.unwrap_or(4);
+
+        write_string(line_number, sink, width, format.alignment)
     }
 
-    fn print_log<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
-        let log = match self.record {
-            Record::Defmt(record) => color_diff(record.args().to_string()),
-            Record::Host(record) => record.args().to_string(),
-        };
+    fn print_log<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+        match self.record {
+            Record::Defmt(record) => match color_diff(record.args().to_string()) {
+                Ok(s) => write!(sink, "{s}"),
+                Err(s) => {
+                    let log = apply_format(
+                        s.as_str(),
+                        format.color,
+                        format.style.as_ref(),
+                        self.record_log_level(),
+                    );
+                    let width = format.width.unwrap_or(0);
+                    write_string(log, sink, width, format.alignment)
+                }
+            },
+            Record::Host(record) => {
+                let s = record.args().to_string();
+                write!(sink, "{s}")
+            }
+        }
+    }
 
-        write!(sink, "{log}")
+    fn record_log_level(&self) -> Option<Level> {
+        match self.record {
+            Record::Defmt(record) => record.level(),
+            Record::Host(record) => Some(record.level()),
+        }
     }
 }
 
 // color the output of `defmt::assert_eq`
 // HACK we should not re-parse formatted output but instead directly format into a color diff
 // template; that may require specially tagging log messages that come from `defmt::assert_eq`
-fn color_diff(text: String) -> String {
+fn color_diff(text: String) -> Result<String, String> {
     let lines = text.lines().collect::<Vec<_>>();
     let nlines = lines.len();
     if nlines > 2 {
@@ -321,12 +388,11 @@ fn color_diff(text: String) -> String {
                     }
                 }
             }
-            return buf;
+            return Ok(buf);
         }
     }
 
-    // keep output as it is
-    text.bold().to_string()
+    Err(text)
 }
 
 fn color_for_log_level(level: Level) -> Color {
@@ -336,5 +402,73 @@ fn color_for_log_level(level: Level) -> Color {
         Level::Info => Color::Green,
         Level::Debug => Color::BrightWhite,
         Level::Trace => Color::BrightBlack,
+    }
+}
+
+fn apply_format(
+    s: &str,
+    color: Option<LogColor>,
+    styles: Option<&Vec<Styles>>,
+    level: Option<Level>,
+) -> ColoredString {
+    let s = ColoredString::from(s);
+    let s = apply_color(s, color, level);
+    apply_styles(s, styles)
+}
+
+fn apply_color(
+    s: ColoredString,
+    log_color: Option<LogColor>,
+    level: Option<Level>,
+) -> ColoredString {
+    match log_color {
+        Some(color) => match color {
+            LogColor::Color(c) => s.color(c),
+            LogColor::SeverityLevel => match level {
+                Some(level) => s.color(color_for_log_level(level)),
+                None => s,
+            },
+            LogColor::WarnError => match level {
+                Some(level @ (Level::Warn | Level::Error)) => s.color(color_for_log_level(level)),
+                _ => s,
+            },
+        },
+        None => s,
+    }
+}
+
+fn apply_styles(s: ColoredString, log_style: Option<&Vec<Styles>>) -> ColoredString {
+    let Some(log_styles) = log_style else {
+        return s;
+    };
+
+    let mut stylized_string = s;
+    for style in log_styles {
+        stylized_string = match style {
+            Styles::Bold => stylized_string.bold(),
+            Styles::Italic => stylized_string.italic(),
+            Styles::Underline => stylized_string.underline(),
+            Styles::Strikethrough => stylized_string.strikethrough(),
+            Styles::Dimmed => stylized_string.dimmed(),
+            Styles::Clear => stylized_string.clear(),
+            Styles::Reversed => stylized_string.reversed(),
+            Styles::Blink => stylized_string.blink(),
+            Styles::Hidden => stylized_string.hidden(),
+        };
+    }
+
+    stylized_string
+}
+
+fn write_string<W: io::Write>(
+    s: ColoredString,
+    sink: &mut W,
+    width: usize,
+    alignment: Option<Alignment>,
+) -> io::Result<()> {
+    match alignment.unwrap_or(Alignment::Left) {
+        Alignment::Left => write!(sink, "{s:<0$}", width),
+        Alignment::Center => write!(sink, "{s:^0$}", width),
+        Alignment::Right => write!(sink, "{s:>0$}", width),
     }
 }
