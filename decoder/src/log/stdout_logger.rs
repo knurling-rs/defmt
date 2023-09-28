@@ -138,7 +138,7 @@ pub(super) struct Printer<'a> {
 }
 
 impl<'a> Printer<'a> {
-    pub fn new(record: Record<'a>, format: &'a [LogSegment]) -> Self {
+    fn new(record: Record<'a>, format: &'a [LogSegment]) -> Self {
         Self {
             record,
             format,
@@ -156,7 +156,7 @@ impl<'a> Printer<'a> {
 
     /// Pads the defmt timestamp to take up at least the given number of characters.
     /// TODO: Remove this, shouldn't be needed now that we have width field support
-    pub fn min_timestamp_width(&mut self, min_timestamp_width: usize) -> &mut Self {
+    fn min_timestamp_width(&mut self, min_timestamp_width: usize) -> &mut Self {
         self.min_timestamp_width = min_timestamp_width;
         self
     }
