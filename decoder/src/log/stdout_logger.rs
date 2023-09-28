@@ -175,15 +175,10 @@ impl<'a> Printer<'a> {
 
     fn print_timestamp<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
         let s = match self.record {
-            Record::Defmt(record) => {
-                if record.timestamp().is_empty() {
-                    String::from("<time>")
-                } else {
-                    record.timestamp().to_string()
-                }
-            }
-            Record::Host(_) => String::from("<time>"),
-        };
+            Record::Defmt(record) if !record.timestamp().is_empty() => record.timestamp(),
+            _ => "<time>",
+        }
+        .to_string();
 
         write_string(
             s.as_str(),
@@ -195,10 +190,9 @@ impl<'a> Printer<'a> {
     }
 
     fn print_log_level<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
-        let s = if let Some(level) = self.record_log_level() {
-            level.to_string()
-        } else {
-            String::from("<lvl>")
+        let s = match self.record_log_level() {
+            Some(level) => level.to_string(),
+            None => "<lvl>".to_string(),
         };
 
         let color = format.color.unwrap_or(LogColor::SeverityLevel);
