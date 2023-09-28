@@ -77,7 +77,8 @@ impl StdoutLogger {
         const DEFAULT_HOST_LOG_FORMAT: &str = "(HOST) {L} {s}";
 
         let log_format = log_format.unwrap_or(DEFAULT_LOG_FORMAT);
-        let log_format = format::parse(log_format).unwrap();
+        let log_format = format::parse(log_format)
+            .expect(format!("log format is invalid '{log_format}'").as_str());
 
         let host_log_format = host_log_format.unwrap_or(DEFAULT_HOST_LOG_FORMAT);
         let host_log_format = format::parse(host_log_format).unwrap();
