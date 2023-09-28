@@ -78,7 +78,7 @@ impl StdoutLogger {
 
         let log_format = log_format.unwrap_or(DEFAULT_LOG_FORMAT);
         let log_format = format::parse(log_format)
-            .expect(format!("log format is invalid '{log_format}'").as_str());
+            .unwrap_or_else(|_| panic!("log format is invalid '{log_format}'"));
 
         let host_log_format = host_log_format.unwrap_or(DEFAULT_HOST_LOG_FORMAT);
         let host_log_format = format::parse(host_log_format).unwrap();
