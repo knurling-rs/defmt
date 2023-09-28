@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#777]: `defmt-decoder`: Simplify StdoutLogger
 - [#775]: `defmt-decoder`: Ignore AArch64 mapping symbols
 - [#771]: `defmt-macros`: Ignore empty items in DEFMT_LOG
 - [#769]: `defmt-decoder`: Add support for color, style, width and alignment to format
 
+[#777]: https://github.com/knurling-rs/defmt/pull/777
 [#775]: https://github.com/knurling-rs/defmt/pull/775
 [#771]: https://github.com/knurling-rs/defmt/pull/771
 [#769]: https://github.com/knurling-rs/defmt/pull/769
