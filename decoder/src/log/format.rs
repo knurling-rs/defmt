@@ -3,10 +3,9 @@ use nom::{
     bytes::complete::{take_till1, take_while},
     character::complete::{char, digit1, one_of},
     combinator::{map, map_res, opt},
-    error::{Error, ErrorKind, ParseError},
     multi::{many0, separated_list1},
     sequence::{delimited, preceded},
-    Err, IResult, Parser,
+    IResult, Parser,
 };
 
 use std::str::FromStr;
@@ -29,10 +28,10 @@ impl LogMetadata {
     /// Checks whether this `LogMetadata` came from a specifier such as
     /// {t}, {f}, etc.
     fn is_metadata_specifier(&self) -> bool {
-        match self {
-            LogMetadata::String(_) | LogMetadata::NestedLogSegments(_) => false,
-            _ => true,
-        }
+        !matches!(
+            self,
+            LogMetadata::String(_) | LogMetadata::NestedLogSegments(_)
+        )
     }
 }
 
@@ -309,7 +308,7 @@ fn build_log_segment<const NEST: bool>(
         // If we have a nested segment there must be exactly one,
         // otherwise there's something weird going on
         if let Some(segments) = nested_segments {
-            if segments.iter().count() == 1 {
+            if segments.len() == 1 {
                 return Ok(segments[0].clone());
             } else {
                 return Err(nom::Err::Failure(()));
