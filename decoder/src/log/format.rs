@@ -75,13 +75,14 @@
 //! The alignment can be specified to be left (`<`), right (`>`), or center-aligned (`^`).
 //! If no alignment is specified, left alignment is used by default.
 //!
-//! The minimum width is specified after the alignment
-//!
+//! The minimum width is specified after the alignment.
 //! For example, "{L} {f:>10}: {s}" is printed as follows:
 //!
 //! ```text
 //! [ERROR]    main.rs: hello
 //! ```
+//! 
+//! The log level format specifier is printed with a minimum width of 5 by default.
 //!
 //! ## Nested formatting
 //!
