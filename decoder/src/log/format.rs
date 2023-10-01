@@ -410,15 +410,9 @@ fn parse_argument<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()
     take_between_matching_brackets.and_then(parse_log_segment::<NEST>).parse(input)
 }
 
-fn parse_string_segment<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()> {
+fn parse_string_segment(input: &str) -> IResult<&str, LogSegment, ()> {
     println!("parse_string_segment: \"{input}\"");
-    map(take_till1(|c| {
-        if !NEST {
-            c == '{'
-        } else {
-            c == '{' || c == '%' 
-        }
-    }), |s: &str| {
+    map(take_till1(|c| c == '{' || c == '%'), |s: &str| {
         LogSegment::new(LogMetadata::String(s.to_string()))
     })
     .parse(input)
@@ -428,7 +422,7 @@ fn parse_nested<const NEST: bool>(input: &str) -> IResult<&str, IntermediateOutp
     println!("\nIN parse_nested ({NEST}): \"{input}\" ----------------");
 
     let parse_nested_argument = map_res(parse_argument::<NEST>, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
-    let parse_nested_string_segment = map_res(parse_string_segment::<NEST>, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
+    let parse_nested_string_segment = map_res(parse_string_segment, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
     let parse_nested_format = preceded(char('%'), parse_format::<true>);
     let mut parse_all = many0(alt((parse_nested_argument, parse_nested_string_segment, parse_nested_format)));
 
@@ -441,7 +435,7 @@ fn parse_nested<const NEST: bool>(input: &str) -> IResult<&str, IntermediateOutp
 }
 
 pub(super) fn parse(input: &str) -> Result<Vec<LogSegment>, String> {
-    let mut parse_all = many0(alt((parse_argument::<false>, parse_string_segment::<false>)));
+    let mut parse_all = many0(alt((parse_argument::<false>, parse_string_segment)));
 
     parse_all(input)
         .map(|(_, output)| output)
@@ -476,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_parse_string_segment() {
-        let result = parse_string_segment::<false>("Log: {t}");
+        let result = parse_string_segment("Log: {t}");
         let (input, output) = result.unwrap();
         assert_eq!(input, "{t}");
         assert_eq!(
@@ -487,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_parse_empty_string_segment() {
-        let result = parse_string_segment::<false>("");
+        let result = parse_string_segment("");
         assert!(result.is_err());
     }
 
@@ -647,6 +641,31 @@ mod tests {
     #[test]
     fn test_parse_double_nested_format() {
         let log_template = "{{[{L:<5}]%bold} {f:>20}:%<30} {s}";
-        assert!(true);
+        let expected_output = vec![
+            LogSegment::new(LogMetadata::NestedLogSegments(
+                vec![
+                    LogSegment::new(LogMetadata::NestedLogSegments(
+                        vec![
+                            LogSegment::new(LogMetadata::String("[".to_string())),
+                            LogSegment::new(LogMetadata::LogLevel)
+                                .with_alignment(Alignment::Left)
+                                .with_width(5),
+                            LogSegment::new(LogMetadata::String("]".to_string())),
+                        ]
+                    )).with_style(colored::Styles::Bold),
+                    LogSegment::new(LogMetadata::String(" ".to_string())),
+                    LogSegment::new(LogMetadata::FileName)
+                        .with_alignment(Alignment::Right)
+                        .with_width(20),
+                    LogSegment::new(LogMetadata::String(":".to_string())),
+                ]
+            ))
+            .with_alignment(Alignment::Left)
+            .with_width(30),
+            LogSegment::new(LogMetadata::String(" ".to_string())),
+            LogSegment::new(LogMetadata::Log),
+        ];
+        let result = parse(log_template);
+        assert_eq!(result, Ok(expected_output));
     }
 }
