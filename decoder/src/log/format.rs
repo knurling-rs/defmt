@@ -630,4 +630,33 @@ mod tests {
         let result = parse(log_template);
         assert_eq!(result, Ok(expected_output));
     }
+
+    #[test]
+    fn test_parse_triple_nested_format() {
+        let log_template = "{{{[{L:<5}]%bold} {f:>20}:%<30} {s}%werror}";
+        let expected_output = vec![LogSegment::new(LogMetadata::NestedLogSegments(vec![
+            LogSegment::new(LogMetadata::NestedLogSegments(vec![
+                LogSegment::new(LogMetadata::NestedLogSegments(vec![
+                    LogSegment::new(LogMetadata::String("[".to_string())),
+                    LogSegment::new(LogMetadata::LogLevel)
+                        .with_alignment(Alignment::Left)
+                        .with_width(5),
+                    LogSegment::new(LogMetadata::String("]".to_string())),
+                ]))
+                .with_style(colored::Styles::Bold),
+                LogSegment::new(LogMetadata::String(" ".to_string())),
+                LogSegment::new(LogMetadata::FileName)
+                    .with_alignment(Alignment::Right)
+                    .with_width(20),
+                LogSegment::new(LogMetadata::String(":".to_string())),
+            ]))
+            .with_alignment(Alignment::Left)
+            .with_width(30),
+            LogSegment::new(LogMetadata::String(" ".to_string())),
+            LogSegment::new(LogMetadata::Log),
+        ]))
+        .with_color(LogColor::WarnError)];
+        let result = parse(log_template);
+        assert_eq!(result, Ok(expected_output));
+    }
 }
