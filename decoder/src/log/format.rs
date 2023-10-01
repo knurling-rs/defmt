@@ -405,7 +405,11 @@ fn format_contains_log_specifier(segments: &[LogSegment]) -> bool {
     for segment in segments {
         match &segment.metadata {
             LogMetadata::Log => return true,
-            LogMetadata::NestedLogSegments(s) => return format_contains_log_specifier(s),
+            LogMetadata::NestedLogSegments(s) => {
+                if format_contains_log_specifier(s) {
+                    return true;
+                }
+            },
             _ => continue,
         }
     }
