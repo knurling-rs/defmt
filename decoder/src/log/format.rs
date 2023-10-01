@@ -401,12 +401,29 @@ fn parse_nested<const NEST: bool>(input: &str) -> IResult<&str, IntermediateOutp
     Ok((new_input, IntermediateOutput::NestedLogSegment(log_segment)))
 }
 
+fn format_contains_log_specifier(segments: &[LogSegment]) -> bool {
+    for segment in segments {
+        match &segment.metadata {
+            LogMetadata::Log => return true,
+            LogMetadata::NestedLogSegments(s) => return format_contains_log_specifier(s),
+            _ => continue,
+        }
+    }
+    false
+}
+
 pub(super) fn parse(input: &str) -> Result<Vec<LogSegment>, String> {
     let mut parse_all = many0(alt((parse_argument::<false>, parse_string_segment)));
 
-    parse_all(input)
+    let result = parse_all(input)
         .map(|(_, output)| output)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    if !format_contains_log_specifier(&result) {
+        return Err("log format must contain a `{s}` format specifier".to_string());
+    }
+
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -433,6 +450,12 @@ mod tests {
 
         let result = parse(log_template);
         assert_eq!(result, Ok(expected_output));
+    }
+
+    #[test]
+    fn test_parse_format_without_log() {
+        let result = parse("{t}");
+        assert!(result.is_err());
     }
 
     #[test]
