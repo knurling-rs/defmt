@@ -164,6 +164,7 @@ impl<'a> Printer<'a> {
                 LogMetadata::LineNumber => self.print_line_number(sink, &segment.format),
                 LogMetadata::LogLevel => self.print_log_level(sink, &segment.format),
                 LogMetadata::Log => self.print_log(sink, &segment.format),
+                _ => return Ok(())
             }?;
         }
         writeln!(sink)

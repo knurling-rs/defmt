@@ -4,8 +4,9 @@ use nom::{
     character::complete::{char, digit1, one_of},
     combinator::{map, map_res, opt},
     multi::{many0, separated_list1},
-    sequence::delimited,
-    IResult, Parser,
+    sequence::{delimited, preceded},
+    error::{Error, ErrorKind, ParseError},
+    Err, IResult, Parser,
 };
 
 use std::str::FromStr;
@@ -21,6 +22,7 @@ pub(super) enum LogMetadata {
     ModulePath,
     String(String),
     Timestamp,
+    NestedLogSegments(Vec<LogSegment>),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -63,6 +65,7 @@ enum IntermediateOutput {
     WidthAndAlignment((usize, Option<Alignment>)),
     Color(LogColor),
     Style(colored::Styles),
+    NestedLogSegment(LogSegment),
 }
 
 impl LogSegment {
@@ -105,7 +108,58 @@ impl LogSegment {
     }
 }
 
+/// This function is taken as-is from the parse-hyperlinks crate
+/// https://docs.rs/parse-hyperlinks/0.9.3/src/parse_hyperlinks/lib.rs.html#24-68
+/// There is an open issue in nom to include this parser in nom 8.0
+/// https://github.com/rust-bakery/nom/issues/1253
+pub fn take_until_unbalanced(
+    opening_bracket: char,
+    closing_bracket: char,
+) -> impl Fn(&str) -> IResult<&str, &str, ()> {
+    move |i: &str| {
+        let mut index = 0;
+        let mut bracket_counter = 0;
+        while let Some(n) = &i[index..].find(&[opening_bracket, closing_bracket, '\\'][..]) {
+            index += n;
+            let mut it = i[index..].chars();
+            match it.next().unwrap_or_default() {
+                c if c == '\\' => {
+                    // Skip the escape char `\`.
+                    index += '\\'.len_utf8();
+                    // Skip also the following char.
+                    let c = it.next().unwrap_or_default();
+                    index += c.len_utf8();
+                }
+                c if c == opening_bracket => {
+                    bracket_counter += 1;
+                    index += opening_bracket.len_utf8();
+                }
+                c if c == closing_bracket => {
+                    // Closing bracket.
+                    bracket_counter -= 1;
+                    index += closing_bracket.len_utf8();
+                }
+                // Can not happen.
+                _ => unreachable!(),
+            };
+            // We found the unmatched closing bracket.
+            if bracket_counter == -1 {
+                // We do not consume it.
+                index -= closing_bracket.len_utf8();
+                return Ok((&i[index..], &i[0..index]));
+            };
+        }
+
+        if bracket_counter == 0 {
+            Ok(("", i))
+        } else {
+            Err(nom::Err::Error(()))
+        }
+    }
+}
+
 fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    println!("parse_metadata: \"{input}\"");
     let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
         let metadata = match s {
             "f" => LogMetadata::FileName,
@@ -124,6 +178,7 @@ fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
 }
 
 fn parse_color(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    println!("parse_color: \"{input}\"");
     let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
         let color = match s {
             "severity" => LogColor::SeverityLevel,
@@ -140,6 +195,7 @@ fn parse_color(input: &str) -> IResult<&str, IntermediateOutput, ()> {
 }
 
 fn parse_style(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    println!("parse_style: \"{input}\"");
     let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
         let style = match s {
             "bold" => colored::Styles::Bold,
@@ -156,6 +212,7 @@ fn parse_style(input: &str) -> IResult<&str, IntermediateOutput, ()> {
 }
 
 fn parse_width_and_alignment(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    println!("parse_width_and_alignment: \"{input}\"");
     let (input, alignment) = opt(map_res(one_of("<^>"), move |c| match c {
         '^' => Ok(Alignment::Center),
         '<' => Ok(Alignment::Left),
@@ -171,44 +228,92 @@ fn parse_width_and_alignment(input: &str) -> IResult<&str, IntermediateOutput, (
     ))
 }
 
-fn parse_log_segment(input: &str) -> IResult<&str, LogSegment, ()> {
-    let (input, output) = separated_list1(
-        char(':'),
-        alt((
-            parse_metadata,
-            parse_color,
-            parse_style,
-            parse_width_and_alignment,
-        )),
-    )(input)?;
+fn parse_format(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    alt((
+        parse_color,
+        parse_style,
+        parse_width_and_alignment,
+    )).parse(input)
+}
 
+fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutput>) -> Result<LogSegment, nom::Err<()>> {
+    println!("\nbuild_log_segment ({NEST}): {:?}", intermediate_output);
     let mut metadata = None;
     let mut color = None;
     let mut style = None;
     let mut width_and_alignment = None;
-    for item in output {
+    let mut nested_segments = None;
+    for item in intermediate_output {
         match item {
-            IntermediateOutput::Metadata(m) if metadata.is_none() => metadata = Some(m),
-            IntermediateOutput::Color(c) if color.is_none() => color = Some(c),
+            IntermediateOutput::Metadata(m) if metadata.is_none() => {
+                println!("Found metadata");
+                metadata = Some(m)
+            },
+            IntermediateOutput::Color(c) if color.is_none() => {
+                println!("Found color");
+                color = Some(c)
+            },
             IntermediateOutput::Style(s) => {
                 let mut styles: Vec<colored::Styles> = style.unwrap_or_default();
 
                 // A format with repeated style specifiers is not valid
                 if styles.contains(&s) {
+                    println!("Style fail");
                     return Err(nom::Err::Failure(()));
                 }
 
+                println!("Found style");
                 styles.push(s);
                 style = Some(styles);
             }
             IntermediateOutput::WidthAndAlignment(w) if width_and_alignment.is_none() => {
+                println!("Found width and alignment");
                 width_and_alignment = Some(w)
             }
-            _ => return Err(nom::Err::Failure(())),
+            IntermediateOutput::NestedLogSegment(s) => {
+                let mut segments: Vec<LogSegment> = nested_segments.unwrap_or_default();
+
+                println!("Found nested");
+                segments.push(s);
+                nested_segments = Some(segments);
+            }
+            _ => {
+                println!("Intermediate output fail");
+                return Err(nom::Err::Failure(()))
+            },
+        }
+    }
+
+    if NEST {
+        let Some(nested_segments) = nested_segments else {
+            println!("Nested segments fail");
+            return Err(nom::Err::Failure(()));
+        };
+
+        println!("Adding nested log segments to metadata for nested segment");
+        metadata = Some(LogMetadata::NestedLogSegments(nested_segments));
+    } else {
+        // We either have nested segments, or a metadata specifier, we can't have both
+        // This means we either have:
+        //  metadata specifier: {L:underline}
+        //  nested segments specifier: {[{L:<5:bold}]%underline}
+        if metadata.is_some() && nested_segments.is_some() {
+            return Err(nom::Err::Failure(()));
+        }
+
+        // If we have a nested segment there must be exactly one,
+        // otherwise there's something weird going on
+        if let Some(segments) = nested_segments {
+            if segments.iter().count() == 1 {
+                return Ok(segments[0].clone());
+            } else {
+                return Err(nom::Err::Failure(()));
+            }
         }
     }
 
     let Some(metadata) = metadata else {
+        println!("Metadata fail");
         return Err(nom::Err::Failure(()));
     };
 
@@ -216,7 +321,7 @@ fn parse_log_segment(input: &str) -> IResult<&str, LogSegment, ()> {
         .map(|(w, a)| (Some(w), a))
         .unwrap_or((None, None));
 
-    let log_segment = LogSegment {
+    Ok(LogSegment {
         metadata,
         format: LogFormat {
             color,
@@ -224,25 +329,90 @@ fn parse_log_segment(input: &str) -> IResult<&str, LogSegment, ()> {
             width,
             alignment,
         },
-    };
+    })
+}
 
+
+fn parse_log_segment<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()> {
+    println!("parse_log_segment ({NEST}): \"{input}\"");
+
+    let (input, output) = if !NEST {
+        separated_list1(
+            char(':'),
+            alt((
+                parse_metadata,
+                parse_format,
+                parse_nested::<true>,
+            )),
+        )(input)
+    } else {
+        let parse_nested_argument = separated_list1(
+            char(':'),
+            alt((parse_metadata, parse_format)),
+        );
+
+        let parse_nested_log_segment = map_res(parse_nested_argument, |result| {
+            let log_segment = build_log_segment::<false>(result)?;
+            Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(log_segment))
+        });
+
+        separated_list1(
+            char('%'),
+            alt((
+                parse_nested_log_segment,
+                parse_format,
+                parse_nested::<false>,
+            )),
+        )(input)
+    }?;
+
+    let log_segment = build_log_segment::<false>(output)?;
     Ok((input, log_segment))
 }
 
-fn parse_argument(input: &str) -> IResult<&str, LogSegment, ()> {
-    let mut parse_enclosed = delimited(char('{'), parse_log_segment, char('}'));
-    parse_enclosed.parse(input)
+fn parse_argument<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()> {
+    println!("parse_argument ({NEST}): \"{input}\"");
+    let take_between_matching_brackets = delimited(
+        char('{'), 
+        take_until_unbalanced('{', '}'), 
+        char('}')
+    );
+    
+    take_between_matching_brackets.and_then(parse_log_segment::<NEST>).parse(input)
 }
 
-fn parse_string_segment(input: &str) -> IResult<&str, LogSegment, ()> {
-    map(take_till1(|c| c == '{'), |s: &str| {
+fn parse_string_segment<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()> {
+    println!("parse_string_segment: \"{input}\"");
+    map(take_till1(|c| {
+        if !NEST {
+            c == '{'
+        } else {
+            c == '{' || c == '%' 
+        }
+    }), |s: &str| {
         LogSegment::new(LogMetadata::String(s.to_string()))
     })
     .parse(input)
 }
 
+fn parse_nested<const NEST: bool>(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    println!("\nIN parse_nested ({NEST}): \"{input}\" ----------------");
+
+    let parse_nested_argument = map_res(parse_argument::<NEST>, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
+    let parse_nested_string_segment = map_res(parse_string_segment::<NEST>, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
+    let parse_nested_format = preceded(char('%'), parse_format);
+    let mut parse_all = many0(alt((parse_nested_argument, parse_nested_format, parse_nested_string_segment)));
+
+    let (new_input, output) = parse_all(input)?;
+
+    let log_segment = build_log_segment::<true>(output)?;
+
+    println!("\nOUT parse_nested ({NEST}): \"{new_input}\" ---------------");
+    Ok((new_input, IntermediateOutput::NestedLogSegment(log_segment)))
+}
+
 pub(super) fn parse(input: &str) -> Result<Vec<LogSegment>, String> {
-    let mut parse_all = many0(alt((parse_argument, parse_string_segment)));
+    let mut parse_all = many0(alt((parse_argument::<false>, parse_string_segment::<false>)));
 
     parse_all(input)
         .map(|(_, output)| output)
@@ -277,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_parse_string_segment() {
-        let result = parse_string_segment("Log: {t}");
+        let result = parse_string_segment::<false>("Log: {t}");
         let (input, output) = result.unwrap();
         assert_eq!(input, "{t}");
         assert_eq!(
@@ -288,19 +458,19 @@ mod tests {
 
     #[test]
     fn test_parse_empty_string_segment() {
-        let result = parse_string_segment("");
+        let result = parse_string_segment::<false>("");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_parse_timestamp_argument() {
-        let result = parse_argument("{t}");
+        let result = parse_argument::<false>("{t}");
         assert_eq!(result, Ok(("", LogSegment::new(LogMetadata::Timestamp))));
     }
 
     #[test]
     fn test_parse_argument_with_color() {
-        let result = parse_log_segment("t:werror");
+        let result = parse_log_segment::<false>("t:werror");
         let expected_output =
             LogSegment::new(LogMetadata::Timestamp).with_color(LogColor::WarnError);
         assert_eq!(result, Ok(("", expected_output)));
@@ -308,7 +478,7 @@ mod tests {
 
     #[test]
     fn test_parse_argument_with_extra_format_parameters_width_first() {
-        let result = parse_argument("{t:>8:white}");
+        let result = parse_argument::<false>("{t:>8:white}");
         let expected_output = LogSegment::new(LogMetadata::Timestamp)
             .with_width(8)
             .with_alignment(Alignment::Right)
@@ -318,7 +488,7 @@ mod tests {
 
     #[test]
     fn test_parse_argument_with_extra_format_parameters_color_first() {
-        let result = parse_argument("{f:werror:<25}");
+        let result = parse_argument::<false>("{f:werror:<25}");
         let expected_output = LogSegment::new(LogMetadata::FileName)
             .with_width(25)
             .with_alignment(Alignment::Left)
@@ -328,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_argument() {
-        let result = parse_argument("{foo}");
+        let result = parse_argument::<false>("{foo}");
         assert_eq!(result, Result::Err(nom::Err::Error(())));
     }
 
@@ -413,5 +583,58 @@ mod tests {
         let log_template = "{s:bold:bold}";
         let result = parse(log_template);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_single_nested_format() {
+        let log_template = "{[{L:<5:bold}]%underline%italic} {s}";
+        let expected_output = vec![
+            LogSegment::new(LogMetadata::NestedLogSegments(
+                vec![
+                    LogSegment::new(LogMetadata::String("[".to_string())),
+                    LogSegment::new(LogMetadata::LogLevel)
+                        .with_alignment(Alignment::Left)
+                        .with_width(5)
+                        .with_style(colored::Styles::Bold),
+                    LogSegment::new(LogMetadata::String("]".to_string())),
+                ]
+            ))
+            .with_style(colored::Styles::Underline)
+            .with_style(colored::Styles::Italic),
+            LogSegment::new(LogMetadata::String(" ".to_string())),
+            LogSegment::new(LogMetadata::Log),
+        ];
+        let result = parse(log_template);
+        assert_eq!(result, Ok(expected_output));
+    }
+
+
+    /// Note: A format string with a bad format specifier doesn't actually make the parser fail.
+    /// It will just "eat" the bad specifier and will output a Log
+    #[test]
+    fn test_parse_single_nested_format_with_bad_specifier() {
+        let log_template = "{[{L:<5:bold}]%bad%underline} {s}";
+        let expected_output = vec![
+            LogSegment::new(LogMetadata::NestedLogSegments(
+                vec![
+                    LogSegment::new(LogMetadata::String("[".to_string())),
+                    LogSegment::new(LogMetadata::LogLevel)
+                        .with_alignment(Alignment::Left)
+                        .with_width(5)
+                        .with_style(colored::Styles::Bold),
+                    LogSegment::new(LogMetadata::String("]".to_string())),
+                ]
+            )).with_style(colored::Styles::Underline),
+            LogSegment::new(LogMetadata::String(" ".to_string())),
+            LogSegment::new(LogMetadata::Log),
+        ];
+        let result = parse(log_template);
+        assert_eq!(result, Ok(expected_output));
+    }
+
+    #[test]
+    fn test_parse_double_nested_format() {
+        let log_template = "{{[{L:<5}]%bold} {f:>20}:%<30} {s}";
+        assert!(true);
     }
 }
