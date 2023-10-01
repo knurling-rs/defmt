@@ -25,6 +25,17 @@ pub(super) enum LogMetadata {
     NestedLogSegments(Vec<LogSegment>),
 }
 
+impl LogMetadata {
+    /// Checks whether this `LogMetadata` came from a specifier such as
+    /// {t}, {f}, etc.
+    fn is_metadata_specifier(&self) -> bool {
+        match self {
+            LogMetadata::String(_) | LogMetadata::NestedLogSegments(_) => false,
+            _ => true,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub(super) enum LogColor {
     /// User-defined color
@@ -228,12 +239,21 @@ fn parse_width_and_alignment(input: &str) -> IResult<&str, IntermediateOutput, (
     ))
 }
 
-fn parse_format(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    alt((
+fn parse_format<const FAIL_ON_ERR: bool>(input: &str) -> IResult<&str, IntermediateOutput, ()> {
+    let result = alt((
         parse_color,
         parse_style,
         parse_width_and_alignment,
-    )).parse(input)
+    )).parse(input);
+
+    if !FAIL_ON_ERR {
+        result
+    } else {
+        match result {
+            Ok(r) => Ok(r),
+            Err(_) => Err(nom::Err::Failure(())),
+        }
+    }
 }
 
 fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutput>) -> Result<LogSegment, nom::Err<()>> {
@@ -290,6 +310,13 @@ fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutp
             return Err(nom::Err::Failure(()));
         };
 
+        // A nested segment must have at least a valid specifier such as {t} or {f},
+        // it isn't allowed to have {foo} and consider foo a string segment.
+        let has_metadata_specifier = nested_segments.iter().any(|segment| segment.metadata.is_metadata_specifier());
+        if !has_metadata_specifier {
+            return Err(nom::Err::Failure(()));
+        }
+
         println!("Adding nested log segments to metadata for nested segment");
         metadata = Some(LogMetadata::NestedLogSegments(nested_segments));
     } else {
@@ -334,21 +361,21 @@ fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutp
 
 
 fn parse_log_segment<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()> {
-    println!("parse_log_segment ({NEST}): \"{input}\"");
+    println!("IN parse_log_segment ({NEST}): \"{input}\"");
 
     let (input, output) = if !NEST {
         separated_list1(
             char(':'),
             alt((
                 parse_metadata,
-                parse_format,
+                parse_format::<false>,
                 parse_nested::<true>,
             )),
         )(input)
     } else {
         let parse_nested_argument = separated_list1(
             char(':'),
-            alt((parse_metadata, parse_format)),
+            alt((parse_metadata, parse_format::<false>)),
         );
 
         let parse_nested_log_segment = map_res(parse_nested_argument, |result| {
@@ -360,11 +387,13 @@ fn parse_log_segment<const NEST: bool>(input: &str) -> IResult<&str, LogSegment,
             char('%'),
             alt((
                 parse_nested_log_segment,
-                parse_format,
+                parse_format::<false>,
                 parse_nested::<false>,
             )),
         )(input)
     }?;
+
+    println!("OUT parse_log_segment ({NEST}): \"{input}\"");
 
     let log_segment = build_log_segment::<false>(output)?;
     Ok((input, log_segment))
@@ -400,8 +429,8 @@ fn parse_nested<const NEST: bool>(input: &str) -> IResult<&str, IntermediateOutp
 
     let parse_nested_argument = map_res(parse_argument::<NEST>, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
     let parse_nested_string_segment = map_res(parse_string_segment::<NEST>, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
-    let parse_nested_format = preceded(char('%'), parse_format);
-    let mut parse_all = many0(alt((parse_nested_argument, parse_nested_format, parse_nested_string_segment)));
+    let parse_nested_format = preceded(char('%'), parse_format::<true>);
+    let mut parse_all = many0(alt((parse_nested_argument, parse_nested_string_segment, parse_nested_format)));
 
     let (new_input, output) = parse_all(input)?;
 
@@ -499,7 +528,7 @@ mod tests {
     #[test]
     fn test_parse_invalid_argument() {
         let result = parse_argument::<false>("{foo}");
-        assert_eq!(result, Result::Err(nom::Err::Error(())));
+        assert!(result.is_err());
     }
 
     #[test]
@@ -608,28 +637,11 @@ mod tests {
         assert_eq!(result, Ok(expected_output));
     }
 
-
-    /// Note: A format string with a bad format specifier doesn't actually make the parser fail.
-    /// It will just "eat" the bad specifier and will output a Log
     #[test]
     fn test_parse_single_nested_format_with_bad_specifier() {
         let log_template = "{[{L:<5:bold}]%bad%underline} {s}";
-        let expected_output = vec![
-            LogSegment::new(LogMetadata::NestedLogSegments(
-                vec![
-                    LogSegment::new(LogMetadata::String("[".to_string())),
-                    LogSegment::new(LogMetadata::LogLevel)
-                        .with_alignment(Alignment::Left)
-                        .with_width(5)
-                        .with_style(colored::Styles::Bold),
-                    LogSegment::new(LogMetadata::String("]".to_string())),
-                ]
-            )).with_style(colored::Styles::Underline),
-            LogSegment::new(LogMetadata::String(" ".to_string())),
-            LogSegment::new(LogMetadata::Log),
-        ];
         let result = parse(log_template);
-        assert_eq!(result, Ok(expected_output));
+        assert!(result.is_err());
     }
 
     #[test]
