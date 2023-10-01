@@ -3,9 +3,9 @@ use nom::{
     bytes::complete::{take_till1, take_while},
     character::complete::{char, digit1, one_of},
     combinator::{map, map_res, opt},
+    error::{Error, ErrorKind, ParseError},
     multi::{many0, separated_list1},
     sequence::{delimited, preceded},
-    error::{Error, ErrorKind, ParseError},
     Err, IResult, Parser,
 };
 
@@ -236,11 +236,7 @@ fn parse_width_and_alignment(input: &str) -> IResult<&str, IntermediateOutput, (
 }
 
 fn parse_format<const FAIL_ON_ERR: bool>(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    let result = alt((
-        parse_color,
-        parse_style,
-        parse_width_and_alignment,
-    )).parse(input);
+    let result = alt((parse_color, parse_style, parse_width_and_alignment)).parse(input);
 
     if !FAIL_ON_ERR {
         result
@@ -252,7 +248,9 @@ fn parse_format<const FAIL_ON_ERR: bool>(input: &str) -> IResult<&str, Intermedi
     }
 }
 
-fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutput>) -> Result<LogSegment, nom::Err<()>> {
+fn build_log_segment<const NEST: bool>(
+    intermediate_output: Vec<IntermediateOutput>,
+) -> Result<LogSegment, nom::Err<()>> {
     let mut metadata = None;
     let mut color = None;
     let mut style = None;
@@ -260,12 +258,8 @@ fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutp
     let mut nested_segments = None;
     for item in intermediate_output {
         match item {
-            IntermediateOutput::Metadata(m) if metadata.is_none() => {
-                metadata = Some(m)
-            },
-            IntermediateOutput::Color(c) if color.is_none() => {
-                color = Some(c)
-            },
+            IntermediateOutput::Metadata(m) if metadata.is_none() => metadata = Some(m),
+            IntermediateOutput::Color(c) if color.is_none() => color = Some(c),
             IntermediateOutput::Style(s) => {
                 let mut styles: Vec<colored::Styles> = style.unwrap_or_default();
 
@@ -285,9 +279,7 @@ fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutp
                 segments.push(s);
                 nested_segments = Some(segments);
             }
-            _ => {
-                return Err(nom::Err::Failure(()))
-            },
+            _ => return Err(nom::Err::Failure(())),
         }
     }
 
@@ -298,7 +290,9 @@ fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutp
 
         // A nested segment must have at least a valid specifier such as {t} or {f},
         // it isn't allowed to have {foo} and consider foo a string segment.
-        let has_metadata_specifier = nested_segments.iter().any(|segment| segment.metadata.is_metadata_specifier());
+        let has_metadata_specifier = nested_segments
+            .iter()
+            .any(|segment| segment.metadata.is_metadata_specifier());
         if !has_metadata_specifier {
             return Err(nom::Err::Failure(()));
         }
@@ -342,26 +336,21 @@ fn build_log_segment<const NEST: bool>(intermediate_output: Vec<IntermediateOutp
     })
 }
 
-
 fn parse_log_segment<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()> {
     let (input, output) = if !NEST {
         separated_list1(
             char(':'),
-            alt((
-                parse_metadata,
-                parse_format::<false>,
-                parse_nested::<true>,
-            )),
+            alt((parse_metadata, parse_format::<false>, parse_nested::<true>)),
         )(input)
     } else {
-        let parse_nested_argument = separated_list1(
-            char(':'),
-            alt((parse_metadata, parse_format::<false>)),
-        );
+        let parse_nested_argument =
+            separated_list1(char(':'), alt((parse_metadata, parse_format::<false>)));
 
         let parse_nested_log_segment = map_res(parse_nested_argument, |result| {
             let log_segment = build_log_segment::<false>(result)?;
-            Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(log_segment))
+            Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(
+                log_segment,
+            ))
         });
 
         separated_list1(
@@ -379,13 +368,12 @@ fn parse_log_segment<const NEST: bool>(input: &str) -> IResult<&str, LogSegment,
 }
 
 fn parse_argument<const NEST: bool>(input: &str) -> IResult<&str, LogSegment, ()> {
-    let take_between_matching_brackets = delimited(
-        char('{'), 
-        take_until_unbalanced('{', '}'), 
-        char('}')
-    );
-    
-    take_between_matching_brackets.and_then(parse_log_segment::<NEST>).parse(input)
+    let take_between_matching_brackets =
+        delimited(char('{'), take_until_unbalanced('{', '}'), char('}'));
+
+    take_between_matching_brackets
+        .and_then(parse_log_segment::<NEST>)
+        .parse(input)
 }
 
 fn parse_string_segment(input: &str) -> IResult<&str, LogSegment, ()> {
@@ -396,10 +384,18 @@ fn parse_string_segment(input: &str) -> IResult<&str, LogSegment, ()> {
 }
 
 fn parse_nested<const NEST: bool>(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    let parse_nested_argument = map_res(parse_argument::<NEST>, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
-    let parse_nested_string_segment = map_res(parse_string_segment, |result| Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result)));
+    let parse_nested_argument = map_res(parse_argument::<NEST>, |result| {
+        Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result))
+    });
+    let parse_nested_string_segment = map_res(parse_string_segment, |result| {
+        Ok::<IntermediateOutput, nom::Err<()>>(IntermediateOutput::NestedLogSegment(result))
+    });
     let parse_nested_format = preceded(char('%'), parse_format::<true>);
-    let mut parse_all = many0(alt((parse_nested_argument, parse_nested_string_segment, parse_nested_format)));
+    let mut parse_all = many0(alt((
+        parse_nested_argument,
+        parse_nested_string_segment,
+        parse_nested_format,
+    )));
 
     let (new_input, output) = parse_all(input)?;
     let log_segment = build_log_segment::<true>(output)?;
@@ -584,16 +580,14 @@ mod tests {
     fn test_parse_single_nested_format() {
         let log_template = "{[{L:<5:bold}]%underline%italic} {s}";
         let expected_output = vec![
-            LogSegment::new(LogMetadata::NestedLogSegments(
-                vec![
-                    LogSegment::new(LogMetadata::String("[".to_string())),
-                    LogSegment::new(LogMetadata::LogLevel)
-                        .with_alignment(Alignment::Left)
-                        .with_width(5)
-                        .with_style(colored::Styles::Bold),
-                    LogSegment::new(LogMetadata::String("]".to_string())),
-                ]
-            ))
+            LogSegment::new(LogMetadata::NestedLogSegments(vec![
+                LogSegment::new(LogMetadata::String("[".to_string())),
+                LogSegment::new(LogMetadata::LogLevel)
+                    .with_alignment(Alignment::Left)
+                    .with_width(5)
+                    .with_style(colored::Styles::Bold),
+                LogSegment::new(LogMetadata::String("]".to_string())),
+            ]))
             .with_style(colored::Styles::Underline)
             .with_style(colored::Styles::Italic),
             LogSegment::new(LogMetadata::String(" ".to_string())),
@@ -614,24 +608,21 @@ mod tests {
     fn test_parse_double_nested_format() {
         let log_template = "{{[{L:<5}]%bold} {f:>20}:%<30} {s}";
         let expected_output = vec![
-            LogSegment::new(LogMetadata::NestedLogSegments(
-                vec![
-                    LogSegment::new(LogMetadata::NestedLogSegments(
-                        vec![
-                            LogSegment::new(LogMetadata::String("[".to_string())),
-                            LogSegment::new(LogMetadata::LogLevel)
-                                .with_alignment(Alignment::Left)
-                                .with_width(5),
-                            LogSegment::new(LogMetadata::String("]".to_string())),
-                        ]
-                    )).with_style(colored::Styles::Bold),
-                    LogSegment::new(LogMetadata::String(" ".to_string())),
-                    LogSegment::new(LogMetadata::FileName)
-                        .with_alignment(Alignment::Right)
-                        .with_width(20),
-                    LogSegment::new(LogMetadata::String(":".to_string())),
-                ]
-            ))
+            LogSegment::new(LogMetadata::NestedLogSegments(vec![
+                LogSegment::new(LogMetadata::NestedLogSegments(vec![
+                    LogSegment::new(LogMetadata::String("[".to_string())),
+                    LogSegment::new(LogMetadata::LogLevel)
+                        .with_alignment(Alignment::Left)
+                        .with_width(5),
+                    LogSegment::new(LogMetadata::String("]".to_string())),
+                ]))
+                .with_style(colored::Styles::Bold),
+                LogSegment::new(LogMetadata::String(" ".to_string())),
+                LogSegment::new(LogMetadata::FileName)
+                    .with_alignment(Alignment::Right)
+                    .with_width(20),
+                LogSegment::new(LogMetadata::String(":".to_string())),
+            ]))
             .with_alignment(Alignment::Left)
             .with_width(30),
             LogSegment::new(LogMetadata::String(" ".to_string())),
