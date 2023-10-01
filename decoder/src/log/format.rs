@@ -109,8 +109,8 @@
 //!
 //! - Format strings *must* include the `{s}` format specifier (log specifier).
 //! - At the moment it is not possible to escape curly brackets (i.e. `{`, `}`)
-//! in the format string, therefore curly brackets cannot be printed as part
-//! of the logger format.
+//!   in the format string, therefore curly brackets cannot be printed as part
+//!   of the logger format.
 //! - The same restriction exists for the `%` character.
 //!
 //! [format specifiers]: LogMetadata
