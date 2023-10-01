@@ -13,7 +13,7 @@
 //!
 //! The following log will be used as reference in the examples below:
 //!
-//! ```
+//! ```ignore
 //! defmt::error!("hello");
 //! ```
 //!
@@ -164,7 +164,7 @@ pub(super) enum LogMetadata {
     /// Prints the module path of the function where the log is coming from.
     /// For the following log:
     ///
-    /// ```
+    /// ```ignore
     /// // crate: my_crate
     /// mod foo {
     ///     fn bar() {
