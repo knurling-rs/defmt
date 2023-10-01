@@ -147,6 +147,7 @@ impl<'a> Printer<'a> {
     }
 
     /// Pads the defmt timestamp to take up at least the given number of characters.
+    /// TODO: Remove this, shouldn't be needed now that we have width field support
     pub fn min_timestamp_width(&mut self, min_timestamp_width: usize) -> &mut Self {
         self.min_timestamp_width = min_timestamp_width;
         self
@@ -155,42 +156,60 @@ impl<'a> Printer<'a> {
     /// Prints the formatted log frame to `sink`.
     pub fn print_frame<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         for segment in self.format {
-            match &segment.metadata {
-                LogMetadata::String(s) => self.print_string(sink, s),
-                LogMetadata::Timestamp => self.print_timestamp(sink, &segment.format),
-                LogMetadata::FileName => self.print_file_name(sink, &segment.format),
-                LogMetadata::FilePath => self.print_file_path(sink, &segment.format),
-                LogMetadata::ModulePath => self.print_module_path(sink, &segment.format),
-                LogMetadata::LineNumber => self.print_line_number(sink, &segment.format),
-                LogMetadata::LogLevel => self.print_log_level(sink, &segment.format),
-                LogMetadata::Log => self.print_log(sink, &segment.format),
-                _ => return Ok(())
-            }?;
+            let s = match &segment.metadata {
+                LogMetadata::String(s) => s.to_string(),
+                LogMetadata::Timestamp => self.build_timestamp(&segment.format),
+                LogMetadata::FileName => self.build_file_name(&segment.format),
+                LogMetadata::FilePath => self.build_file_path(&segment.format),
+                LogMetadata::ModulePath => self.build_module_path(&segment.format),
+                LogMetadata::LineNumber => self.build_line_number(&segment.format),
+                LogMetadata::LogLevel => self.build_log_level(&segment.format),
+                LogMetadata::Log => self.build_log(&segment.format),
+                LogMetadata::NestedLogSegments(segments) => self.build_nested(segments, &segment.format),
+            };
+
+            write!(sink, "{s}")?;
         }
         writeln!(sink)
     }
 
-    fn print_string<W: io::Write>(&self, sink: &mut W, s: &str) -> io::Result<()> {
-        write!(sink, "{s}")
+    fn build_nested(&self, segments: &[LogSegment], format: &LogFormat) -> String {
+        let mut result = String::new();
+        for segment in segments {
+            let s = match &segment.metadata {
+                LogMetadata::String(s) => s.to_string(),
+                LogMetadata::Timestamp => self.build_timestamp(&segment.format),
+                LogMetadata::FileName => self.build_file_name(&segment.format),
+                LogMetadata::FilePath => self.build_file_path(&segment.format),
+                LogMetadata::ModulePath => self.build_module_path(&segment.format),
+                LogMetadata::LineNumber => self.build_line_number(&segment.format),
+                LogMetadata::LogLevel => self.build_log_level(&segment.format),
+                LogMetadata::Log => self.build_log(&segment.format),
+                LogMetadata::NestedLogSegments(segments) => self.build_nested(segments, &segment.format),
+            };
+            result.push_str(&s);
+        }
+
+        build_formatted_string(&result, format, 0, self.record_log_level(), format.color)
     }
 
-    fn print_timestamp<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+    fn build_timestamp(&self, format: &LogFormat) -> String {
         let s = match self.record {
             Record::Defmt(record) if !record.timestamp().is_empty() => record.timestamp(),
             _ => "<time>",
         }
         .to_string();
 
-        write_string(
+        build_formatted_string(
             s.as_str(),
-            sink,
             format,
             self.min_timestamp_width,
             self.record_log_level(),
+            format.color,
         )
     }
 
-    fn print_log_level<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+    fn build_log_level(&self, format: &LogFormat) -> String {
         let s = match self.record_log_level() {
             Some(level) => level.to_string(),
             None => "<lvl>".to_string(),
@@ -198,9 +217,8 @@ impl<'a> Printer<'a> {
 
         let color = format.color.unwrap_or(LogColor::SeverityLevel);
 
-        write_string_with_color(
+        build_formatted_string(
             s.as_str(),
-            sink,
             format,
             5,
             self.record_log_level(),
@@ -208,17 +226,17 @@ impl<'a> Printer<'a> {
         )
     }
 
-    fn print_file_path<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+    fn build_file_path(&self, format: &LogFormat) -> String {
         let file_path = match self.record {
             Record::Defmt(record) => record.file(),
             Record::Host(record) => record.file(),
         }
         .unwrap_or("<file>");
 
-        write_string(file_path, sink, format, 0, self.record_log_level())
+        build_formatted_string(file_path, format, 0, self.record_log_level(), format.color)
     }
 
-    fn print_file_name<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+    fn build_file_name(&self, format: &LogFormat) -> String {
         let file = match self.record {
             Record::Defmt(record) => record.file(),
             Record::Host(record) => record.file(),
@@ -235,20 +253,20 @@ impl<'a> Printer<'a> {
             "<file>"
         };
 
-        write_string(s, sink, format, 0, self.record_log_level())
+        build_formatted_string(s, format, 0, self.record_log_level(), format.color)
     }
 
-    fn print_module_path<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+    fn build_module_path(&self, format: &LogFormat) -> String {
         let s = match self.record {
             Record::Defmt(record) => record.module_path(),
             Record::Host(record) => record.module_path(),
         }
         .unwrap_or("<mod path>");
 
-        write_string(s, sink, format, 0, self.record_log_level())
+        build_formatted_string(s, format, 0, self.record_log_level(), format.color)
     }
 
-    fn print_line_number<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+    fn build_line_number(&self, format: &LogFormat) -> String {
         let s = match self.record {
             Record::Defmt(record) => record.line(),
             Record::Host(record) => record.line(),
@@ -256,18 +274,19 @@ impl<'a> Printer<'a> {
         .unwrap_or(0)
         .to_string();
 
-        write_string(s.as_str(), sink, format, 4, self.record_log_level())
+        build_formatted_string(s.as_str(), format, 4, self.record_log_level(), format.color)
     }
 
-    fn print_log<W: io::Write>(&self, sink: &mut W, format: &LogFormat) -> io::Result<()> {
+    fn build_log(&self, format: &LogFormat) -> String {
         match self.record {
             Record::Defmt(record) => match color_diff(record.args().to_string()) {
-                Ok(s) => write!(sink, "{s}"),
-                Err(s) => write_string(s.as_str(), sink, format, 0, self.record_log_level()),
+                Ok(s) => s.to_string(),
+                Err(s) => {
+                    build_formatted_string(s.as_str(), format, 0, self.record_log_level(), format.color)
+                },
             },
             Record::Host(record) => {
-                let s = record.args().to_string();
-                write!(sink, "{s}")
+                record.args().to_string()
             }
         }
     }
@@ -402,24 +421,13 @@ fn apply_styles(s: ColoredString, log_style: Option<&Vec<Styles>>) -> ColoredStr
     stylized_string
 }
 
-fn write_string<W: io::Write>(
+fn build_formatted_string(
     s: &str,
-    sink: &mut W,
-    format: &LogFormat,
-    default_width: usize,
-    level: Option<Level>,
-) -> io::Result<()> {
-    write_string_with_color(s, sink, format, default_width, level, format.color)
-}
-
-fn write_string_with_color<W: io::Write>(
-    s: &str,
-    sink: &mut W,
     format: &LogFormat,
     default_width: usize,
     level: Option<Level>,
     log_color: Option<LogColor>,
-) -> io::Result<()> {
+) -> String {
     let s = ColoredString::from(s);
     let s = apply_color(s, log_color, level);
     let colored_str = apply_styles(s, format.style.as_ref());
@@ -427,9 +435,11 @@ fn write_string_with_color<W: io::Write>(
     let alignment = format.alignment.unwrap_or(Alignment::Left);
     let width = format.width.unwrap_or(default_width);
 
+    let mut result = String::new();
     match alignment {
-        Alignment::Left => write!(sink, "{colored_str:<0$}", width),
-        Alignment::Center => write!(sink, "{colored_str:^0$}", width),
-        Alignment::Right => write!(sink, "{colored_str:>0$}", width),
-    }
+        Alignment::Left => write!(&mut result, "{colored_str:<0$}", width),
+        Alignment::Center => write!(&mut result, "{colored_str:^0$}", width),
+        Alignment::Right => write!(&mut result, "{colored_str:>0$}", width),
+    }.expect("Failed to format string: \"{colored_str}\"");
+    result
 }
