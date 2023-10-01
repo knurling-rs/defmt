@@ -6,112 +6,112 @@
 //!
 //! A format string takes a set of [format specifiers] written
 //! in the way a log should be printed by the logger.
-//! 
+//!
 //! ## Basics
-//! 
+//!
 //! Format strings allow the customization of how the logger prints logs.
-//! 
+//!
 //! The following log will be used as reference in the examples below:
-//! 
+//!
 //! ```
 //! defmt::error!("hello");
 //! ```
-//! 
+//!
 //! The simplest format string is `"{s}"`. This prints the log and nothing else:
-//! 
+//!
 //! ```text
 //! hello
 //! ```
-//! 
+//!
 //! Arbitrary text can be added to the format string, which will be printed as specified with each log.
 //! For example, `"Log: {s}"`:
-//! 
+//!
 //! ```text
 //! Log: hello
 //! ```
-//! 
+//!
 //! Multiple specifiers can be included within a format string, in any order. For example `"[{L}] {s}"` prints:
-//! 
+//!
 //! ```text
 //! [ERROR] hello
 //! ```
-//! 
+//!
 //! ## Customizing log segments
-//! 
+//!
 //! The way a format specifier is printed can be customized by providing additional, optional [format parameters].
-//! 
+//!
 //! Format parameters are provided by adding the parameters after the format specifier, separated by colons (`:`),
 //! like this: `"{L:bold:5} {f:white:<10} {s}"`.
-//! 
+//!
 //! ### Color
-//! 
+//!
 //! A log segment can be specified to be colored by providing a color in the format parameters.
-//! 
+//!
 //! There are three different options for coloring a log segment:
 //! - a string that can be parsed by the FromStr implementation of [colored::Color].
 //! - `severity` colors the log segment using the predefined color for the log level of log.
 //! - `werror` is similar to `severity`, but it only applies the color if the log level is WARN or ERROR.
-//! 
+//!
 //! Only one coloring option can be provided in format parameters for a given format specifier.
-//! 
+//!
 //! ### Styles
-//! 
+//!
 //! A log segment can be specified to be printed with a given style by providing a style in the format parameters.
-//! 
+//!
 //! The style specifier must be one of the following strings:
 //! - `bold`
 //! - `italic`
 //! - `underline`
 //! - `strike`
 //! - `dimmed`
-//! 
+//!
 //! Multiple styles can be applied to a single format specifier, but they must not be repeated, i.e.
 //! `"{s:bold:underline:italic}"` is allowed, but `"{s:bold:bold}"` isn't.
-//! 
+//!
 //! ### Width and alignment
-//! 
+//!
 //! A log segment can be specified to be printed with a given minimum width and alignment by providing a format parameter.
-//! 
+//!
 //! The alignment can be specified to be left (`<`), right (`>`), or center-aligned (`^`).
 //! If no alignment is specified, left alignment is used by default.
-//! 
+//!
 //! The minimum width is specified after the alignment
-//! 
+//!
 //! For example, "{L} {f:>10}: {s}" is printed as follows:
-//! 
+//!
 //! ```text
 //! [ERROR]    main.rs: hello
 //! ```
-//! 
+//!
 //! ## Nested formatting
-//! 
+//!
 //! Log segments can be grouped and formatted together by nesting formats. Format parameters for the grouped log segments
 //! must be provided after the group, separated by `%`.
-//! 
+//!
 //! Nested formats allow for more intricate formatting. For example, `"{[{L:bold}]%underline} {s}"` prints
-//! 
+//!
 //! ```text
 //! [ERROR] hello
 //! ```
-//! 
+//!
 //! where `ERROR` is formatted bold, and `[ERROR]` is underlined.
-//! 
+//!
 //! Formats can be nested several levels. This provides a great level of flexibility to customize the logger formatting.
 //! For example, the width and alignment of a group of log segments can be specified with nested formats.
 //! `"{{[{L}]%bold} {f:>20}:%<35} {s}"` prints:
-//! 
+//!
 //! ```text
 //! [ERROR]              main.rs:       hello
 //! ```
-//! 
+//!
 //! ## Restrictions
-//! 
+//!
 //! - Format strings *must* include the `{s}` format specifier (log specifier).
 //! - At the moment it is not possible to escape curly brackets (i.e. `{`, `}`)
 //! in the format string, therefore curly brackets cannot be printed as part
 //! of the logger format.
 //! - The same restriction exists for the `%` character.
-//! 
+//!
 //! [format specifiers]: LogMetadata
 //! [format parameters]: LogFormat
 
@@ -202,7 +202,7 @@ impl LogMetadata {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub(super) enum LogColor {
     /// User-defined color.
-    /// 
+    ///
     /// Use a string that can be parsed by the FromStr implementation
     /// of [colored::Color].
     Color(colored::Color),
@@ -213,7 +213,7 @@ pub(super) enum LogColor {
 
     /// Color matching the default color for the log level,
     /// but only if the log level is WARN or ERROR.
-    /// 
+    ///
     /// Use `"werror"` as a format parameter to use this option.
     WarnError,
 }
@@ -581,7 +581,7 @@ fn format_contains_log_specifier(segments: &[LogSegment]) -> bool {
                 if format_contains_log_specifier(s) {
                     return true;
                 }
-            },
+            }
             _ => continue,
         }
     }
