@@ -165,7 +165,9 @@ impl<'a> Printer<'a> {
                 LogMetadata::LineNumber => self.build_line_number(&segment.format),
                 LogMetadata::LogLevel => self.build_log_level(&segment.format),
                 LogMetadata::Log => self.build_log(&segment.format),
-                LogMetadata::NestedLogSegments(segments) => self.build_nested(segments, &segment.format),
+                LogMetadata::NestedLogSegments(segments) => {
+                    self.build_nested(segments, &segment.format)
+                }
             };
 
             write!(sink, "{s}")?;
@@ -185,7 +187,9 @@ impl<'a> Printer<'a> {
                 LogMetadata::LineNumber => self.build_line_number(&segment.format),
                 LogMetadata::LogLevel => self.build_log_level(&segment.format),
                 LogMetadata::Log => self.build_log(&segment.format),
-                LogMetadata::NestedLogSegments(segments) => self.build_nested(segments, &segment.format),
+                LogMetadata::NestedLogSegments(segments) => {
+                    self.build_nested(segments, &segment.format)
+                }
             };
             result.push_str(&s);
         }
@@ -217,13 +221,7 @@ impl<'a> Printer<'a> {
 
         let color = format.color.unwrap_or(LogColor::SeverityLevel);
 
-        build_formatted_string(
-            s.as_str(),
-            format,
-            5,
-            self.record_log_level(),
-            Some(color),
-        )
+        build_formatted_string(s.as_str(), format, 5, self.record_log_level(), Some(color))
     }
 
     fn build_file_path(&self, format: &LogFormat) -> String {
@@ -281,13 +279,15 @@ impl<'a> Printer<'a> {
         match self.record {
             Record::Defmt(record) => match color_diff(record.args().to_string()) {
                 Ok(s) => s.to_string(),
-                Err(s) => {
-                    build_formatted_string(s.as_str(), format, 0, self.record_log_level(), format.color)
-                },
+                Err(s) => build_formatted_string(
+                    s.as_str(),
+                    format,
+                    0,
+                    self.record_log_level(),
+                    format.color,
+                ),
             },
-            Record::Host(record) => {
-                record.args().to_string()
-            }
+            Record::Host(record) => record.args().to_string(),
         }
     }
 
@@ -440,6 +440,7 @@ fn build_formatted_string(
         Alignment::Left => write!(&mut result, "{colored_str:<0$}", width),
         Alignment::Center => write!(&mut result, "{colored_str:^0$}", width),
         Alignment::Right => write!(&mut result, "{colored_str:>0$}", width),
-    }.expect("Failed to format string: \"{colored_str}\"");
+    }
+    .expect("Failed to format string: \"{colored_str}\"");
     result
 }
