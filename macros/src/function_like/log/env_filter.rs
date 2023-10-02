@@ -212,14 +212,14 @@ mod tests {
     }
 
     #[test]
-    fn when_empty_defmt_log_use_error() {
+    fn when_empty_defmt_log_use_info() {
         let env_filter = EnvFilter::new(None, "krate");
         let expected = [ModulePath::parse("krate")];
         assert_eq!(
             expected.iter().collect::<BTreeSet<_>>(),
-            env_filter.modules_on_for(Level::Error)
+            env_filter.modules_on_for(Level::Info)
         );
-        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Warn));
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Debug));
     }
 
     #[test]
@@ -346,9 +346,9 @@ mod tests {
         let expected = [ModulePath::parse("foo")];
         assert_eq!(
             expected.iter().collect::<BTreeSet<_>>(),
-            env_filter.modules_on_for(Level::Error)
+            env_filter.modules_on_for(Level::Info)
         );
-        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Warn));
+        assert_eq!(btreeset![], env_filter.modules_on_for(Level::Debug));
     }
 
     // doesn't affect runtime performance but it makes the expanded code smaller
