@@ -173,6 +173,7 @@ impl DefmtLoggerInfo {
 // - use two Formatter in StdoutLogger instead of the log format
 // - add fn format_to_sink
 // - specify log format
+#[derive(Debug)]
 pub struct Formatter {
     format: Vec<LogSegment>,
 }
