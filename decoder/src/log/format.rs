@@ -363,7 +363,7 @@ pub fn take_until_unbalanced(
 }
 
 fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    let mut parse_type = map_res(take_while(char::is_alphanumeric), move |s| {
+    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
         let metadata = match s {
             "f" => LogMetadata::FileName,
             "F" => LogMetadata::FilePath,
