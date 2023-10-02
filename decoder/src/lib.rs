@@ -29,13 +29,15 @@ use std::{
 };
 
 use byteorder::{ReadBytesExt, LE};
-use decoder::Decoder;
 use defmt_parser::Level;
-use elf2table::parse_impl;
 
-pub use elf2table::{Location, Locations};
-pub use frame::Frame;
-pub use stream::StreamDecoder;
+use crate::{decoder::Decoder, elf2table::parse_impl};
+
+pub use crate::{
+    elf2table::{Location, Locations},
+    frame::Frame,
+    stream::StreamDecoder,
+};
 
 /// Specifies the origin of a format string
 #[derive(PartialEq, Eq, Debug)]
