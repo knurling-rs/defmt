@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#780]: `defmt-decoder`: Add support for zero-padded timestamps and Unix-style timestamps
 - [#778]: `defmt-decoder`: Add support for nested log formatting
 - [#777]: `defmt-decoder`: Simplify StdoutLogger
 - [#775]: `defmt-decoder`: Ignore AArch64 mapping symbols
 - [#771]: `defmt-macros`: Ignore empty items in DEFMT_LOG
 - [#769]: `defmt-decoder`: Add support for color, style, width and alignment to format
 
+[#780]: https://github.com/knurling-rs/defmt/pull/780
 [#778]: https://github.com/knurling-rs/defmt/pull/778
 [#777]: https://github.com/knurling-rs/defmt/pull/777
 [#775]: https://github.com/knurling-rs/defmt/pull/775
