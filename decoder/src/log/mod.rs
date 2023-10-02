@@ -16,7 +16,7 @@ use log::{Level, LevelFilter, Log, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    format::LogSegment,
+    format::{LogMetadata, LogSegment},
     json_logger::JsonLogger,
     stdout_logger::{Printer, StdoutLogger},
 };
@@ -208,9 +208,18 @@ impl Formatter {
                     payload: Payload { level, timestamp },
                 };
 
-                Printer::new_defmt(&record, &self.format)
-                    .format_frame()
-                    .unwrap()
+                match level {
+                    Some(_) => Printer::new_defmt(&record, &self.format)
+                        .format_frame()
+                        .unwrap(),
+                    None => {
+                        // handle defmt::println separately
+                        const RAW_FORMAT: &[LogSegment] = &[LogSegment::new(LogMetadata::Log)];
+                        Printer::new_defmt(&record, RAW_FORMAT)
+                            .format_frame()
+                            .unwrap()
+                    }
+                }
             }
         }
     }
