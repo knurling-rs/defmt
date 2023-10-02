@@ -164,7 +164,7 @@ impl DefmtLoggerInfo {
     }
 }
 
-/// Format [DefmtRecord]s according to a `log_format`.
+/// Format [`Frame`]s according to a `log_format`.
 ///
 /// The `log_format` makes it possible to customize the defmt output.
 ///
@@ -209,17 +209,15 @@ impl Formatter {
                 };
 
                 match level {
-                    Some(_) => Printer::new_defmt(&record, &self.format)
-                        .format_frame()
-                        .unwrap(),
+                    Some(_) => Printer::new_defmt(&record, &self.format),
                     None => {
                         // handle defmt::println separately
                         const RAW_FORMAT: &[LogSegment] = &[LogSegment::new(LogMetadata::Log)];
                         Printer::new_defmt(&record, RAW_FORMAT)
-                            .format_frame()
-                            .unwrap()
                     }
                 }
+                .format_frame()
+                .unwrap()
             }
         }
     }
