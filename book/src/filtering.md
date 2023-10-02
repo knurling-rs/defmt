@@ -10,8 +10,8 @@
 
 The logging macros `trace!`, `debug!`, `info!`, `warn!` and `error!` match these logging levels.
 
-By default, only `ERROR` level messages are emitted.
-All other logging levels are disabled.
+By default, only messages up to `INFO` level are emitted.
+Higher logging levels are disabled.
 
 Note that `defmt::println!` statements cannot be filtered and are always included in the output.
 
