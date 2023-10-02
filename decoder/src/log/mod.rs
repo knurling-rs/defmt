@@ -10,12 +10,16 @@ mod format;
 mod json_logger;
 mod stdout_logger;
 
+use std::fmt;
+
 use log::{Level, LevelFilter, Log, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
-use std::fmt;
-
-use self::{json_logger::JsonLogger, stdout_logger::StdoutLogger};
+use self::{
+    format::LogSegment,
+    json_logger::JsonLogger,
+    stdout_logger::{Printer, StdoutLogger},
+};
 use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
@@ -168,5 +172,67 @@ pub struct DefmtLoggerInfo {
 impl DefmtLoggerInfo {
     pub fn has_timestamp(&self) -> bool {
         self.has_timestamp
+    }
+}
+
+/// Format [DefmtRecord]s according to a `log_format`.
+///
+/// The `log_format` makes it possible to customize the defmt output.
+///
+/// The `log_format` is specified here: TODO
+// TODO:
+// - use two Formatter in StdoutLogger instead of the log format
+// - add fn format_to_sink
+// - specify log format
+pub struct Formatter {
+    format: Vec<LogSegment>,
+}
+
+impl Formatter {
+    pub fn new(log_format: &str) -> Self {
+        let format = format::parse(log_format)
+            .unwrap_or_else(|_| panic!("log format is invalid '{log_format}'"));
+        Self { format }
+    }
+
+    pub fn format_to_string(
+        &self,
+        frame: Frame<'_>,
+        file: Option<&str>,
+        line: Option<u32>,
+        module_path: Option<&str>,
+    ) -> String {
+        let timestamp = frame
+            .display_timestamp()
+            .map(|ts| ts.to_string())
+            .unwrap_or_default();
+
+        let level = frame.level().map(|level| match level {
+            crate::Level::Trace => Level::Trace,
+            crate::Level::Debug => Level::Debug,
+            crate::Level::Info => Level::Info,
+            crate::Level::Warn => Level::Warn,
+            crate::Level::Error => Level::Error,
+        });
+
+        match format_args!("{}", frame.display_message()) {
+            args => {
+                let log_record = &Record::builder()
+                    .args(args)
+                    .module_path(module_path)
+                    .file(file)
+                    .line(line)
+                    .build();
+
+                let record = DefmtRecord {
+                    log_record,
+                    payload: Payload { level, timestamp },
+                };
+
+                Printer::new_defmt(&record, &self.format)
+                    .format_frame()
+                    .unwrap()
+            }
+        }
     }
 }
