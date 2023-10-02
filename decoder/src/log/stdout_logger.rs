@@ -93,7 +93,7 @@ impl StdoutLogger {
     }
 
     pub fn info(&self) -> DefmtLoggerInfo {
-        fn has_timestamp(segments :&[LogSegment]) -> bool {
+        fn has_timestamp(segments: &[LogSegment]) -> bool {
             for segment in segments {
                 match &segment.metadata {
                     LogMetadata::TimestampMs | LogMetadata::TimestampUnix => return true,
