@@ -206,10 +206,7 @@ impl LogMetadata {
     }
 
     pub fn is_timestamp(&self) -> bool {
-        matches!(
-            self,
-            LogMetadata::TimestampMs | LogMetadata::TimestampUnix
-        )
+        matches!(self, LogMetadata::TimestampMs | LogMetadata::TimestampUnix)
     }
 }
 
@@ -739,7 +736,10 @@ mod tests {
         let result = parse_width_and_alignment("12");
         assert_eq!(
             result,
-            Ok(("", IntermediateOutput::WidthAndAlignment((12, Padding::Space, None))))
+            Ok((
+                "",
+                IntermediateOutput::WidthAndAlignment((12, Padding::Space, None))
+            ))
         );
     }
 
@@ -748,7 +748,10 @@ mod tests {
         let result = parse_width_and_alignment("012");
         assert_eq!(
             result,
-            Ok(("", IntermediateOutput::WidthAndAlignment((12, Padding::Zero, None))))
+            Ok((
+                "",
+                IntermediateOutput::WidthAndAlignment((12, Padding::Zero, None))
+            ))
         );
     }
 
