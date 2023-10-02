@@ -10,7 +10,7 @@ use std::{
 };
 
 use super::{
-    format::{self, Alignment, LogColor, LogFormat, LogMetadata, LogSegment},
+    format::{self, Alignment, LogColor, LogFormat, LogMetadata, LogSegment, Padding},
     DefmtLoggerInfo, DefmtRecord,
 };
 
@@ -21,7 +21,6 @@ enum Record<'a> {
 
 enum TimestampStyle {
     Normal,
-    ZeroPadded,
     Unix,
 }
 
@@ -141,9 +140,6 @@ impl<'a> Printer<'a> {
                 LogMetadata::TimestampMs => {
                     self.build_timestamp(&segment.format, TimestampStyle::Normal)
                 }
-                LogMetadata::TimestampMsZeroPadded => {
-                    self.build_timestamp(&segment.format, TimestampStyle::ZeroPadded)
-                }
                 LogMetadata::TimestampUnix => {
                     self.build_timestamp(&segment.format, TimestampStyle::Unix)
                 }
@@ -171,9 +167,6 @@ impl<'a> Printer<'a> {
                 LogMetadata::TimestampMs => {
                     self.build_timestamp(&segment.format, TimestampStyle::Normal)
                 }
-                LogMetadata::TimestampMsZeroPadded => {
-                    self.build_timestamp(&segment.format, TimestampStyle::ZeroPadded)
-                }
                 LogMetadata::TimestampUnix => {
                     self.build_timestamp(&segment.format, TimestampStyle::Unix)
                 }
@@ -197,15 +190,19 @@ impl<'a> Printer<'a> {
         let s = match self.record {
             Record::Defmt(record) if !record.timestamp().is_empty() => {
                 match style {
-                    TimestampStyle::Normal => record.timestamp().to_string(),
-                    TimestampStyle::ZeroPadded => {
-                        let mut result = String::new();
-                        let width = format.width.unwrap_or(8);
-                        let timestamp = record.timestamp();
-                        write!(&mut result, "{timestamp:0>0$}", width)
-                            .expect("failed to format timestamp");
-                        result
-                    }
+                    TimestampStyle::Normal => {
+                        match format.padding {
+                            Some(Padding::Space) | None => record.timestamp().to_string(),
+                            Some(Padding::Zero) => {
+                                let mut result = String::new();
+                                let width = format.width.unwrap_or(8);
+                                let timestamp = record.timestamp();
+                                write!(&mut result, "{timestamp:0>0$}", width)
+                                    .expect("failed to format timestamp");
+                                result
+                            }
+                        }
+                    },
                     TimestampStyle::Unix => {
                         let mut timestamp = record
                             .timestamp()
