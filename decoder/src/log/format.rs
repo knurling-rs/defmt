@@ -204,10 +204,6 @@ impl LogMetadata {
             LogMetadata::String(_) | LogMetadata::NestedLogSegments(_)
         )
     }
-
-    pub fn is_timestamp(&self) -> bool {
-        matches!(self, LogMetadata::TimestampMs | LogMetadata::TimestampUnix)
-    }
 }
 
 /// Coloring options for [LogSegment]s.

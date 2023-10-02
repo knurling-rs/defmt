@@ -93,7 +93,22 @@ impl StdoutLogger {
     }
 
     pub fn info(&self) -> DefmtLoggerInfo {
-        let has_timestamp = self.log_format.iter().any(|s| s.metadata.is_timestamp());
+        fn has_timestamp(segments :&[LogSegment]) -> bool {
+            for segment in segments {
+                match &segment.metadata {
+                    LogMetadata::TimestampMs | LogMetadata::TimestampUnix => return true,
+                    LogMetadata::NestedLogSegments(s) => {
+                        if has_timestamp(s) {
+                            return true;
+                        }
+                    }
+                    _ => continue,
+                }
+            }
+            false
+        }
+
+        let has_timestamp = has_timestamp(&self.log_format);
         DefmtLoggerInfo { has_timestamp }
     }
 
