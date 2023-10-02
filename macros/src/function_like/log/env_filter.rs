@@ -27,9 +27,8 @@ impl EnvFilter {
     }
 
     fn new(defmt_log: Option<&str>, cargo_crate_name: &str) -> Self {
-        // match `env_logger` behavior
         const LEVEL_WHEN_LEVEL_IS_NOT_SPECIFIED: LogLevelOrOff = Some(Level::Trace);
-        const LEVEL_WHEN_NOTHING_IS_SPECIFIED: LogLevelOrOff = Some(Level::Error);
+        const LEVEL_WHEN_NOTHING_IS_SPECIFIED: LogLevelOrOff = Some(Level::Info);
 
         let caller_crate = cargo_crate_name;
 
