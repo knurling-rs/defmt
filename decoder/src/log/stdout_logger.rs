@@ -5,8 +5,8 @@ use log::{Level, Log, Metadata, Record as LogRecord};
 use std::{
     fmt::Write as _,
     io::{self, StderrLock, StdoutLock},
+    iter::successors,
     path::Path,
-    sync::atomic::{AtomicUsize, Ordering},
 };
 
 use super::{
@@ -19,13 +19,16 @@ enum Record<'a> {
     Host(&'a LogRecord<'a>),
 }
 
+enum TimestampStyle {
+    Normal,
+    ZeroPadded,
+    Unix,
+}
+
 pub(crate) struct StdoutLogger {
     log_format: Vec<LogSegment>,
     host_log_format: Vec<LogSegment>,
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
-    /// Number of characters used by the timestamp.
-    /// This may increase over time and is used to align messages.
-    timing_align: AtomicUsize,
 }
 
 impl Log for StdoutLogger {
@@ -87,25 +90,16 @@ impl StdoutLogger {
             log_format,
             host_log_format,
             should_log: Box::new(should_log),
-            timing_align: AtomicUsize::new(0),
         }
     }
 
     pub fn info(&self) -> DefmtLoggerInfo {
-        let has_timestamp = self
-            .log_format
-            .iter()
-            .any(|s| s.metadata == LogMetadata::Timestamp);
+        let has_timestamp = self.log_format.iter().any(|s| s.metadata.is_timestamp());
         DefmtLoggerInfo { has_timestamp }
     }
 
     fn print_defmt_record(&self, record: DefmtRecord, mut sink: StdoutLock) {
-        let len = record.timestamp().len();
-        self.timing_align.fetch_max(len, Ordering::Relaxed);
-        let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
-
         Printer::new(Record::Defmt(&record), &self.log_format)
-            .min_timestamp_width(min_timestamp_width)
             .print_frame(&mut sink)
             .ok();
     }
@@ -122,9 +116,7 @@ impl StdoutLogger {
     }
 
     pub(super) fn print_host_record(&self, record: &LogRecord, mut sink: StderrLock) {
-        let min_timestamp_width = self.timing_align.load(Ordering::Relaxed);
         Printer::new(Record::Host(record), &self.host_log_format)
-            .min_timestamp_width(min_timestamp_width)
             .print_frame(&mut sink)
             .ok();
     }
@@ -134,23 +126,11 @@ impl StdoutLogger {
 struct Printer<'a> {
     record: Record<'a>,
     format: &'a [LogSegment],
-    min_timestamp_width: usize,
 }
 
 impl<'a> Printer<'a> {
     pub fn new(record: Record<'a>, format: &'a [LogSegment]) -> Self {
-        Self {
-            record,
-            format,
-            min_timestamp_width: 0,
-        }
-    }
-
-    /// Pads the defmt timestamp to take up at least the given number of characters.
-    /// TODO: Remove this, shouldn't be needed now that we have width field support
-    pub fn min_timestamp_width(&mut self, min_timestamp_width: usize) -> &mut Self {
-        self.min_timestamp_width = min_timestamp_width;
-        self
+        Self { record, format }
     }
 
     /// Prints the formatted log frame to `sink`.
@@ -158,7 +138,15 @@ impl<'a> Printer<'a> {
         for segment in self.format {
             let s = match &segment.metadata {
                 LogMetadata::String(s) => s.to_string(),
-                LogMetadata::Timestamp => self.build_timestamp(&segment.format),
+                LogMetadata::TimestampMs => {
+                    self.build_timestamp(&segment.format, TimestampStyle::Normal)
+                }
+                LogMetadata::TimestampMsZeroPadded => {
+                    self.build_timestamp(&segment.format, TimestampStyle::ZeroPadded)
+                }
+                LogMetadata::TimestampUnix => {
+                    self.build_timestamp(&segment.format, TimestampStyle::Unix)
+                }
                 LogMetadata::FileName => self.build_file_name(&segment.format),
                 LogMetadata::FilePath => self.build_file_path(&segment.format),
                 LogMetadata::ModulePath => self.build_module_path(&segment.format),
@@ -180,7 +168,15 @@ impl<'a> Printer<'a> {
         for segment in segments {
             let s = match &segment.metadata {
                 LogMetadata::String(s) => s.to_string(),
-                LogMetadata::Timestamp => self.build_timestamp(&segment.format),
+                LogMetadata::TimestampMs => {
+                    self.build_timestamp(&segment.format, TimestampStyle::Normal)
+                }
+                LogMetadata::TimestampMsZeroPadded => {
+                    self.build_timestamp(&segment.format, TimestampStyle::ZeroPadded)
+                }
+                LogMetadata::TimestampUnix => {
+                    self.build_timestamp(&segment.format, TimestampStyle::Unix)
+                }
                 LogMetadata::FileName => self.build_file_name(&segment.format),
                 LogMetadata::FilePath => self.build_file_path(&segment.format),
                 LogMetadata::ModulePath => self.build_module_path(&segment.format),
@@ -197,20 +193,88 @@ impl<'a> Printer<'a> {
         build_formatted_string(&result, format, 0, self.record_log_level(), format.color)
     }
 
-    fn build_timestamp(&self, format: &LogFormat) -> String {
+    fn build_timestamp(&self, format: &LogFormat, style: TimestampStyle) -> String {
         let s = match self.record {
-            Record::Defmt(record) if !record.timestamp().is_empty() => record.timestamp(),
-            _ => "<time>",
-        }
-        .to_string();
+            Record::Defmt(record) if !record.timestamp().is_empty() => {
+                match style {
+                    TimestampStyle::Normal => record.timestamp().to_string(),
+                    TimestampStyle::ZeroPadded => {
+                        let mut result = String::new();
+                        let width = format.width.unwrap_or(8);
+                        let timestamp = record.timestamp();
+                        write!(&mut result, "{timestamp:0>0$}", width)
+                            .expect("failed to format timestamp");
+                        result
+                    }
+                    TimestampStyle::Unix => {
+                        let mut timestamp = record
+                            .timestamp()
+                            .parse::<usize>()
+                            .expect("failed to parse timestamp");
 
-        build_formatted_string(
-            s.as_str(),
-            format,
-            self.min_timestamp_width,
-            self.record_log_level(),
-            format.color,
-        )
+                        let ms = timestamp % 1000;
+                        timestamp /= 1000;
+                        let seconds = timestamp % 60;
+                        timestamp /= 60;
+                        let minutes = timestamp % 60;
+                        timestamp /= 60;
+                        let hours = timestamp % 24;
+                        timestamp /= 24;
+                        let days = timestamp;
+
+                        // Enough for "00:00:00.000" by default
+                        let width = format.width.unwrap_or(12);
+                        let mut result = String::new();
+
+                        fn num_of_digits(n: usize) -> usize {
+                            successors(Some(n), |&n| (n >= 10).then_some(n / 10)).count()
+                        }
+
+                        if days > 0 || width > 12 {
+                            let zero_padding =
+                                std::cmp::max(num_of_digits(days), width.saturating_sub(13));
+                            write!(
+                                &mut result,
+                                "{days:0>0$}:{hours:0>2}:{minutes:0>2}:{seconds:0>2}.{ms:0>3}",
+                                zero_padding
+                            )
+                            .expect("failed to format timestamp");
+                        } else if hours > 0 || width > 9 {
+                            let zero_padding =
+                                std::cmp::max(num_of_digits(hours), width.saturating_sub(10));
+                            write!(
+                                &mut result,
+                                "{hours:0>0$}:{minutes:0>2}:{seconds:0>2}.{ms:0>3}",
+                                zero_padding
+                            )
+                            .expect("failed to format timestamp");
+                        } else if minutes > 0 || width > 6 {
+                            let zero_padding =
+                                std::cmp::max(num_of_digits(minutes), width.saturating_sub(7));
+                            write!(
+                                &mut result,
+                                "{minutes:0>0$}:{seconds:0>2}.{ms:0>3}",
+                                zero_padding
+                            )
+                            .expect("failed to format timestamp");
+                        } else if seconds > 0 || width > 3 {
+                            let zero_padding =
+                                std::cmp::max(num_of_digits(seconds), width.saturating_sub(4));
+                            write!(&mut result, "{seconds:0>0$}.{ms:0>3}", zero_padding)
+                                .expect("failed to format timestamp");
+                        } else {
+                            let zero_padding = std::cmp::max(num_of_digits(ms), width);
+                            write!(&mut result, "{ms:0>0$}", zero_padding)
+                                .expect("failed to format timestamp");
+                        }
+                        result
+                    }
+                }
+            }
+            _ => "<time>".to_string(),
+        };
+
+        build_formatted_string(s.as_str(), format, 8, self.record_log_level(), format.color)
     }
 
     fn build_log_level(&self, format: &LogFormat) -> String {

@@ -182,7 +182,21 @@ pub(super) enum LogMetadata {
     ///
     /// Prints the timestamp at which something was logged.
     /// For a log printed with a timestamp 123456 ms, this prints "123456".
-    Timestamp,
+    TimestampMs,
+
+    /// `{0t}` format specifier.
+    ///
+    /// Prints the timestamp at which something was logged, but zero padded
+    /// to fill the minimum width.
+    /// For a log printed with format {0t:<8}, a timestamp 123456 ms is printed "00123456".
+    TimestampMsZeroPadded,
+
+    /// `{T}` format specifier.
+    ///
+    /// Prints the timestamp at which something was logged, but printing it
+    /// in Unix style (hh:mm:ss.milliseconds).
+    /// For a log printed with timestamp 123456 ms, this prints "00:02:03.456".
+    TimestampUnix,
 
     /// Represents formats specified within nested curly brackets in the formatting string.
     NestedLogSegments(Vec<LogSegment>),
@@ -195,6 +209,15 @@ impl LogMetadata {
         !matches!(
             self,
             LogMetadata::String(_) | LogMetadata::NestedLogSegments(_)
+        )
+    }
+
+    pub fn is_timestamp(&self) -> bool {
+        matches!(
+            self,
+            LogMetadata::TimestampMs
+                | LogMetadata::TimestampMsZeroPadded
+                | LogMetadata::TimestampUnix
         )
     }
 }
@@ -342,7 +365,7 @@ pub fn take_until_unbalanced(
 }
 
 fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
-    let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
+    let mut parse_type = map_res(take_while(char::is_alphanumeric), move |s| {
         let metadata = match s {
             "f" => LogMetadata::FileName,
             "F" => LogMetadata::FilePath,
@@ -350,7 +373,9 @@ fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
             "s" => LogMetadata::Log,
             "L" => LogMetadata::LogLevel,
             "m" => LogMetadata::ModulePath,
-            "t" => LogMetadata::Timestamp,
+            "t" => LogMetadata::TimestampMs,
+            "0t" => LogMetadata::TimestampMsZeroPadded,
+            "T" => LogMetadata::TimestampUnix,
             _ => return Err(()),
         };
         Ok(IntermediateOutput::Metadata(metadata))
@@ -612,7 +637,7 @@ mod tests {
         let log_template = "{t} [{L}] {s}\n└─ {m} @ {F}:{l}";
 
         let expected_output = vec![
-            LogSegment::new(LogMetadata::Timestamp),
+            LogSegment::new(LogMetadata::TimestampMs),
             LogSegment::new(LogMetadata::String(" [".to_string())),
             LogSegment::new(LogMetadata::LogLevel),
             LogSegment::new(LogMetadata::String("] ".to_string())),
@@ -655,21 +680,21 @@ mod tests {
     #[test]
     fn test_parse_timestamp_argument() {
         let result = parse_argument::<false>("{t}");
-        assert_eq!(result, Ok(("", LogSegment::new(LogMetadata::Timestamp))));
+        assert_eq!(result, Ok(("", LogSegment::new(LogMetadata::TimestampMs))));
     }
 
     #[test]
     fn test_parse_argument_with_color() {
         let result = parse_log_segment::<false>("t:werror");
         let expected_output =
-            LogSegment::new(LogMetadata::Timestamp).with_color(LogColor::WarnError);
+            LogSegment::new(LogMetadata::TimestampMs).with_color(LogColor::WarnError);
         assert_eq!(result, Ok(("", expected_output)));
     }
 
     #[test]
     fn test_parse_argument_with_extra_format_parameters_width_first() {
         let result = parse_argument::<false>("{t:>8:white}");
-        let expected_output = LogSegment::new(LogMetadata::Timestamp)
+        let expected_output = LogSegment::new(LogMetadata::TimestampMs)
             .with_width(8)
             .with_alignment(Alignment::Right)
             .with_color(LogColor::Color(colored::Color::White));
@@ -731,7 +756,7 @@ mod tests {
 
         let expected_output = vec![
             LogSegment::new(LogMetadata::String("T".to_string())),
-            LogSegment::new(LogMetadata::Timestamp)
+            LogSegment::new(LogMetadata::TimestampMs)
                 .with_width(8)
                 .with_alignment(Alignment::Right),
             LogSegment::new(LogMetadata::String(" [".to_string())),
