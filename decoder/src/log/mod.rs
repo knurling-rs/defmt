@@ -31,7 +31,7 @@ pub fn log_defmt(
     line: Option<u32>,
     module_path: Option<&str>,
 ) {
-    let (timestamp, level) = timestamp_and_level_from_frame(&frame);
+    let (timestamp, level) = timestamp_and_level_from_frame(frame);
 
     let target = format!(
         "{}{}",
@@ -194,6 +194,7 @@ impl Formatter {
     ) -> String {
         let (timestamp, level) = timestamp_and_level_from_frame(&frame);
 
+        #[allow(clippy::match_single_binding)]
         match format_args!("{}", frame.display_message()) {
             args => {
                 let log_record = &Record::builder()
