@@ -48,7 +48,7 @@
 //! A log segment can be specified to be colored by providing a color in the format parameters.
 //!
 //! There are three different options for coloring a log segment:
-//! - a string that can be parsed by the FromStr implementation of [colored::Color].
+//! - a string that can be parsed by the FromStr implementation of [colored::Color] (`red`, `green` etc.).
 //! - `severity` colors the log segment using the predefined color for the log level of log.
 //! - `werror` is similar to `severity`, but it only applies the color if the log level is WARN or ERROR.
 //!
