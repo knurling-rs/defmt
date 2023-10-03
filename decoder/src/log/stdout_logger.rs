@@ -147,11 +147,7 @@ impl<'a> Printer<'a> {
     }
 
     pub fn new_defmt(record: &'a DefmtRecord<'a>, format: &'a [LogSegment]) -> Self {
-        Self {
-            record: Record::Defmt(record),
-            format,
-            min_timestamp_width: 0,
-        }
+        Self::new(Record::Defmt(record), format)
     }
 
     /// Pads the defmt timestamp to take up at least the given number of characters.
