@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#789]: `defmt`: Add support for new time-related display hints
+- [#783]: `defmt-decoder`: Move formatting logic to `Formatter`
 
 [#789]: https://github.com/knurling-rs/defmt/pull/789
+[#783]: https://github.com/knurling-rs/defmt/pull/783
 
 ## defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
 

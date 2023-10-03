@@ -7,7 +7,10 @@ use std::{
 
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
-use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
+use defmt_decoder::{
+    log::{DefmtLoggerConfig, DefmtLoggerType},
+    DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
+};
 
 /// Prints defmt-encoded logs to stdout
 #[derive(Parser)]
@@ -98,16 +101,6 @@ fn main() -> anyhow::Result<()> {
         return print_version();
     }
 
-    defmt_decoder::log::init_logger(
-        log_format.as_deref(),
-        host_log_format.as_deref(),
-        json,
-        move |metadata| match verbose {
-            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
-            true => true,                                          // We display *all* frames.
-        },
-    );
-
     // read and parse elf file
     let bytes = fs::read(elf.unwrap())?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
@@ -120,6 +113,25 @@ fn main() -> anyhow::Result<()> {
         log::warn!("(BUG) location info is incomplete; it will be omitted from the output");
         None
     };
+
+    let logger_type = if json {
+        DefmtLoggerType::Json
+    } else {
+        DefmtLoggerType::Stdout
+    };
+
+    let logger_config = DefmtLoggerConfig {
+        log_format: log_format.as_deref(),
+        host_log_format: host_log_format.as_deref(),
+        use_verbose_defaults: verbose,
+        is_timestamp_available: table.has_timestamp(),
+        logger_type,
+    };
+
+    defmt_decoder::log::init_logger(logger_config, move |metadata| match verbose {
+        false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
+        true => true,                                          // We display *all* frames.
+    });
 
     let mut buf = [0; READ_BUFFER_SIZE];
     let mut stream_decoder = table.new_stream_decoder();

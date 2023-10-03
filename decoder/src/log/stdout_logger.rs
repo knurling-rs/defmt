@@ -11,7 +11,7 @@ use std::{
 
 use super::{
     format::{self, Alignment, LogColor, LogFormat, LogMetadata, LogSegment},
-    DefmtLoggerInfo, DefmtRecord,
+    DefmtLoggerConfig, DefmtLoggerInfo, DefmtRecord,
 };
 
 enum Record<'a> {
@@ -61,27 +61,56 @@ impl Log for StdoutLogger {
 
 impl StdoutLogger {
     pub fn new(
-        log_format: Option<&str>,
-        host_log_format: Option<&str>,
+        config: DefmtLoggerConfig,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
-        Box::new(Self::new_unboxed(log_format, host_log_format, should_log))
+        Box::new(Self::new_unboxed(config, should_log))
     }
 
     pub fn new_unboxed(
-        log_format: Option<&str>,
-        host_log_format: Option<&str>,
+        config: DefmtLoggerConfig,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {
-        const DEFAULT_LOG_FORMAT: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
+        const DEFAULT_LOG_FORMAT_WITH_TIMESTAMP: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
+        const DEFAULT_LOG_FORMAT_WITHOUT_TIMESTAMP: &str = "{L} {s}\n└─ {m} @ {F}:{l}";
         const DEFAULT_HOST_LOG_FORMAT: &str = "(HOST) {L} {s}";
+        const DEFAULT_VERBOSE_HOST_LOG_FORMAT: &str = "(HOST) {L} {s}\n└─ {m} @ {F}:{l}";
 
-        let log_format = log_format.unwrap_or(DEFAULT_LOG_FORMAT);
-        let log_format = format::parse(log_format)
-            .unwrap_or_else(|_| panic!("log format is invalid '{log_format}'"));
+        let log_format = config
+            .log_format
+            .unwrap_or(if config.is_timestamp_available {
+                DEFAULT_LOG_FORMAT_WITH_TIMESTAMP
+            } else {
+                DEFAULT_LOG_FORMAT_WITHOUT_TIMESTAMP
+            });
 
-        let host_log_format = host_log_format.unwrap_or(DEFAULT_HOST_LOG_FORMAT);
-        let host_log_format = format::parse(host_log_format).unwrap();
+        let host_log_format = config
+            .host_log_format
+            .unwrap_or(if config.use_verbose_defaults {
+                DEFAULT_VERBOSE_HOST_LOG_FORMAT
+            } else {
+                DEFAULT_HOST_LOG_FORMAT
+            });
+
+        let log_format = format::parse(log_format).expect("log format is invalid '{log_format}'");
+
+        let host_log_format =
+            format::parse(host_log_format).expect("host log format is invalid '{host_log_format}'");
+
+        let format_has_timestamp = format_has_timestamp(&log_format);
+        if format_has_timestamp && !config.is_timestamp_available {
+            log::warn!(
+                "logger format contains timestamp but no timestamp implementation \
+                was provided; consider removing the timestamp (`{{t}}` or `{{T}}`) from the \
+                logger format or provide a `defmt::timestamp!` implementation"
+            );
+        } else if !format_has_timestamp && config.is_timestamp_available {
+            log::warn!(
+                "`defmt::timestamp!` implementation was found, but timestamp is not \
+                part of the log format; consider adding the timestamp (`{{t}}` or `{{T}}`) \
+                argument to the log format"
+            );
+        }
 
         Self {
             log_format,
@@ -92,10 +121,7 @@ impl StdoutLogger {
     }
 
     pub fn info(&self) -> DefmtLoggerInfo {
-        let has_timestamp = self
-            .log_format
-            .iter()
-            .any(|s| s.metadata == LogMetadata::Timestamp);
+        let has_timestamp = format_has_timestamp(&self.log_format);
         DefmtLoggerInfo { has_timestamp }
     }
 
@@ -128,6 +154,21 @@ impl StdoutLogger {
             .print_frame(&mut sink)
             .ok();
     }
+}
+
+fn format_has_timestamp(segments: &[LogSegment]) -> bool {
+    for segment in segments {
+        match &segment.metadata {
+            LogMetadata::Timestamp => return true,
+            LogMetadata::NestedLogSegments(s) => {
+                if format_has_timestamp(s) {
+                    return true;
+                }
+            }
+            _ => continue,
+        }
+    }
+    false
 }
 
 /// Printer for `DefmtRecord`s.

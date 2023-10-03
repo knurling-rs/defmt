@@ -62,6 +62,20 @@ struct DefmtRecord<'a> {
     payload: Payload,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum DefmtLoggerType {
+    Stdout,
+    Json,
+}
+
+pub struct DefmtLoggerConfig<'a> {
+    pub log_format: Option<&'a str>,
+    pub host_log_format: Option<&'a str>,
+    pub is_timestamp_available: bool,
+    pub use_verbose_defaults: bool,
+    pub logger_type: DefmtLoggerType,
+}
+
 #[derive(Deserialize, Serialize)]
 struct Payload {
     level: Option<Level>,
@@ -130,20 +144,18 @@ impl<'a> DefmtRecord<'a> {
 /// For example, with the log format shown above, a log would look like this:
 /// "23124 [INFO] Location<main.rs:23> Hello, world!"
 pub fn init_logger(
-    log_format: Option<&str>,
-    host_log_format: Option<&str>,
-    json: bool,
+    config: DefmtLoggerConfig,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
 ) -> DefmtLoggerInfo {
-    let (logger, info): (Box<dyn Log>, DefmtLoggerInfo) = match json {
-        false => {
-            let logger = StdoutLogger::new(log_format, host_log_format, should_log);
+    let (logger, info): (Box<dyn Log>, DefmtLoggerInfo) = match config.logger_type {
+        DefmtLoggerType::Stdout => {
+            let logger = StdoutLogger::new(config, should_log);
             let info = logger.info();
             (logger, info)
         }
-        true => {
+        DefmtLoggerType::Json => {
             JsonLogger::print_schema_version();
-            let logger = JsonLogger::new(log_format, host_log_format, should_log);
+            let logger = JsonLogger::new(config, should_log);
             let info = logger.info();
             (logger, info)
         }
