@@ -194,6 +194,7 @@ impl Formatter {
     ) -> String {
         let (timestamp, level) = timestamp_and_level_from_frame(&frame);
 
+        // HACK: use match instead of let, because otherwise compilation fails
         #[allow(clippy::match_single_binding)]
         match format_args!("{}", frame.display_message()) {
             args => {
