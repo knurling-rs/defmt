@@ -166,13 +166,13 @@ impl<'a> Printer<'a> {
         writeln!(sink)
     }
 
-    pub(super) fn format_frame(&self) -> Result<String, std::fmt::Error> {
-        let mut sink = String::new();
+    pub(super) fn format_frame(&self) -> String {
+        let mut buf = String::new();
         for segment in self.format {
             let s = self.build_segment(segment);
-            write!(sink, "{s}")?;
+            write!(buf, "{s}").expect("writing to String cannot fail");
         }
-        Ok(sink)
+        buf
     }
 
     fn build_segment(&self, segment: &LogSegment) -> String {

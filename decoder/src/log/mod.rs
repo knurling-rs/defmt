@@ -218,7 +218,6 @@ impl Formatter {
                     }
                 }
                 .format_frame()
-                .unwrap()
             }
         }
     }
