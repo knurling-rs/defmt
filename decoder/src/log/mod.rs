@@ -57,7 +57,7 @@ pub fn is_defmt_frame(metadata: &Metadata) -> bool {
 }
 
 /// A `log` record representing a defmt log frame.
-pub struct DefmtRecord<'a> {
+struct DefmtRecord<'a> {
     log_record: &'a Record<'a>,
     payload: Payload,
 }
