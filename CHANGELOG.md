@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
 
+- [#784]: `defmt-decoder`: Prepare `defmt-decoder v0.3.9` release
 - [#781]: `defmt-decoder`: Add `pub struct Formatter` to `defmt_decoder::log`
 - [#778]: `defmt-decoder`: Add support for nested log formatting
 - [#777]: `defmt-decoder`: Simplify StdoutLogger
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#771]: `defmt-macros`: Ignore empty items in DEFMT_LOG
 - [#769]: `defmt-decoder`: Add support for color, style, width and alignment to format
 
+[#784]: https://github.com/knurling-rs/defmt/pull/784
 [#781]: https://github.com/knurling-rs/defmt/pull/781
 [#778]: https://github.com/knurling-rs/defmt/pull/778
 [#777]: https://github.com/knurling-rs/defmt/pull/777
