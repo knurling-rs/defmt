@@ -131,14 +131,14 @@ impl StdoutLogger {
 }
 
 /// Printer for `DefmtRecord`s.
-struct Printer<'a> {
+pub(super) struct Printer<'a> {
     record: Record<'a>,
     format: &'a [LogSegment],
     min_timestamp_width: usize,
 }
 
 impl<'a> Printer<'a> {
-    pub fn new(record: Record<'a>, format: &'a [LogSegment]) -> Self {
+    fn new(record: Record<'a>, format: &'a [LogSegment]) -> Self {
         Self {
             record,
             format,
@@ -146,9 +146,13 @@ impl<'a> Printer<'a> {
         }
     }
 
+    pub fn new_defmt(record: &'a DefmtRecord<'a>, format: &'a [LogSegment]) -> Self {
+        Self::new(Record::Defmt(record), format)
+    }
+
     /// Pads the defmt timestamp to take up at least the given number of characters.
     /// TODO: Remove this, shouldn't be needed now that we have width field support
-    pub fn min_timestamp_width(&mut self, min_timestamp_width: usize) -> &mut Self {
+    fn min_timestamp_width(&mut self, min_timestamp_width: usize) -> &mut Self {
         self.min_timestamp_width = min_timestamp_width;
         self
     }
@@ -156,23 +160,35 @@ impl<'a> Printer<'a> {
     /// Prints the formatted log frame to `sink`.
     pub fn print_frame<W: io::Write>(&self, sink: &mut W) -> io::Result<()> {
         for segment in self.format {
-            let s = match &segment.metadata {
-                LogMetadata::String(s) => s.to_string(),
-                LogMetadata::Timestamp => self.build_timestamp(&segment.format),
-                LogMetadata::FileName => self.build_file_name(&segment.format),
-                LogMetadata::FilePath => self.build_file_path(&segment.format),
-                LogMetadata::ModulePath => self.build_module_path(&segment.format),
-                LogMetadata::LineNumber => self.build_line_number(&segment.format),
-                LogMetadata::LogLevel => self.build_log_level(&segment.format),
-                LogMetadata::Log => self.build_log(&segment.format),
-                LogMetadata::NestedLogSegments(segments) => {
-                    self.build_nested(segments, &segment.format)
-                }
-            };
-
+            let s = self.build_segment(segment);
             write!(sink, "{s}")?;
         }
         writeln!(sink)
+    }
+
+    pub(super) fn format_frame(&self) -> String {
+        let mut buf = String::new();
+        for segment in self.format {
+            let s = self.build_segment(segment);
+            write!(buf, "{s}").expect("writing to String cannot fail");
+        }
+        buf
+    }
+
+    fn build_segment(&self, segment: &LogSegment) -> String {
+        match &segment.metadata {
+            LogMetadata::String(s) => s.to_string(),
+            LogMetadata::Timestamp => self.build_timestamp(&segment.format),
+            LogMetadata::FileName => self.build_file_name(&segment.format),
+            LogMetadata::FilePath => self.build_file_path(&segment.format),
+            LogMetadata::ModulePath => self.build_module_path(&segment.format),
+            LogMetadata::LineNumber => self.build_line_number(&segment.format),
+            LogMetadata::LogLevel => self.build_log_level(&segment.format),
+            LogMetadata::Log => self.build_log(&segment.format),
+            LogMetadata::NestedLogSegments(segments) => {
+                self.build_nested(segments, &segment.format)
+            }
+        }
     }
 
     fn build_nested(&self, segments: &[LogSegment], format: &LogFormat) -> String {

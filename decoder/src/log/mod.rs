@@ -10,12 +10,16 @@ mod format;
 mod json_logger;
 mod stdout_logger;
 
+use std::fmt;
+
 use log::{Level, LevelFilter, Log, Metadata, Record};
 use serde::{Deserialize, Serialize};
 
-use std::fmt;
-
-use self::{json_logger::JsonLogger, stdout_logger::StdoutLogger};
+use self::{
+    format::{LogMetadata, LogSegment},
+    json_logger::JsonLogger,
+    stdout_logger::{Printer, StdoutLogger},
+};
 use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
@@ -27,18 +31,7 @@ pub fn log_defmt(
     line: Option<u32>,
     module_path: Option<&str>,
 ) {
-    let timestamp = frame
-        .display_timestamp()
-        .map(|ts| ts.to_string())
-        .unwrap_or_default();
-
-    let level = frame.level().map(|level| match level {
-        crate::Level::Trace => Level::Trace,
-        crate::Level::Debug => Level::Debug,
-        crate::Level::Info => Level::Info,
-        crate::Level::Warn => Level::Warn,
-        crate::Level::Error => Level::Error,
-    });
+    let (timestamp, level) = timestamp_and_level_from_frame(frame);
 
     let target = format!(
         "{}{}",
@@ -64,7 +57,7 @@ pub fn is_defmt_frame(metadata: &Metadata) -> bool {
 }
 
 /// A `log` record representing a defmt log frame.
-pub struct DefmtRecord<'a> {
+struct DefmtRecord<'a> {
     log_record: &'a Record<'a>,
     payload: Payload,
 }
@@ -169,4 +162,80 @@ impl DefmtLoggerInfo {
     pub fn has_timestamp(&self) -> bool {
         self.has_timestamp
     }
+}
+
+/// Format [`Frame`]s according to a `log_format`.
+///
+/// The `log_format` makes it possible to customize the defmt output.
+///
+/// The `log_format` is specified here: TODO
+// TODO:
+// - use two Formatter in StdoutLogger instead of the log format
+// - add fn format_to_sink
+// - specify log format
+// - clarify relationship between Formatter and Printer (https://github.com/knurling-rs/defmt/pull/781#discussion_r1343000073)
+#[derive(Debug)]
+pub struct Formatter {
+    format: Vec<LogSegment>,
+}
+
+impl Formatter {
+    pub fn new(log_format: &str) -> Self {
+        let format = format::parse(log_format)
+            .unwrap_or_else(|_| panic!("log format is invalid '{log_format}'"));
+        Self { format }
+    }
+
+    pub fn format_to_string(
+        &self,
+        frame: Frame<'_>,
+        file: Option<&str>,
+        line: Option<u32>,
+        module_path: Option<&str>,
+    ) -> String {
+        let (timestamp, level) = timestamp_and_level_from_frame(&frame);
+
+        // HACK: use match instead of let, because otherwise compilation fails
+        #[allow(clippy::match_single_binding)]
+        match format_args!("{}", frame.display_message()) {
+            args => {
+                let log_record = &Record::builder()
+                    .args(args)
+                    .module_path(module_path)
+                    .file(file)
+                    .line(line)
+                    .build();
+
+                let record = DefmtRecord {
+                    log_record,
+                    payload: Payload { level, timestamp },
+                };
+
+                match level {
+                    Some(_) => Printer::new_defmt(&record, &self.format),
+                    None => {
+                        // handle defmt::println separately
+                        const RAW_FORMAT: &[LogSegment] = &[LogSegment::new(LogMetadata::Log)];
+                        Printer::new_defmt(&record, RAW_FORMAT)
+                    }
+                }
+                .format_frame()
+            }
+        }
+    }
+}
+
+fn timestamp_and_level_from_frame(frame: &Frame<'_>) -> (String, Option<Level>) {
+    let timestamp = frame
+        .display_timestamp()
+        .map(|ts| ts.to_string())
+        .unwrap_or_default();
+    let level = frame.level().map(|level| match level {
+        crate::Level::Trace => Level::Trace,
+        crate::Level::Debug => Level::Debug,
+        crate::Level::Info => Level::Info,
+        crate::Level::Warn => Level::Warn,
+        crate::Level::Error => Level::Error,
+    });
+    (timestamp, level)
 }

@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#781]: `defmt-decoder`: Add `pub struct Formatter` to `defmt_decoder::log`
 - [#778]: `defmt-decoder`: Add support for nested log formatting
 - [#777]: `defmt-decoder`: Simplify StdoutLogger
 - [#775]: `defmt-decoder`: Ignore AArch64 mapping symbols
 - [#771]: `defmt-macros`: Ignore empty items in DEFMT_LOG
 - [#769]: `defmt-decoder`: Add support for color, style, width and alignment to format
 
+[#781]: https://github.com/knurling-rs/defmt/pull/781
 [#778]: https://github.com/knurling-rs/defmt/pull/778
 [#777]: https://github.com/knurling-rs/defmt/pull/777
 [#775]: https://github.com/knurling-rs/defmt/pull/775
