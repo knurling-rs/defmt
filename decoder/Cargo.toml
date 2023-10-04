@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 name = "defmt-decoder"
 readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.8"
+version = "0.3.9"
 
 [dependencies]
 byteorder = "1"
@@ -31,11 +31,11 @@ defmt-json-schema = { version = "0.1", path = "./defmt-json-schema" }
 
 # elf2table
 anyhow = "1.0.65"
-gimli = { version = "0.27", default-features = false, features = [
+gimli = { version = "0.28", default-features = false, features = [
     "read",
     "std",
 ] }
-object = { version = "0.31", default-features = false, features = [
+object = { version = "0.32", default-features = false, features = [
     "read_core",
     "elf",
     "std",
