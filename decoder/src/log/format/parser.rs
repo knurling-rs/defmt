@@ -116,6 +116,8 @@
 //! [format specifiers]: LogMetadata
 //! [format parameters]: LogFormat
 
+use super::{Alignment, LogColor, LogFormat, LogMetadata, LogSegment};
+
 use nom::{
     branch::alt,
     bytes::complete::{take_till1, take_while},
@@ -128,120 +130,6 @@ use nom::{
 
 use std::str::FromStr;
 
-/// Representation of what a [LogSegment] can be.
-#[derive(Debug, PartialEq, Clone)]
-#[non_exhaustive]
-pub(super) enum LogMetadata {
-    /// `{f}` format specifier.
-    ///
-    /// For a file "src/foo/bar.rs", this option prints "bar.rs".
-    FileName,
-
-    /// `{F}` format specifier.
-    ///
-    /// For a file "src/foo/bar.rs", this option prints "src/foo/bar.rs".
-    FilePath,
-
-    /// `{l}` format specifier.
-    ///
-    /// Prints the line number where the log is coming from.
-    LineNumber,
-
-    /// `{s}` format specifier.
-    ///
-    /// Prints the actual log contents.
-    /// For `defmt::info!("hello")`, this prints "hello".
-    Log,
-
-    /// `{L}` format specifier.
-    ///
-    /// Prints the log level.
-    /// For `defmt::info!("hello")`, this prints "INFO".
-    LogLevel,
-
-    /// `{m}` format specifier.
-    ///
-    /// Prints the module path of the function where the log is coming from.
-    /// For the following log:
-    ///
-    /// ```ignore
-    /// // crate: my_crate
-    /// mod foo {
-    ///     fn bar() {
-    ///         defmt::info!("hello");
-    ///     }
-    /// }
-    /// ```
-    /// this prints "my_crate::foo::bar".
-    ModulePath,
-
-    /// Represents the parts of the formatting string that is not specifiers.
-    String(String),
-
-    /// `{t}` format specifier.
-    ///
-    /// Prints the timestamp at which something was logged.
-    /// For a log printed with a timestamp 123456 ms, this prints "123456".
-    Timestamp,
-
-    /// Represents formats specified within nested curly brackets in the formatting string.
-    NestedLogSegments(Vec<LogSegment>),
-}
-
-impl LogMetadata {
-    /// Checks whether this `LogMetadata` came from a specifier such as
-    /// {t}, {f}, etc.
-    fn is_metadata_specifier(&self) -> bool {
-        !matches!(
-            self,
-            LogMetadata::String(_) | LogMetadata::NestedLogSegments(_)
-        )
-    }
-}
-
-/// Coloring options for [LogSegment]s.
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub(super) enum LogColor {
-    /// User-defined color.
-    ///
-    /// Use a string that can be parsed by the FromStr implementation
-    /// of [colored::Color].
-    Color(colored::Color),
-
-    /// Color matching the default color for the log level.
-    /// Use `"severity"` as a format parameter to use this option.
-    SeverityLevel,
-
-    /// Color matching the default color for the log level,
-    /// but only if the log level is WARN or ERROR.
-    ///
-    /// Use `"werror"` as a format parameter to use this option.
-    WarnError,
-}
-
-/// Alignment options for [LogSegment]s.
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub(super) enum Alignment {
-    Center,
-    Left,
-    Right,
-}
-
-/// Representation of a segment of the formatting string.
-#[derive(Debug, PartialEq, Clone)]
-pub(super) struct LogSegment {
-    pub(super) metadata: LogMetadata,
-    pub(super) format: LogFormat,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub(super) struct LogFormat {
-    pub(super) width: Option<usize>,
-    pub(super) color: Option<LogColor>,
-    pub(super) style: Option<Vec<colored::Styles>>,
-    pub(super) alignment: Option<Alignment>,
-}
-
 #[derive(Debug, PartialEq, Clone)]
 enum IntermediateOutput {
     Metadata(LogMetadata),
@@ -249,46 +137,6 @@ enum IntermediateOutput {
     Color(LogColor),
     Style(colored::Styles),
     NestedLogSegment(LogSegment),
-}
-
-impl LogSegment {
-    pub(super) const fn new(metadata: LogMetadata) -> Self {
-        Self {
-            metadata,
-            format: LogFormat {
-                color: None,
-                style: None,
-                width: None,
-                alignment: None,
-            },
-        }
-    }
-
-    #[cfg(test)]
-    const fn with_color(mut self, color: LogColor) -> Self {
-        self.format.color = Some(color);
-        self
-    }
-
-    #[cfg(test)]
-    fn with_style(mut self, style: colored::Styles) -> Self {
-        let mut styles = self.format.style.unwrap_or_default();
-        styles.push(style);
-        self.format.style = Some(styles);
-        self
-    }
-
-    #[cfg(test)]
-    const fn with_width(mut self, width: usize) -> Self {
-        self.format.width = Some(width);
-        self
-    }
-
-    #[cfg(test)]
-    const fn with_alignment(mut self, alignment: Alignment) -> Self {
-        self.format.alignment = Some(alignment);
-        self
-    }
 }
 
 /// This function is taken as-is from the parse-hyperlinks crate

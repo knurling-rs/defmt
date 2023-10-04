@@ -8,7 +8,10 @@ use std::{
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{
-    log::{DefmtLoggerConfig, DefmtLoggerType},
+    log::{
+        format::{DefmtFormatter, FormatterConfig, FormatterFormat, HostFormatter},
+        DefmtLoggerType,
+    },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
 
@@ -120,17 +123,46 @@ fn main() -> anyhow::Result<()> {
         DefmtLoggerType::Stdout
     };
 
-    let logger_config = DefmtLoggerConfig {
-        log_format: log_format.as_deref(),
-        host_log_format: host_log_format.as_deref(),
-        use_verbose_defaults: verbose,
-        is_timestamp_available: table.has_timestamp(),
-        logger_type,
+    // TODO: Figure out how to get around the temporary borrowed value error if
+    // you try to do FormatterFormat::Custom(log_format.as_str())
+    let cloned_format = log_format.clone().unwrap_or_default();
+    let defmt_format = if log_format.is_some() {
+        FormatterFormat::Custom(cloned_format.as_str())
+    } else {
+        FormatterFormat::Default {
+            with_location: verbose,
+        }
     };
 
-    defmt_decoder::log::init_logger(logger_config, move |metadata| match verbose {
-        false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
-        true => true,                                          // We display *all* frames.
+    // TODO: Figure out how to get around the temporary borrowed value error if
+    // you try to do FormatterFormat::Custom(host_log_format.as_str())
+    let cloned_host_format = host_log_format.clone().unwrap_or_default();
+    let host_format = if host_log_format.is_some() {
+        FormatterFormat::Custom(cloned_host_format.as_str())
+    } else {
+        FormatterFormat::Default {
+            with_location: verbose,
+        }
+    };
+
+    let defmt_config = FormatterConfig {
+        format: defmt_format,
+        is_timestamp_available: table.has_timestamp(),
+    };
+
+    let host_config = FormatterConfig {
+        format: host_format,
+        is_timestamp_available: table.has_timestamp(),
+    };
+
+    let formatter = DefmtFormatter::new(defmt_config);
+    let host_formatter = HostFormatter::new(host_config);
+
+    defmt_decoder::log::init_logger(formatter, host_formatter, logger_type, move |metadata| {
+        match verbose {
+            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
+            true => true,                                          // We display *all* frames.
+        }
     });
 
     let mut buf = [0; READ_BUFFER_SIZE];
