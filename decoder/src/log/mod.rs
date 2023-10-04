@@ -173,6 +173,7 @@ impl DefmtLoggerInfo {
 // - use two Formatter in StdoutLogger instead of the log format
 // - add fn format_to_sink
 // - specify log format
+// - clarify relationship between Formatter and Printer (https://github.com/knurling-rs/defmt/pull/781#discussion_r1343000073)
 #[derive(Debug)]
 pub struct Formatter {
     format: Vec<LogSegment>,
