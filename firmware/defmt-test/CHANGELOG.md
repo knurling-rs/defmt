@@ -1,10 +1,18 @@
 # [Unreleased]
 
+# [v0.3.1]
+
+- [#786]: `defmt-test`: Exit with semihosting exit
 - [#698] Expose number of tests with `DEFMT_TEST_COUNT` symbol in test artifact for other tools to pick up
 - [#696] Add `#[before_each]` and `#[after_each]` attributes
 
+[#786]: https://github.com/knurling-rs/defmt/pull/786
 [#698]: https://github.com/knurling-rs/defmt/pull/698
 [#696]: https://github.com/knurling-rs/defmt/pull/696
+
+# [v0.3.0]
+
+No changes.
 
 # [v0.2.3]
 
