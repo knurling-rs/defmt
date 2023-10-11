@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#786]: `defmt-test`: Exit with semihosting exit
-
-[#786]: https://github.com/knurling-rs/defmt/pull/786
-
 ## defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
 
 - [#784]: `defmt-decoder`: Prepare `defmt-decoder v0.3.9` release
