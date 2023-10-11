@@ -81,11 +81,11 @@ Format parameters are provided by adding the formatting parameters after the met
 A log segment can be specified to be colored by providing a color in the format parameters.
 
 There are three different options for coloring a log segment:
-- using a supported color such `red` or `green`.
+- using a supported color such as `red` or `green`.
 - `severity` colors the log segment using the predefined color for the log level of the log.
 - `werror` is similar to `severity`, but it only applies the color if the log level is `WARN` or `ERROR`.
 
-Only one coloring option can be provided in format parameters for a given format specifier.
+Only one coloring option can be provided in format parameters for a given log segment, i.e. `{L:red:green}` is not supported.
 
 The following colors are supported in the format parameters:
 - `black`
@@ -109,7 +109,7 @@ The following colors are supported in the format parameters:
 
 ### Styles
 
-A log segment can be specified to be printed with a given style by providing a style in the format parameters.
+A log segment can be specified to be printed with a given style by providing a style specifier in the format parameters.
 
 The style specifier must be one of the following strings:
 - `bold`
@@ -118,7 +118,7 @@ The style specifier must be one of the following strings:
 - `strike`
 - `dimmed`
 
-Multiple styles can be applied to a single format specifier, but they must not be repeated, i.e.
+Multiple styles can be applied to a single log segment, but they must not be repeated, i.e.
 `"{s:bold:underline:italic}"` is allowed, but `"{s:bold:bold}"` isn't.
 
 ### Width, alignment and padding
@@ -154,10 +154,11 @@ where only `DEBUG` is formatted bold, and `[DEBUG]` is underlined.
 
 Formats can be nested several levels. This provides a great level of flexibility to customize the logger formatting.
 For example, the width and alignment of a group of log segments can be specified with nested formats.
-`"{{[{L}]%bold} {f:>20}:%<35} {s}"` prints:
+`"{{[{L}]%bold} {f}:{l}%35} {s}"` prints something like this:
 
 ```text
-[DEBUG]              main.rs:       hello
+[DEBUG] main.rs:20                  hello
+[DEBUG] goodbye.rs:304              goodbye
 ```
 
 ## Restrictions
