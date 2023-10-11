@@ -27,8 +27,8 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
 
     let formatting_exprs = args
         .formatting_args
-        .map(|punctuated| punctuated.into_iter().collect())
-        .unwrap_or_else(Vec::new);
+        .map(|punctuated| punctuated.into_iter().collect::<Vec<_>>())
+        .unwrap_or_default();
 
     let Codegen { patterns, exprs } = Codegen::new(
         &fragments,
