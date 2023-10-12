@@ -16,7 +16,7 @@ use log::{Level, LevelFilter, Log, Metadata, Record as LogRecord};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    format::{DefmtFormatter, HostFormatter},
+    format::{Formatter, HostFormatter},
     json_logger::JsonLogger,
     stdout_logger::StdoutLogger,
 };
@@ -69,7 +69,7 @@ pub enum DefmtLoggerType {
 }
 
 pub struct DefmtLoggerConfig {
-    pub formatter: DefmtFormatter,
+    pub formatter: Formatter,
     pub host_formatter: HostFormatter,
     pub logger_type: DefmtLoggerType,
 }
@@ -125,7 +125,7 @@ impl<'a> DefmtRecord<'a> {
 /// The caller has to provide a `should_log` closure that determines whether a log record should be
 /// printed.
 pub fn init_logger(
-    formatter: DefmtFormatter,
+    formatter: Formatter,
     host_formatter: HostFormatter,
     logger_type: DefmtLoggerType,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,

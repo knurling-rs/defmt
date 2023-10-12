@@ -9,7 +9,7 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{
     log::{
-        format::{DefmtFormatter, FormatterConfig, FormatterFormat, HostFormatter},
+        format::{Formatter, FormatterConfig, FormatterFormat, HostFormatter},
         DefmtLoggerType,
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
@@ -155,7 +155,7 @@ fn main() -> anyhow::Result<()> {
         is_timestamp_available: table.has_timestamp(),
     };
 
-    let formatter = DefmtFormatter::new(defmt_config);
+    let formatter = Formatter::new(defmt_config);
     let host_formatter = HostFormatter::new(host_config);
 
     defmt_decoder::log::init_logger(formatter, host_formatter, logger_type, move |metadata| {

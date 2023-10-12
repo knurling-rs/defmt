@@ -161,14 +161,14 @@ impl LogSegment {
     }
 }
 
-pub struct DefmtFormatter {
-    formatter: Formatter,
+pub struct Formatter {
+    formatter: InternalFormatter,
 }
 
-impl DefmtFormatter {
+impl Formatter {
     pub fn new(config: FormatterConfig) -> Self {
         Self {
-            formatter: Formatter::new(config, Source::Defmt),
+            formatter: InternalFormatter::new(config, Source::Defmt),
         }
     }
 
@@ -208,13 +208,13 @@ impl DefmtFormatter {
 }
 
 pub struct HostFormatter {
-    formatter: Formatter,
+    formatter: InternalFormatter,
 }
 
 impl HostFormatter {
     pub fn new(config: FormatterConfig) -> Self {
         Self {
-            formatter: Formatter::new(config, Source::Host),
+            formatter: InternalFormatter::new(config, Source::Host),
         }
     }
 
@@ -224,7 +224,7 @@ impl HostFormatter {
 }
 
 #[derive(Debug)]
-struct Formatter {
+struct InternalFormatter {
     format: Vec<LogSegment>,
 }
 
@@ -249,7 +249,7 @@ pub struct FormatterConfig<'a> {
     pub is_timestamp_available: bool,
 }
 
-impl Formatter {
+impl InternalFormatter {
     fn new(config: FormatterConfig, source: Source) -> Self {
         const FORMAT: &str = "{L} {s}";
         const FORMAT_WITH_LOCATION: &str = "{L} {s}\n└─ {m} @ {F}:{l}";

@@ -2,12 +2,12 @@ use log::{Log, Metadata, Record as LogRecord};
 use std::io::{self, StderrLock, StdoutLock, Write};
 
 use super::{
-    format::{DefmtFormatter, HostFormatter},
+    format::{Formatter, HostFormatter},
     DefmtRecord,
 };
 
 pub(crate) struct StdoutLogger {
-    formatter: DefmtFormatter,
+    formatter: Formatter,
     host_formatter: HostFormatter,
     should_log: Box<dyn Fn(&Metadata) -> bool + Sync + Send>,
 }
@@ -45,7 +45,7 @@ impl Log for StdoutLogger {
 
 impl StdoutLogger {
     pub fn new(
-        formatter: DefmtFormatter,
+        formatter: Formatter,
         host_formatter: HostFormatter,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
@@ -53,7 +53,7 @@ impl StdoutLogger {
     }
 
     pub fn new_unboxed(
-        formatter: DefmtFormatter,
+        formatter: Formatter,
         host_formatter: HostFormatter,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Self {

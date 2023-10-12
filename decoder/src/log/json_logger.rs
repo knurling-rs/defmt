@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 use std::io::{self, Write};
 
 use super::{
-    format::{DefmtFormatter, HostFormatter},
+    format::{Formatter, HostFormatter},
     DefmtRecord, StdoutLogger,
 };
 
@@ -45,7 +45,7 @@ impl Log for JsonLogger {
 
 impl JsonLogger {
     pub fn new(
-        formatter: DefmtFormatter,
+        formatter: Formatter,
         host_formatter: HostFormatter,
         should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
     ) -> Box<Self> {
