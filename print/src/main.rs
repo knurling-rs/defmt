@@ -9,7 +9,7 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{
     log::{
-        format::{Formatter, FormatterConfig, FormatterFormat, HostFormatter},
+        format::{Formatter, FormatterConfig, HostFormatter},
         DefmtLoggerType,
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
@@ -123,40 +123,28 @@ fn main() -> anyhow::Result<()> {
         DefmtLoggerType::Stdout
     };
 
-    // TODO: Figure out how to get around the temporary borrowed value error if
-    // you try to do FormatterFormat::Custom(log_format.as_str())
     let cloned_format = log_format.clone().unwrap_or_default();
-    let defmt_format = if log_format.is_some() {
-        FormatterFormat::Custom(cloned_format.as_str())
+    let mut formatter_config = if log_format.is_some() {
+        FormatterConfig::custom(cloned_format.as_str())
+    } else if verbose {
+        FormatterConfig::default().with_location()
     } else {
-        FormatterFormat::Default {
-            with_location: verbose,
-        }
+        FormatterConfig::default()
     };
 
-    // TODO: Figure out how to get around the temporary borrowed value error if
-    // you try to do FormatterFormat::Custom(host_log_format.as_str())
+    formatter_config.is_timestamp_available = table.has_timestamp();
+
     let cloned_host_format = host_log_format.clone().unwrap_or_default();
-    let host_format = if host_log_format.is_some() {
-        FormatterFormat::Custom(cloned_host_format.as_str())
+    let host_formatter_config = if host_log_format.is_some() {
+        FormatterConfig::custom(cloned_host_format.as_str())
+    } else if verbose {
+        FormatterConfig::default().with_location()
     } else {
-        FormatterFormat::Default {
-            with_location: verbose,
-        }
+        FormatterConfig::default()
     };
 
-    let defmt_config = FormatterConfig {
-        format: defmt_format,
-        is_timestamp_available: table.has_timestamp(),
-    };
-
-    let host_config = FormatterConfig {
-        format: host_format,
-        is_timestamp_available: table.has_timestamp(),
-    };
-
-    let formatter = Formatter::new(defmt_config);
-    let host_formatter = HostFormatter::new(host_config);
+    let formatter = Formatter::new(formatter_config);
+    let host_formatter = HostFormatter::new(host_formatter_config);
 
     defmt_decoder::log::init_logger(formatter, host_formatter, logger_type, move |metadata| {
         match verbose {

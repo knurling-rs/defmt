@@ -239,14 +239,52 @@ enum Record<'a> {
     Host(&'a LogRecord<'a>),
 }
 
+#[derive(Debug)]
 pub enum FormatterFormat<'a> {
     Default { with_location: bool },
     Custom(&'a str),
 }
 
+impl Default for FormatterFormat<'_> {
+    fn default() -> Self {
+        FormatterFormat::Default {
+            with_location: false,
+        }
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct FormatterConfig<'a> {
     pub format: FormatterFormat<'a>,
     pub is_timestamp_available: bool,
+}
+
+impl<'a> FormatterConfig<'a> {
+    pub fn custom(format: &'a str) -> Self {
+        FormatterConfig {
+            format: FormatterFormat::Custom(format),
+            is_timestamp_available: false,
+        }
+    }
+
+    pub fn with_timestamp(mut self) -> Self {
+        self.is_timestamp_available = true;
+        self
+    }
+
+    pub fn with_location(mut self) -> Self {
+        // TODO: Should we warn the user that trying to set a location
+        //       for a custom format won't work?
+        match self.format {
+            FormatterFormat::Default { with_location: _ } => {
+                self.format = FormatterFormat::Default {
+                    with_location: true,
+                };
+                self
+            }
+            _ => self,
+        }
+    }
 }
 
 impl InternalFormatter {
