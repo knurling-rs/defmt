@@ -8,14 +8,18 @@ The hint follows the syntax `:Display` and must come after the type within the b
 
 The following display hints are currently supported:
 
-| hint  | name                                           |
-| :---- | :--------------------------------------------- |
-| `:x`  | lowercase hexadecimal                          |
-| `:X`  | uppercase hexadecimal                          |
-| `:?`  | `core::fmt::Debug`-like                        |
-| `:b`  | binary                                         |
-| `:a`  | ASCII                                          |
-| `:us` | microseconds (formats integers as time stamps) |
+| hint   | name                                                     |
+| :----- | :------------------------------------------------------- |
+| `:x`   | lowercase hexadecimal                                    |
+| `:X`   | uppercase hexadecimal                                    |
+| `:?`   | `core::fmt::Debug`-like                                  |
+| `:b`   | binary                                                   |
+| `:a`   | ASCII                                                    |
+| `:ms`  | timestamp in seconds (input in milliseconds)             |
+| `:us`  | timestamp in seconds (input in microseconds)             |
+| `:ts`  | timestamp in human-readable time (input in seconds)      |
+| `:tms` | timestamp in human-readable time (input in milliseconds) |
+| `:tus` | timestamp in human-readable time (input in microseconds) |
 
 The first 4 display hints resemble what's supported in `core::fmt`, for example:
 
