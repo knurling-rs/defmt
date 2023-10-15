@@ -192,14 +192,20 @@ pub fn take_until_unbalanced(
 fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
     let mut parse_type = map_res(take_while(char::is_alphabetic), move |s| {
         let metadata = match s {
-            "f" => LogMetadata::FileName,
+            "c" => LogMetadata::CrateName,
             "F" => LogMetadata::FilePath,
             "l" => LogMetadata::LineNumber,
             "s" => LogMetadata::Log,
             "L" => LogMetadata::LogLevel,
             "m" => LogMetadata::ModulePath,
             "t" => LogMetadata::Timestamp,
-            _ => return Err(()),
+            _ => {
+                if s == "f".repeat(s.len()) {
+                    LogMetadata::FileName(s.len() as u8)
+                } else {
+                    return Err(());
+                }
+            }
         };
         Ok(IntermediateOutput::Metadata(metadata))
     });
@@ -507,6 +513,12 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_invalid_file_path_argument() {
+        let result = parse_argument::<false>("{FFFF}");
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_parse_argument_with_color() {
         let result = parse_log_segment::<false>("t:werror");
         let expected_output =
@@ -527,7 +539,7 @@ mod tests {
     #[test]
     fn test_parse_argument_with_extra_format_parameters_color_first() {
         let result = parse_argument::<false>("{f:werror:<25}");
-        let expected_output = LogSegment::new(LogMetadata::FileName)
+        let expected_output = LogSegment::new(LogMetadata::FileName(1))
             .with_width(25)
             .with_alignment(Alignment::Left)
             .with_color(LogColor::WarnError);
@@ -575,7 +587,8 @@ mod tests {
 
     #[test]
     fn test_parse_log_template_with_color_style_width_and_alignment() {
-        let log_template = "T{t:>8} [{L:severity:bold}] {f:white:underline}:{l:white:3} {s:werror}";
+        let log_template =
+            "T{t:>8} [{L:severity:bold}] {ff:white:underline}:{l:white:3} {s:werror}";
 
         let expected_output = vec![
             LogSegment::new(LogMetadata::String("T".to_string())),
@@ -587,7 +600,7 @@ mod tests {
                 .with_color(LogColor::SeverityLevel)
                 .with_style(colored::Styles::Bold),
             LogSegment::new(LogMetadata::String("] ".to_string())),
-            LogSegment::new(LogMetadata::FileName)
+            LogSegment::new(LogMetadata::FileName(2))
                 .with_color(LogColor::Color(colored::Color::White))
                 .with_style(colored::Styles::Underline),
             LogSegment::new(LogMetadata::String(":".to_string())),
@@ -665,7 +678,7 @@ mod tests {
                 ]))
                 .with_style(colored::Styles::Bold),
                 LogSegment::new(LogMetadata::String(" ".to_string())),
-                LogSegment::new(LogMetadata::FileName)
+                LogSegment::new(LogMetadata::FileName(1))
                     .with_alignment(Alignment::Right)
                     .with_width(20),
                 LogSegment::new(LogMetadata::String(":".to_string())),
@@ -681,7 +694,7 @@ mod tests {
 
     #[test]
     fn test_parse_triple_nested_format() {
-        let log_template = "{{{[{L:<5}]%bold} {f:>20}:%<30} {s}%werror}";
+        let log_template = "{{{[{L:<5}]%bold} {ff:>20}:%<30} {s}%werror}";
         let expected_output = vec![LogSegment::new(LogMetadata::NestedLogSegments(vec![
             LogSegment::new(LogMetadata::NestedLogSegments(vec![
                 LogSegment::new(LogMetadata::NestedLogSegments(vec![
@@ -693,7 +706,7 @@ mod tests {
                 ]))
                 .with_style(colored::Styles::Bold),
                 LogSegment::new(LogMetadata::String(" ".to_string())),
-                LogSegment::new(LogMetadata::FileName)
+                LogSegment::new(LogMetadata::FileName(2))
                     .with_alignment(Alignment::Right)
                     .with_width(20),
                 LogSegment::new(LogMetadata::String(":".to_string())),

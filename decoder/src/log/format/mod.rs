@@ -11,14 +11,24 @@ mod parser;
 #[derive(Debug, PartialEq, Clone)]
 #[non_exhaustive]
 pub(super) enum LogMetadata {
+    /// `{c}` format specifier.
+    ///
+    /// Prints the name of the crate where the log is coming from.
+    CrateName,
+
     /// `{f}` format specifier.
     ///
-    /// For a file "src/foo/bar.rs", this option prints "bar.rs".
-    FileName,
+    /// This specifier may be repeated up to 255 times.
+    /// For a file "/path/to/crate/src/foo/bar.rs":
+    /// - `{f}` prints "bar.rs".
+    /// - `{ff}` prints "foo/bar.rs".
+    /// - `{fff}` prints "src/foo/bar.rs"
+    FileName(u8),
 
     /// `{F}` format specifier.
     ///
-    /// For a file "src/foo/bar.rs", this option prints "src/foo/bar.rs".
+    /// For a file "/path/to/crate/src/foo/bar.rs"
+    /// this option prints "/path/to/crate/src/foo/bar.rs".
     FilePath,
 
     /// `{l}` format specifier.
@@ -348,7 +358,8 @@ impl InternalFormatter {
         match &segment.metadata {
             LogMetadata::String(s) => s.to_string(),
             LogMetadata::Timestamp => self.build_timestamp(record, &segment.format),
-            LogMetadata::FileName => self.build_file_name(record, &segment.format),
+            LogMetadata::CrateName => self.build_crate_name(record, &segment.format),
+            LogMetadata::FileName(n) => self.build_file_name(record, &segment.format, *n),
             LogMetadata::FilePath => self.build_file_path(record, &segment.format),
             LogMetadata::ModulePath => self.build_module_path(record, &segment.format),
             LogMetadata::LineNumber => self.build_line_number(record, &segment.format),
@@ -366,7 +377,8 @@ impl InternalFormatter {
             let s = match &segment.metadata {
                 LogMetadata::String(s) => s.to_string(),
                 LogMetadata::Timestamp => self.build_timestamp(record, &segment.format),
-                LogMetadata::FileName => self.build_file_name(record, &segment.format),
+                LogMetadata::CrateName => self.build_crate_name(record, &segment.format),
+                LogMetadata::FileName(n) => self.build_file_name(record, &segment.format, *n),
                 LogMetadata::FilePath => self.build_file_path(record, &segment.format),
                 LogMetadata::ModulePath => self.build_module_path(record, &segment.format),
                 LogMetadata::LineNumber => self.build_line_number(record, &segment.format),
@@ -437,24 +449,38 @@ impl InternalFormatter {
         )
     }
 
-    fn build_file_name(&self, record: &Record, format: &LogFormat) -> String {
+    fn build_file_name(&self, record: &Record, format: &LogFormat, level_of_detail: u8) -> String {
         let file = match record {
             Record::Defmt(record) => record.file(),
             Record::Host(record) => record.file(),
         };
 
         let s = if let Some(file) = file {
-            let file_name = Path::new(file).file_name();
-            if let Some(file_name) = file_name {
-                file_name.to_str().unwrap_or("<file>")
+            let path_iter = Path::new(file).iter();
+            let number_of_components = path_iter.clone().count();
+
+            let number_of_components_to_join = if number_of_components > level_of_detail as usize {
+                level_of_detail as usize
             } else {
-                "<file>"
-            }
+                number_of_components
+            };
+
+            let number_of_elements_to_skip =
+                number_of_components.saturating_sub(number_of_components_to_join);
+            let s = path_iter
+                .skip(number_of_elements_to_skip)
+                .take(number_of_components)
+                .fold(String::new(), |mut acc, s| {
+                    acc.push_str(s.to_str().unwrap_or("<?>"));
+                    acc.push('/');
+                    acc
+                });
+            s.strip_suffix('/').unwrap().to_string()
         } else {
-            "<file>"
+            "<file>".to_string()
         };
 
-        build_formatted_string(s, format, 0, get_log_level_of_record(record), format.color)
+        build_formatted_string(&s, format, 0, get_log_level_of_record(record), format.color)
     }
 
     fn build_module_path(&self, record: &Record, format: &LogFormat) -> String {
@@ -463,6 +489,28 @@ impl InternalFormatter {
             Record::Host(record) => record.module_path(),
         }
         .unwrap_or("<mod path>");
+
+        build_formatted_string(s, format, 0, get_log_level_of_record(record), format.color)
+    }
+
+    fn build_crate_name(&self, record: &Record, format: &LogFormat) -> String {
+        let module_path = match record {
+            Record::Defmt(record) => record.module_path(),
+            Record::Host(record) => record.module_path(),
+        };
+
+        let s = if let Some(module_path) = module_path {
+            let path = module_path.split("::").collect::<Vec<_>>();
+
+            // There need to be at least two elements, the crate and the function
+            if path.len() >= 2 {
+                path.first().unwrap()
+            } else {
+                "<crate>"
+            }
+        } else {
+            "<crate>"
+        };
 
         build_formatted_string(s, format, 0, get_log_level_of_record(record), format.color)
     }
