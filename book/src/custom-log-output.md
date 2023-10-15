@@ -29,31 +29,37 @@ Multiple specifiers can be included within a format string, in any order. For ex
 
 There are several metadata specifiers available that can be used in a format string.
 
-- Log - `{s}`
+#### Log - `{s}`
 
 This specifier prints the actual log contents. For `defmt::info!("hello");`, this specifier prints `hello`.
 
-- File name - `{f}`
+#### Crate name - `{c}`
 
-For a log coming from a file `src/foo/bar.rs`, this specifier prints `bar.rs`.
+This specifier prints the name of the crate where the log is coming from.
 
-- File path - `{F}`
+#### File name - `{f}`
 
-For a log coming from a file `src/foo/bar.rs`, this specifier prints `src/foo/bar.rs`
+For a log coming from a file `/path/to/crate/src/foo/bar.rs`, this specifier prints `bar.rs`.
 
-- Line number - `{l}`
+This specifier can be used to print more detailed parts of the file path. The number of `f`s in the specifier determines how many levels up the path should be printed. For example, `{ff}` prints `foo/bar.rs`, and `{fff}` prints `src/foo/bar.rs`.
+
+#### File path - `{F}`
+
+For a log coming from a file `/path/to/crate/src/foo/bar.rs`, this specifier prints `/path/to/crate/src/foo/bar.rs`.
+
+#### Line number - `{l}`
 
 This specifier prints the line number where the log is coming from.
 
-- Log level - `{L}`
+#### Log level - `{L}`
 
 This specifier prints the log level. The log level is padded to 5 characters by default, for alignment purposes. For `defmt::info!("hello);`, this prints `INFO `.
 
-- Module path - `{m}`
+#### Module path - `{m}`
 
 This specifier prints the module path of the function where this log is coming from. This prints `my_crate::foo::bar` for the log shown below:
 
-```
+```ignore
 // crate: my_crate
 mod foo {
     fn bar() {
@@ -62,13 +68,9 @@ mod foo {
 }
 ```
 
-- Timestamp - `{t}`
+#### Timestamp - `{t}`
 
-This specifier prints the timestamp at which a log was logged. For a log logged with a timestamp of 123456 ms, this prints `123456`.
-
-- Unix-style timestamp - `{T}`
-
-This specifier prints the timestamp at which a log was logged, in Unix-style. For a log logged with a timestamp of 123456 ms, this prints `00:02:03.456`.
+This specifier prints the timestamp at which a log was logged, as formatted by `defmt::timestamp!`.
 
 ## Customizing log segments
 
@@ -133,12 +135,7 @@ The minimum width is specified after the alignment. For example, `"{L} {f:>10}: 
 [DEBUG]    main.rs: hello
 ```
 
-The log segment is padded with spaces by default in order to fill the specified segment width. The timestamp specifier can additionally be padded with zeros by prefixing the width specifier with a zero, e.g. `{t:>06}` prints a timestamp of 1234 as `00001234`.
-
-If no format parameters are provided, some metadata specifiers are printed with a default width, alignment and padding for convenience.
-- `{L}` is printed as `{L:<5}`.
-- `{t}` is printed as `{t:<08}`.
-- `{T}` is printed as `{T:<12}`.
+The log segment is padded with spaces by default in order to fill the specified segment width. A specifier can be padded with zeros by prefixing the width specifier with a zero, e.g. `{l:03}` prints a line number 24 as `024`.
 
 ## Nested formatting
 
@@ -169,19 +166,20 @@ For example, the width and alignment of a group of log segments can be specified
 
 ## Passing log format to printers
 
-The format string can be passed to `probe-run`, `probe-rs` and `defmt-print` using the `--log-format` option.
+The format string can be passed to `probe-rs`, `probe-run` and `defmt-print` using the `--log-format` option.
 
 This option can be passed to the printer in `.cargo/config.toml`, but due to limitations in `cargo`, the command has to be split as follows:
 
-```
+```toml
 # .cargo/config.toml
 
 runner = [
-  "probe-run",
+  "probe-rs",
+  "run"
   "--chip",
   "nRF52840_xxAA",
   "--log-format",
-  "{t} [{L}] {f}:{l} {s}",
+  "{L} {s}",
 ]
 ```
 
