@@ -424,7 +424,7 @@ impl InternalFormatter {
         build_formatted_string(
             s.as_str(),
             format,
-            8,
+            0,
             get_log_level_of_record(record),
             format.color,
         )
