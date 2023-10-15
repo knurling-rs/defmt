@@ -23,7 +23,7 @@ pub enum DisplayHint {
     Debug,
     /// `:us` `:ms`, formats integers as timestamps in seconds
     Seconds(TimePrecision),
-    /// `:tus` `:tms`, formats integers as time, where 0 is 00:00:00.000
+    /// `:tus` `:tms` `:ts`, formats integers as human-readable time
     Time(TimePrecision),
     /// `:iso8601{ms,s}`, formats integers as timestamp in ISO8601 date time format
     ISO8601(TimePrecision),
