@@ -116,6 +116,12 @@ pub(super) enum Alignment {
     Right,
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub(super) enum Padding {
+    Space,
+    Zero,
+}
+
 /// Representation of a segment of the formatting string.
 #[derive(Debug, PartialEq, Clone)]
 pub(super) struct LogSegment {
@@ -129,6 +135,7 @@ pub(super) struct LogFormat {
     pub(super) color: Option<LogColor>,
     pub(super) style: Option<Vec<colored::Styles>>,
     pub(super) alignment: Option<Alignment>,
+    pub(super) padding: Option<Padding>,
 }
 
 impl LogSegment {
@@ -140,6 +147,7 @@ impl LogSegment {
                 style: None,
                 width: None,
                 alignment: None,
+                padding: None,
             },
         }
     }
@@ -167,6 +175,12 @@ impl LogSegment {
     #[cfg(test)]
     pub(crate) const fn with_alignment(mut self, alignment: Alignment) -> Self {
         self.format.alignment = Some(alignment);
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) const fn with_padding(mut self, padding: Padding) -> Self {
+        self.format.padding = Some(padding);
         self
     }
 }
@@ -686,12 +700,16 @@ fn build_formatted_string(
 
     let alignment = format.alignment.unwrap_or(Alignment::Left);
     let width = format.width.unwrap_or(default_width);
+    let padding = format.padding.unwrap_or(Padding::Space);
 
     let mut result = String::new();
-    match alignment {
-        Alignment::Left => write!(&mut result, "{colored_str:<0$}", width),
-        Alignment::Center => write!(&mut result, "{colored_str:^0$}", width),
-        Alignment::Right => write!(&mut result, "{colored_str:>0$}", width),
+    match (alignment, padding) {
+        (Alignment::Left, Padding::Space) => write!(&mut result, "{colored_str:<0$}", width),
+        (Alignment::Left, Padding::Zero) => write!(&mut result, "{colored_str:0<0$}", width),
+        (Alignment::Center, Padding::Space) => write!(&mut result, "{colored_str:^0$}", width),
+        (Alignment::Center, Padding::Zero) => write!(&mut result, "{colored_str:0^0$}", width),
+        (Alignment::Right, Padding::Space) => write!(&mut result, "{colored_str:>0$}", width),
+        (Alignment::Right, Padding::Zero) => write!(&mut result, "{colored_str:0>0$}", width),
     }
     .expect("Failed to format string: \"{colored_str}\"");
     result

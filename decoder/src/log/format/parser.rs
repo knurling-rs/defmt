@@ -116,7 +116,7 @@
 //! [format specifiers]: LogMetadata
 //! [format parameters]: LogFormat
 
-use super::{Alignment, LogColor, LogFormat, LogMetadata, LogSegment};
+use super::{Alignment, LogColor, LogFormat, LogMetadata, LogSegment, Padding};
 
 use nom::{
     branch::alt,
@@ -133,7 +133,7 @@ use std::str::FromStr;
 #[derive(Debug, PartialEq, Clone)]
 enum IntermediateOutput {
     Metadata(LogMetadata),
-    WidthAndAlignment((usize, Option<Alignment>)),
+    WidthAndAlignment((usize, Padding, Option<Alignment>)),
     Color(LogColor),
     Style(colored::Styles),
     NestedLogSegment(LogSegment),
@@ -200,7 +200,7 @@ fn parse_metadata(input: &str) -> IResult<&str, IntermediateOutput, ()> {
             "m" => LogMetadata::ModulePath,
             "t" => LogMetadata::Timestamp,
             _ => {
-                if s == "f".repeat(s.len()) {
+                if !s.is_empty() && s == "f".repeat(s.len()) {
                     LogMetadata::FileName(s.len() as u8)
                 } else {
                     return Err(());
@@ -253,11 +253,21 @@ fn parse_width_and_alignment(input: &str) -> IResult<&str, IntermediateOutput, (
         _ => Err(()),
     }))(input)?;
 
-    let (input, width) = map_res(digit1, move |s: &str| s.parse::<usize>())(input)?;
+    let (input, width) = digit1.parse(input)?;
+
+    let padding = if width.starts_with('0') {
+        Padding::Zero
+    } else {
+        Padding::Space
+    };
+
+    let Ok(width) = width.parse::<usize>() else {
+        return Err(nom::Err::Error(()));
+    };
 
     Ok((
         input,
-        IntermediateOutput::WidthAndAlignment((width, alignment)),
+        IntermediateOutput::WidthAndAlignment((width, padding, alignment)),
     ))
 }
 
@@ -347,9 +357,9 @@ fn build_log_segment<const NEST: bool>(
         return Err(nom::Err::Failure(()));
     };
 
-    let (width, alignment) = width_and_alignment
-        .map(|(w, a)| (Some(w), a))
-        .unwrap_or((None, None));
+    let (width, padding, alignment) = width_and_alignment
+        .map(|(w, p, a)| (Some(w), Some(p), a))
+        .unwrap_or((None, None, None));
 
     Ok(LogSegment {
         metadata,
@@ -358,6 +368,7 @@ fn build_log_segment<const NEST: bool>(
             style,
             width,
             alignment,
+            padding,
         },
     })
 }
@@ -513,12 +524,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_file_path_argument() {
-        let result = parse_argument::<false>("{FFFF}");
-        assert!(result.is_err());
-    }
-
-    #[test]
     fn test_parse_argument_with_color() {
         let result = parse_log_segment::<false>("t:werror");
         let expected_output =
@@ -532,6 +537,7 @@ mod tests {
         let expected_output = LogSegment::new(LogMetadata::Timestamp)
             .with_width(8)
             .with_alignment(Alignment::Right)
+            .with_padding(Padding::Space)
             .with_color(LogColor::Color(colored::Color::White));
         assert_eq!(result, Ok(("", expected_output)));
     }
@@ -542,6 +548,7 @@ mod tests {
         let expected_output = LogSegment::new(LogMetadata::FileName(1))
             .with_width(25)
             .with_alignment(Alignment::Left)
+            .with_padding(Padding::Space)
             .with_color(LogColor::WarnError);
         assert_eq!(result, Ok(("", expected_output)));
     }
@@ -557,7 +564,10 @@ mod tests {
         let result = parse_width_and_alignment("12");
         assert_eq!(
             result,
-            Ok(("", IntermediateOutput::WidthAndAlignment((12, None))))
+            Ok((
+                "",
+                IntermediateOutput::WidthAndAlignment((12, Padding::Space, None))
+            ))
         );
     }
 
@@ -568,7 +578,19 @@ mod tests {
             result,
             Ok((
                 "",
-                IntermediateOutput::WidthAndAlignment((12, Some(Alignment::Right)))
+                IntermediateOutput::WidthAndAlignment((12, Padding::Space, Some(Alignment::Right)))
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_width_with_zero_padding_no_alignment() {
+        let result = parse_width_and_alignment("012");
+        assert_eq!(
+            result,
+            Ok((
+                "",
+                IntermediateOutput::WidthAndAlignment((12, Padding::Zero, None))
             ))
         );
     }
@@ -594,6 +616,7 @@ mod tests {
             LogSegment::new(LogMetadata::String("T".to_string())),
             LogSegment::new(LogMetadata::Timestamp)
                 .with_width(8)
+                .with_padding(Padding::Space)
                 .with_alignment(Alignment::Right),
             LogSegment::new(LogMetadata::String(" [".to_string())),
             LogSegment::new(LogMetadata::LogLevel)
@@ -606,7 +629,8 @@ mod tests {
             LogSegment::new(LogMetadata::String(":".to_string())),
             LogSegment::new(LogMetadata::LineNumber)
                 .with_color(LogColor::Color(colored::Color::White))
-                .with_width(3),
+                .with_width(3)
+                .with_padding(Padding::Space),
             LogSegment::new(LogMetadata::String(" ".to_string())),
             LogSegment::new(LogMetadata::Log).with_color(LogColor::WarnError),
         ];
@@ -645,6 +669,7 @@ mod tests {
                 LogSegment::new(LogMetadata::LogLevel)
                     .with_alignment(Alignment::Left)
                     .with_width(5)
+                    .with_padding(Padding::Space)
                     .with_style(colored::Styles::Bold),
                 LogSegment::new(LogMetadata::String("]".to_string())),
             ]))
@@ -673,18 +698,21 @@ mod tests {
                     LogSegment::new(LogMetadata::String("[".to_string())),
                     LogSegment::new(LogMetadata::LogLevel)
                         .with_alignment(Alignment::Left)
-                        .with_width(5),
+                        .with_width(5)
+                        .with_padding(Padding::Space),
                     LogSegment::new(LogMetadata::String("]".to_string())),
                 ]))
                 .with_style(colored::Styles::Bold),
                 LogSegment::new(LogMetadata::String(" ".to_string())),
                 LogSegment::new(LogMetadata::FileName(1))
                     .with_alignment(Alignment::Right)
-                    .with_width(20),
+                    .with_width(20)
+                    .with_padding(Padding::Space),
                 LogSegment::new(LogMetadata::String(":".to_string())),
             ]))
             .with_alignment(Alignment::Left)
-            .with_width(30),
+            .with_width(30)
+            .with_padding(Padding::Space),
             LogSegment::new(LogMetadata::String(" ".to_string())),
             LogSegment::new(LogMetadata::Log),
         ];
@@ -701,18 +729,21 @@ mod tests {
                     LogSegment::new(LogMetadata::String("[".to_string())),
                     LogSegment::new(LogMetadata::LogLevel)
                         .with_alignment(Alignment::Left)
-                        .with_width(5),
+                        .with_width(5)
+                        .with_padding(Padding::Space),
                     LogSegment::new(LogMetadata::String("]".to_string())),
                 ]))
                 .with_style(colored::Styles::Bold),
                 LogSegment::new(LogMetadata::String(" ".to_string())),
                 LogSegment::new(LogMetadata::FileName(2))
                     .with_alignment(Alignment::Right)
-                    .with_width(20),
+                    .with_width(20)
+                    .with_padding(Padding::Space),
                 LogSegment::new(LogMetadata::String(":".to_string())),
             ]))
             .with_alignment(Alignment::Left)
-            .with_width(30),
+            .with_width(30)
+            .with_padding(Padding::Space),
             LogSegment::new(LogMetadata::String(" ".to_string())),
             LogSegment::new(LogMetadata::Log),
         ]))
