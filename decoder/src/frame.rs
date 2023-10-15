@@ -421,7 +421,7 @@ impl<'t> Frame<'t> {
         let (timestamp, hours) = div_rem(timestamp, 24);
         let days = timestamp;
 
-        if days > 0 {
+        if days == 0 {
             match precision {
                 TimePrecision::Micros => write!(
                     buf,
