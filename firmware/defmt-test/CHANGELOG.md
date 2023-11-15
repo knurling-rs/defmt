@@ -1,4 +1,5 @@
 # [Unreleased]
+- [#796] Add support for risc-v
 
 # [v0.3.1]
 

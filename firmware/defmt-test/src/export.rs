@@ -1,5 +1,3 @@
-use cortex_m_rt as _;
-use cortex_m_semihosting::debug;
 pub use defmt::info;
 
 use crate::TestOutcome;
@@ -8,7 +6,7 @@ use crate::TestOutcome;
 /// with status code 0.
 pub fn exit() -> ! {
     loop {
-        debug::exit(debug::EXIT_SUCCESS);
+        semihosting::process::exit(0);
     }
 }
 
