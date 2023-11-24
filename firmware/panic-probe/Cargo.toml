@@ -1,19 +1,25 @@
 [package]
 authors = ["The Knurling Authors"]
 categories = ["embedded", "no-std"]
-description = "Panic handler that exits `probe-run` with an error code"
+description = "Panic handler that exits `probe-rs` with an error code"
 edition = "2021"
-keywords = ["knurling", "panic-impl", "defmt", "probe-run"]
+keywords = ["knurling", "panic-impl", "defmt", "probe-rs"]
 license = "MIT OR Apache-2.0"
 name = "panic-probe"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.1"
+version = "0.4.0"
 
 [dependencies]
-cortex-m = "0.7"
 defmt = { version = "0.3", path = "../../defmt", optional = true }
 rtt-target = { version = "0.4", optional = true }
+semihosting = "0.1.4"
+
+[target.'cfg(target_arch = "arm")'.dependencies]
+cortex-m = "0.7"
+
+[target.'cfg(target_arch = "riscv32")'.dependencies]
+riscv = "0.10.1"
 
 
 [features]

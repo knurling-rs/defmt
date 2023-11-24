@@ -1,8 +1,8 @@
-//! Panic handler for `probe-run`.
+//! Panic handler for `probe-rs`.
 //!
-//! When this panic handler is used, panics will make `probe-run` print a backtrace and exit with a
-//! non-zero status code, indicating failure. This building block can be used to run on-device
-//! tests.
+//! When this panic handler is used, panics will make `probe-rs` print a backtrace (by triggering a semihosting::process::abort).
+//! Probe-rs will then exit with a non-zero status code, indicating failure.
+//! This building block can be used to run on-device tests.
 //!
 //! # Panic Messages
 //!
@@ -20,8 +20,8 @@
 #![cfg(target_os = "none")]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-#[cfg(not(cortex_m))]
-compile_error!("`panic-probe` only supports Cortex-M targets (thumbvN-none-eabi[hf])");
+#[cfg(all(not(cortex_m), not(target_arch = "riscv32")))]
+compile_error!("`panic-probe` only supports Cortex-M targets or riscv32");
 
 // Functionality `cfg`d out on platforms with OS/libstd.
 #[cfg(target_os = "none")]
@@ -42,7 +42,7 @@ mod imp {
     fn panic(info: &PanicInfo) -> ! {
         static PANICKED: AtomicBool = AtomicBool::new(false);
 
-        cortex_m::interrupt::disable();
+        crate::disable_isr();
 
         // Guard against infinite recursion, just in case.
         if !PANICKED.load(Ordering::Relaxed) {
@@ -51,11 +51,11 @@ mod imp {
             print(info);
         }
 
-        crate::hard_fault();
+        crate::abort();
     }
 }
 
-/// Trigger a `HardFault` via `udf` instruction.
+/// Triggers a semihosting::process::abort
 ///
 /// This function may be used to as `defmt::panic_handler` to avoid double prints.
 ///
@@ -64,26 +64,22 @@ mod imp {
 /// ```
 /// #[defmt::panic_handler]
 /// fn panic() -> ! {
-///     panic_probe::hard_fault();
+///     panic_probe::abort();
 /// }
 /// ```
 #[cfg(target_os = "none")]
-pub fn hard_fault() -> ! {
-    // If `UsageFault` is enabled, we disable that first, since otherwise `udf` will cause that
-    // exception instead of `HardFault`.
-    #[cfg(not(any(armv6m, armv8m_base)))]
-    {
-        const SHCSR: *mut u32 = 0xE000ED24usize as _;
-        const USGFAULTENA: usize = 18;
+pub fn abort() -> ! {
+    semihosting::process::abort();
+}
 
-        unsafe {
-            let mut shcsr = core::ptr::read_volatile(SHCSR);
-            shcsr &= !(1 << USGFAULTENA);
-            core::ptr::write_volatile(SHCSR, shcsr);
-        }
-    }
-
-    cortex_m::asm::udf();
+#[cfg(target_os = "none")]
+pub fn disable_isr() {
+    #[cfg(cortex_m)]
+    cortex_m::interrupt::disable();
+    #[cfg(target_arch = "riscv32")]
+    unsafe {
+        riscv::interrupt::disable()
+    };
 }
 
 #[cfg(feature = "print-rtt")]
