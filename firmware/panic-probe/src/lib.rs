@@ -35,7 +35,10 @@ mod imp {
     #[cfg(feature = "print-defmt")]
     use crate::print_defmt::print;
 
-    #[cfg(not(any(feature = "print-rtt", feature = "print-defmt")))]
+    #[cfg(feature = "print-log")]
+    use crate::print_log::print;
+
+    #[cfg(not(any(feature = "print-rtt", feature = "print-defmt", feature = "print-log")))]
     fn print(_: &core::panic::PanicInfo) {}
 
     #[panic_handler]
@@ -98,5 +101,14 @@ mod print_defmt {
 
     pub fn print(info: &PanicInfo) {
         defmt::error!("{}", defmt::Display2Format(info));
+    }
+}
+
+#[cfg(feature = "print-log")]
+mod print_log {
+    use core::panic::PanicInfo;
+
+    pub fn print(info: &PanicInfo) {
+        log::error!("{}", info);
     }
 }

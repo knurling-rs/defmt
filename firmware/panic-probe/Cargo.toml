@@ -12,6 +12,7 @@ version = "0.4.0"
 
 [dependencies]
 defmt = { version = "0.3", path = "../../defmt", optional = true }
+log = { version = "0.4", optional = true }
 rtt-target = { version = "0.4", optional = true }
 semihosting = "0.1.4"
 
@@ -27,6 +28,8 @@ riscv = "0.10.1"
 print-rtt = ["rtt-target"]
 # Print the panic message using `defmt`.
 print-defmt = ["defmt", "defmt-error"]
+# Print the panic message using `log`
+print-log = ["log"]
 
 defmt-error = [] # internal feature, do not use
 
