@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#789]: `defmt`: Add support for new time-related display hints
+- [#800]: `defmt-macros`: Fix generic trait bounds in Format derive macro
 
 [#789]: https://github.com/knurling-rs/defmt/pull/789
 
