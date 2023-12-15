@@ -175,7 +175,7 @@ This option can be passed to the printer in `.cargo/config.toml`, but due to lim
 
 runner = [
   "probe-rs",
-  "run"
+  "run",
   "--chip",
   "nRF52840_xxAA",
   "--log-format",
