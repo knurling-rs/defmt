@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#789]: `defmt`: Add support for new time-related display hints
+
+[#789]: https://github.com/knurling-rs/defmt/pull/789
+
 ## defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
 
 - [#784]: `defmt-decoder`: Prepare `defmt-decoder v0.3.9` release

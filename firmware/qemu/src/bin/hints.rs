@@ -127,6 +127,15 @@ fn main() -> ! {
     defmt::info!("ISO8601 {:iso8601ms}", 1618910624804_u64);
     defmt::info!("ISO8601 {:iso8601s}", 1618910624804_u64);
 
+    // Timestamps with seconds
+    defmt::info!("Sec ms  {:ms}", 1_234_567_u64);
+    defmt::info!("Sec us  {:us}", 1_234_567_u64);
+
+    // Timestamps with time format
+    defmt::info!("Time s  {:ts}", 1_234_567_u64);
+    defmt::info!("Time ms {:tms}", 1_234_567_u64);
+    defmt::info!("Time us {:tus}", 1_234_567_u64);
+
     loop {
         debug::exit(debug::EXIT_SUCCESS)
     }
