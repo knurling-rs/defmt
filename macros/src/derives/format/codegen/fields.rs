@@ -2,7 +2,7 @@ use std::fmt::Write as _;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{Field, Fields, Index, Type};
+use syn::{parse_quote, Field, Fields, Index, Type, WherePredicate};
 
 use crate::consts;
 
@@ -10,15 +10,15 @@ pub(crate) fn codegen(
     fields: &Fields,
     format_string: &mut String,
     patterns: &mut Vec<TokenStream2>,
-) -> syn::Result<Vec<TokenStream2>> {
+) -> syn::Result<(Vec<TokenStream2>, Vec<WherePredicate>)> {
     let (fields, fields_are_named) = match fields {
         Fields::Named(named) => (&named.named, true),
-        Fields::Unit => return Ok(vec![]),
+        Fields::Unit => return Ok((vec![], vec![])),
         Fields::Unnamed(unnamed) => (&unnamed.unnamed, false),
     };
 
     if fields.is_empty() {
-        return Ok(vec![]);
+        return Ok((vec![], vec![]));
     }
 
     if fields_are_named {
@@ -28,6 +28,7 @@ pub(crate) fn codegen(
     }
 
     let mut stmts = vec![];
+    let mut where_predicates = vec![];
     let mut is_first = true;
     for (index, field) in fields.iter().enumerate() {
         if is_first {
@@ -37,21 +38,30 @@ pub(crate) fn codegen(
         }
 
         let format_opt = get_defmt_format_option(field)?;
-        let ty = as_native_type(&field.ty).unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
+        let ty = as_native_type(&field.ty);
+        let field_ty = if ty.is_none() { Some(&field.ty) } else { None };
+        let ty = ty.unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
         let ident = field
             .ident
             .clone()
             .unwrap_or_else(|| format_ident!("arg{}", index));
 
-        if let Some(FormatOption::Debug2Format) = format_opt {
-            stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
+        let bound: Option<syn::Path> = if let Some(FormatOption::Debug2Format) = format_opt {
+            stmts.push(quote!(::defmt::export::fmt(&defmt::Debug2Format(&#ident))));
+            field_ty.map(|_| parse_quote!(::core::fmt::Debug))
         } else if let Some(FormatOption::Display2Format) = format_opt {
-            stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
+            stmts.push(quote!(::defmt::export::fmt(&defmt::Display2Format(&#ident))));
+            field_ty.map(|_| parse_quote!(::core::fmt::Display))
         } else if ty == consts::TYPE_FORMAT {
-            stmts.push(quote!(defmt::export::fmt(#ident)));
+            stmts.push(quote!(::defmt::export::fmt(#ident)));
+            field_ty.map(|_| parse_quote!(::defmt::Format))
         } else {
             let method = format_ident!("{}", ty);
-            stmts.push(quote!(defmt::export::#method(#ident)));
+            stmts.push(quote!(::defmt::export::#method(#ident)));
+            field_ty.map(|_| parse_quote!(::defmt::Format))
+        };
+        if let Some(bound) = bound {
+            where_predicates.push(parse_quote!(#field_ty: #bound));
         }
 
         if field.ident.is_some() {
@@ -74,11 +84,11 @@ pub(crate) fn codegen(
         format_string.push(')');
     }
 
-    Ok(stmts)
+    Ok((stmts, where_predicates))
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-enum FormatOption {
+pub(crate) enum FormatOption {
     Debug2Format,
     Display2Format,
 }

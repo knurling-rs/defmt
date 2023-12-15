@@ -12,10 +12,12 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
         return Ok(EncodeData {
             stmts: vec![quote!(match *self {})],
             format_tag: construct::interned_string("!", "derived", false),
+            where_predicates: vec![],
         });
     }
 
     let mut format_string = String::new();
+    let mut where_predicates = vec![];
 
     let mut match_arms = vec![];
     let mut is_first_variant = true;
@@ -32,8 +34,9 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
         format_string.push_str(&variant_ident.to_string());
 
         let mut field_patterns = vec![];
-        let encode_fields_stmts =
+        let (encode_fields_stmts, encode_field_where_predicates) =
             super::fields::codegen(&variant.fields, &mut format_string, &mut field_patterns)?;
+        where_predicates.extend(encode_field_where_predicates.into_iter());
         let pattern = quote!( { #(#field_patterns),* } );
 
         let encode_discriminant_stmt = discriminant_encoder.encode(index);
@@ -50,8 +53,14 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
     let stmts = vec![quote!(match self {
         #(#match_arms)*
     })];
+    // This would require syn feature "extra-traits"
+    // where_predicates.dedup_by(|a, b| a == b);
 
-    Ok(EncodeData { format_tag, stmts })
+    Ok(EncodeData {
+        format_tag,
+        stmts,
+        where_predicates,
+    })
 }
 
 enum DiscriminantEncoder {
