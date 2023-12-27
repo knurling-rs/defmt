@@ -1,5 +1,9 @@
 # [Unreleased]
 
+- [#796] Add support for risc-v, but do no longer import the cortex-m exception handlers
+
+[#796]: https://github.com/knurling-rs/defmt/pull/796
+
 # [v0.3.1]
 
 - [#786]: `defmt-test`: Exit with semihosting exit

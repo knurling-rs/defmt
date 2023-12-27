@@ -1,5 +1,3 @@
-use cortex_m_rt as _;
-use cortex_m_semihosting::debug;
 pub use defmt::info;
 
 use crate::TestOutcome;
@@ -7,9 +5,7 @@ use crate::TestOutcome;
 /// Terminates the application and makes a semihosting-capable debug tool exit
 /// with status code 0.
 pub fn exit() -> ! {
-    loop {
-        debug::exit(debug::EXIT_SUCCESS);
-    }
+    semihosting::process::exit(0);
 }
 
 pub fn check_outcome<T: TestOutcome>(outcome: T, should_error: bool) {

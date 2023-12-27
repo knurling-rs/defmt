@@ -1,13 +1,13 @@
 # `panic-probe`
 
-> Panic handler that exits [`probe-run`] with an error code
+> Panic handler that exits [`probe-rs`] with an error code using semihosting::process::abort.
 
-[`probe-run`]: https://github.com/knurling-rs/probe-run
+[`probe-rs`]: https://github.com/probe-rs/probe-rs
 
-`panic-probe` can optionally log the panic message using the [`defmt`] logging framework.
-This functionality can be enabled through the `print-defmt` Cargo feature.
-
-[`defmt`]: https://github.com/knurling-rs/defmt
+`panic-probe` can optionally log the panic message. Enable one of the following features for that:
+* `print-defmt` to print via `defmt::error!(..)`
+* `print-log` to print via `log::error!(..)`
+* `print-rtt` to print via `rtt_target::rprintln(..)`
 
 ## Support
 
