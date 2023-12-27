@@ -43,18 +43,17 @@ mod imp {
 
     #[panic_handler]
     fn panic(info: &PanicInfo) -> ! {
-        static PANICKED: AtomicBool = AtomicBool::new(false);
+        critical_section::with(|_| {
+            // Guard against infinite recursion, just in case.
+            static PANICKED: AtomicBool = AtomicBool::new(false);
+            if !PANICKED.load(Ordering::Relaxed) {
+                PANICKED.store(true, Ordering::Relaxed);
 
-        crate::disable_isr();
+                print(info);
+            }
 
-        // Guard against infinite recursion, just in case.
-        if !PANICKED.load(Ordering::Relaxed) {
-            PANICKED.store(true, Ordering::Relaxed);
-
-            print(info);
-        }
-
-        crate::abort();
+            crate::abort() // this call will never return, therefore we stay in the critical section forever.
+        })
     }
 }
 
@@ -74,21 +73,6 @@ mod imp {
 pub fn abort() -> ! {
     semihosting::process::abort();
 }
-
-#[cfg(target_arch = "riscv32")]
-pub fn riscv32_disable_isr() {
-    unsafe { riscv::interrupt::disable() };
-}
-#[cfg(target_arch = "riscv32")]
-use crate::riscv32_disable_isr as disable_isr;
-
-#[cfg(cortex_m)]
-pub fn cortex_m_disable_isr() {
-    cortex_m::interrupt::disable();
-}
-
-#[cfg(cortex_m)]
-use crate::cortex_m_disable_isr as disable_isr;
 
 #[cfg(feature = "print-rtt")]
 mod print_rtt {

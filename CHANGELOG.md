@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#789]: `defmt`: Add support for new time-related display hints
-- [#796]: `panic-probe`: Add `print-log` feature
+- [#796]: `panic-probe`: Add riscv32 support, `print-log` feature and employ critical-section on panic.
 
 [#789]: https://github.com/knurling-rs/defmt/pull/789
 [#796]: https://github.com/knurling-rs/defmt/pull/796
