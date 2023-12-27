@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#789]: `defmt`: Add support for new time-related display hints
+- [#796]: `panic-probe`: Add `print-log` feature
 
 [#789]: https://github.com/knurling-rs/defmt/pull/789
+[#796]: https://github.com/knurling-rs/defmt/pull/796
 
 ## defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
 

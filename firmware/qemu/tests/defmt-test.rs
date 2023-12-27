@@ -3,6 +3,7 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
+use cortex_m_rt as _; // exception handlers
 use defmt_semihosting as _; // global logger
 
 static MAY_PANIC: AtomicBool = AtomicBool::new(false);

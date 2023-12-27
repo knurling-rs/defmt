@@ -75,15 +75,20 @@ pub fn abort() -> ! {
     semihosting::process::abort();
 }
 
-#[cfg(target_os = "none")]
-pub fn disable_isr() {
-    #[cfg(cortex_m)]
-    cortex_m::interrupt::disable();
-    #[cfg(target_arch = "riscv32")]
-    unsafe {
-        riscv::interrupt::disable()
-    };
+#[cfg(target_arch = "riscv32")]
+pub fn riscv32_disable_isr() {
+    unsafe { riscv::interrupt::disable() };
 }
+#[cfg(target_arch = "riscv32")]
+use crate::riscv32_disable_isr as disable_isr;
+
+#[cfg(cortex_m)]
+pub fn cortex_m_disable_isr() {
+    cortex_m::interrupt::disable();
+}
+
+#[cfg(cortex_m)]
+use crate::cortex_m_disable_isr as disable_isr;
 
 #[cfg(feature = "print-rtt")]
 mod print_rtt {

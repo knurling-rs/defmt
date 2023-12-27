@@ -5,9 +5,7 @@ use crate::TestOutcome;
 /// Terminates the application and makes a semihosting-capable debug tool exit
 /// with status code 0.
 pub fn exit() -> ! {
-    loop {
-        semihosting::process::exit(0);
-    }
+    semihosting::process::exit(0);
 }
 
 pub fn check_outcome<T: TestOutcome>(outcome: T, should_error: bool) {

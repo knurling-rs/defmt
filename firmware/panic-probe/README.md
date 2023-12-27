@@ -4,16 +4,10 @@
 
 [`probe-rs`]: https://github.com/probe-rs/probe-rs
 
-`panic-probe` can optionally log the panic message. Enabled one of the following features for that:
+`panic-probe` can optionally log the panic message. Enable one of the following features for that:
 * `print-defmt` to print via `defmt::error!(..)`
 * `print-log` to print via `log::error!(..)`
 * `print-rtt` to print via `rtt_target::rprintln(..)`
-
-
- using the [`defmt`] logging framework.
-This functionality can be enabled through the `print-defmt` Cargo feature.
-
-[`defmt`]: https://github.com/knurling-rs/defmt
 
 ## Support
 
