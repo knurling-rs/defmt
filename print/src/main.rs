@@ -7,7 +7,13 @@ use std::{
 
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
-use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
+use defmt_decoder::{
+    log::{
+        format::{Formatter, FormatterConfig, HostFormatter},
+        DefmtLoggerType,
+    },
+    DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
+};
 
 /// Prints defmt-encoded logs to stdout
 #[derive(Parser)]
@@ -98,16 +104,6 @@ fn main() -> anyhow::Result<()> {
         return print_version();
     }
 
-    defmt_decoder::log::init_logger(
-        log_format.as_deref(),
-        host_log_format.as_deref(),
-        json,
-        move |metadata| match verbose {
-            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
-            true => true,                                          // We display *all* frames.
-        },
-    );
-
     // read and parse elf file
     let bytes = fs::read(elf.unwrap())?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
@@ -120,6 +116,42 @@ fn main() -> anyhow::Result<()> {
         log::warn!("(BUG) location info is incomplete; it will be omitted from the output");
         None
     };
+
+    let logger_type = if json {
+        DefmtLoggerType::Json
+    } else {
+        DefmtLoggerType::Stdout
+    };
+
+    let cloned_format = log_format.clone().unwrap_or_default();
+    let mut formatter_config = if log_format.is_some() {
+        FormatterConfig::custom(cloned_format.as_str())
+    } else if verbose {
+        FormatterConfig::default().with_location()
+    } else {
+        FormatterConfig::default()
+    };
+
+    formatter_config.is_timestamp_available = table.has_timestamp();
+
+    let cloned_host_format = host_log_format.clone().unwrap_or_default();
+    let host_formatter_config = if host_log_format.is_some() {
+        FormatterConfig::custom(cloned_host_format.as_str())
+    } else if verbose {
+        FormatterConfig::default().with_location()
+    } else {
+        FormatterConfig::default()
+    };
+
+    let formatter = Formatter::new(formatter_config);
+    let host_formatter = HostFormatter::new(host_formatter_config);
+
+    defmt_decoder::log::init_logger(formatter, host_formatter, logger_type, move |metadata| {
+        match verbose {
+            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
+            true => true,                                          // We display *all* frames.
+        }
+    });
 
     let mut buf = [0; READ_BUFFER_SIZE];
     let mut stream_decoder = table.new_stream_decoder();
