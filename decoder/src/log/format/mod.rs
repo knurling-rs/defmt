@@ -473,11 +473,7 @@ impl InternalFormatter {
             let path_iter = Path::new(file).iter();
             let number_of_components = path_iter.clone().count();
 
-            let number_of_components_to_join = if number_of_components > level_of_detail as usize {
-                level_of_detail as usize
-            } else {
-                number_of_components
-            };
+            let number_of_components_to_join = number_of_components.min(level_of_detail as usize);
 
             let number_of_elements_to_skip =
                 number_of_components.saturating_sub(number_of_components_to_join);
