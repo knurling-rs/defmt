@@ -16,6 +16,7 @@
   - [panic! and assert!](./panic.md)
   - [Printers](./printers.md)
   - [Encoding](./encoding.md)
+  - [Customizing log output](./custom-log-output.md)
   - [JSON output](./json-output.md)
 - [Migrating from `v0.2.x` to `v0.3.0`](./migration-02-03.md)
 - [Design & impl details](./design.md)
