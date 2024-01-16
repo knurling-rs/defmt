@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#xxx]: `CI`: Disable nightly qemu-snapshot tests
 - [#789]: `defmt`: Add support for new time-related display hints
 - [#783]: `defmt-decoder`: Move formatting logic to `Formatter`
 
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
 [#789]: https://github.com/knurling-rs/defmt/pull/789
 [#783]: https://github.com/knurling-rs/defmt/pull/783
 
