@@ -62,13 +62,7 @@ jobs:
         run: cargo xtask test-ui
 
   mdbook:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          # as of 2021-04 github SIGKILLs us on macos for unknown reasons (possible OOM)
-          # - macOS-latest
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
