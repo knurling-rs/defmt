@@ -73,7 +73,6 @@ fn test_all_snapshots(overwrite: bool) {
     for test in tests {
         let features = match test {
             "alloc" => "alloc",
-            "net" => "ip_in_core",
             _ => "",
         };
 

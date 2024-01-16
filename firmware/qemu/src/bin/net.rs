@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(ip_in_core)]
 
 use core::net::{
     AddrParseError, IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
