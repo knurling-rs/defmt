@@ -1,8 +1,9 @@
 use std::{
     env,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, time::Duration,
 };
 
+use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{
@@ -16,11 +17,11 @@ use defmt_decoder::{
 use tokio::{
     fs,
     io::{self, AsyncReadExt, Stdin},
-    net::TcpStream,
+    net::TcpStream, select, sync::mpsc::Receiver,
 };
 
 /// Prints defmt-encoded logs to stdout
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[command(name = "defmt-print")]
 struct Opts {
     #[arg(short, required = true, conflicts_with("version"))]
@@ -44,11 +45,14 @@ struct Opts {
     #[arg(short = 'V', long)]
     version: bool,
 
+    #[arg[short, long]]
+    watch_elf: bool,
+
     #[command(subcommand)]
     command: Option<Command>,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Clone)]
 enum Command {
     /// Read defmt frames from stdin (default)
     Stdin,
@@ -94,6 +98,68 @@ const READ_BUFFER_SIZE: usize = 1024;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let opts =  Opts::parse();
+
+    if opts.version {
+        return print_version();
+    }
+
+    // We create the source outside of the run command since recreating the stdin looses us some frames
+    let mut source = match opts.command.clone() {
+        None | Some(Command::Stdin) => Source::stdin(),
+        Some(Command::Tcp { host, port }) => Source::tcp(host, port).await?,
+    };
+
+    if opts.watch_elf {
+        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+
+        let mut watcher = RecommendedWatcher::new(
+            move |res| {
+                futures::executor::block_on(async {
+                    tx.send(res).await.unwrap();
+                })
+            },
+            Config::default().with_poll_interval(Duration::from_secs(1))
+        )?;
+        let mut directory_path = opts.elf.clone().unwrap();
+        directory_path.pop(); // We want the elf directory instead of the elf, since some editors remove and recreate the file on save which will remove the notifier
+        watcher.watch(directory_path.as_ref(), RecursiveMode::NonRecursive)?;
+
+        let path = opts.elf.clone().unwrap();
+
+        loop {
+            select! {
+                r = run(opts.clone(), &mut source) => {
+                    if r.is_err() {
+                        return r;
+                    }
+                },
+                _ = has_file_changed(&mut rx, &path) => ()
+            }
+        }
+    } else {
+        run(opts, &mut source).await
+    }
+
+}
+
+async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path: &PathBuf) -> bool {
+    loop {
+        if let Some(Ok(event)) = rx.recv().await {
+            if event.paths.contains(path) {
+                match event.kind {
+                    notify::EventKind::Create(_) | notify::EventKind::Modify(_) => { 
+                        break;
+                    },
+                    _ => ()
+                }
+            }
+        }
+    }
+    true
+}
+
+async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()>  {
     let Opts {
         elf,
         json,
@@ -101,13 +167,10 @@ async fn main() -> anyhow::Result<()> {
         host_log_format,
         show_skipped_frames,
         verbose,
-        version,
-        command,
-    } = Opts::parse();
-
-    if version {
-        return print_version();
-    }
+        version: _,
+        watch_elf: _,
+        command: _,
+    } = opts;
 
     // read and parse elf file
     let bytes = fs::read(elf.unwrap()).await?;
@@ -161,11 +224,6 @@ async fn main() -> anyhow::Result<()> {
     let mut buf = [0; READ_BUFFER_SIZE];
     let mut stream_decoder = table.new_stream_decoder();
     let current_dir = env::current_dir()?;
-
-    let mut source = match command {
-        None | Some(Command::Stdin) => Source::stdin(),
-        Some(Command::Tcp { host, port }) => Source::tcp(host, port).await?,
-    };
 
     loop {
         // read from stdin or tcpstream and push it to the decoder
