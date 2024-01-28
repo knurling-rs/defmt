@@ -1,8 +1,9 @@
 use std::{
-    env, path::{Path, PathBuf}, time::Duration
+    env,
+    path::{Path, PathBuf},
+    time::Duration,
 };
 
-use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{
@@ -12,9 +13,16 @@ use defmt_decoder::{
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
+use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 
-use tokio::{fs::{self}, io::Stdin, net::TcpStream, select, sync::mpsc::Receiver};
 use tokio::io::{self, AsyncReadExt};
+use tokio::{
+    fs::{self},
+    io::Stdin,
+    net::TcpStream,
+    select,
+    sync::mpsc::Receiver,
+};
 /// Prints defmt-encoded logs to stdout
 #[derive(Parser, Clone)]
 #[command(name = "defmt-print")]
@@ -93,7 +101,7 @@ const READ_BUFFER_SIZE: usize = 1024;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let opts =  Opts::parse();
+    let opts = Opts::parse();
 
     if opts.version {
         return print_version();
@@ -114,7 +122,7 @@ async fn main() -> anyhow::Result<()> {
                     tx.send(res).await.unwrap();
                 })
             },
-            Config::default().with_poll_interval(Duration::from_secs(1))
+            Config::default(),
         )?;
         let mut directory_path = opts.elf.clone().unwrap();
         directory_path.pop(); // We want the elf directory instead of the elf, since some editors remove and recreate the file on save which will remove the notifyer
@@ -124,18 +132,13 @@ async fn main() -> anyhow::Result<()> {
 
         loop {
             select! {
-                r = run(opts.clone(), &mut source) => {
-                    if r.is_err() {
-                        return r;
-                    }
-                },
+                r = run(opts.clone(), &mut source) => r?,
                 _ = has_file_changed(&mut rx, &path) => ()
             }
         }
     } else {
         run(opts, &mut source).await
     }
-
 }
 
 async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path: &PathBuf) -> bool {
@@ -143,10 +146,10 @@ async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path:
         if let Some(Ok(event)) = rx.recv().await {
             if event.paths.contains(path) {
                 match event.kind {
-                    notify::EventKind::Create(_) | notify::EventKind::Modify(_) => { 
+                    notify::EventKind::Create(_) | notify::EventKind::Modify(_) => {
                         break;
-                    },
-                    _ => ()
+                    }
+                    _ => (),
                 }
             }
         }
@@ -154,7 +157,7 @@ async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path:
     true
 }
 
-async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()>  {
+async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let Opts {
         elf,
         json,
