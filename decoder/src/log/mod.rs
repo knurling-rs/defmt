@@ -137,8 +137,8 @@ pub fn init_logger(
             JsonLogger::new(formatter, host_formatter, should_log)
         }
     };
-    log::set_boxed_logger(logger).unwrap();
-    log::set_max_level(LevelFilter::Trace);
+    alterable_logger::set_boxed_logger(logger);
+    alterable_logger::set_max_level(LevelFilter::Trace);
 }
 
 fn timestamp_and_level_from_frame(frame: &Frame<'_>) -> (String, Option<Level>) {
