@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.6] - 2024-02-05
+
 - [#804]: `CI`: Remove mdbook strategy
 - [#803]: `CI`: Disable nightly qemu-snapshot tests
 - [#789]: `defmt`: Add support for new time-related display hints
@@ -603,7 +605,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...main
+[v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...defmt-v0.3.6
 [v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...defmt-v0.3.5
 [v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...defmt-v0.3.4
 [v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...defmt-v0.3.3
