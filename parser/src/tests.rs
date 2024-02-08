@@ -10,6 +10,7 @@ use super::*;
 #[case::two_param_type_hint("=u8:x", None, Type::U8, Some(DisplayHint::Hexadecimal {alternate: false, uppercase: false, zero_pad: 0}))]
 #[case::two_param_index_type("0=u8", Some(0), Type::U8, None)]
 #[case::two_param_index_hint("0:a", Some(0), Type::Format, Some(DisplayHint::Ascii))]
+#[case::two_param_type_hint("=[u8]:#04x", None, Type::U8Slice, Some(DisplayHint::Hexadecimal {alternate: true, uppercase: false, zero_pad: 4}))]
 #[case::all_param("1=u8:b", Some(1), Type::U8, Some(DisplayHint::Binary { alternate: false, zero_pad: 0}))]
 fn all_parse_param_cases(
     #[case] input: &str,
@@ -28,7 +29,9 @@ fn all_parse_param_cases(
 #[case(":b", DisplayHint::Binary { alternate: false, zero_pad: 0 })]
 #[case(":#b", DisplayHint::Binary { alternate: true, zero_pad: 0 })]
 #[case(":x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 0 })]
+#[case(":02x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 2 })]
 #[case(":#x", DisplayHint::Hexadecimal { alternate: true, uppercase: false, zero_pad: 0 })]
+#[case(":#04x", DisplayHint::Hexadecimal { alternate: true, uppercase: false, zero_pad: 4 })]
 #[case(":X", DisplayHint::Hexadecimal { alternate: false, uppercase: true, zero_pad: 0 })]
 #[case(":#X", DisplayHint::Hexadecimal { alternate: true, uppercase: true, zero_pad: 0 })]
 #[case(":ms", DisplayHint::Seconds(TimePrecision::Millis))]
