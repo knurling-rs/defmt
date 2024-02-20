@@ -20,6 +20,7 @@ version = "0.3.6"
 [features]
 alloc = []
 ip_in_core = []
+avoid-default-panic = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #
