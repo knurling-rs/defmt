@@ -42,6 +42,7 @@ use crate::{export, Formatter, Str};
 ///     }
 /// }
 /// ```
+/// **Note** Some implementations of standard types like `Vec<T>` are hidden behind the `alloc` feature flag.
 pub trait Format {
     /// Writes the defmt representation of `self` to `fmt`.
     fn format(&self, fmt: Formatter);
