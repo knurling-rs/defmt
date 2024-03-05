@@ -54,7 +54,7 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
         #(#match_arms)*
     })];
     // This would require syn feature "extra-traits"
-    // where_predicates.dedup_by(|a, b| a == b);
+    where_predicates.dedup_by(|a, b| a == b);
 
     Ok(EncodeData {
         format_tag,

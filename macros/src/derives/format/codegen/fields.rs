@@ -38,14 +38,17 @@ pub(crate) fn codegen(
         }
 
         let format_opt = get_defmt_format_option(field)?;
+        // Find out if the field type is natively supported by defmt. `ty` will be None if not.
         let ty = as_native_type(&field.ty);
+        // `field_ty` will be the field's type if it is not natively supported by defmt
         let field_ty = if ty.is_none() { Some(&field.ty) } else { None };
+        // Get the field format specifier. Either the native specifier or '?'.
         let ty = ty.unwrap_or_else(|| consts::TYPE_FORMAT.to_string());
         let ident = field
             .ident
             .clone()
             .unwrap_or_else(|| format_ident!("arg{}", index));
-
+        // Find the required trait bounds for the field and add the formatting statement depending on the field type and the formatting options
         let bound: Option<syn::Path> = if let Some(FormatOption::Debug2Format) = format_opt {
             stmts.push(quote!(::defmt::export::fmt(&defmt::Debug2Format(&#ident))));
             field_ty.map(|_| parse_quote!(::core::fmt::Debug))

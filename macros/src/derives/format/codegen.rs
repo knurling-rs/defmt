@@ -52,9 +52,7 @@ impl<'a> Generics<'a> {
         let (impl_generics, type_generics, _) = generics.split_for_impl();
 
         // Extend where-clause with `Format` bounds for all field types.
-        for predicate in where_predicates {
-            where_clause.predicates.push(predicate);
-        }
+        where_clause.predicates.extend(where_predicates);
 
         Self {
             impl_generics,
