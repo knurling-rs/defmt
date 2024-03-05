@@ -6,19 +6,19 @@
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
 
-mod format;
+pub mod format;
 mod json_logger;
 mod stdout_logger;
 
 use std::fmt;
 
-use log::{Level, LevelFilter, Log, Metadata, Record};
+use log::{Level, LevelFilter, Log, Metadata, Record as LogRecord};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    format::{LogMetadata, LogSegment},
+    format::{Formatter, HostFormatter},
     json_logger::JsonLogger,
-    stdout_logger::{Printer, StdoutLogger},
+    stdout_logger::StdoutLogger,
 };
 use crate::Frame;
 
@@ -40,7 +40,7 @@ pub fn log_defmt(
     );
 
     log::logger().log(
-        &Record::builder()
+        &LogRecord::builder()
             .args(format_args!("{}", frame.display_message()))
             // .level(level) // no need to set the level, since it is transferred via payload
             .target(&target)
@@ -58,8 +58,20 @@ pub fn is_defmt_frame(metadata: &Metadata) -> bool {
 
 /// A `log` record representing a defmt log frame.
 struct DefmtRecord<'a> {
-    log_record: &'a Record<'a>,
+    log_record: &'a LogRecord<'a>,
     payload: Payload,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum DefmtLoggerType {
+    Stdout,
+    Json,
+}
+
+pub struct DefmtLoggerConfig {
+    pub formatter: Formatter,
+    pub host_formatter: HostFormatter,
+    pub logger_type: DefmtLoggerType,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -70,7 +82,7 @@ struct Payload {
 
 impl<'a> DefmtRecord<'a> {
     /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
-    pub fn new(log_record: &'a Record<'a>) -> Option<Self> {
+    pub fn new(log_record: &'a LogRecord<'a>) -> Option<Self> {
         let target = log_record.metadata().target();
         target
             .strip_prefix(DEFMT_TARGET_MARKER)
@@ -112,117 +124,21 @@ impl<'a> DefmtRecord<'a> {
 ///
 /// The caller has to provide a `should_log` closure that determines whether a log record should be
 /// printed.
-///
-/// An optional `log_format` string can be provided to format the way
-/// logs are printed. A format string could look as follows:
-/// "{t} [{L}] Location<{f}:{l}> {s}"
-///
-/// The arguments between curly braces are placeholders for log metadata.
-/// The following arguments are supported:
-/// - {f} : file name (e.g. "main.rs")
-/// - {F} : file path (e.g. "src/bin/main.rs")
-/// - {l} : line number
-/// - {L} : log level (e.g. "INFO", "DEBUG", etc)
-/// - {m} : module path (e.g. "foo::bar::some_function")
-/// - {s} : the actual log
-/// - {t} : log timestamp
-///
-/// For example, with the log format shown above, a log would look like this:
-/// "23124 [INFO] Location<main.rs:23> Hello, world!"
 pub fn init_logger(
-    log_format: Option<&str>,
-    host_log_format: Option<&str>,
-    json: bool,
+    formatter: Formatter,
+    host_formatter: HostFormatter,
+    logger_type: DefmtLoggerType,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
-) -> DefmtLoggerInfo {
-    let (logger, info): (Box<dyn Log>, DefmtLoggerInfo) = match json {
-        false => {
-            let logger = StdoutLogger::new(log_format, host_log_format, should_log);
-            let info = logger.info();
-            (logger, info)
-        }
-        true => {
+) {
+    let logger: Box<dyn Log> = match logger_type {
+        DefmtLoggerType::Stdout => StdoutLogger::new(formatter, host_formatter, should_log),
+        DefmtLoggerType::Json => {
             JsonLogger::print_schema_version();
-            let logger = JsonLogger::new(log_format, host_log_format, should_log);
-            let info = logger.info();
-            (logger, info)
+            JsonLogger::new(formatter, host_formatter, should_log)
         }
     };
     log::set_boxed_logger(logger).unwrap();
     log::set_max_level(LevelFilter::Trace);
-    info
-}
-
-#[derive(Clone, Copy)]
-pub struct DefmtLoggerInfo {
-    has_timestamp: bool,
-}
-
-impl DefmtLoggerInfo {
-    pub fn has_timestamp(&self) -> bool {
-        self.has_timestamp
-    }
-}
-
-/// Format [`Frame`]s according to a `log_format`.
-///
-/// The `log_format` makes it possible to customize the defmt output.
-///
-/// The `log_format` is specified here: TODO
-// TODO:
-// - use two Formatter in StdoutLogger instead of the log format
-// - add fn format_to_sink
-// - specify log format
-// - clarify relationship between Formatter and Printer (https://github.com/knurling-rs/defmt/pull/781#discussion_r1343000073)
-#[derive(Debug)]
-pub struct Formatter {
-    format: Vec<LogSegment>,
-}
-
-impl Formatter {
-    pub fn new(log_format: &str) -> Self {
-        let format = format::parse(log_format)
-            .unwrap_or_else(|_| panic!("log format is invalid '{log_format}'"));
-        Self { format }
-    }
-
-    pub fn format_to_string(
-        &self,
-        frame: Frame<'_>,
-        file: Option<&str>,
-        line: Option<u32>,
-        module_path: Option<&str>,
-    ) -> String {
-        let (timestamp, level) = timestamp_and_level_from_frame(&frame);
-
-        // HACK: use match instead of let, because otherwise compilation fails
-        #[allow(clippy::match_single_binding)]
-        match format_args!("{}", frame.display_message()) {
-            args => {
-                let log_record = &Record::builder()
-                    .args(args)
-                    .module_path(module_path)
-                    .file(file)
-                    .line(line)
-                    .build();
-
-                let record = DefmtRecord {
-                    log_record,
-                    payload: Payload { level, timestamp },
-                };
-
-                match level {
-                    Some(_) => Printer::new_defmt(&record, &self.format),
-                    None => {
-                        // handle defmt::println separately
-                        const RAW_FORMAT: &[LogSegment] = &[LogSegment::new(LogMetadata::Log)];
-                        Printer::new_defmt(&record, RAW_FORMAT)
-                    }
-                }
-                .format_frame()
-            }
-        }
-    }
 }
 
 fn timestamp_and_level_from_frame(frame: &Frame<'_>) -> (String, Option<Level>) {

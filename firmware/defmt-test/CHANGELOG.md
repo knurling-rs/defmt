@@ -1,5 +1,9 @@
 # [Unreleased]
 
+# [v0.3.2]
+
+Updates `defmt-test-macros` and therefore actually support [#696].
+
 # [v0.3.1]
 
 - [#786]: `defmt-test`: Exit with semihosting exit
