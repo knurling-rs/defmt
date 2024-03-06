@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#813] doc: add note for the alloc feature flag
 - [#811]: `book`: Add some examples for byte slice/array hints as well
+- [#800]: `defmt-macros`: Fix generic trait bounds in Format derive macro
 
+[#813]: https://github.com/knurling-rs/defmt/pull/813
 [#811]: https://github.com/knurling-rs/defmt/pull/811
+[#800]: https://github.com/knurling-rs/defmt/pull/800
 
 ## [v0.3.6] - 2024-02-05
 
