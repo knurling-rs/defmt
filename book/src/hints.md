@@ -74,6 +74,20 @@ defmt::info!("{=u8:#08X}", 42); // -> INFO 0x00002A
 
 When the alternate form is used for hex and binary, the `0x`/`0b` length is subtracted from the leading zeros.  This matches [`core::fmt` behavior](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b11809759f975e266251f7968e542756).
 
+## Display hints for byte slice and byte array elements
+
+Besides ASCII hints, byte slice and array elements can be formatted using hexadecimal or binary hints:
+
+```rust
+# extern crate defmt;
+let bytes = [4, 101, 5, 108, 6, 111];
+
+defmt::info!("{=[u8]}", bytes);         // -> INFO [4, 101, 5, 108, 6, 111]
+defmt::info!("{=[u8]:x}", bytes);       // -> INFO [4, 65, 5, 6c, 6, 6f]
+defmt::info!("{=[u8]:#04x}", bytes);    // -> INFO [0x04, 0x65, 0x05, 0x6c, 0x06, 0x6f]
+defmt::info!("{=[u8]:#010b}", bytes);   // -> INFO [0b00000100, 0b01100101, 0b00000101, 0b01101100, 0b00000110, 0b01101111]
+```
+
 ## Propagation
 
 Display hints "propagate downwards" and apply to formatting parameters that specify no display hint.
