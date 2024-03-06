@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#811]: `book`: Add some examples for byte slice/array hints as well
+
+[#811]: https://github.com/knurling-rs/defmt/pull/811
+
 ## [v0.3.6] - 2024-02-05
 
 - [#804]: `CI`: Remove mdbook strategy
