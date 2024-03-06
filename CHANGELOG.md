@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#813] doc: add note for the alloc feature flag
+- [#813]: doc: add note for the alloc feature flag
 - [#811]: `book`: Add some examples for byte slice/array hints as well
 - [#800]: `defmt-macros`: Fix generic trait bounds in Format derive macro
 
