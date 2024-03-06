@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#813] doc: add note for the alloc feature flag
+
+[#813]: https://github.com/knurling-rs/defmt/pull/813
+
 ## [v0.3.6] - 2024-02-05
 
 - [#804]: `CI`: Remove mdbook strategy
