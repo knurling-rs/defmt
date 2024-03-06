@@ -53,7 +53,6 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
     let stmts = vec![quote!(match self {
         #(#match_arms)*
     })];
-    // This would require syn feature "extra-traits"
     where_predicates.dedup_by(|a, b| a == b);
 
     Ok(EncodeData {

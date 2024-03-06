@@ -91,7 +91,7 @@ pub(crate) fn codegen(
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub(crate) enum FormatOption {
+enum FormatOption {
     Debug2Format,
     Display2Format,
 }
