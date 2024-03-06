@@ -9,5 +9,6 @@ fn ui() {
         t.compile_fail("tests/ui/*.rs");
 
         t.pass("tests/basic_usage.rs");
+        t.pass("tests/derive-bounds.rs");
     }
 }
