@@ -21,11 +21,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#803]: `CI`: Disable nightly qemu-snapshot tests
 - [#789]: `defmt`: Add support for new time-related display hints
 - [#783]: `defmt-decoder`: Move formatting logic to `Formatter`
+- [#807]: `defmt-print`: Add watch_elf flrag to allow elf reload without restarting `defmt-print`
 
 [#804]: https://github.com/knurling-rs/defmt/pull/804
 [#803]: https://github.com/knurling-rs/defmt/pull/803
 [#789]: https://github.com/knurling-rs/defmt/pull/789
 [#783]: https://github.com/knurling-rs/defmt/pull/783
+[#807]: https://github.com/knurling-rs/defmt/pull/807
 
 ## defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
 
