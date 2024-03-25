@@ -85,7 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use the latest stable release
-        run: rustup update stable && rustup default ${{ matrix.toolchain }}
+        run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - name: Install QEMU_TARGET
         run: rustup target add ${{ env.QEMU_TARGET }}
       - name: Install dependencies
