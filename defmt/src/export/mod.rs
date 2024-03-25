@@ -17,8 +17,8 @@ impl UnsignedInt for u128 {}
 
 #[cfg(feature = "unstable-test")]
 thread_local! {
-    static I: core::sync::atomic::AtomicU16 = core::sync::atomic::AtomicU16::new(0);
-    static BYTES: core::cell::RefCell<Vec<u8>> = core::cell::RefCell::new(Vec::new());
+    static I: core::sync::atomic::AtomicU16 = const { core::sync::atomic::AtomicU16::new(0) };
+    static BYTES: core::cell::RefCell<Vec<u8>> = const { core::cell::RefCell::new(Vec::new()) };
 }
 
 /// For testing purposes

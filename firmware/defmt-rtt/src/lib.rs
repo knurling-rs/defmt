@@ -127,6 +127,7 @@ unsafe fn handle() -> &'static Channel {
         max_down_channels: 0,
         up_channel: Channel {
             name: &NAME as *const _ as *const u8,
+            #[allow(static_mut_refs)]
             buffer: unsafe { &mut BUFFER as *mut _ as *mut u8 },
             size: BUF_SIZE,
             write: AtomicUsize::new(0),
