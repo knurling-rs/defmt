@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - [#831]: Fix CI
 - [#828]: `defmt-decoder`: Update to `gimli 0.29`
-- [#821]: Cleanup
+- [#822]: Run `cargo semver-checks` in CI
+- [#821]: Clean up
 - [#813]: doc: add note for the alloc feature flag
 - [#812]: `defmt`: Add a feature to stop linking a default panic handler
 - [#811]: `book`: Add some examples for byte slice/array hints as well
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [#831]: https://github.com/knurling-rs/defmt/pull/831
 [#828]: https://github.com/knurling-rs/defmt/pull/828
+[#822]: https://github.com/knurling-rs/defmt/pull/822
 [#821]: https://github.com/knurling-rs/defmt/pull/821
 [#813]: https://github.com/knurling-rs/defmt/pull/813
 [#812]: https://github.com/knurling-rs/defmt/pull/812
