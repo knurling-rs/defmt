@@ -19,7 +19,7 @@ version = "0.3.6"
 
 [features]
 alloc = []
-ip_in_core = []
+ip_in_core = [] # no-op feature, should be removed at next breaking release
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #

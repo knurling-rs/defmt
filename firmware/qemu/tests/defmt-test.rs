@@ -83,6 +83,15 @@ mod tests {
 
         Ok("this should have returned `Err`")
     }
+
+    #[test]
+    fn assert_some_data() {
+        let a = SomeData {
+            elem1: 1,
+            elem2: 2.0,
+        };
+        assert_eq!(a.elem2, 2.0);
+    }
 }
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)

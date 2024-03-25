@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#821]: Cleanup
 - [#813]: doc: add note for the alloc feature flag
 - [#811]: `book`: Add some examples for byte slice/array hints as well
+- [#805]: `defmt`: Drop ip_in_core feature and re-enable nightly snapshot tests
 - [#800]: `defmt-macros`: Fix generic trait bounds in Format derive macro
 
 [#821]: https://github.com/knurling-rs/defmt/pull/821
 [#813]: https://github.com/knurling-rs/defmt/pull/813
 [#811]: https://github.com/knurling-rs/defmt/pull/811
+[#805]: https://github.com/knurling-rs/defmt/pull/805
 [#800]: https://github.com/knurling-rs/defmt/pull/800
 
 ## [v0.3.6] - 2024-02-05
