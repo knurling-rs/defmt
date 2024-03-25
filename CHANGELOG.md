@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#821]: Cleanup
+- [#822]: Run `cargo semver-checks` in CI
+- [#821]: Clean up
 - [#813]: doc: add note for the alloc feature flag
 - [#812]: `defmt`: Add a feature to stop linking a default panic handler
 - [#811]: `book`: Add some examples for byte slice/array hints as well
 - [#800]: `defmt-macros`: Fix generic trait bounds in Format derive macro
 
+[#822]: https://github.com/knurling-rs/defmt/pull/822
 [#821]: https://github.com/knurling-rs/defmt/pull/821
 [#813]: https://github.com/knurling-rs/defmt/pull/813
 [#812]: https://github.com/knurling-rs/defmt/pull/812
