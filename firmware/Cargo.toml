@@ -7,3 +7,4 @@ members = [
   "panic-probe",
   "qemu",
 ]
+resolver = "2"

@@ -1,4 +1,5 @@
 [workspace]
+exclude = ["firmware/*"]
 members = [
   "decoder",
   "decoder/defmt-json-schema",
@@ -9,8 +10,7 @@ members = [
   "qemu-run",
   "xtask",
 ]
-exclude = [ "firmware/*" ]
-
+resolver = "2"
 
 [profile.release]
 codegen-units = 1
