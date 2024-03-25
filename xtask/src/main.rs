@@ -9,7 +9,7 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 
 use crate::{
-    snapshot::{test_snapshot, Snapshot, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY},
+    snapshot::{test_snapshot, Snapshot},
     utils::{run_capturing_stdout, run_command},
 };
 
