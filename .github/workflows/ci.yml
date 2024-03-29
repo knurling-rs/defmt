@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
       - name: Install C libraries for tooling on ubuntu
@@ -36,7 +36,7 @@ jobs:
   cross:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
       - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
       - name: Run rustfmt & clippy
@@ -55,7 +55,7 @@ jobs:
   ui:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
       - name: Install Rust stable, run all UI tests on the host
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
       - name: Setup mdBook
@@ -83,7 +83,7 @@ jobs:
           # - nightly # some tests use unstable features
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - name: Install QEMU_TARGET
@@ -96,7 +96,7 @@ jobs:
   backcompat:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Use the latest stable release
