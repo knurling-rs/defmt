@@ -29,6 +29,19 @@ Like built-in derives (e.g. `#[derive(Debug)]`), `#[derive(Format)]` will add `F
 
 > ⚠️ Do *not* use the API used by the expansion of the `derive(Format)` macro; it is *unstable*.
 
+## Feature-gated `#[derive(Format)]`
+
+It is also possible to feature-gate the implementation by defining
+`derive` implementation via `cfg_attr(feature = ...)`:
+
+```rust
+#[derive(Copy, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Header {
+    ...
+}
+```
+
 ## Manual implementation with `write!`
 
 It is also possible to implement the `Format` trait manually.
