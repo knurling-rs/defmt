@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#830]: `book`: Add section about feature-gated derive Format
 - [#828]: `defmt-decoder`: Update to `gimli 0.29`
 - [#821]: Cleanup
 - [#813]: doc: add note for the alloc feature flag
