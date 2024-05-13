@@ -26,9 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use the latest stable release
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        uses: ./.github/actions/update-rust
       - name: Install C libraries for tooling on ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
@@ -40,9 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use the latest stable release
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        uses: ./.github/actions/update-rust
       - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
         run: cargo xtask test-cross
 
@@ -52,9 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use the latest stable release
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        uses: ./.github/actions/update-rust
       - name: Run rustfmt & clippy
         run: cargo xtask test-lint
 
@@ -63,9 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use the latest stable release
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        uses: ./.github/actions/update-rust
       - name: Install Rust stable, run all UI tests on the host
         run: cargo xtask test-ui
 
@@ -75,9 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use the latest stable release
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        uses: ./.github/actions/update-rust
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
@@ -95,9 +85,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use the latest ${{ matrix.toolchain }} release
-        run: |
-          rustup update --no-self-update ${{ matrix.toolchain }}
-          rustup default ${{ matrix.toolchain }}
+        uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - name: Install QEMU_TARGET
         run: rustup target add ${{ env.QEMU_TARGET }}
       - name: Install dependencies
@@ -112,9 +102,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Use the latest stable release
-        run: |
-          rustup update --no-self-update stable
-          rustup default stable
+        uses: ./.github/actions/update-rust
       - name: Install QEMU_TARGET
         run: rustup target add ${{ env.QEMU_TARGET }}
       - name: Install dependencies
