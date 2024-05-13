@@ -28,6 +28,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         _ => {}
     }
+
+    // allow #[cfg(cfg_name)]
+    for cfg_name in ["c_variadic", "no_cas"] {
+        println!("cargo::rustc-check-cfg=cfg({cfg_name})");
+    }
+
     Ok(())
 }
 
