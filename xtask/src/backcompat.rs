@@ -35,7 +35,10 @@ use anyhow::anyhow;
 use colored::Colorize as _;
 use tempfile::TempDir;
 
-use crate::{ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
+use crate::{
+    snapshot::{SNAPSHOT_TESTS_DIRECTORY, STABLE_SNAPSHOT_TESTS},
+    ALL_ERRORS,
+};
 
 const DISABLED: bool = false;
 
@@ -68,7 +71,7 @@ pub fn test() {
         }
     };
 
-    for snapshot_test in ALL_SNAPSHOT_TESTS {
+    for snapshot_test in STABLE_SNAPSHOT_TESTS {
         super::do_test(
             || qemu_run.run_snapshot(snapshot_test),
             "backcompat (see xtask/src/backcompat.rs for FIXME instructions)",

@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub const SNAPSHOT_TESTS_DIRECTORY: &str = "firmware/qemu";
-pub const ALL_SNAPSHOT_TESTS: [&str; 12] = [
+pub const STABLE_SNAPSHOT_TESTS: &[&str] = &[
     "log",
     "bitflags",
     "timestamp",
@@ -23,7 +23,9 @@ pub const ALL_SNAPSHOT_TESTS: [&str; 12] = [
     "hints",
     "hints_inner",
     "dbg",
+    "net",
 ];
+const NIGHTLY_SNAPSHOT_TESTS: &[&str] = &["alloc"];
 
 #[derive(Clone, Debug)]
 pub struct Snapshot(String);
@@ -38,12 +40,12 @@ impl FromStr for Snapshot {
     type Err = String;
 
     fn from_str(test: &str) -> Result<Self, Self::Err> {
-        if ALL_SNAPSHOT_TESTS.contains(&test) {
+        if STABLE_SNAPSHOT_TESTS.contains(&test) || NIGHTLY_SNAPSHOT_TESTS.contains(&test) {
             Ok(Self(String::from(test)))
         } else {
             Err(format!(
                 "Specified test '{}' does not exist, available tests are: {:?}",
-                test, ALL_SNAPSHOT_TESTS
+                test, STABLE_SNAPSHOT_TESTS
             ))
         }
     }
@@ -64,16 +66,15 @@ pub fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
 }
 
 fn test_all_snapshots(overwrite: bool) {
-    let mut tests = ALL_SNAPSHOT_TESTS.to_vec();
+    let mut tests = STABLE_SNAPSHOT_TESTS.to_vec();
 
     if rustc_is_nightly() {
-        tests.extend(["alloc", "net"]);
+        tests.extend(NIGHTLY_SNAPSHOT_TESTS);
     }
 
     for test in tests {
         let features = match test {
             "alloc" => "alloc",
-            "net" => "ip_in_core",
             _ => "",
         };
 

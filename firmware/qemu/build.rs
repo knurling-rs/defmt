@@ -14,4 +14,7 @@ fn main() {
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=memory.x");
+
+    // allow #[cfg(never)]
+    println!("cargo::rustc-check-cfg=cfg(never)");
 }
