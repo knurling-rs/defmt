@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#831]: Fix CI
 - [#830]: `book`: Add section about feature-gated derive Format
 - [#828]: `defmt-decoder`: Update to `gimli 0.29`
 - [#821]: Cleanup
@@ -15,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#811]: `book`: Add some examples for byte slice/array hints as well
 - [#800]: `defmt-macros`: Fix generic trait bounds in Format derive macro
 
+[#831]: https://github.com/knurling-rs/defmt/pull/831
 [#828]: https://github.com/knurling-rs/defmt/pull/828
 [#821]: https://github.com/knurling-rs/defmt/pull/821
 [#813]: https://github.com/knurling-rs/defmt/pull/813

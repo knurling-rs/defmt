@@ -39,6 +39,7 @@ pub struct Encoder {
 
 impl Encoder {
     /// Create a new `Encoder`.
+    #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
         Self {
             inner: inner::Encoder::new(),

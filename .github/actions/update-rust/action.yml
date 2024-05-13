@@ -1,0 +1,14 @@
+name: "Update Rust"
+description: "Update the Rust toolchain"
+inputs:
+  toolchain:
+    required: true
+    default: "stable"
+    description: "The toolchain channel or version to use"
+runs:
+  using: "composite"
+  steps:
+    - run: rustup update --no-self-update ${{ inputs.toolchain }}
+      shell: bash
+    - run: rustup default ${{ inputs.toolchain }}
+      shell: bash
