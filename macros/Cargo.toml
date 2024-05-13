@@ -26,4 +26,4 @@ syn = { version = "2", features = ["full", "extra-traits"] }
 [dev-dependencies]
 maplit = "1"
 pretty_assertions = "1"
-rstest = { version = "0.17", default-features = false }
+rstest = { version = "0.19", default-features = false }

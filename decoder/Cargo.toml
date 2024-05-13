@@ -35,7 +35,7 @@ gimli = { version = "0.29", default-features = false, features = [
     "read",
     "std",
 ] }
-object = { version = "0.32", default-features = false, features = [
+object = { version = "0.35", default-features = false, features = [
     "read_core",
     "elf",
     "std",
