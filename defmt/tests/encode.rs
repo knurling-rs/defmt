@@ -438,6 +438,7 @@ fn c_like_enum() {
 }
 
 #[test]
+#[allow(dead_code)]
 fn uninhabited_enum() {
     #[derive(Format)]
     enum Void {}
