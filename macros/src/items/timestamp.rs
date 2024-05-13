@@ -35,7 +35,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         const _: () = {
             #[export_name = "_defmt_timestamp"]
             #[inline(never)]
-            fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
+            fn defmt_timestamp(fmt: defmt::Formatter<'_>) {
                 match (#(&(#formatting_exprs)),*) {
                     (#(#patterns),*) => {
                     // NOTE: No format string index, and no finalize call.
