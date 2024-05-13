@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.7] - 2024-05-13
+
 - [#831]: Fix CI
 - [#830]: `book`: Add section about feature-gated derive Format
 - [#828]: `defmt-decoder`: Update to `gimli 0.29`
@@ -624,7 +626,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.7...main
+[v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...defmt-v0.3.7
 [v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...defmt-v0.3.6
 [v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...defmt-v0.3.5
 [v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...defmt-v0.3.4
