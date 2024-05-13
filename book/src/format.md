@@ -38,7 +38,7 @@ It is also possible to feature-gate the implementation by defining
 #[derive(Copy, Clone)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Header {
-    ...
+    // ...
 }
 ```
 
