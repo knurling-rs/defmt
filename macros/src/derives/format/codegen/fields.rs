@@ -50,18 +50,18 @@ pub(crate) fn codegen(
             .unwrap_or_else(|| format_ident!("arg{}", index));
         // Find the required trait bounds for the field and add the formatting statement depending on the field type and the formatting options
         let bound: Option<syn::Path> = if let Some(FormatOption::Debug2Format) = format_opt {
-            stmts.push(quote!(::defmt::export::fmt(&defmt::Debug2Format(&#ident))));
+            stmts.push(quote!(defmt::export::fmt(&defmt::Debug2Format(&#ident))));
             field_ty.map(|_| parse_quote!(::core::fmt::Debug))
         } else if let Some(FormatOption::Display2Format) = format_opt {
-            stmts.push(quote!(::defmt::export::fmt(&defmt::Display2Format(&#ident))));
+            stmts.push(quote!(defmt::export::fmt(&defmt::Display2Format(&#ident))));
             field_ty.map(|_| parse_quote!(::core::fmt::Display))
         } else if ty == consts::TYPE_FORMAT {
-            stmts.push(quote!(::defmt::export::fmt(#ident)));
-            field_ty.map(|_| parse_quote!(::defmt::Format))
+            stmts.push(quote!(defmt::export::fmt(#ident)));
+            field_ty.map(|_| parse_quote!(defmt::Format))
         } else {
             let method = format_ident!("{}", ty);
-            stmts.push(quote!(::defmt::export::#method(#ident)));
-            field_ty.map(|_| parse_quote!(::defmt::Format))
+            stmts.push(quote!(defmt::export::#method(#ident)));
+            field_ty.map(|_| parse_quote!(defmt::Format))
         };
         if let Some(bound) = bound {
             where_predicates.push(parse_quote!(#field_ty: #bound));

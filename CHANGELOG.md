@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#835]: Fix some `defmt` crate name usage
+
 ## [v0.3.7] - 2024-05-13
 
 - [#831]: Fix CI
