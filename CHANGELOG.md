@@ -7,14 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#835]: Fix some `defmt` crate name usage
+## defmt-macros v0.3.9
+
+- [#835]: `macros`: Fix some `defmt` crate name usage
 
 ## [v0.3.7] - 2024-05-13
 
-- [#831]: Fix CI
+- [#831]: `CI`: Fix CI
 - [#830]: `book`: Add section about feature-gated derive Format
 - [#828]: `defmt-decoder`: Update to `gimli 0.29`
-- [#821]: Cleanup
+- [#821]: Clean up
 - [#813]: doc: add note for the alloc feature flag
 - [#812]: `defmt`: Add a feature to stop linking a default panic handler
 - [#811]: `book`: Add some examples for byte slice/array hints as well
