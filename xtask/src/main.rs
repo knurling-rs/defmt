@@ -9,8 +9,8 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 
 use crate::{
-    snapshot::{test_snapshot, Snapshot},
-    utils::{run_capturing_stdout, run_command},
+    snapshot::{test_snapshot, Snapshot, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY},
+    utils::{run_capturing_stdout, run_command, rustc_is_nightly},
 };
 
 static ALL_ERRORS: Mutex<Vec<String>> = Mutex::new(Vec::new());
@@ -150,6 +150,28 @@ fn test_cross(deny_warnings: bool) {
                 "cross",
             );
         }
+
+        if rustc_is_nightly() {
+            do_test(
+                || {
+                    run_command(
+                        "cargo",
+                        &[
+                            "check",
+                            "--target",
+                            target,
+                            "-p",
+                            "defmt",
+                            "--features",
+                            "ip_in_core",
+                        ],
+                        None,
+                        &env,
+                    )
+                },
+                "cross",
+            );
+        }
     }
 
     do_test(
@@ -210,6 +232,13 @@ fn test_cross(deny_warnings: bool) {
         },
         "lint",
     );
+
+    if rustc_is_nightly() {
+        do_test(
+            || run_command("cargo", &["check", "--features", "ip_in_core"], None, &env),
+            "cross",
+        );
+    }
 }
 
 fn test_book() {

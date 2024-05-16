@@ -80,7 +80,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - nightly # some tests use unstable features
+          # - nightly # some tests use unstable features
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
