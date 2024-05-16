@@ -137,21 +137,19 @@ fn test_cross(deny_warnings: bool) {
     };
 
     for target in &targets {
-        do_test(
-            || run_command("cargo", &["check", "--target", target, "-p", "defmt"], None, &env),
-            "cross",
-        );
-        do_test(
-            || {
-                run_command(
-                    "cargo",
-                    &["check", "--target", target, "-p", "defmt", "--features", "alloc"],
-                    None,
-                    &env,
-                )
-            },
-            "cross",
-        );
+        for feature in ["", "alloc"] {
+            do_test(
+                || {
+                    run_command(
+                        "cargo",
+                        &["check", "--target", target, "-p", "defmt", "--features", feature],
+                        None,
+                        &env,
+                    )
+                },
+                "cross",
+            );
+        }
     }
 
     do_test(
