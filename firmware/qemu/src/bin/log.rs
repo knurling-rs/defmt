@@ -64,40 +64,40 @@ fn main() -> ! {
         2,
         200_000,
         4,
-        u128::max_value()
+        u128::MAX
     );
 
     defmt::info!(
         "u64: 0 = {=u64}, 1 = {=u64}, MAX = {=u64}, MIN = {=u64}",
         0,
         1,
-        u64::max_value(),
-        u64::min_value()
+        u64::MAX,
+        u64::MIN
     );
 
     defmt::info!(
         "i64: 0 = {=i64}, -1 = {=i64}, MAX = {=i64}, MIN = {=i64}",
         0,
         -1,
-        i64::max_value(),
-        i64::min_value()
+        i64::MAX,
+        i64::MIN
     );
 
     defmt::info!(
         "isize: 0 = {=isize}, -1 = {=isize}, MAX = {=isize}, MIN = {=isize}",
         0,
         -1,
-        isize::max_value(),
-        isize::min_value()
+        isize::MAX,
+        isize::MIN
     );
     defmt::info!(
         "isize: 0 = {=?}, -1 = {=?}, MAX = {=?}, MIN = {=?}",
         0,
         -1,
-        isize::max_value(),
-        isize::min_value()
+        isize::MAX,
+        isize::MIN
     );
-    defmt::info!("usize: 0 = {=usize}, MAX = {=usize}", 0, usize::max_value());
+    defmt::info!("usize: 0 = {=usize}, MAX = {=usize}", 0, usize::MAX);
     defmt::info!("bitfields {0=0..3} {0=5..7}", 0b0110_0011_1101_0110u16);
     defmt::trace!("log trace");
     defmt::debug!("log debug");
@@ -557,16 +557,16 @@ fn main() -> ! {
         "i128: 0 = {=i128}, -1 = {=i128}, MAX = {=i128}, MIN = {=i128}",
         0,
         -1,
-        i128::max_value(),
-        i128::min_value()
+        i128::MAX,
+        i128::MIN
     );
 
     defmt::info!(
         "u128: 0 = {=u128}, -1 = {=u128}, MAX = {=u128}, MIN = {=u128}",
         0,
         1,
-        u128::max_value(),
-        u128::min_value()
+        u128::MAX,
+        u128::MIN
     );
 
     defmt::info!("{=?}", 340282366920938u128);
