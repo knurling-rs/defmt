@@ -18,9 +18,11 @@ homepage = "https://knurling.ferrous-systems.com/"
 version = "0.3.7"
 
 [features]
+default = ["ip_in_core"]
+
 alloc = []
-ip_in_core = []
 avoid-default-panic = []
+ip_in_core = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #
