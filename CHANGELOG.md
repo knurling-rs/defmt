@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#xxx]: `CI`: Fix tests
 - [#805]: `defmt`: Switch to Cargo instruction compatible with older versions of Cargo
 
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
 [#838]: https://github.com/knurling-rs/defmt/pull/838
 
 ## defmt-macros v0.3.9
