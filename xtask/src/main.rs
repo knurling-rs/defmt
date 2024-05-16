@@ -217,6 +217,7 @@ fn test_cross(deny_warnings: bool) {
 fn test_book() {
     println!("🧪 book");
     do_test(|| run_command("cargo", &["clean"], None, &[]), "book");
+    do_test(|| run_command("cargo", &["clean"], Some("firmware"), &[]), "book");
 
     do_test(
         || {
