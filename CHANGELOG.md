@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.8] - 2024-05-17
+
 - [#840]: `defmt`: Support pre-1.77
 - [#839]: `CI`: Fix tests
 - [#838]: `defmt`: Switch to Cargo instruction compatible with older versions of Cargo
@@ -638,7 +640,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.7...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.8...main
+[v0.3.8]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.7...defmt-v0.3.8
 [v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...defmt-v0.3.7
 [v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...defmt-v0.3.6
 [v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...defmt-v0.3.5
