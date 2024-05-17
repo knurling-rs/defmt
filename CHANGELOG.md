@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#840]: `defmt`: Support pre-1.77
 - [#839]: `CI`: Fix tests
 - [#838]: `defmt`: Switch to Cargo instruction compatible with older versions of Cargo
 
+[#840]: https://github.com/knurling-rs/defmt/pull/840
 [#839]: https://github.com/knurling-rs/defmt/pull/839
 [#838]: https://github.com/knurling-rs/defmt/pull/838
 

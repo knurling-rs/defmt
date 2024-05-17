@@ -137,7 +137,7 @@ fn test_cross(deny_warnings: bool) {
     };
 
     for target in &targets {
-        for feature in ["", "alloc"] {
+        for feature in ["", "alloc", "ip_in_core"] {
             do_test(
                 || {
                     run_command(

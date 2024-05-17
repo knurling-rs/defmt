@@ -20,7 +20,7 @@ version = "0.3.7"
 [features]
 alloc = []
 avoid-default-panic = []
-ip_in_core = [] # no-op feature, should be removed at next breaking release
+ip_in_core = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #

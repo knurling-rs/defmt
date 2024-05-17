@@ -74,6 +74,7 @@ pub fn test() {
     for snapshot_test in all_snapshot_tests() {
         let feature = match snapshot_test {
             "alloc" => "alloc",
+            "net" => "ip_in_core",
             _ => "",
         };
 
