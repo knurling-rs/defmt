@@ -5,5 +5,5 @@ use crate::construct;
 
 pub(crate) fn expand(args: TokenStream) -> TokenStream {
     let literal = parse_macro_input!(args as LitStr);
-    construct::interned_string(&literal.value(), "str", false).into()
+    construct::interned_string(&literal.value(), "str", false, None).into()
 }

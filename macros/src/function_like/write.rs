@@ -34,7 +34,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         log_args.format_string.span(),
     );
 
-    let format_tag = construct::interned_string(&format_string, "write", false);
+    let format_tag = construct::interned_string(&format_string, "write", false, None);
     quote!({
         let _typecheck_formatter: defmt::Formatter<'_> = #formatter;
         match (#(&(#formatting_exprs)),*) {
