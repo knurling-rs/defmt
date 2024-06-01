@@ -4,6 +4,7 @@ use colored::{Color, ColoredString, Colorize, Styles};
 use dissimilar::Chunk;
 use log::{Level, Record as LogRecord};
 use std::{fmt::Write, path::Path};
+use regex::Regex;
 
 mod parser;
 
@@ -691,11 +692,15 @@ fn build_formatted_string(
     log_color: Option<LogColor>,
 ) -> String {
     let s = ColoredString::from(s);
+    let styled_string_length = s.len();
+    let length_without_styles = string_excluding_ansi(&s).len();
+    let length_of_ansi_sequences = styled_string_length - length_without_styles;
+
     let s = apply_color(s, log_color, level);
     let colored_str = apply_styles(s, format.style.as_ref());
 
     let alignment = format.alignment.unwrap_or(Alignment::Left);
-    let width = format.width.unwrap_or(default_width);
+    let width = format.width.unwrap_or(default_width) + length_of_ansi_sequences;
     let padding = format.padding.unwrap_or(Padding::Space);
 
     let mut result = String::new();
@@ -724,4 +729,48 @@ fn format_has_timestamp(segments: &[LogSegment]) -> bool {
         }
     }
     false
+}
+
+/// Returns the given string excluding ANSI control sequences.
+fn string_excluding_ansi(s: &str) -> String {
+    // Regular expression to match ANSI escape sequences
+    let re = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+
+    // Replace all ANSI sequences with an empty string
+    re.replace_all(s, "").to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_left_aligned_styled_string() {
+        let format = LogFormat {
+            color: Some(LogColor::Color(Color::Green)),
+            width: Some(10),
+            alignment: Some(Alignment::Left),
+            padding: Some(Padding::Space),
+            style: Some(vec![Styles::Bold]),
+        };
+
+        let s = build_formatted_string("test", &format, 0, None, None);
+        let string_without_styles = string_excluding_ansi(&s);
+        assert_eq!(string_without_styles, "test      ");
+    }
+
+    #[test]
+    fn test_right_aligned_styled_string() {
+        let format = LogFormat {
+            color: Some(LogColor::Color(Color::Green)),
+            width: Some(10),
+            alignment: Some(Alignment::Right),
+            padding: Some(Padding::Space),
+            style: Some(vec![Styles::Bold]),
+        };
+
+        let s = build_formatted_string("test", &format, 0, None, None);
+        let string_without_styles = string_excluding_ansi(&s);
+        assert_eq!(string_without_styles, "      test");
+    }
 }
