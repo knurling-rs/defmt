@@ -3,8 +3,8 @@ use crate::Frame;
 use colored::{Color, ColoredString, Colorize, Styles};
 use dissimilar::Chunk;
 use log::{Level, Record as LogRecord};
-use std::{fmt::Write, path::Path};
 use regex::Regex;
+use std::{fmt::Write, path::Path};
 
 mod parser;
 
