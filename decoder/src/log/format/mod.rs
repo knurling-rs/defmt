@@ -314,10 +314,10 @@ impl<'a> FormatterConfig<'a> {
 
 impl InternalFormatter {
     fn new(config: FormatterConfig, source: Source) -> Self {
-        const FORMAT: &str = "{L} {s}";
-        const FORMAT_WITH_LOCATION: &str = "{L} {s}\n└─ {m} @ {F}:{l}";
-        const FORMAT_WITH_TIMESTAMP: &str = "{t} {L} {s}";
-        const FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
+        const FORMAT: &str = "{{[{L}]%bold} {s}%werror}";
+        const FORMAT_WITH_LOCATION: &str = "{{[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
+        const FORMAT_WITH_TIMESTAMP: &str = "{{t:>8} {[{L}]%bold} {s}%werror}";
+        const FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str = "{{t:>8} {[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
 
         let format = match config.format {
             FormatterFormat::Default { with_location } => {
