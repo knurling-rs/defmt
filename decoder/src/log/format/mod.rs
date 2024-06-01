@@ -317,7 +317,8 @@ impl InternalFormatter {
         const FORMAT: &str = "{{[{L}]%bold} {s}%werror}";
         const FORMAT_WITH_LOCATION: &str = "{{[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
         const FORMAT_WITH_TIMESTAMP: &str = "{{t:>8} {[{L}]%bold} {s}%werror}";
-        const FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str = "{{t:>8} {[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
+        const FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str =
+            "{{t:>8} {[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
 
         let format = match config.format {
             FormatterFormat::Default { with_location } => {
