@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#845]: `decoder`: fix println!() records being printed with formatting
+
+[#845]: https://github.com/knurling-rs/defmt/pull/845
+
 ## [v0.3.8] - 2024-05-17
 
 - [#840]: `defmt`: Support pre-1.77
