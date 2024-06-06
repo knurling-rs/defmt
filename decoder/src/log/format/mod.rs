@@ -265,8 +265,10 @@ enum Record<'a> {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum FormatterFormat<'a> {
     Default { with_location: bool },
+    Legacy { with_location: bool },
     Custom(&'a str),
 }
 
@@ -320,6 +322,11 @@ impl InternalFormatter {
         const FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str =
             "{{t:>8} {[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
 
+        const LEGACY_FORMAT: &str = "{L} {s}";
+        const LEGACY_FORMAT_WITH_LOCATION: &str = "{L} {s}\n└─ {m} @ {F}:{l}";
+        const LEGACY_FORMAT_WITH_TIMESTAMP: &str = "{t} {L} {s}";
+        const LEGACY_FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
+
         let format = match config.format {
             FormatterFormat::Default { with_location } => {
                 let mut format = match (with_location, config.is_timestamp_available) {
@@ -327,6 +334,21 @@ impl InternalFormatter {
                     (false, true) => FORMAT_WITH_TIMESTAMP,
                     (true, false) => FORMAT_WITH_LOCATION,
                     (true, true) => FORMAT_WITH_TIMESTAMP_AND_LOCATION,
+                }
+                .to_string();
+
+                if source == Source::Host {
+                    format.insert_str(0, "(HOST) ");
+                }
+
+                format
+            }
+            FormatterFormat::Legacy { with_location } => {
+                let mut format = match (with_location, config.is_timestamp_available) {
+                    (false, false) => LEGACY_FORMAT,
+                    (false, true) => LEGACY_FORMAT_WITH_TIMESTAMP,
+                    (true, false) => LEGACY_FORMAT_WITH_LOCATION,
+                    (true, true) => LEGACY_FORMAT_WITH_TIMESTAMP_AND_LOCATION,
                 }
                 .to_string();
 
