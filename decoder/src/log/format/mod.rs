@@ -130,7 +130,7 @@ pub(super) struct LogSegment {
     pub(super) format: LogFormat,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub(super) struct LogFormat {
     pub(super) width: Option<usize>,
     pub(super) color: Option<LogColor>,
@@ -345,13 +345,13 @@ impl InternalFormatter {
             if format_has_timestamp && !config.is_timestamp_available {
                 log::warn!(
                     "logger format contains timestamp but no timestamp implementation \
-                    was provided; consider removing the timestamp (`{{t}}` or `{{T}}`) from the \
+                    was provided; consider removing the timestamp (`{{t}}`) from the \
                     logger format or provide a `defmt::timestamp!` implementation"
                 );
             } else if !format_has_timestamp && config.is_timestamp_available {
                 log::warn!(
                     "`defmt::timestamp!` implementation was found, but timestamp is not \
-                    part of the log format; consider adding the timestamp (`{{t}}` or `{{T}}`) \
+                    part of the log format; consider adding the timestamp (`{{t}}`) \
                     argument to the log format"
                 );
             }
@@ -362,8 +362,16 @@ impl InternalFormatter {
 
     fn format(&self, record: &Record) -> String {
         let mut buf = String::new();
-        for segment in &self.format {
-            let s = self.build_segment(record, segment);
+        // Only format logs, not printlns
+        // printlns do not have a log level
+        if get_log_level_of_record(record).is_some() {
+            for segment in &self.format {
+                let s = self.build_segment(record, segment);
+                write!(buf, "{s}").expect("writing to String cannot fail");
+            }
+        } else {
+            let empty_format: LogFormat = Default::default();
+            let s = self.build_log(record, &empty_format);
             write!(buf, "{s}").expect("writing to String cannot fail");
         }
         buf
