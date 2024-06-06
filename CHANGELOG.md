@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### defmt-decoder v0.3.12
+
 - [#847]: `decoder`: Fix log format width specifier not working as expected
 - [#845]: `decoder`: fix println!() records being printed with formatting
 
@@ -23,7 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#839]: https://github.com/knurling-rs/defmt/pull/839
 [#838]: https://github.com/knurling-rs/defmt/pull/838
 
-## defmt-macros v0.3.9
+### defmt-macros v0.3.9
 
 - [#835]: `macros`: Fix some `defmt` crate name usage
 
@@ -60,7 +62,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#789]: https://github.com/knurling-rs/defmt/pull/789
 [#783]: https://github.com/knurling-rs/defmt/pull/783
 
-## defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
+### defmt-decoder v0.3.9, defmt-print v0.3.10 - 2023-10-04
 
 - [#784]: `defmt-decoder`: Prepare `defmt-decoder v0.3.9` release
 - [#781]: `defmt-decoder`: Add `pub struct Formatter` to `defmt_decoder::log`
@@ -78,7 +80,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#771]: https://github.com/knurling-rs/defmt/pull/771
 [#769]: https://github.com/knurling-rs/defmt/pull/769
 
-## defmt-decoder v0.3.8, defmt-print v0.3.8 - 2023-08-01
+### defmt-decoder v0.3.8, defmt-print v0.3.8 - 2023-08-01
 
 - [#766] `decoder::log`: Rename `PrettyLogger` to `StdoutLogger`
 - [#765]: `defmt-decoder`: Add support for customizable logger formatting
@@ -102,7 +104,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#756]: https://github.com/knurling-rs/defmt/pull/756
 [#753]: https://github.com/knurling-rs/defmt/pull/753
 
-## defmt-decoder v0.3.7, defmt-macros v0.3.5, defmt-parser v0.3.3, defmt-print v0.3.7 - 2023-05-05
+### defmt-decoder v0.3.7, defmt-macros v0.3.5, defmt-parser v0.3.3, defmt-print v0.3.7 - 2023-05-05
 
 - [#754]: Release `defmt-decoder v0.3.7`, `defmt-macros v0.3.5`, `defmt-parser v0.3.3`, `defmt-print v0.3.7`
 - [#750]: Add support for decoding wire format version 3
@@ -144,7 +146,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#603]: https://github.com/knurling-rs/defmt/pull/734
 [#536]: https://github.com/knurling-rs/defmt/pull/735
 
-## defmt-decoder v0.3.4, defmt-print v0.3.4
+### defmt-decoder v0.3.4, defmt-print v0.3.4
 
 - [#729]: Release `defmt-decoder v0.3.4`, `defmt-print v0.3.4`
 - [#726]: `defmt-decoder`: Remove difference in favor of dissimilar
@@ -161,7 +163,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#710]: https://github.com/knurling-rs/defmt/pull/710
 [#706]: https://github.com/knurling-rs/defmt/pull/706
 
-## defmt-decoder v0.3.3, defmt-macros v0.3.3, defmt-print v0.3.3, vdefmt-rtt 0.4.0
+### defmt-decoder v0.3.3, defmt-macros v0.3.3, defmt-print v0.3.3, vdefmt-rtt 0.4.0
 - [#704]: Release `defmt-macros 0.3.3`, `defmt-print 0.3.3`, `defmt-rtt 0.4.0`
 - [#703]: `defmt-print`: Update to `clap 4.0`.
 - [#701]: `defmt-rtt`: Pre-relase cleanup
