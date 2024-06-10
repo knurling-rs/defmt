@@ -29,7 +29,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     );
 
     let var_name = format_ident!("S");
-    let var_item = construct::static_variable(&var_name, &format_string, "timestamp");
+    let var_item = construct::static_variable(&var_name, &format_string, "timestamp", None);
 
     quote!(
         const _: () = {

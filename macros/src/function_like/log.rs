@@ -36,7 +36,8 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
         args.format_string.span(),
     );
 
-    let header = construct::interned_string(&format_string, level.as_str(), true);
+    let header =
+        construct::interned_string(&format_string, level.as_str(), true, Some(level.as_str()));
     let env_filter = EnvFilter::from_env_var();
 
     if let Some(filter_check) = env_filter.path_check(level) {

@@ -11,7 +11,7 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
     if data.variants.is_empty() {
         return Ok(EncodeData {
             stmts: vec![quote!(match *self {})],
-            format_tag: construct::interned_string("!", "derived", false),
+            format_tag: construct::interned_string("!", "derived", false, None),
             where_predicates: vec![],
         });
     }
@@ -49,7 +49,7 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
         ))
     }
 
-    let format_tag = construct::interned_string(&format_string, "derived", false);
+    let format_tag = construct::interned_string(&format_string, "derived", false, None);
     let stmts = vec![quote!(match self {
         #(#match_arms)*
     })];
