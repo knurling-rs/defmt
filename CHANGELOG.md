@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - [#847]: `decoder`: Fix log format width specifier not working as expected
 - [#845]: `decoder`: fix println!() records being printed with formatting
+- [#843]: `defmt`: Sort IDs of log msgs by severity to allow runtime filtering by severity
 
 [#847]: https://github.com/knurling-rs/defmt/pull/847
 [#845]: https://github.com/knurling-rs/defmt/pull/845
+[#843]: https://github.com/knurling-rs/defmt/pull/843
 
 ## [v0.3.8] - 2024-05-17
 
