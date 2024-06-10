@@ -316,11 +316,11 @@ impl<'a> FormatterConfig<'a> {
 
 impl InternalFormatter {
     fn new(config: FormatterConfig, source: Source) -> Self {
-        const FORMAT: &str = "{{[{L}]%bold} {s}%werror}";
-        const FORMAT_WITH_LOCATION: &str = "{{[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
-        const FORMAT_WITH_TIMESTAMP: &str = "{{t:>8} {[{L}]%bold} {s}%werror}";
+        const FORMAT: &str = "{[{L}]%bold} {s}";
+        const FORMAT_WITH_LOCATION: &str = "{[{L}]%bold} {s} {({c:bold}:{ff}:{l:1})%dimmed}";
+        const FORMAT_WITH_TIMESTAMP: &str = "{t} {[{L}]%bold} {s}";
         const FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str =
-            "{{t:>8} {[{L}]%bold} {{c:bold}/{ff}:{l}%45} {s}%werror}";
+            "{t} {[{L}]%bold} {s} {({c:bold}:{ff}:{l:1})%dimmed}";
 
         const LEGACY_FORMAT: &str = "{L} {s}";
         const LEGACY_FORMAT_WITH_LOCATION: &str = "{L} {s}\n└─ {m} @ {F}:{l}";
