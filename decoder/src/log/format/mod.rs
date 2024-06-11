@@ -186,17 +186,20 @@ impl LogSegment {
     }
 }
 
+/// A formatter for microcontroller-generated frames
 pub struct Formatter {
     formatter: InternalFormatter,
 }
 
 impl Formatter {
+    /// Create a new formatter, using the given configuration.
     pub fn new(config: FormatterConfig) -> Self {
         Self {
             formatter: InternalFormatter::new(config, Source::Defmt),
         }
     }
 
+    /// Format a defmt frame using this formatter.
     pub fn format_frame<'a>(
         &self,
         frame: Frame<'a>,
@@ -227,22 +230,26 @@ impl Formatter {
         }
     }
 
+    /// Format the given [`DefmtRecord`] (which is an internal type).
     pub(super) fn format(&self, record: &DefmtRecord) -> String {
         self.formatter.format(&Record::Defmt(record))
     }
 }
 
+/// A formatter for host-generated frames
 pub struct HostFormatter {
     formatter: InternalFormatter,
 }
 
 impl HostFormatter {
+    /// Create a new host formatter using the given config
     pub fn new(config: FormatterConfig) -> Self {
         Self {
             formatter: InternalFormatter::new(config, Source::Host),
         }
     }
 
+    /// Format the given [`log::Record`].
     pub fn format(&self, record: &LogRecord) -> String {
         self.formatter.format(&Record::Host(record))
     }
@@ -267,26 +274,114 @@ enum Record<'a> {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum FormatterFormat<'a> {
-    Default { with_location: bool },
-    Legacy { with_location: bool },
+    /// The classic defmt two-line format.
+    ///
+    /// Looks like:
+    ///
+    /// ```text
+    /// INFO This is a log message
+    /// └─ test_lib::hello @ /Users/jonathan/Documents/knurling/test-lib/src/lib.rs:8
+    /// ```
+    Default {
+        with_location: bool,
+    },
+    /// A one-line format.
+    ///
+    /// Looks like:
+    ///
+    /// ```text
+    /// [INFO ] This is a log message (crate_name test-lib/src/lib.rs:8)
+    /// ```
+    OneLine {
+        with_location: bool,
+    },
     Custom(&'a str),
+}
+
+impl FormatterFormat<'static> {
+    /// Parse a string into a choice of [`FormatterFormat`].
+    ///
+    /// Unknown strings return `None`.
+    pub fn from_string(s: &str, with_location: bool) -> Option<FormatterFormat<'static>> {
+        match s {
+            "default" => Some(FormatterFormat::Default { with_location }),
+            "oneline" => Some(FormatterFormat::OneLine { with_location }),
+            _ => None,
+        }
+    }
+
+    /// Get a list of valid string names for the various format options.
+    ///
+    /// This will *not* include an entry for [`FormatterFormat::Custom`] because
+    /// that requires a format string argument.
+    pub fn get_options() -> impl Iterator<Item = &'static str> {
+        ["default", "oneline"].iter().cloned()
+    }
 }
 
 impl Default for FormatterFormat<'_> {
     fn default() -> Self {
-        FormatterFormat::Default {
+        FormatterFormat::OneLine {
             with_location: false,
         }
     }
 }
 
+/// Describes one of the fixed format string sets.
+trait Style {
+    const FORMAT: &'static str;
+    const FORMAT_WITH_TS: &'static str;
+    const FORMAT_WITH_LOC: &'static str;
+    const FORMAT_WITH_TS_LOC: &'static str;
+
+    /// Return a suitable format string, given these options.
+    fn get_string(with_location: bool, has_timestamp: bool) -> &'static str {
+        match (with_location, has_timestamp) {
+            (false, false) => Self::FORMAT,
+            (false, true) => Self::FORMAT_WITH_TS,
+            (true, false) => Self::FORMAT_WITH_LOC,
+            (true, true) => Self::FORMAT_WITH_TS_LOC,
+        }
+    }
+}
+
+/// Implements the `FormatterFormat::Default` style.
+struct DefaultStyle;
+
+impl Style for DefaultStyle {
+    const FORMAT: &'static str = "{L} {s}";
+    const FORMAT_WITH_LOC: &'static str = "{L} {s}\n└─ {m} @ {F}:{l}";
+    const FORMAT_WITH_TS: &'static str = "{t} {L} {s}";
+    const FORMAT_WITH_TS_LOC: &'static str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
+}
+
+/// Implements the `FormatterFormat::OneLine` style.
+struct OneLineStyle;
+
+impl Style for OneLineStyle {
+    const FORMAT: &'static str = "{[{L}]%bold} {s}";
+    const FORMAT_WITH_LOC: &'static str = "{[{L}]%bold} {s} {({c:bold} {fff}:{l:1})%dimmed}";
+    const FORMAT_WITH_TS: &'static str = "{t} {[{L}]%bold} {s}";
+    const FORMAT_WITH_TS_LOC: &'static str = "{t} {[{L}]%bold} {s} {({c:bold} {fff}:{l:1})%dimmed}";
+}
+
+/// Settings that control how defmt frames should be formatted.
 #[derive(Debug, Default)]
 pub struct FormatterConfig<'a> {
+    /// The format to use
     pub format: FormatterFormat<'a>,
+    /// If `true`, then the logs should include a timestamp.
+    /// 
+    /// Not all targets can supply a timestamp, and if not, it should be
+    /// omitted.
     pub is_timestamp_available: bool,
 }
 
 impl<'a> FormatterConfig<'a> {
+    /// Create a new custom formatter config.
+    /// 
+    /// This allows the user to supply a custom log-format string. See the
+    /// "Custom Log Output" section of the defmt book for details of the format.
     pub fn custom(format: &'a str) -> Self {
         FormatterConfig {
             format: FormatterFormat::Custom(format),
@@ -294,15 +389,27 @@ impl<'a> FormatterConfig<'a> {
         }
     }
 
+    /// Modify a formatter configuration, setting the 'timestamp available' flag
+    /// to true.
     pub fn with_timestamp(mut self) -> Self {
         self.is_timestamp_available = true;
         self
     }
 
+    /// Modify a formatter configuration, setting the 'with_location' flag
+    /// to true.
+    /// 
+    /// Do not use this with a custom log formatter.
     pub fn with_location(mut self) -> Self {
         // TODO: Should we warn the user that trying to set a location
         //       for a custom format won't work?
         match self.format {
+            FormatterFormat::OneLine { with_location: _ } => {
+                self.format = FormatterFormat::OneLine {
+                    with_location: true,
+                };
+                self
+            }
             FormatterFormat::Default { with_location: _ } => {
                 self.format = FormatterFormat::Default {
                     with_location: true,
@@ -316,41 +423,21 @@ impl<'a> FormatterConfig<'a> {
 
 impl InternalFormatter {
     fn new(config: FormatterConfig, source: Source) -> Self {
-        const FORMAT: &str = "{[{L}]%bold} {s}";
-        const FORMAT_WITH_LOCATION: &str = "{[{L}]%bold} {s} {({c:bold}:{ff}:{l:1})%dimmed}";
-        const FORMAT_WITH_TIMESTAMP: &str = "{t} {[{L}]%bold} {s}";
-        const FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str =
-            "{t} {[{L}]%bold} {s} {({c:bold}:{ff}:{l:1})%dimmed}";
-
-        const LEGACY_FORMAT: &str = "{L} {s}";
-        const LEGACY_FORMAT_WITH_LOCATION: &str = "{L} {s}\n└─ {m} @ {F}:{l}";
-        const LEGACY_FORMAT_WITH_TIMESTAMP: &str = "{t} {L} {s}";
-        const LEGACY_FORMAT_WITH_TIMESTAMP_AND_LOCATION: &str = "{t} {L} {s}\n└─ {m} @ {F}:{l}";
-
         let format = match config.format {
             FormatterFormat::Default { with_location } => {
-                let mut format = match (with_location, config.is_timestamp_available) {
-                    (false, false) => FORMAT,
-                    (false, true) => FORMAT_WITH_TIMESTAMP,
-                    (true, false) => FORMAT_WITH_LOCATION,
-                    (true, true) => FORMAT_WITH_TIMESTAMP_AND_LOCATION,
-                }
-                .to_string();
-
+                let mut format =
+                    DefaultStyle::get_string(with_location, config.is_timestamp_available)
+                        .to_string();
                 if source == Source::Host {
                     format.insert_str(0, "(HOST) ");
                 }
 
                 format
             }
-            FormatterFormat::Legacy { with_location } => {
-                let mut format = match (with_location, config.is_timestamp_available) {
-                    (false, false) => LEGACY_FORMAT,
-                    (false, true) => LEGACY_FORMAT_WITH_TIMESTAMP,
-                    (true, false) => LEGACY_FORMAT_WITH_LOCATION,
-                    (true, true) => LEGACY_FORMAT_WITH_TIMESTAMP_AND_LOCATION,
-                }
-                .to_string();
+            FormatterFormat::OneLine { with_location } => {
+                let mut format =
+                    OneLineStyle::get_string(with_location, config.is_timestamp_available)
+                        .to_string();
 
                 if source == Source::Host {
                     format.insert_str(0, "(HOST) ");
