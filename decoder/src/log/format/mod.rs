@@ -371,7 +371,7 @@ pub struct FormatterConfig<'a> {
     /// The format to use
     pub format: FormatterFormat<'a>,
     /// If `true`, then the logs should include a timestamp.
-    /// 
+    ///
     /// Not all targets can supply a timestamp, and if not, it should be
     /// omitted.
     pub is_timestamp_available: bool,
@@ -379,7 +379,7 @@ pub struct FormatterConfig<'a> {
 
 impl<'a> FormatterConfig<'a> {
     /// Create a new custom formatter config.
-    /// 
+    ///
     /// This allows the user to supply a custom log-format string. See the
     /// "Custom Log Output" section of the defmt book for details of the format.
     pub fn custom(format: &'a str) -> Self {
@@ -398,7 +398,7 @@ impl<'a> FormatterConfig<'a> {
 
     /// Modify a formatter configuration, setting the 'with_location' flag
     /// to true.
-    /// 
+    ///
     /// Do not use this with a custom log formatter.
     pub fn with_location(mut self) -> Self {
         // TODO: Should we warn the user that trying to set a location

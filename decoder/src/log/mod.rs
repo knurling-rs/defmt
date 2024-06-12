@@ -1,5 +1,5 @@
 //! Handles the conversion of defmt frames to log messages (as strings).
-//! 
+//!
 //! Also provides interoperability utilities between [`defmt`] and the [`log`] crate.
 //!
 //! If you are implementing a custom defmt decoding tool, this module can make it easier to
