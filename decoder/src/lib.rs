@@ -1,9 +1,6 @@
 //! Decodes [`defmt`](https://github.com/knurling-rs/defmt) log frames
 //!
 //! NOTE: The decoder always runs on the host!
-//!
-//! This is an implementation detail of [`probe-run`](https://github.com/knurling-rs/probe-run) and
-//! not meant to be consumed by other tools at the moment so all the API is unstable.
 
 #![cfg(feature = "unstable")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -124,10 +121,13 @@ struct BitflagsKey {
     crate_name: Option<String>,
 }
 
+/// How a defmt frame is encoded
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum Encoding {
+    /// raw data, that is no encoding.
     Raw,
+    /// [Reverse Zero-compressing COBS encoding](https://github.com/Dirbaio/rzcobs)
     Rzcobs,
 }
 
@@ -144,6 +144,7 @@ impl FromStr for Encoding {
 }
 
 impl Encoding {
+    /// Can this encoding recover from missed bytes?
     pub const fn can_recover(&self) -> bool {
         match self {
             Encoding::Raw => false,
@@ -322,11 +323,12 @@ struct FormatSliceElement<'t> {
     args: Vec<Arg<'t>>,
 }
 
+/// Ways in which decoding a defmt frame can fail.
 #[derive(Debug, Eq, PartialEq)]
 pub enum DecodeError {
     /// More data is needed to decode the next frame.
     UnexpectedEof,
-
+    /// The frame was not in the expected format.
     Malformed,
 }
 
