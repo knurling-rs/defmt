@@ -6,9 +6,7 @@ fn ui() {
         .unwrap_or(false)
     {
         let t = trybuild::TestCases::new();
-        t.compile_fail("tests/ui/*.rs");
-
-        t.pass("tests/basic_usage.rs");
-        t.pass("tests/derive-bounds.rs");
+        t.compile_fail("tests/ui/fail/*.rs");
+        t.pass("tests/ui/pass/*.rs");
     }
 }
