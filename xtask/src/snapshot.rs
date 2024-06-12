@@ -10,20 +10,31 @@ use crate::{
 };
 
 pub const SNAPSHOT_TESTS_DIRECTORY: &str = "firmware/qemu";
-pub const ALL_SNAPSHOT_TESTS: [&str; 12] = [
-    "log",
-    "bitflags",
-    "timestamp",
-    "panic",
-    "assert",
-    "assert-eq",
-    "assert-ne",
-    "unwrap",
-    "defmt-test",
-    "hints",
-    "hints_inner",
-    "dbg",
-];
+
+pub(crate) fn all_snapshot_tests() -> Vec<&'static str> {
+    pub const STABLE_SNAPSHOT_TESTS: &[&str] = &[
+        "log",
+        "bitflags",
+        "timestamp",
+        "panic",
+        "assert",
+        "assert-eq",
+        "assert-ne",
+        "unwrap",
+        "defmt-test",
+        "hints",
+        "hints_inner",
+        "dbg",
+        "net",
+    ];
+    const NIGHTLY_SNAPSHOT_TESTS: &[&str] = &["alloc"];
+
+    let mut tests = STABLE_SNAPSHOT_TESTS.to_vec();
+    if rustc_is_nightly() {
+        tests.extend(NIGHTLY_SNAPSHOT_TESTS);
+    }
+    tests
+}
 
 #[derive(Clone, Debug)]
 pub struct Snapshot(String);
@@ -38,12 +49,12 @@ impl FromStr for Snapshot {
     type Err = String;
 
     fn from_str(test: &str) -> Result<Self, Self::Err> {
-        if ALL_SNAPSHOT_TESTS.contains(&test) {
+        let all_tests = all_snapshot_tests();
+        if all_tests.contains(&test) {
             Ok(Self(String::from(test)))
         } else {
             Err(format!(
-                "Specified test '{}' does not exist, available tests are: {:?}",
-                test, ALL_SNAPSHOT_TESTS
+                "Specified test '{test}' does not exist, available tests are: {all_tests:?}"
             ))
         }
     }
@@ -64,13 +75,7 @@ pub fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
 }
 
 fn test_all_snapshots(overwrite: bool) {
-    let mut tests = ALL_SNAPSHOT_TESTS.to_vec();
-
-    if rustc_is_nightly() {
-        tests.extend(["alloc", "net"]);
-    }
-
-    for test in tests {
+    for test in all_snapshot_tests() {
         let features = match test {
             "alloc" => "alloc",
             "net" => "ip_in_core",

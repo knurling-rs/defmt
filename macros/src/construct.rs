@@ -26,7 +26,12 @@ pub(crate) fn escaped_expr_string(expr: &Expr) -> String {
         .replace('}', "}}")
 }
 
-pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -> TokenStream2 {
+pub(crate) fn interned_string(
+    string: &str,
+    tag: &str,
+    is_log_statement: bool,
+    prefix: Option<&str>,
+) -> TokenStream2 {
     // NOTE we rely on this variable name when extracting file location information from the DWARF
     // without it we have no other mean to differentiate static variables produced by `info!` vs
     // produced by `intern!` (or `internp`)
@@ -39,7 +44,7 @@ pub(crate) fn interned_string(string: &str, tag: &str, is_log_statement: bool) -
     let var_addr = if cfg!(feature = "unstable-test") {
         quote!({ defmt::export::fetch_add_string_index() })
     } else {
-        let var_item = static_variable(&var_name, string, tag);
+        let var_item = static_variable(&var_name, string, tag, prefix);
         quote!({
             #var_item
             &#var_name as *const u8 as u16
@@ -69,10 +74,15 @@ pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str
     format!(".defmt{sub_section}")
 }
 
-pub(crate) fn static_variable(name: &Ident2, data: &str, tag: &str) -> TokenStream2 {
+pub(crate) fn static_variable(
+    name: &Ident2,
+    data: &str,
+    tag: &str,
+    prefix: Option<&str>,
+) -> TokenStream2 {
     let sym_name = mangled_symbol_name(tag, data);
-    let section = linker_section(false, None, &sym_name);
-    let section_for_macos = linker_section(true, None, &sym_name);
+    let section = linker_section(false, prefix, &sym_name);
+    let section_for_macos = linker_section(true, prefix, &sym_name);
 
     quote!(
         #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]

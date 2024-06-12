@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 name = "defmt-decoder"
 readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.10"
+version = "0.3.11"
 
 [dependencies]
 byteorder = "1"
@@ -35,13 +35,14 @@ gimli = { version = "0.29", default-features = false, features = [
     "read",
     "std",
 ] }
-object = { version = "0.32", default-features = false, features = [
+object = { version = "0.35", default-features = false, features = [
     "read_core",
     "elf",
     "std",
 ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["arbitrary_precision"] }
+regex = "1"
 
 [features]
 # WARNING: API and wire format subject to change.

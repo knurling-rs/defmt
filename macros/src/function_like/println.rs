@@ -34,7 +34,7 @@ pub(crate) fn expand_parsed(args: Args) -> TokenStream2 {
         args.format_string.span(),
     );
 
-    let header = construct::interned_string(&format_string, "println", true);
+    let header = construct::interned_string(&format_string, "println", true, None);
     quote!({
         match (#(&(#formatting_exprs)),*) {
             (#(#patterns),*) => {

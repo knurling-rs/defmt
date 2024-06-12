@@ -29,7 +29,7 @@ pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> syn::Resul
         }
     }));
 
-    let format_tag = construct::interned_string(&format_string, "derived", false);
+    let format_tag = construct::interned_string(&format_string, "derived", false, None);
     Ok(EncodeData {
         format_tag,
         stmts,

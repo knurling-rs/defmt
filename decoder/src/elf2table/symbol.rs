@@ -1,8 +1,9 @@
-use crate::Tag;
 use serde::Deserialize;
 
+use crate::Tag;
+
 #[derive(Deserialize, PartialEq, Eq, Hash)]
-pub struct Symbol {
+pub(super) struct Symbol {
     /// Name of the Cargo package in which the symbol is being instantiated. Used for avoiding
     /// symbol name collisions.
     package: String,
@@ -27,12 +28,12 @@ pub struct Symbol {
     crate_name: Option<String>,
 }
 
-pub enum SymbolTag<'a> {
+pub(super) enum SymbolTag {
     /// `defmt_*` tag that we can interpret.
     Defmt(Tag),
 
     /// Non-`defmt_*` tag for custom tooling.
-    Custom(&'a str),
+    Custom(()),
 }
 
 impl Symbol {
@@ -41,7 +42,7 @@ impl Symbol {
             .map_err(|j| anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", raw, j))
     }
 
-    pub fn tag(&self) -> SymbolTag<'_> {
+    pub fn tag(&self) -> SymbolTag {
         match &*self.tag {
             "defmt_prim" => SymbolTag::Defmt(Tag::Prim),
             "defmt_derived" => SymbolTag::Defmt(Tag::Derived),
@@ -56,7 +57,7 @@ impl Symbol {
             "defmt_info" => SymbolTag::Defmt(Tag::Info),
             "defmt_warn" => SymbolTag::Defmt(Tag::Warn),
             "defmt_error" => SymbolTag::Defmt(Tag::Error),
-            _ => SymbolTag::Custom(&self.tag),
+            _ => SymbolTag::Custom(()),
         }
     }
 

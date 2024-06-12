@@ -7,22 +7,51 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#831]: Fix CI
+- [#852]: `CI`: Update mdbook to v0.4.40
+- [#847]: `decoder`: Fix log format width specifier not working as expected
+- [#845]: `decoder`: fix println!() records being printed with formatting
+- [#843]: `defmt`: Sort IDs of log msgs by severity to allow runtime filtering by severity
+- [#822]: `CI`: Run `cargo semver-checks` on every PR
+
+[#852]: https://github.com/knurling-rs/defmt/pull/852
+[#847]: https://github.com/knurling-rs/defmt/pull/847
+[#845]: https://github.com/knurling-rs/defmt/pull/845
+[#843]: https://github.com/knurling-rs/defmt/pull/843
+[#822]: https://github.com/knurling-rs/defmt/pull/822
+
+## [v0.3.8] - 2024-05-17
+
+- [#840]: `defmt`: Support pre-1.77
+- [#839]: `CI`: Fix tests
+- [#838]: `defmt`: Switch to Cargo instruction compatible with older versions of Cargo
+
+[#840]: https://github.com/knurling-rs/defmt/pull/840
+[#839]: https://github.com/knurling-rs/defmt/pull/839
+[#838]: https://github.com/knurling-rs/defmt/pull/838
+
+## defmt-macros v0.3.9
+
+- [#835]: `macros`: Fix some `defmt` crate name usage
+
+## [v0.3.7] - 2024-05-13
+
+- [#831]: `CI`: Fix CI
+- [#830]: `book`: Add section about feature-gated derive Format
 - [#828]: `defmt-decoder`: Update to `gimli 0.29`
-- [#822]: Run `cargo semver-checks` in CI
 - [#821]: Clean up
 - [#813]: doc: add note for the alloc feature flag
 - [#812]: `defmt`: Add a feature to stop linking a default panic handler
 - [#811]: `book`: Add some examples for byte slice/array hints as well
+- [#805]: `defmt`: Drop ip_in_core feature and re-enable nightly snapshot tests
 - [#800]: `defmt-macros`: Fix generic trait bounds in Format derive macro
 
 [#831]: https://github.com/knurling-rs/defmt/pull/831
 [#828]: https://github.com/knurling-rs/defmt/pull/828
-[#822]: https://github.com/knurling-rs/defmt/pull/822
 [#821]: https://github.com/knurling-rs/defmt/pull/821
 [#813]: https://github.com/knurling-rs/defmt/pull/813
 [#812]: https://github.com/knurling-rs/defmt/pull/812
 [#811]: https://github.com/knurling-rs/defmt/pull/811
+[#805]: https://github.com/knurling-rs/defmt/pull/805
 [#800]: https://github.com/knurling-rs/defmt/pull/800
 
 ## [v0.3.6] - 2024-02-05
@@ -623,7 +652,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.8...main
+[v0.3.8]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.7...defmt-v0.3.8
+[v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...defmt-v0.3.7
 [v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...defmt-v0.3.6
 [v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...defmt-v0.3.5
 [v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...defmt-v0.3.4

@@ -23,7 +23,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         construct::crate_local_disambiguator(),
         cargo::crate_name(),
     );
-    let format_tag = construct::interned_string(&format_string, "bitflags", false);
+    let format_tag = construct::interned_string(&format_string, "bitflags", false, None);
 
     let ident = input.ident();
     let ty = input.ty();

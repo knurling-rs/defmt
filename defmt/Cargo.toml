@@ -15,12 +15,12 @@ name = "defmt"
 readme = "../README.md"
 repository = "https://github.com/knurling-rs/defmt"
 homepage = "https://knurling.ferrous-systems.com/"
-version = "0.3.6"
+version = "0.3.8"
 
 [features]
 alloc = []
-ip_in_core = []
 avoid-default-panic = []
+ip_in_core = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #
