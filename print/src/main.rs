@@ -1,6 +1,6 @@
 use std::{
-    path::{Path, PathBuf},
     env,
+    path::{Path, PathBuf},
 };
 
 use anyhow::anyhow;
