@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#845]: `decoder`: fix println!() records being printed with formatting
 - [#843]: `defmt`: Sort IDs of log msgs by severity to allow runtime filtering by severity
 - [#822]: `CI`: Run `cargo semver-checks` on every PR
+- [#855]: `defmt-print`: Now uses tokio to make tcp and stdin reads async (in preparation for a `watch elf` flag)
 
 [#852]: https://github.com/knurling-rs/defmt/pull/852
 [#847]: https://github.com/knurling-rs/defmt/pull/847
 [#845]: https://github.com/knurling-rs/defmt/pull/845
 [#843]: https://github.com/knurling-rs/defmt/pull/843
 [#822]: https://github.com/knurling-rs/defmt/pull/822
+[#855]: https://github.com/knurling-rs/defmt/pull/855
 
 ## [v0.3.8] - 2024-05-17
 
