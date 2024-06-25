@@ -13,10 +13,9 @@ use defmt_decoder::{
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
 
-use tokio::io::{self, AsyncReadExt};
 use tokio::{
-    fs::{self},
-    io::Stdin,
+    fs,
+    io::{self, AsyncReadExt, Stdin},
     net::TcpStream,
 };
 
