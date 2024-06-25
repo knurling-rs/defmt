@@ -1,7 +1,5 @@
 use std::{
-    env, fs,
-    io::{self, Read, StdinLock},
-    net::TcpStream,
+    env,
     path::{Path, PathBuf},
 };
 
@@ -13,6 +11,12 @@ use defmt_decoder::{
         DefmtLoggerType,
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
+};
+
+use tokio::{
+    fs,
+    io::{self, AsyncReadExt, Stdin},
+    net::TcpStream,
 };
 
 /// Prints defmt-encoded logs to stdout
@@ -59,36 +63,37 @@ enum Command {
 }
 
 enum Source {
-    Stdin(StdinLock<'static>),
+    Stdin(Stdin),
     Tcp(TcpStream),
 }
 
 impl Source {
     fn stdin() -> Self {
-        Source::Stdin(io::stdin().lock())
+        Source::Stdin(io::stdin())
     }
 
-    fn tcp(host: String, port: u16) -> anyhow::Result<Self> {
-        match TcpStream::connect((host, port)) {
+    async fn tcp(host: String, port: u16) -> anyhow::Result<Self> {
+        match TcpStream::connect((host, port)).await {
             Ok(stream) => Ok(Source::Tcp(stream)),
             Err(e) => Err(anyhow!(e)),
         }
     }
 
-    fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
+    async fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
         match self {
             Source::Stdin(stdin) => {
-                let n = stdin.read(buf)?;
+                let n = stdin.read(buf).await?;
                 Ok((n, n == 0))
             }
-            Source::Tcp(tcpstream) => Ok((tcpstream.read(buf)?, false)),
+            Source::Tcp(tcpstream) => Ok((tcpstream.read(buf).await?, false)),
         }
     }
 }
 
 const READ_BUFFER_SIZE: usize = 1024;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let Opts {
         elf,
         json,
@@ -105,7 +110,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     // read and parse elf file
-    let bytes = fs::read(elf.unwrap())?;
+    let bytes = fs::read(elf.unwrap()).await?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
 
@@ -159,12 +164,12 @@ fn main() -> anyhow::Result<()> {
 
     let mut source = match command {
         None | Some(Command::Stdin) => Source::stdin(),
-        Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
+        Some(Command::Tcp { host, port }) => Source::tcp(host, port).await?,
     };
 
     loop {
         // read from stdin or tcpstream and push it to the decoder
-        let (n, eof) = source.read(&mut buf)?;
+        let (n, eof) = source.read(&mut buf).await?;
 
         // if 0 bytes where read, we reached EOF, so quit
         if eof {
