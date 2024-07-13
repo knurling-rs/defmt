@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#858]: `defmt`: Implement "passthrough" trait impls for *2Format wrappers
 - [#852]: `CI`: Update mdbook to v0.4.40
 - [#847]: `decoder`: Fix log format width specifier not working as expected
 - [#845]: `decoder`: fix println!() records being printed with formatting
