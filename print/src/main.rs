@@ -47,7 +47,7 @@ struct Opts {
     #[arg(short = 'V', long)]
     version: bool,
 
-    #[arg[short, long]]
+    #[arg(short, long)]
     watch_elf: bool,
 
     #[command(subcommand)]

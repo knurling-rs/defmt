@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#843]: `defmt`: Sort IDs of log msgs by severity to allow runtime filtering by severity
 - [#822]: `CI`: Run `cargo semver-checks` on every PR
 - [#855]: `defmt-print`: Now uses tokio to make tcp and stdin reads async (in preparation for a `watch elf` flag)
-- [#807]: `defmt-print`: Add watch_elf flag to allow elf reload without restarting `defmt-print`
+- [#807]: `defmt-print`: Add `watch_elf` flag to allow ELF file reload without restarting `defmt-print`
 
 [#852]: https://github.com/knurling-rs/defmt/pull/852
 [#847]: https://github.com/knurling-rs/defmt/pull/847
