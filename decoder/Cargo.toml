@@ -43,7 +43,7 @@ object = { version = "0.35", default-features = false, features = [
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["arbitrary_precision"] }
 regex = "1"
-alterable_logger = "1.0.0"
+alterable_logger = "1"
 
 [features]
 # WARNING: API and wire format subject to change.

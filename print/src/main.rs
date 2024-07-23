@@ -13,7 +13,6 @@ use defmt_decoder::{
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
-
 use tokio::{
     fs,
     io::{self, AsyncReadExt, Stdin},
@@ -113,28 +112,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     if opts.watch_elf {
-        let (tx, mut rx) = tokio::sync::mpsc::channel(1);
-
-        let mut watcher = RecommendedWatcher::new(
-            move |res| {
-                futures::executor::block_on(async {
-                    tx.send(res).await.unwrap();
-                })
-            },
-            Config::default(),
-        )?;
-        let mut directory_path = opts.elf.clone().unwrap();
-        directory_path.pop(); // We want the elf directory instead of the elf, since some editors remove and recreate the file on save which will remove the notifier
-        watcher.watch(directory_path.as_ref(), RecursiveMode::NonRecursive)?;
-
-        let path = opts.elf.clone().unwrap();
-
-        loop {
-            select! {
-                r = run(opts.clone(), &mut source) => r?,
-                _ = has_file_changed(&mut rx, &path) => ()
-            }
-        }
+        run_and_watch(opts, &mut source).await
     } else {
         run(opts, &mut source).await
     }
@@ -154,6 +132,29 @@ async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path:
         }
     }
     true
+}
+
+async fn run_and_watch(opts: Opts, mut source: &mut Source) -> anyhow::Result<()> {
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+
+    let mut watcher = RecommendedWatcher::new(
+        move |res| {
+            let _ = tx.blocking_send(res);
+        },
+        Config::default(),
+    )?;
+    let mut directory_path = opts.elf.clone().unwrap();
+    directory_path.pop(); // We want the elf directory instead of the elf, since some editors remove and recreate the file on save which will remove the notifier
+    watcher.watch(directory_path.as_ref(), RecursiveMode::NonRecursive)?;
+
+    let path = opts.elf.clone().unwrap();
+
+    loop {
+        select! {
+            r = run(opts.clone(), &mut source) => r?,
+            _ = has_file_changed(&mut rx, &path) => ()
+        }
+    }
 }
 
 async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
