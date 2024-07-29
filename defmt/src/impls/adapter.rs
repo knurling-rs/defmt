@@ -24,6 +24,12 @@ use crate::{export, Format, Formatter, Str};
 /// because this always uses `{:?}` to format the contained value.
 pub struct Debug2Format<'a, T: fmt::Debug + ?Sized>(pub &'a T);
 
+impl<T: fmt::Debug + ?Sized> fmt::Debug for Debug2Format<'_, T> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        self.0.fmt(fmt)
+    }
+}
+
 impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
     default_format!();
 
@@ -61,6 +67,12 @@ impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
 /// Note that any provided defmt display hints will be ignored
 /// because this always uses `{}` to format the contained value.
 pub struct Display2Format<'a, T: fmt::Display + ?Sized>(pub &'a T);
+
+impl<T: fmt::Display + ?Sized> fmt::Display for Display2Format<'_, T> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        self.0.fmt(fmt)
+    }
+}
 
 impl<T: fmt::Display + ?Sized> Format for Display2Format<'_, T> {
     default_format!();
