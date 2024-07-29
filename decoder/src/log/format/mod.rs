@@ -321,7 +321,7 @@ impl FormatterFormat<'static> {
 
 impl Default for FormatterFormat<'_> {
     fn default() -> Self {
-        FormatterFormat::OneLine {
+        FormatterFormat::Default {
             with_location: false,
         }
     }
