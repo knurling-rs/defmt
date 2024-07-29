@@ -7,17 +7,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#xxx]: `CI`: Update mdbook to v0.4.40
+- [#859]: `defmt`: Satisfy clippy
+- [#858]: `defmt`: Implement "passthrough" trait impls for *2Format wrappers
+- [#857]: Add an octal display hint (`:o`)
+- [#855]: `defmt-print`: Now uses tokio to make tcp and stdin reads async (in preparation for a `watch elf` flag)
+- [#852]: `CI`: Update mdbook to v0.4.40
 - [#848]: `decoder`: improve default format
 - [#847]: `decoder`: Fix log format width specifier not working as expected
 - [#845]: `decoder`: fix println!() records being printed with formatting
 - [#843]: `defmt`: Sort IDs of log msgs by severity to allow runtime filtering by severity
+- [#822]: `CI`: Run `cargo semver-checks` on every PR
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#859]: https://github.com/knurling-rs/defmt/pull/859
+[#858]: https://github.com/knurling-rs/defmt/pull/858
+[#857]: https://github.com/knurling-rs/defmt/pull/857
+[#855]: https://github.com/knurling-rs/defmt/pull/855
+[#852]: https://github.com/knurling-rs/defmt/pull/852
 [#848]: https://github.com/knurling-rs/defmt/pull/848
 [#847]: https://github.com/knurling-rs/defmt/pull/847
 [#845]: https://github.com/knurling-rs/defmt/pull/845
 [#843]: https://github.com/knurling-rs/defmt/pull/843
+[#822]: https://github.com/knurling-rs/defmt/pull/822
 
 ## [v0.3.8] - 2024-05-17
 
