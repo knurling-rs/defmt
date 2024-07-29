@@ -165,9 +165,7 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
         host_log_format,
         show_skipped_frames,
         verbose,
-        version: _,
-        watch_elf: _,
-        command: _,
+        ..
     } = opts;
 
     // read and parse elf file
