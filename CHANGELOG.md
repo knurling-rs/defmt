@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#xxx]: `defmt`: Satisfy clippy
 - [#852]: `CI`: Update mdbook to v0.4.40
 - [#847]: `decoder`: Fix log format width specifier not working as expected
 - [#845]: `decoder`: fix println!() records being printed with formatting
@@ -14,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#822]: `CI`: Run `cargo semver-checks` on every PR
 - [#855]: `defmt-print`: Now uses tokio to make tcp and stdin reads async (in preparation for a `watch elf` flag)
 
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
 [#852]: https://github.com/knurling-rs/defmt/pull/852
 [#847]: https://github.com/knurling-rs/defmt/pull/847
 [#845]: https://github.com/knurling-rs/defmt/pull/845
