@@ -134,7 +134,7 @@ async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path:
     true
 }
 
-async fn run_and_watch(opts: Opts, mut source: &mut Source) -> anyhow::Result<()> {
+async fn run_and_watch(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
     let mut watcher = RecommendedWatcher::new(
@@ -151,7 +151,7 @@ async fn run_and_watch(opts: Opts, mut source: &mut Source) -> anyhow::Result<()
 
     loop {
         select! {
-            r = run(opts.clone(), &mut source) => r?,
+            r = run(opts.clone(), source) => r?,
             _ = has_file_changed(&mut rx, &path) => ()
         }
     }
