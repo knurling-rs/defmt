@@ -230,6 +230,13 @@ impl<'t> Frame<'t> {
                 true => write!(buf, "{x:#0zero_pad$b}")?,
                 false => write!(buf, "{x:0zero_pad$b}")?,
             },
+            Some(DisplayHint::Octal {
+                alternate,
+                zero_pad,
+            }) => match alternate {
+                true => write!(buf, "{x:#0zero_pad$o}")?,
+                false => write!(buf, "{x:0zero_pad$o}")?,
+            },
             Some(DisplayHint::Hexadecimal {
                 uppercase,
                 alternate,
@@ -319,6 +326,13 @@ impl<'t> Frame<'t> {
                 true => write!(buf, "{x:#0zero_pad$b}")?,
                 false => write!(buf, "{x:0zero_pad$b}")?,
             },
+            Some(DisplayHint::Octal {
+                alternate,
+                zero_pad,
+            }) => match alternate {
+                true => write!(buf, "{x:#0zero_pad$o}")?,
+                false => write!(buf, "{x:0zero_pad$o}")?,
+            },
             Some(DisplayHint::Hexadecimal {
                 uppercase,
                 alternate,
@@ -368,7 +382,9 @@ impl<'t> Frame<'t> {
                 }
                 buf.push('\"');
             }
-            Some(DisplayHint::Hexadecimal { .. }) | Some(DisplayHint::Binary { .. }) => {
+            Some(DisplayHint::Hexadecimal { .. })
+            | Some(DisplayHint::Octal { .. })
+            | Some(DisplayHint::Binary { .. }) => {
                 // `core::write!` doesn't quite produce the output we want, for example
                 // `write!("{:#04x?}", bytes)` produces a multi-line output
                 // `write!("{:02x?}", bytes)` is single-line but each byte doesn't include the "0x" prefix

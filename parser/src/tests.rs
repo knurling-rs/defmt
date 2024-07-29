@@ -28,6 +28,8 @@ fn all_parse_param_cases(
 #[case(":a", DisplayHint::Ascii)]
 #[case(":b", DisplayHint::Binary { alternate: false, zero_pad: 0 })]
 #[case(":#b", DisplayHint::Binary { alternate: true, zero_pad: 0 })]
+#[case(":o", DisplayHint::Octal { alternate: false, zero_pad: 0 })]
+#[case(":#o", DisplayHint::Octal { alternate: true, zero_pad: 0 })]
 #[case(":x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 0 })]
 #[case(":02x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 2 })]
 #[case(":#x", DisplayHint::Hexadecimal { alternate: true, uppercase: false, zero_pad: 0 })]

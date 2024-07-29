@@ -12,6 +12,11 @@ pub enum DisplayHint {
         uppercase: bool,
         zero_pad: usize,
     },
+    /// `:o`
+    Octal {
+        alternate: bool,
+        zero_pad: usize,
+    },
     /// `:b`
     Binary {
         alternate: bool,
@@ -84,6 +89,10 @@ impl DisplayHint {
             "ts" => DisplayHint::Time(TimePrecision::Seconds),
             "a" => DisplayHint::Ascii,
             "b" => DisplayHint::Binary {
+                alternate,
+                zero_pad,
+            },
+            "o" => DisplayHint::Octal {
                 alternate,
                 zero_pad,
             },
