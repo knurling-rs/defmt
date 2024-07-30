@@ -122,11 +122,8 @@ async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path:
     loop {
         if let Some(Ok(event)) = rx.recv().await {
             if event.paths.contains(path) {
-                match event.kind {
-                    notify::EventKind::Create(_) | notify::EventKind::Modify(_) => {
-                        break;
-                    }
-                    _ => (),
+                if let notify::EventKind::Create(_) | notify::EventKind::Modify(_) = event.kind {
+                    break;
                 }
             }
         }
@@ -137,17 +134,19 @@ async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path:
 async fn run_and_watch(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
+    let path = opts.elf.clone().unwrap().canonicalize().unwrap();
+
+    // We want the elf directory instead of the elf, since some editors remove
+    // and recreate the file on save which will remove the notifier
+    let directory_path = path.parent().unwrap();
+
     let mut watcher = RecommendedWatcher::new(
         move |res| {
             let _ = tx.blocking_send(res);
         },
         Config::default(),
     )?;
-    let mut directory_path = opts.elf.clone().unwrap();
-    directory_path.pop(); // We want the elf directory instead of the elf, since some editors remove and recreate the file on save which will remove the notifier
     watcher.watch(directory_path.as_ref(), RecursiveMode::NonRecursive)?;
-
-    let path = opts.elf.clone().unwrap();
 
     loop {
         select! {
