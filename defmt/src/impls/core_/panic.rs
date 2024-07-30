@@ -4,7 +4,11 @@ use super::*;
 
 impl<'a> Format for panic::PanicInfo<'a> {
     fn format(&self, f: Formatter) {
-        crate::write!(f, "panicked at {}", self.location());
+        if let Some(location) = self.location() {
+            crate::write!(f, "panicked at {}", location);
+        } else {
+            crate::write!(f, "panicked");
+        }
         // TODO: consider supporting self.message() once stabilized, or add a crate feature for
         // conditional support
     }
