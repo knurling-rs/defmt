@@ -26,6 +26,7 @@ pub(crate) fn all_snapshot_tests() -> Vec<&'static str> {
         "hints_inner",
         "dbg",
         "net",
+        "panic_info",
     ];
     const NIGHTLY_SNAPSHOT_TESTS: &[&str] = &["alloc"];
 
