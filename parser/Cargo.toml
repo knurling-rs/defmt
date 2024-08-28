@@ -10,10 +10,10 @@ repository = "https://github.com/knurling-rs/defmt"
 version = "0.5.0"
 
 [dependencies]
-thiserror = "1.0"
+thiserror = "1"
 
 [dev-dependencies]
-rstest = { version = "0.19", default-features = false }
+rstest = { version = "0.22", default-features = false }
 
 [features]
 unstable = []
