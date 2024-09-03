@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#859]: `defmt`: Satisfy clippy
 - [#858]: `defmt`: Implement "passthrough" trait impls for *2Format wrappers
 - [#857]: Add an octal display hint (`:o`)
+- [#856]: `defmt`: Add a `Format` impl for `PanicInfo` and related types.
 - [#855]: `defmt-print`: Now uses tokio to make tcp and stdin reads async (in preparation for a `watch elf` flag)
 - [#852]: `CI`: Update mdbook to v0.4.40
 - [#848]: `decoder`: add optional one-line format
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#859]: https://github.com/knurling-rs/defmt/pull/859
 [#858]: https://github.com/knurling-rs/defmt/pull/858
 [#857]: https://github.com/knurling-rs/defmt/pull/857
+[#856]: https://github.com/knurling-rs/defmt/pull/856
 [#855]: https://github.com/knurling-rs/defmt/pull/855
 [#852]: https://github.com/knurling-rs/defmt/pull/852
 [#848]: https://github.com/knurling-rs/defmt/pull/848
