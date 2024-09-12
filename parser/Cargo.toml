@@ -15,9 +15,5 @@ thiserror = "1.0"
 [dev-dependencies]
 rstest = { version = "0.19", default-features = false }
 
-[features]
-unstable = []
-
 [package.metadata.docs.rs]
-features = ["unstable"]
 rustdoc-args = [ "--cfg=docsrs" ]

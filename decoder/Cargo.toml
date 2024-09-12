@@ -12,7 +12,7 @@ version = "0.3.11"
 [dependencies]
 byteorder = "1"
 colored = "2"
-defmt-parser = { version = "=0.3.4", path = "../parser", features = ["unstable"] }
+defmt-parser = { version = "=0.3.4", path = "../parser" }
 ryu = "1"
 nom = "7"
 
@@ -45,10 +45,5 @@ serde_json = { version = "1", features = ["arbitrary_precision"] }
 regex = "1"
 alterable_logger = "1"
 
-[features]
-# WARNING: API and wire format subject to change.
-unstable = []
-
 [package.metadata.docs.rs]
-features = ["unstable"]
 rustdoc-args = ["--cfg=docsrs"]
