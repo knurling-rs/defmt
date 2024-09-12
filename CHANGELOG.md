@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.9] - 2024-09-13
+
 - [#889]: Add script for book hosting
 - [#887]: Fix interning example in the book
 - [#884]: Upgrade dependencies: notify is now at v7, thiserror is now at v2 
@@ -685,7 +687,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.8...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.9...main
+[v0.3.9]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.8...defmt-v0.3.9
 [v0.3.8]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.7...defmt-v0.3.8
 [v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...defmt-v0.3.7
 [v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...defmt-v0.3.6
