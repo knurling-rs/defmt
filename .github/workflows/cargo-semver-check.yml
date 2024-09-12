@@ -14,15 +14,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Semver check crates without "unstable" feature
+      - name: Semver check host crates
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: default-features
-      - name: Semver check crates with "unstable" feature
-        uses: obi1kenobi/cargo-semver-checks-action@v2
-        with:
-          exclude: defmt, defmt-json-schema
-          features: unstable
       - name: Semver check firmware crates
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
