@@ -2,9 +2,7 @@
 //!
 //! NOTE: The decoder always runs on the host!
 
-#![cfg(feature = "unstable")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(docsrs, doc(cfg(unstable)))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
 pub const DEFMT_VERSIONS: &[&str] = &["3", "4"];
