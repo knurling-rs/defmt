@@ -88,7 +88,7 @@ checksum = "f64009896348fc5af4222e9cf7d7d82a95a256c634ebcf61c53e4ea461422242"
 
 [[package]]
 name = "defmt"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "bitflags",
  "defmt-macros",
@@ -104,7 +104,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-macros"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "defmt-parser",
  "proc-macro-error",
@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-parser"
-version = "0.3.4"
+version = "0.4.0"
 dependencies = [
  "thiserror",
 ]
@@ -130,7 +130,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-semihosting"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cortex-m",
  "cortex-m-semihosting",
@@ -175,7 +175,7 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "firmware"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloc-cortex-m",
  "cortex-m",
