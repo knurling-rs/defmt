@@ -1,6 +1,6 @@
 use defmt_parser::ParserMode;
 use proc_macro::TokenStream;
-use proc_macro_error::abort;
+use proc_macro_error2::abort;
 use quote::format_ident;
 use quote::quote;
 use syn::parse_macro_input;

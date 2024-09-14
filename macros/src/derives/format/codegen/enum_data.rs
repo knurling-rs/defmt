@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream as TokenStream2;
-use proc_macro_error::abort_call_site;
+use proc_macro_error2::abort_call_site;
 use quote::quote;
 use syn::{DataEnum, Ident};
 

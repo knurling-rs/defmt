@@ -1,6 +1,6 @@
 use defmt_parser::{Fragment, Parameter, Type};
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
-use proc_macro_error::abort;
+use proc_macro_error2::abort;
 use quote::{format_ident, quote};
 
 pub(crate) struct Codegen {
