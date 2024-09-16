@@ -5,7 +5,7 @@
 use defmt_parser::Level;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use proc_macro_error::proc_macro_error;
+use proc_macro_error2::proc_macro_error;
 use quote::quote;
 
 mod attributes;
