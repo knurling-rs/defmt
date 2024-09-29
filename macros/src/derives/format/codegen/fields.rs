@@ -157,8 +157,8 @@ fn as_native_type(ty: &Type) -> Option<String> {
             let ty_name = ident.to_string();
 
             match &*ty_name {
-                "u8" | "u16" | "u32" | "usize" | "i8" | "i16" | "i32" | "isize" | "f32" | "f64"
-                | "bool" | "str" => Some(ty_name),
+                "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64"
+                | "i128" | "isize" | "f32" | "f64" | "bool" | "str" => Some(ty_name),
                 _ => None,
             }
         }
