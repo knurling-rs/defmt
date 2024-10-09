@@ -23,7 +23,7 @@ jobs:
           - windows-latest
         toolchain:
           - "stable"
-          - "1.77" # MSRV
+          - "1.76" # MSRV
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -43,7 +43,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.77" # MSRV
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.77" # MSRV
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -76,7 +76,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.77" # MSRV
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +92,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.77" # MSRV
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -113,7 +113,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - "1.77" # MSRV
+          - "1.76" # MSRV
           - nightly # some tests use unstable features
     runs-on: ubuntu-latest
     steps:
@@ -134,7 +134,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.77" # MSRV
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

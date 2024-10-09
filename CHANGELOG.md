@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#xxx]: Set MSRV to Rust 1.77
+- [#871]: Set MSRV to Rust 1.76
 - [#865]: `defmt`: Replace proc-macro-error with proc-macro-error2
 - [#859]: `defmt`: Satisfy clippy
 - [#858]: `defmt`: Implement "passthrough" trait impls for *2Format wrappers
@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#822]: `CI`: Run `cargo semver-checks` on every PR
 - [#807]: `defmt-print`: Add `watch_elf` flag to allow ELF file reload without restarting `defmt-print`
 
-[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+[#871]: https://github.com/knurling-rs/defmt/pull/871
 [#859]: https://github.com/knurling-rs/defmt/pull/859
 [#858]: https://github.com/knurling-rs/defmt/pull/858
 [#857]: https://github.com/knurling-rs/defmt/pull/857

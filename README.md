@@ -22,7 +22,7 @@ To include `defmt` in your existing project, follow our [Application Setup guide
 
 ## MSRV
 
-The minum supported Rust version is 1.77.
+The minimum supported Rust version is 1.76, which is Ferrocene 24.05.
 
 ## defmt ecosystem
 
