@@ -6,7 +6,10 @@ use similar::{ChangeTag, TextDiff};
 
 use crate::{
     do_test,
-    utils::{load_expected_output, overwrite_expected_output, run_capturing_stdout, rustc_is_nightly},
+    utils::{
+        load_expected_output, overwrite_expected_output, run_capturing_stdout, rustc_is_msrv,
+        rustc_is_nightly,
+    },
 };
 
 pub const SNAPSHOT_TESTS_DIRECTORY: &str = "firmware/qemu";
@@ -25,15 +28,19 @@ pub(crate) fn all_snapshot_tests() -> Vec<&'static str> {
         "hints",
         "hints_inner",
         "dbg",
-        "net",
         "panic_info",
     ];
     const NIGHTLY_SNAPSHOT_TESTS: &[&str] = &["alloc"];
+    const POST_MSRV_SNAPSHOT_TESTS: &[&str] = &["net"];
 
     let mut tests = STABLE_SNAPSHOT_TESTS.to_vec();
     if rustc_is_nightly() {
         tests.extend(NIGHTLY_SNAPSHOT_TESTS);
     }
+    if !rustc_is_msrv() {
+        tests.extend(POST_MSRV_SNAPSHOT_TESTS);
+    }
+
     tests
 }
 

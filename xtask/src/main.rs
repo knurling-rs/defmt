@@ -7,6 +7,7 @@ use std::sync::Mutex;
 
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
+use utils::rustc_is_msrv;
 
 use crate::{
     snapshot::{test_snapshot, Snapshot},
@@ -136,8 +137,13 @@ fn test_cross(deny_warnings: bool) {
         false => vec![],
     };
 
+    let mut features = vec!["", "alloc"];
+    if !rustc_is_msrv() {
+        features.push("ip_in_core");
+    }
+
     for target in &targets {
-        for feature in ["", "alloc", "ip_in_core"] {
+        for feature in &features {
             do_test(
                 || {
                     run_command(
@@ -203,12 +209,21 @@ fn test_cross(deny_warnings: bool) {
         || {
             run_command(
                 "cargo",
-                &["clippy", "--target", "thumbv7m-none-eabi", "--", "-D", "warnings"],
+                &[
+                    "clippy",
+                    "--target",
+                    "thumbv7m-none-eabi",
+                    "--",
+                    "-D",
+                    "warnings",
+                    "-A",
+                    "unknown-lints",
+                ],
                 Some("firmware/"),
                 &env,
             )
         },
-        "lint",
+        "cross",
     );
 }
 
