@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
 - [#865]: `defmt`: Replace proc-macro-error with proc-macro-error2
 - [#859]: `defmt`: Satisfy clippy
 - [#858]: `defmt`: Implement "passthrough" trait impls for *2Format wrappers

@@ -190,6 +190,19 @@ pub use defmt_macros::panic_ as panic;
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::unwrap;
 
+/// This is an alias for defmt's [`unwrap`] macro which supports messages like std's except.
+/// ```
+/// use defmt::expect;
+///
+/// # let arg = ();
+/// let x = value.expect(&format!("text {:?}", arg));
+/// let x = expect!(value, "text {:?}", arg); // arg must be implement `Format`
+/// ```
+///
+/// For the complete documentation see that of defmt's *unwrap* macro.
+// note: Linking to unwrap is broken as of 2024-10-09, it links back to expect
+pub use defmt_macros::unwrap as expect;
+
 /// Overrides the panicking behavior of `defmt::panic!`
 ///
 /// By default, `defmt::panic!` calls `core::panic!` after logging the panic message using `defmt`.
