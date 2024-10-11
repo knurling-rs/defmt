@@ -6,6 +6,9 @@
 //! log frames so don't use those APIs.
 
 #![no_std]
+// nightly warns about static_mut_refs, but 1.76 (our MSRV) does not know about
+// that lint yet, so we ignore it it but also ignore if it is unknown
+#![allow(unknown_lints, static_mut_refs)]
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
