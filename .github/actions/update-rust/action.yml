@@ -12,3 +12,5 @@ runs:
       shell: bash
     - run: rustup default ${{ inputs.toolchain }}
       shell: bash
+    - run: rustup component add clippy rustfmt
+      shell: bash

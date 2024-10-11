@@ -21,12 +21,17 @@ jobs:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
+        toolchain:
+          - "stable"
+          - "1.76" # MSRV
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Use the latest stable release
+      - name: Set Rust version
         uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - name: Install C libraries for tooling on ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
@@ -34,40 +39,68 @@ jobs:
         run: cargo xtask -d test-host
 
   cross:
+    strategy:
+      matrix:
+        toolchain:
+          - "stable"
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use the latest stable release
+      - name: Set Rust version
         uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
         run: cargo xtask test-cross
 
   lint:
+    strategy:
+      matrix:
+        toolchain:
+          - "stable"
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Use the latest stable release
+      - name: Set Rust version
         uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - name: Run rustfmt & clippy
         run: cargo xtask test-lint
 
   ui:
+    strategy:
+      matrix:
+        toolchain:
+          - "stable"
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use the latest stable release
+      - name: Set Rust version
         uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - name: Install Rust stable, run all UI tests on the host
         run: cargo xtask test-ui
 
   mdbook:
+    strategy:
+      matrix:
+        toolchain:
+          - "stable"
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Use the latest stable release
+      - name: Set Rust version
         uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
@@ -80,6 +113,7 @@ jobs:
       matrix:
         toolchain:
           - stable
+          - "1.76" # MSRV
           - nightly # some tests use unstable features
     runs-on: ubuntu-latest
     steps:
@@ -96,13 +130,20 @@ jobs:
         run: cargo xtask test-snapshot
 
   backcompat:
+    strategy:
+      matrix:
+        toolchain:
+          - "stable"
+          - "1.76" # MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Use the latest stable release
+      - name: Set Rust version
         uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - name: Install QEMU_TARGET
         run: rustup target add ${{ env.QEMU_TARGET }}
       - name: Install dependencies
