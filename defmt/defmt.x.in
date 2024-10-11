@@ -1,10 +1,15 @@
-/* exhaustively search for these symbols */
+/* Exhaustively search for these symbols */
 EXTERN(_defmt_acquire);
 EXTERN(_defmt_release);
-EXTERN(__defmt_default_timestamp);
 EXTERN(__DEFMT_MARKER_TIMESTAMP_WAS_DEFINED);
+
+/* Define timestamp and panic, unless the user defines them */
 PROVIDE(_defmt_timestamp = __defmt_default_timestamp);
 PROVIDE(_defmt_panic = __defmt_default_panic);
+
+/* Avoid default implementations to be garbage collected */
+EXTERN(__defmt_default_timestamp);
+EXTERN(__defmt_default_panic);
 
 SECTIONS
 {

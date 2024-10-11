@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#xxx]: `defmt`: Fix __defmt_default_panic being garbage collected by linker
+
+[#xxx]: https://github.com/knurling-rs/defmt/pull/xxx
+
 ## [v0.3.8] - 2024-05-17
 
 - [#840]: `defmt`: Support pre-1.77
