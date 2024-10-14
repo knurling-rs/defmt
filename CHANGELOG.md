@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#874]: `defmt`: Fix doc test
 - [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
 - [#871]: Set MSRV to Rust 1.76
 - [#865]: `defmt`: Replace proc-macro-error with proc-macro-error2
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#822]: `CI`: Run `cargo semver-checks` on every PR
 - [#807]: `defmt-print`: Add `watch_elf` flag to allow ELF file reload without restarting `defmt-print`
 
+[#874]: https://github.com/knurling-rs/defmt/pull/874
 [#872]: https://github.com/knurling-rs/defmt/pull/872
 [#871]: https://github.com/knurling-rs/defmt/pull/871
 [#859]: https://github.com/knurling-rs/defmt/pull/859

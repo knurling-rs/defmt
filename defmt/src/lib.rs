@@ -176,13 +176,12 @@ pub use defmt_macros::panic_ as panic;
 /// let x = result.unwrap();
 /// let x = unwrap!(result);
 ///
-/// # let value = result;
-/// let x = value.expect("text");
-/// let x = unwrap!(value, "text");
+/// let x = result.expect("text");
+/// let x = unwrap!(result, "text");
 ///
 /// # let arg = ();
-/// let x = value.expect(&format!("text {:?}", arg));
-/// let x = unwrap!(value, "text {:?}", arg); // arg must be implement `Format`
+/// let x = result.expect(&format!("text {:?}", arg));
+/// let x = unwrap!(result, "text {:?}", arg); // arg must be implement `Format`
 /// ```
 ///
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
@@ -194,9 +193,10 @@ pub use defmt_macros::unwrap;
 /// ```
 /// use defmt::expect;
 ///
+/// # let result = Ok::<(), ()>(());
 /// # let arg = ();
-/// let x = value.expect(&format!("text {:?}", arg));
-/// let x = expect!(value, "text {:?}", arg); // arg must be implement `Format`
+/// let x = result.expect(&format!("text {:?}", arg));
+/// let x = expect!(result, "text {:?}", arg); // arg must be implement `Format`
 /// ```
 ///
 /// For the complete documentation see that of defmt's *unwrap* macro.
