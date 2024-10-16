@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 - [#874]: `defmt`: Fix doc test
+- [#873]: `defmt`: Fix __defmt_default_panic being garbage collected by linker
 - [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
 - [#871]: Set MSRV to Rust 1.76
 - [#869]: `macros`: Add missing type hints
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#807]: `defmt-print`: Add `watch_elf` flag to allow ELF file reload without restarting `defmt-print`
 
 [#874]: https://github.com/knurling-rs/defmt/pull/874
+[#873]: https://github.com/knurling-rs/defmt/pull/873
 [#872]: https://github.com/knurling-rs/defmt/pull/872
 [#871]: https://github.com/knurling-rs/defmt/pull/871
 [#869]: https://github.com/knurling-rs/defmt/pull/869
