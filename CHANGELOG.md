@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#874]: `defmt`: Fix doc test
 - [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
 - [#871]: Set MSRV to Rust 1.76
+- [#869]: `macros`: Add missing type hints
 - [#865]: `defmt`: Replace proc-macro-error with proc-macro-error2
 - [#859]: `defmt`: Satisfy clippy
 - [#858]: `defmt`: Implement "passthrough" trait impls for *2Format wrappers
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [#874]: https://github.com/knurling-rs/defmt/pull/874
 [#872]: https://github.com/knurling-rs/defmt/pull/872
 [#871]: https://github.com/knurling-rs/defmt/pull/871
+[#869]: https://github.com/knurling-rs/defmt/pull/869
 [#859]: https://github.com/knurling-rs/defmt/pull/859
 [#858]: https://github.com/knurling-rs/defmt/pull/858
 [#857]: https://github.com/knurling-rs/defmt/pull/857
