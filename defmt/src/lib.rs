@@ -29,7 +29,7 @@ extern crate alloc;
 #[used]
 #[cfg_attr(target_os = "macos", link_section = ".defmt,end.VERSION")]
 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
-#[export_name = "_defmt_version_ = 4"]
+#[export_name = "_defmt_version_ = 5"]
 static DEFMT_VERSION: u8 = 0;
 
 #[used]
