@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#879]:  Load string indices with inline asm to save space.
+- [#878]: Hex-encode defmt symbols to avoid compatibility issues.
 - [#874]: `defmt`: Fix doc test
 - [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
 - [#871]: Set MSRV to Rust 1.76

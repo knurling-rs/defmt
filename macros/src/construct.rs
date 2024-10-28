@@ -47,7 +47,27 @@ pub(crate) fn interned_string(
         let var_item = static_variable(&var_name, string, tag, prefix);
         quote!({
             #var_item
-            &#var_name as *const u8 as u16
+
+            // defmt string indices are 16 bits, which can be loaded with a single `movw`.
+            // However, the compiler doesn't know that, so it generates `movw+movt` or `ldr rX, [pc, #offs]`
+            // because it sees we're loading an address of a symbol, which could be any 32bit value.
+            // This wastes space, so we load the value with asm manually to avoid this.
+            #[cfg(target_arch = "arm")]
+            {
+                let res: u16;
+                unsafe { ::core::arch::asm!(
+                    "movw {res}, #:lower16:{y}",
+                    res = lateout(reg) res,
+                    y = sym #var_name,
+                    options(pure, nomem, nostack, preserves_flags)
+                )};
+                res
+            }
+
+            #[cfg(not(target_arch = "arm"))]
+            {
+                &#var_name as *const u8 as u16
+            }
         })
     };
 
