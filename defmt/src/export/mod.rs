@@ -209,9 +209,20 @@ pub fn display(val: &dyn core::fmt::Display) {
 }
 
 #[inline(never)]
-pub fn header(s: &Str) {
+pub unsafe fn acquire_and_header(s: &Str) {
+    acquire();
     istr(s);
     timestamp(make_formatter());
+}
+
+#[inline(never)]
+pub fn acquire_header_and_release(s: &Str) {
+    // safety: will be released a few lines further down
+    unsafe { acquire() };
+    istr(s);
+    timestamp(make_formatter());
+    // safety: acquire() was called a few lines above
+    unsafe { release() };
 }
 
 struct FmtWrite;
