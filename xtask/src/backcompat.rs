@@ -43,8 +43,8 @@ use crate::{
 const DISABLED: bool = false;
 
 // use this format: PR <number> - <what feature / change broke compatibility>
-// PR #747 - Bump wire format
-const REVISION_UNDER_TEST: &str = "0e92d3a88aa472377b964979f522829d961d8986";
+// PR #878 - Bump wire format
+const REVISION_UNDER_TEST: &str = "a36db0b100ea86f306225e02a222aede21f9adf5";
 
 // the target name is in `firmware/qemu/.cargo/config.toml` but it'd be hard to extract it from that file
 const RUNNER_ENV_VAR: &str = "CARGO_TARGET_THUMBV7M_NONE_EABI_RUNNER";
