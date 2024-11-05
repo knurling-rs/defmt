@@ -41,16 +41,25 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
     let env_filter = EnvFilter::from_env_var();
 
     if let Some(filter_check) = env_filter.path_check(level) {
+        let content = if exprs.is_empty() {
+            quote!(
+                defmt::export::acquire_header_and_release(&#header);
+            )
+        } else {
+            quote!(
+                // safety: will be released a few lines further down
+                unsafe { defmt::export::acquire_and_header(&#header); };
+                #(#exprs;)*
+                // safety: acquire() was called a few lines above
+                unsafe { defmt::export::release() }
+            )
+        };
+
         quote!(
             match (#(&(#formatting_exprs)),*) {
                 (#(#patterns),*) => {
                     if #filter_check {
-                        // safety: will be released a few lines further down
-                        unsafe { defmt::export::acquire() };
-                        defmt::export::header(&#header);
-                        #(#exprs;)*
-                        // safety: acquire() was called a few lines above
-                        unsafe { defmt::export::release() }
+                        #content
                     }
                 }
             }
