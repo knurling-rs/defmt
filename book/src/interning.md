@@ -73,3 +73,19 @@ static SYM: u8 = 0;
 
 The next thing to note is that each interned string symbol is one byte in size (because `static SYM` has type `u8`).
 Thanks to this the addresses of the symbols are consecutive: 0, 1, 2, etc.
+
+## Encoding
+
+Storing strings as-is in symbol names can cause compatibility problems, since it can contain any arbitrary character. For example:
+
+- The `'@'` character can't be used in symbol names because it's reserved for denoting symbol versions.
+- The double-quote character `'"'` causes issues with escaping if you use it with `sym` inside an `asm!()` call.
+
+To deal with this, as of Wire Format Version 5, strings are encoded to bytes as UTF-8, and then the bytes are hex-encoded.
+The symbol is prefixed with `__defmt_hex_` to denote it's is hex-encoded, and to allow for future expansion.
+
+
+``` rust
+#[export_name = "__defmt_hex_55534220636f6e74726f6c6c6572206973207265616479"]
+static SYM: u8 = 0;
+```
