@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- [#884]: Upgrade dependencies
+- [#884]: Upgrade dependencies: notify is now at v7, thiserror is now at v2 
 - [#880]: Merge function calls emitted by the macro to save space.
 - [#874]: `defmt`: Fix doc test
 - [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
