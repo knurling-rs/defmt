@@ -19,5 +19,5 @@ defmt-decoder = { version = "=0.3.11", path = "../decoder", features = [
     "unstable",
 ] }
 log = "0.4"
-notify = "6.1"
+notify = "7"
 tokio = { version = "1.38", features = ["full"] }
