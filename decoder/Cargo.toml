@@ -45,5 +45,9 @@ serde_json = { version = "1", features = ["arbitrary_precision"] }
 regex = "1"
 alterable_logger = "1"
 
+[features]
+# DEPRECATED: noop, will be removed in 1.0
+unstable = []
+
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg=docsrs"]
