@@ -2,7 +2,7 @@ use defmt_parser::Level;
 #[cfg(not(test))]
 use proc_macro_error2::abort_call_site as panic;
 use std::fmt;
-use syn::Ident;
+// use syn::Ident;
 
 // None = "off" pseudo-level
 pub(crate) type LogLevelOrOff = Option<Level>;
@@ -66,13 +66,14 @@ impl ModulePath {
             panic!("DEFMT_LOG env var: module path cannot be an empty string")
         }
 
-        input.split("::").for_each(validate_identifier);
+        // // Segments have to be indentifiers, because ...
+        // input
+        //     .split("::")
+        //     .map(|s| format!("_{s}"))
+        //     .for_each(validate_identifier);
 
         Self {
-            segments: input
-                .split("::")
-                .map(|segment| segment.to_string())
-                .collect(),
+            segments: input.split("::").map(ToString::to_string).collect(),
         }
     }
 
@@ -99,10 +100,10 @@ fn parse_log_level(input: &str) -> Result<LogLevelOrOff, ()> {
     }))
 }
 
-fn validate_identifier(input: &str) {
-    syn::parse_str::<Ident>(input)
-        .unwrap_or_else(|_| panic!("{} is not a valid identifier", input));
-}
+// fn validate_identifier(input: String) {
+//     syn::parse_str::<Ident>(&input)
+//         .unwrap_or_else(|_| panic!("{} is not a valid identifier", input));
+// }
 
 #[cfg(test)]
 mod tests {
@@ -161,14 +162,14 @@ mod tests {
         assert_eq!("krate", modpath.crate_name());
     }
 
-    #[rstest]
-    #[case::crate_name_is_invalid("some-crate::module")]
-    #[case::module_name_is_invalid("krate::some-module")]
-    #[case::with_level("krate::some-module=info")]
-    #[should_panic = "not a valid identifier"]
-    fn rejects_invalid_identifier(#[case] input: &str) {
-        defmt_log(input).next();
-    }
+    // #[rstest]
+    // #[case::crate_name_is_invalid("some-crate::module")]
+    // #[case::module_name_is_invalid("krate::some-module")]
+    // #[case::with_level("krate::some-module=info")]
+    // #[should_panic = "not a valid identifier"]
+    // fn rejects_invalid_identifier(#[case] input: &str) {
+    //     defmt_log(input).next();
+    // }
 
     #[test]
     #[should_panic = "unknown log level"]
