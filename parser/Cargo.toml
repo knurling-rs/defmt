@@ -16,8 +16,8 @@ thiserror = "2"
 rstest = { version = "0.19", default-features = false }
 
 [features]
+# DEPRECATED: noop, will be removed in 1.0
 unstable = []
 
 [package.metadata.docs.rs]
-features = ["unstable"]
 rustdoc-args = [ "--cfg=docsrs" ]
