@@ -10,7 +10,7 @@ repository = "https://github.com/knurling-rs/defmt"
 version = "0.3.4"
 
 [dependencies]
-thiserror = "1.0"
+thiserror = "2"
 
 [dev-dependencies]
 rstest = { version = "0.19", default-features = false }
