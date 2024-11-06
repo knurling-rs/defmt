@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#883]: Mark decoder and parser not as unstable anymore
 - [#880]: Merge function calls emitted by the macro to save space.
 - [#874]: `defmt`: Fix doc test
 - [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
@@ -26,6 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#822]: `CI`: Run `cargo semver-checks` on every PR
 - [#807]: `defmt-print`: Add `watch_elf` flag to allow ELF file reload without restarting `defmt-print`
 
+[#883]: https://github.com/knurling-rs/defmt/pull/883
+[#880]: https://github.com/knurling-rs/defmt/pull/880
 [#874]: https://github.com/knurling-rs/defmt/pull/874
 [#872]: https://github.com/knurling-rs/defmt/pull/872
 [#871]: https://github.com/knurling-rs/defmt/pull/871
