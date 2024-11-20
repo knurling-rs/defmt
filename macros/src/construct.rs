@@ -63,11 +63,12 @@ pub(crate) fn interned_string(
 pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str) -> String {
     let symbol_hash = hash(symbol);
     let suffix = if for_macos {
-        // The Apple linker doesn't like `.` in input section names
+        // "mach-o section specifier requires a section whose length is between 1 and 16 characters."
         if let Some(prefix) = prefix {
-            format!(",{prefix}_{symbol_hash:x}")
+            let intermediate = format!("{prefix}_{symbol_hash:08x}");
+            format!(",{intermediate:.16}")
         } else {
-            format!(",{symbol_hash:x}")
+            format!(",{symbol_hash:08x}")
         }
     } else {
         if let Some(prefix) = prefix {
