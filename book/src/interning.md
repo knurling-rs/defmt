@@ -21,15 +21,18 @@ A linker script is required to group all these strings into a single OUTPUT link
 ``` text
 SECTIONS
 {
-  /* NOTE: simplified */
-  .my_custom_section /* <- name of the OUTPUT linker section */
-    (INFO) /* <- metadata section: not placed in Flash */
-    : 0 /* <- start address of this section */
-  {
-    *(.my_custom_section.*); /* <- name of the INPUT linker section */
-  /*^                    ^ glob pattern */
-  /*^ from any object file (~= crate) */
-  }
+    /* NOTE: simplified */
+    .my_custom_section 0 (INFO) :
+    /*                    ^^^^^^ metadata section: not placed in Flash  */
+    /*                 ^ start address of this section                  */
+    /* ^^^^^^^^^^^^^^^ name of the OUTPUT linker section                */
+    {
+        *(.my_custom_section);  
+        *(.my_custom_section.*);
+    /*                       ^ glob pattern for sub-sections  */
+    /*     ^^^^^^^^^^^^^^^^^ name of the INPUT linker section */
+    /*  ^ from any object file (~= crate)                     */
+    }
 }
 ```
 
