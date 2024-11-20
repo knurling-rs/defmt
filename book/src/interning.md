@@ -4,7 +4,7 @@ All string literals are interned in a custom ELF section.
 This has proven to be the way that requires the less post-processing and implementation work.
 It is not without downsides as we'll see.
 
-The basic pattern for interning a string is this:
+The basic pattern for interning a string is this (although note that what `defmt` actually does is more complicated - see the [Dealing with duplicates](./duplicates.md) section for more details):
 
 ``` rust,no_run,noplayground
 #[export_name = "the string that will be interned"]
