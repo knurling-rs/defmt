@@ -47,7 +47,7 @@ pub(crate) fn interned_string(
         let var_item = static_variable(&var_name, string, tag, prefix);
         quote!({
             #var_item
-            &#var_name as *const u8 as u16
+            &#var_name as *const _ as usize
         })
     };
 
@@ -61,17 +61,23 @@ pub(crate) fn interned_string(
 ///   under macos: ".defmt," + 16 character hex digest of symbol's hash
 ///   otherwise:   ".defmt." + prefix + symbol
 pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str) -> String {
-    let mut sub_section = if let Some(prefix) = prefix {
-        format!(".{prefix}.{symbol}")
+    let symbol_hash = hash(symbol);
+    let suffix = if for_macos {
+        // The Apple linker doesn't like `.` in input section names
+        if let Some(prefix) = prefix {
+            format!(",{prefix}_{symbol_hash:x}")
+        } else {
+            format!(",{symbol_hash:x}")
+        }
     } else {
-        format!(".{symbol}")
+        if let Some(prefix) = prefix {
+            format!(".{prefix}.{symbol_hash:x}")
+        } else {
+            format!(".{symbol_hash:x}")
+        }
     };
 
-    if for_macos {
-        sub_section = format!(",{:x}", hash(&sub_section));
-    }
-
-    format!(".defmt{sub_section}")
+    format!(".defmt{suffix}")
 }
 
 pub(crate) fn static_variable(
@@ -83,13 +89,20 @@ pub(crate) fn static_variable(
     let sym_name = mangled_symbol_name(tag, data);
     let section = linker_section(false, prefix, &sym_name);
     let section_for_macos = linker_section(true, prefix, &sym_name);
-
-    quote!(
-        #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
-        #[cfg_attr(not(target_os = "macos"), link_section = #section)]
-        #[export_name = #sym_name]
-        static #name: u8 = 0;
-    )
+    if cfg!(feature = "no-interning") {
+        quote!(
+            #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
+            #[cfg_attr(not(target_os = "macos"), link_section = #section)]
+            static #name: &'static str = #sym_name;
+        )
+    } else {
+        quote!(
+            #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
+            #[cfg_attr(not(target_os = "macos"), link_section = #section)]
+            #[export_name = #sym_name]
+            static #name: u8 = 0;
+        )
+    }
 }
 
 pub(crate) fn string_literal(content: &str) -> LitStr {
