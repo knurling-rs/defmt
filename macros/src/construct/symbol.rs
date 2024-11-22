@@ -52,15 +52,24 @@ impl<'a> Symbol<'a> {
     }
 
     fn mangle(&self) -> String {
-        format!(
+        let json = format!(
             r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}","crate_name":"{}"}}"#,
             json_escape(&self.package),
             json_escape(&self.tag),
             json_escape(self.data),
             self.disambiguator,
             json_escape(&self.crate_name),
-        )
+        );
+        format!("__defmt_hex_{}", hex_encode(&json))
     }
+}
+
+fn hex_encode(string: &str) -> String {
+    let mut res = String::new();
+    for &b in string.as_bytes() {
+        write!(&mut res, "{b:02x}").unwrap();
+    }
+    res
 }
 
 fn json_escape(string: &str) -> String {

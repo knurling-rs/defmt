@@ -229,7 +229,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
 fn check_version(version: &str) -> Result<(), String> {
     if !DEFMT_VERSIONS.contains(&version) {
         let msg = format!(
-            "defmt wire format version mismatch: firmware is using {}, `probe-run` supports {}\nsuggestion: use a newer version of `defmt` or `cargo install` a different version of `probe-run` that supports defmt {}",
+            "defmt wire format version mismatch: firmware is using {}, this tool supports {}\nsuggestion: install a newer version of this tool that supports defmt wire format version {}",
             version, DEFMT_VERSIONS.join(", "), version
         );
 

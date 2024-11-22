@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [#884]: Upgrade dependencies: notify is now at v7, thiserror is now at v2 
 - [#883]: Mark decoder and parser not as unstable anymore
 - [#880]: Merge function calls emitted by the macro to save space.
+- [#878]: Hex-encode defmt symbols to avoid compatibility issues.
 - [#874]: `defmt`: Fix doc test
 - [#872]: `defmt`: Add `expect!` as alias for `unwrap!` for discoverability
 - [#871]: Set MSRV to Rust 1.76

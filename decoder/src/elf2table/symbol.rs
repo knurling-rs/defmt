@@ -1,3 +1,6 @@
+use std::borrow::Cow;
+
+use anyhow::bail;
 use serde::Deserialize;
 
 use crate::Tag;
@@ -38,7 +41,11 @@ pub(super) enum SymbolTag {
 
 impl Symbol {
     pub fn demangle(raw: &str) -> anyhow::Result<Self> {
-        serde_json::from_str(raw)
+        let mut raw = Cow::from(raw);
+        if let Some(s) = raw.strip_prefix("__defmt_hex_") {
+            raw = Cow::from(hex_decode(s)?);
+        }
+        serde_json::from_str(&raw)
             .map_err(|j| anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", raw, j))
     }
 
@@ -76,4 +83,24 @@ impl Symbol {
     pub fn crate_name(&self) -> Option<&str> {
         self.crate_name.as_deref()
     }
+}
+
+fn hex_decode_digit(c: u8) -> anyhow::Result<u8> {
+    match c {
+        b'0'..=b'9' => Ok(c - b'0'),
+        b'a'..=b'f' => Ok(c - b'a' + 0xa),
+        _ => bail!("invalid hex char '{c}'"),
+    }
+}
+
+fn hex_decode(s: &str) -> anyhow::Result<String> {
+    let s = s.as_bytes();
+    if s.len() % 2 != 0 {
+        bail!("invalid hex: length must be even")
+    }
+    let mut res = vec![0u8; s.len() / 2];
+    for i in 0..(s.len() / 2) {
+        res[i] = (hex_decode_digit(s[i * 2])? << 4) | hex_decode_digit(s[i * 2 + 1])?;
+    }
+    Ok(String::from_utf8(res)?)
 }
