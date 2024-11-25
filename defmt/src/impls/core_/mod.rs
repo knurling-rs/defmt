@@ -8,6 +8,8 @@
 mod alloc_;
 mod array;
 mod cell;
+#[cfg(feature = "chrono")]
+mod chrono;
 #[cfg(feature = "ip_in_core")]
 mod net;
 mod num;
