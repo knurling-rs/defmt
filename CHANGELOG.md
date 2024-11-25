@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- [#893]: Add impls for structs in Chrono crate
 - [#889]: Add script for book hosting
 - [#887]: Fix interning example in the book
 - [#884]: Upgrade dependencies: notify is now at v7, thiserror is now at v2 
