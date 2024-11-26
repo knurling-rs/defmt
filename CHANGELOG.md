@@ -11,15 +11,15 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [defmt-macros](#defmt-macros)
 * [defmt-print](#defmt-print)
 * [defmt-decoder](#defmt-decoder)
-* [defmt-elf2table](#defmt-elf2table)
-* [defmt-logger](#defmt-logger)
-* [defmt-json-schema](#defmt-json-schema)
 * [defmt-parser](#defmt-parser)
 * [defmt-rtt](#defmt-rtt)
 * [defmt-itm](#defmt-itm)
 * [panic-probe](#panic-probe)
 * [defmt-test](#defmt-test)
 * [defmt-test-macros](#defmt-test-macros)
+* [defmt-json-schema](#defmt-json-schema)
+* [defmt-elf2table](#defmt-elf2table)
+* [defmt-logger](#defmt-logger)
 
 ## defmt
 
