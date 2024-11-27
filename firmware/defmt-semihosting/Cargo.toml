@@ -1,8 +1,13 @@
 [package]
 authors = ["The Knurling-rs developers"]
+categories = ["embedded", "no-std"]
+description = "Transmit defmt log messages over the Cortex-M Semihosting protocol"
 edition = "2021"
+keywords = ["knurling", "defmt", "defmt-transport"]
 license = "MIT OR Apache-2.0"
 name = "defmt-semihosting"
+readme = "README.md"
+repository = "https://github.com/knurling-rs/defmt"
 version = "0.1.0"
 
 [dependencies]
