@@ -11,7 +11,7 @@ name = "defmt-test"
 harness = false
 
 [dependencies]
-defmt = { path = "../../defmt" }
+defmt = { path = "../../defmt", default-features = true, features = ["bitflagsv2"]}
 defmt-semihosting = { path = "../defmt-semihosting" }
 defmt-test = { path = "../defmt-test" }
 cortex-m = "0.7"

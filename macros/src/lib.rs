@@ -199,7 +199,14 @@ pub fn write(args: TokenStream) -> TokenStream {
 #[proc_macro]
 #[proc_macro_error]
 pub fn bitflags(ts: TokenStream) -> TokenStream {
-    items::bitflags::expand(ts)
+    items::bitflags::expand(ts, false)
+}
+
+/* # Items */
+#[proc_macro]
+#[proc_macro_error]
+pub fn bitflagsv2(ts: TokenStream) -> TokenStream {
+    items::bitflags::expand(ts, true)
 }
 
 #[proc_macro]
