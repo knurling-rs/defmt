@@ -6,29 +6,28 @@ For more details about the framework check the book at <https://defmt.ferrous-sy
 
 The git version of the defmt book can be viewed at <https://defmt-next.ferrous-systems.com/>.
 
-## Setup
+## Components
 
-### New project
+This repository contains the following packages:
 
-The fastest way to get started with `defmt` is to use our [app-template] to set up a new Cortex-M embedded project.
-
-[app-template]: https://github.com/knurling-rs/app-template
-
-### Existing project
-
-To include `defmt` in your existing project, follow our [Application Setup guide].
-
-[Application Setup guide]: https://defmt.ferrous-systems.com/setup.html
+| Name                | Path                                                           | Description                                                                |
+| ------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `defmt`             | [`./defmt`](./defmt)                                           | On-target code for highly efficient logging                                |
+| `defmt-macros`      | [`./macros`](./macros)                                         | Proc Macros for `defmt`                                                    |
+| `defmt-print`       | [`./print`](./print)                                           | CLI utility for decoding and printing `defmt` encoded logs to standard out |
+| `defmt-decoder`     | [`./decoder`](./decoder)                                       | Host Library for decoding `defmt` log frames                               |
+| `defmt-parser`      | [`./parser`](./parser)                                         | Host Library for parsing `defmt` log frames                                |
+| `defmt-rtt`         | [`./firmware/defmt-rtt`](./firmware/defmt-rtt)                 | On-target library for sending `defmt` logs over RTT                        |
+| `defmt-itm`         | [`./firmware/defmt-itm`](./firmware/defmt-itm)                 | On-target library for sending `defmt` logs over ITM                        |
+| `defmt-semihosting` | [`./firmware/defmt-semihosting`](./firmware/defmt-semihosting) | On-target library for sending `defmt` logs over semihosting                |
+| `panic-probe`       | [`./firmware/panic-probe`](./firmware/panic-probe)             | On-target library for sending `panic!` over `defmt`                        |
+| `defmt-test`        | [`./firmware/defmt-test`](./firmware/defmt-test)               | Framework for running tests on-target                                      |
+| `defmt-test-macros` | [`./firmware/defmt-test/macros`](./firmware/defmt-test/macros) | Proc Macros for `defmt-test`                                               |
+| `defmt-json-schema` | [`./defmt/defmt-json-schema`](./defmt/defmt-json-schema)       | Describes the JSON emitted by `defmt-decoder`                              |
 
 ## MSRV
 
 The minimum supported Rust version is 1.76 (or Ferrocene 24.05). `defmt` is tested against the latest stable Rust version and the MSRV.
-
-## defmt ecosystem
-
-The following diagram illustrates the user-facing and internal crates of the defmt framework.
-
-![defmt crates structure](assets/defmt.png)
 
 ## Developer Information
 
@@ -39,13 +38,13 @@ Tests are run using `cargo xtask` -- although this is simply an alias (defined i
 To see a list of options, see [`xtask/src/main.rs`](xtask/src/main.rs), or run:
 
 ```console
-$ cargo xtask help
+cargo xtask help
 ```
 
 For example, to run all the tests, run:
 
 ```console
-$ cargo xtask test-all
+cargo xtask test-all
 ```
 
 You will need `qemu-system-arm` installed and in your `$PATH` for some of the tests (e.g. `test-snapshot`).

@@ -3,10 +3,9 @@ authors = ["The Knurling-rs developers"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 name = "defmt-semihosting"
-publish = false
 version = "0.1.0"
 
 [dependencies]
-defmt = { path = "../../defmt" }
+defmt = { version = "0.3", path = "../../defmt" }
 cortex-m = "0.7"
 cortex-m-semihosting = "0.5"
