@@ -14,6 +14,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [defmt-parser](#defmt-parser)
 * [defmt-rtt](#defmt-rtt)
 * [defmt-itm](#defmt-itm)
+* [defmt-semihosting](#defmt-semihosting)
 * [panic-probe](#panic-probe)
 * [defmt-test](#defmt-test)
 * [defmt-test-macros](#defmt-test-macros)
@@ -663,6 +664,19 @@ Initial release
 ### [defmt-itm-v0.3.0] (2021-11-26)
 
 ### [defmt-itm-v0.2.0] (2021-02-20)
+
+Initial release
+
+## defmt-semihosting
+
+> Transmit defmt log messages over the semihosting (Instrumentation Trace Macrocell) stimulus port
+
+[defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.1.0...main
+[defmt-semihosting-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.1.0
+
+### [defmt-semihosting-next]
+
+### [defmt-semihosting-v0.1.0] (2024-11-27)
 
 Initial release
 

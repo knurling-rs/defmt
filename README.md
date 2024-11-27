@@ -19,6 +19,7 @@ This repository contains the following packages:
 | `defmt-parser`      | [`./parser`](./parser)                                         | Host Library for parsing `defmt` log frames                                |
 | `defmt-rtt`         | [`./firmware/defmt-rtt`](./firmware/defmt-rtt)                 | On-target library for sending `defmt` logs over RTT                        |
 | `defmt-itm`         | [`./firmware/defmt-itm`](./firmware/defmt-itm)                 | On-target library for sending `defmt` logs over ITM                        |
+| `defmt-semihosting` | [`./firmware/defmt-semihosting`](./firmware/defmt-semihosting) | On-target library for sending `defmt` logs over semihosting                |
 | `panic-probe`       | [`./firmware/panic-probe`](./firmware/panic-probe)             | On-target library for sending `panic!` over `defmt`                        |
 | `defmt-test`        | [`./firmware/defmt-test`](./firmware/defmt-test)               | Framework for running tests on-target                                      |
 | `defmt-test-macros` | [`./firmware/defmt-test/macros`](./firmware/defmt-test/macros) | Proc Macros for `defmt-test`                                               |
