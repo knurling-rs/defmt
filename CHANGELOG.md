@@ -580,6 +580,7 @@ Initial release
 > Parsing library for defmt format strings
 
 [defmt-parser-next]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.4.0...main
+[defmt-parser-v0.4.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.4.1
 [defmt-parser-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.4.0
 [defmt-parser-v0.3.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.3.4
 [defmt-parser-v0.3.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.3.3
@@ -592,6 +593,10 @@ Initial release
 [defmt-parser-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.1.0
 
 ### [defmt-parser-next]
+
+### [defmt-parser-v0.4.1] (2024-11-27)
+
+* [#897] Added its own README
 
 ### [defmt-parser-v0.4.0] (2024-11-27)
 
@@ -812,6 +817,7 @@ Initial release
 
 ---
 
+[#897]: https://github.com/knurling-rs/defmt/pull/897
 [#889]: https://github.com/knurling-rs/defmt/pull/889
 [#887]: https://github.com/knurling-rs/defmt/pull/887
 [#884]: https://github.com/knurling-rs/defmt/pull/884
