@@ -361,11 +361,21 @@ pub use defmt_macros::timestamp;
 ///         const ABC = Self::A.bits | Self::B.bits | Self::C.bits;
 ///     }
 /// }
-///
+/// #[cfg(feature = "bitflagsv2")]
+/// defmt::bitflagsv2! {
+///     struct Flags: u32 {
+///         const A = 0b00000001;
+///         const B = 0b00000010;
+///         const C = 0b00000100;
+///         const ABC = Self::A.bits() | Self::B.bits() | Self::C.bits()
+///     }
+/// }
 /// defmt::info!("Flags::ABC: {}", Flags::ABC);
 /// defmt::info!("Flags::empty(): {}", Flags::empty());
 /// ```
 pub use defmt_macros::bitflags;
+#[cfg(feature = "bitflagsv2")]
+pub use defmt_macros::bitflagsv2;
 
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use defmt_macros::Format;
