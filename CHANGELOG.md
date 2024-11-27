@@ -26,23 +26,24 @@ We have several packages which live in this repository. Changes are tracked sepa
 > A highly efficient logging framework that targets resource-constrained devices, like microcontrollers
 
 [defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.9...main
-[defmt-v0.3.9]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.8...defmt-v0.3.9
-[defmt-v0.3.8]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.7...defmt-v0.3.8
-[defmt-v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.6...defmt-v0.3.7
-[defmt-v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.5...defmt-v0.3.6
-[defmt-v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.4...defmt-v0.3.5
-[defmt-v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.3...defmt-v0.3.4
-[defmt-v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.2...defmt-v0.3.3
-[defmt-v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.1...defmt-v0.3.2
-[defmt-v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.0...defmt-v0.3.1
-[defmt-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.3...defmt-v0.3.0
-[defmt-v0.2.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.2...defmt-v0.2.3
-[defmt-v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.1...defmt-v0.2.2
-[defmt-v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.2.0...defmt-v0.2.1
-[defmt-v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.3...defmt-v0.2.0
-[defmt-v0.1.3]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.2...defmt-v0.1.3
-[defmt-v0.1.2]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.1...defmt-v0.1.2
-[defmt-v0.1.1]: https://github.com/knurling-rs/defmt/compare/defmt-v0.1.0...defmt-v0.1.1
+[defmt-v0.3.9]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.9
+[defmt-v0.3.8]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.8
+[defmt-v0.3.7]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.7
+[defmt-v0.3.6]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.6
+[defmt-v0.3.5]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.5
+[defmt-v0.3.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.4
+[defmt-v0.3.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.3
+[defmt-v0.3.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.2
+[defmt-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.1
+[defmt-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.0
+[defmt-v0.2.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.2.3
+[defmt-v0.2.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.2.2
+[defmt-v0.2.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.2.1
+[defmt-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.2.0
+[defmt-v0.1.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.3
+[defmt-v0.1.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.2
+[defmt-v0.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.1
+[defmt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.0
 
 ### [defmt-next]
 
@@ -362,7 +363,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 * [#259] crates.io version of `defmt` crates no longer require `git` to be built
 
-### defmt-v0.1.0 - 2020-11-11
+### [defmt-v0.1.0] - 2020-11-11
 
 Initial release
 
@@ -371,22 +372,23 @@ Initial release
 > Macros for [defmt](#defmt)
 
 [defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.10...main
-[defmt-macros-v0.3.10]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.9...defmt-macros-v0.3.10
-[defmt-macros-v0.3.9]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.8...defmt-macros-v0.3.9
-[defmt-macros-v0.3.8]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.7...defmt-macros-v0.3.8
-[defmt-macros-v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.6...defmt-macros-v0.3.7
-[defmt-macros-v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.5...defmt-macros-v0.3.6
-[defmt-macros-v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.4...defmt-macros-v0.3.5
-[defmt-macros-v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.3...defmt-macros-v0.3.4
-[defmt-macros-v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.2...defmt-macros-v0.3.3
-[defmt-macros-v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.1...defmt-macros-v0.3.2
-[defmt-macros-v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.0...defmt-macros-v0.3.1
-[defmt-macros-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.2.3...defmt-macros-v0.3.0
-[defmt-macros-v0.2.3]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.2.2...defmt-macros-v0.2.3
-[defmt-macros-v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.2.1...defmt-macros-v0.2.2
-[defmt-macros-v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.2.0...defmt-macros-v0.2.1
-[defmt-macros-v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.1.1...defmt-macros-v0.2.0
-[defmt-macros-v0.1.1]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.1.0...defmt-macros-v0.1.1
+[defmt-macros-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.10
+[defmt-macros-v0.3.9]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.9
+[defmt-macros-v0.3.8]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.8
+[defmt-macros-v0.3.7]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.7
+[defmt-macros-v0.3.6]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.6
+[defmt-macros-v0.3.5]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.5
+[defmt-macros-v0.3.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.4
+[defmt-macros-v0.3.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.3
+[defmt-macros-v0.3.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.2
+[defmt-macros-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.1
+[defmt-macros-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.0
+[defmt-macros-v0.2.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.2.3
+[defmt-macros-v0.2.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.2.2
+[defmt-macros-v0.2.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.2.1
+[defmt-macros-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.2.0
+[defmt-macros-v0.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.1.1
+[defmt-macros-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.1.0
 
 ### [defmt-macros-next]
 
@@ -426,7 +428,7 @@ Initial release
 
 ### [defmt-macros-v0.1.1] (2020-11-26)
 
-### defmt-macros-v0.1.0 (2020-11-30)
+### [defmt-macros-v0.1.0] (2020-11-30)
 
 Initial release
 
@@ -435,22 +437,22 @@ Initial release
 > A tool that decodes defmt logs and prints them to the console
 
 [defmt-print-next]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.13...main
-[defmt-print-v0.3.13]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.12...defmt-print-v0.3.13
-[defmt-print-v0.3.12]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.11...defmt-print-v0.3.12
-[defmt-print-v0.3.11]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.10...defmt-print-v0.3.11
-[defmt-print-v0.3.10]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.9...defmt-print-v0.3.10
-[defmt-print-v0.3.9]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.8...defmt-print-v0.3.9
-[defmt-print-v0.3.8]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.7...defmt-print-v0.3.8
-[defmt-print-v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.6...defmt-print-v0.3.7
-[defmt-print-v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.5...defmt-print-v0.3.6
-[defmt-print-v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.4...defmt-print-v0.3.5
-[defmt-print-v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.3...defmt-print-v0.3.4
-[defmt-print-v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.2...defmt-print-v0.3.3
-[defmt-print-v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.3.0...defmt-print-v0.3.2
-[defmt-print-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.2.2...defmt-print-v0.3.1
-[defmt-print-v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.2.1...defmt-print-v0.2.2
-[defmt-print-v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.2.0...defmt-print-v0.2.1
-[defmt-print-v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-print-v0.1.0...defmt-print-v0.2.0
+[defmt-print-v0.3.13]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.13
+[defmt-print-v0.3.12]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.12
+[defmt-print-v0.3.11]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.11
+[defmt-print-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.10
+[defmt-print-v0.3.9]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.9
+[defmt-print-v0.3.8]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.8
+[defmt-print-v0.3.7]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.7
+[defmt-print-v0.3.6]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.6
+[defmt-print-v0.3.5]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.5
+[defmt-print-v0.3.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.4
+[defmt-print-v0.3.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.3
+[defmt-print-v0.3.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.2
+[defmt-print-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.1
+[defmt-print-v0.2.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.2.2
+[defmt-print-v0.2.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.2.1
+[defmt-print-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.2.0
 
 ### [defmt-print-next]
 
@@ -496,7 +498,7 @@ Initial release
 
 ### [defmt-print-v0.2.0] (2021-02-19)
 
-### defmt-print-v0.1.0  (2021-01-15)
+### [defmt-print-v0.1.0]  (2021-01-15)
 
 Initial release
 
@@ -505,24 +507,25 @@ Initial release
 > Decodes defmt log frames
 
 [defmt-decoder-next]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.4.0...main
-[defmt-decoder-v0.4.0]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.11...defmt-decoder-v0.4.0
-[defmt-decoder-v0.3.11]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.10...defmt-decoder-v0.3.11
-[defmt-decoder-v0.3.10]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.9...defmt-decoder-v0.3.10
-[defmt-decoder-v0.3.9]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.8...defmt-decoder-v0.3.9
-[defmt-decoder-v0.3.8]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.7...defmt-decoder-v0.3.8
-[defmt-decoder-v0.3.7]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.6...defmt-decoder-v0.3.7
-[defmt-decoder-v0.3.6]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.5...defmt-decoder-v0.3.6
-[defmt-decoder-v0.3.5]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.4...defmt-decoder-v0.3.5
-[defmt-decoder-v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.3...defmt-decoder-v0.3.4
-[defmt-decoder-v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.2...defmt-decoder-v0.3.3
-[defmt-decoder-v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.1...defmt-decoder-v0.3.2
-[defmt-decoder-v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.3.0...defmt-decoder-v0.3.1
-[defmt-decoder-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.2.2...defmt-decoder-v0.3.0
-[defmt-decoder-v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.2.1...defmt-decoder-v0.2.2
-[defmt-decoder-v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.2.0...defmt-decoder-v0.2.1
-[defmt-decoder-v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.1.4...defmt-decoder-v0.2.0
-[defmt-decoder-v0.1.4]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.1.3...defmt-decoder-v0.1.4
-[defmt-decoder-v0.1.3]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v0.1.0...defmt-decoder-v0.1.3
+[defmt-decoder-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.4.0
+[defmt-decoder-v0.3.11]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.11
+[defmt-decoder-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.10
+[defmt-decoder-v0.3.9]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.9
+[defmt-decoder-v0.3.8]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.8
+[defmt-decoder-v0.3.7]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.7
+[defmt-decoder-v0.3.6]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.6
+[defmt-decoder-v0.3.5]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.5
+[defmt-decoder-v0.3.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.4
+[defmt-decoder-v0.3.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.3
+[defmt-decoder-v0.3.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.2
+[defmt-decoder-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.1
+[defmt-decoder-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.0
+[defmt-decoder-v0.2.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.2.2
+[defmt-decoder-v0.2.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.2.1
+[defmt-decoder-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.2.0
+[defmt-decoder-v0.1.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.1.4
+[defmt-decoder-v0.1.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.1.3
+[defmt-decoder-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.1.0
 
 ### [defmt-decoder-next]
 
@@ -567,7 +570,7 @@ Initial release
 
 ### [defmt-decoder-v0.1.3] (2020-11-30)
 
-### defmt-decoder-v0.1.0 (2020-11-30)
+### [defmt-decoder-v0.1.0] (2020-11-30)
 
 Initial release
 
@@ -576,15 +579,16 @@ Initial release
 > Parsing library for defmt format strings
 
 [defmt-parser-next]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.4.0...main
-[defmt-parser-v0.4.0]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.3.4...defmt-parser-v0.4.0
-[defmt-parser-v0.3.4]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.3.3...defmt-parser-v0.3.4
-[defmt-parser-v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.3.2...defmt-parser-v0.3.3
-[defmt-parser-v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.3.1...defmt-parser-v0.3.2
-[defmt-parser-v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.3.0...defmt-parser-v0.3.1
-[defmt-parser-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.2.2...defmt-parser-v0.3.0
-[defmt-parser-v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.2.1...defmt-parser-v0.2.2
-[defmt-parser-v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.2.0...defmt-parser-v0.2.1
-[defmt-parser-v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v0.1.0...defmt-parser-v0.2.0
+[defmt-parser-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.4.0
+[defmt-parser-v0.3.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.3.4
+[defmt-parser-v0.3.3]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.3.3
+[defmt-parser-v0.3.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.3.2
+[defmt-parser-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.3.1
+[defmt-parser-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.3.0
+[defmt-parser-v0.2.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.2.2
+[defmt-parser-v0.2.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.2.1
+[defmt-parser-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.2.0
+[defmt-parser-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.1.0
 
 ### [defmt-parser-next]
 
@@ -606,13 +610,22 @@ Initial release
 
 ### [defmt-parser-v0.2.0] (2021-02-19)
 
-### defmt-parser-v0.1.0 (2020-11-30)
+### [defmt-parser-v0.1.0] (2020-11-30)
 
 Initial release
 
 ## defmt-rtt
 
 > Transmit defmt log messages over the RTT (Real-Time Transfer) protocol
+
+[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.4.1...main
+[defmt-rtt-v0.4.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.1
+[defmt-rtt-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.0
+[defmt-rtt-v0.3.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.3.2
+[defmt-rtt-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.3.1
+[defmt-rtt-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.3.0
+[defmt-rtt-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.2.0
+[defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
 ### [defmt-rtt-next]
 
@@ -633,29 +646,23 @@ Initial release
 
 ### [defmt-rtt-v0.2.0] (2021-02-20)
 
-### defmt-rtt-v0.1.0 (2020-11-30)
+### [defmt-rtt-v0.1.0] (2020-11-30)
 
 Initial release
-
-[defmt-rtt-v0.4.1]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.4.0...defmt-rtt-v0.4.1
-[defmt-rtt-v0.4.0]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.3.2...defmt-rtt-v0.4.0
-[defmt-rtt-v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.3.1...defmt-rtt-v0.3.2
-[defmt-rtt-v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.3.0...defmt-rtt-v0.3.1
-[defmt-rtt-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.2.0...defmt-rtt-v0.3.0
-[defmt-rtt-v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.1.0...defmt-rtt-v0.2.0
 
 ## defmt-itm
 
 > Transmit defmt log messages over the ITM (Instrumentation Trace Macrocell) stimulus port
 
-### [defmt-itm-next]
-
 [defmt-itm-next]: https://github.com/knurling-rs/defmt/compare/defmt-itm-v0.3.0...main
-[defmt-itm-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-itm-v0.2.0...defmt-itm-v0.3.0
+[defmt-itm-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-itm-v0.3.0
+[defmt-itm-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-itm-v0.2.0
+
+### [defmt-itm-next]
 
 ### [defmt-itm-v0.3.0] (2021-11-26)
 
-### defmt-itm-v0.2.0 (2021-02-20)
+### [defmt-itm-v0.2.0] (2021-02-20)
 
 Initial release
 
@@ -694,14 +701,15 @@ Initial release
 > A test harness for embedded devices
 
 [defmt-test-next]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.2...main
-[defmt-test-v0.3.2]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.1...defmt-test-v0.3.2
-[defmt-test-v0.3.1]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.0...defmt-test-v0.3.1
-[defmt-test-v0.3.0]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.3...defmt-test-v0.3.0
-[defmt-test-v0.2.3]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.2...defmt-test-v0.2.3
-[defmt-test-v0.2.2]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.1...defmt-test-v0.2.2
-[defmt-test-v0.2.1]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.0...defmt-test-v0.2.1
-[defmt-test-v0.2.0]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.1.1...defmt-test-v0.2.0
-[defmt-test-v0.1.1]:  https://github.com/knurling-rs/defmt/compare/defmt-Test-v0.0.0...defmt-test-v0.1.1
+[defmt-test-v0.3.2]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.2
+[defmt-test-v0.3.1]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.1
+[defmt-test-v0.3.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.0
+[defmt-test-v0.2.3]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.2.3
+[defmt-test-v0.2.2]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.2.2
+[defmt-test-v0.2.1]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.2.1
+[defmt-test-v0.2.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.2.0
+[defmt-test-v0.1.1]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.1.1
+[defmt-test-v0.1.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.1.0
 
 ### [defmt-test-next]
 
@@ -721,7 +729,7 @@ Initial release
 
 ### [defmt-test-v0.1.1] (2020-12-03)
 
-### defmt-test-v0.1.0 (2020-11-30)
+### [defmt-test-v0.1.0] (2020-11-30)
 
 Initial release
 
@@ -730,10 +738,12 @@ Initial release
 > Macros for defmt-test
 
 [defmt-test-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-test-macros-v0.3.1...main
-[defmt-test-macros-v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-test-macros-v0.3.0...defmt-test-macros-v0.3.1
-[defmt-test-macros-v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-test-macros-v0.2.1...defmt-test-macros-v0.3.0
-[defmt-test-macros-v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-test-macros-v0.2.0...defmt-test-macros-v0.2.1
-[defmt-test-macros-v0.2.0]: https://github.com/knurling-rs/defmt/compare/defmt-test-macros-v0.1.1...defmt-test-macros-v0.2.0
+[defmt-test-macros-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.3.1
+[defmt-test-macros-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.3.0
+[defmt-test-macros-v0.2.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.2.1
+[defmt-test-macros-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.2.0
+[defmt-test-macros-v0.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.1.1
+[defmt-test-macros-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.1.0
 
 ### [defmt-test-macros-next]
 
@@ -745,9 +755,9 @@ Initial release
 
 ### [defmt-test-macros-v0.2.0] (2021-02-26)
 
-### defmt-test-macros-v0.1.1 (2020-11-30)
+### [defmt-test-macros-v0.1.1] (2020-11-30)
 
-### defmt-test-macros-v0.1.0 (2020-11-30)
+### [defmt-test-macros-v0.1.0] (2020-11-30)
 
 Initial release
 
@@ -756,10 +766,11 @@ Initial release
 > JSON schema for defmt
 
 [defmt-json-schema-next]: https://github.com/knurling-rs/defmt/compare/defmt-json-schema-v0.1.0...main
+[defmt-json-schema-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-json-schema-v0.1.0
 
 ### [defmt-json-schema-next]
 
-### defmt-json-schema-v0.1.0 (2022-03-10)
+### [defmt-json-schema-v0.1.0] (2022-03-10)
 
 Initial release
 
@@ -769,7 +780,9 @@ Initial release
 
 Now defunct - lives in [defmt-decoder](#defmt-decoder)
 
-### defmt-elf2table-v0.1.0 (2020-11-30)
+[defmt-elf2table-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-elf2table-v0.1.0
+
+### [defmt-elf2table-v0.1.0] (2020-11-30)
 
 Initial release
 
@@ -777,7 +790,9 @@ Initial release
 
 Now defunct - lives in [defmt-decoder](#defmt-decoder)
 
-### defmt-logger-v0.1.0 (2021-01-15)
+[defmt-logger-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-logger-v0.1.0
+
+### [defmt-logger-v0.1.0] (2021-01-15)
 
 Initial release
 
