@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::parse_macro_input;
 
 use crate::{cargo, construct};
@@ -9,7 +9,7 @@ use self::input::Input;
 
 mod input;
 
-pub(crate) fn expand(input: TokenStream) -> TokenStream {
+pub(crate) fn expand(input: TokenStream, is_v2: bool) -> TokenStream {
     let bitflags_input = TokenStream2::from(input.clone());
     let input = parse_macro_input!(input as Input);
 
@@ -23,11 +23,13 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         construct::crate_local_disambiguator(),
         cargo::crate_name(),
     );
-    let format_tag = construct::interned_string(&format_string, "bitflags", false, None);
+    let bitflags_tag = if is_v2 { "bitflagsv2" } else { "bitflags" };
+    let format_tag = construct::interned_string(&format_string, bitflags_tag, false, None);
 
     let ident = input.ident();
     let ty = input.ty();
-    let flag_statics = codegen_flag_statics(&input);
+    let flag_statics = codegen_flag_statics(&input, is_v2);
+    let bitflag_macro = format_ident!("{bitflags_tag}");
     quote!(
         const _: () = {
             fn assert<T: defmt::export::UnsignedInt>() {}
@@ -36,7 +38,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
             #(#flag_statics)*
         };
 
-        defmt::export::bitflags! {
+        defmt::export::#bitflag_macro! {
             #bitflags_input
         }
 
@@ -59,7 +61,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     .into()
 }
 
-fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
+fn codegen_flag_statics(input: &Input, is_v2: bool) -> Vec<TokenStream2> {
     input
         .flags()
         .enumerate()
@@ -69,11 +71,21 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
             let struct_name = input.ident();
             let repr_ty = input.ty();
 
+            let _tag = if is_v2 {
+                "bitflagsv2_value"
+            } else {
+                "bitflags_value"
+            };
             let sym_name = construct::mangled_symbol_name(
-                "bitflags_value",
+                _tag,
                 &format!("{}::{i}::{}", input.ident(), flag.ident()),
             );
 
+            let bits_access = if is_v2 {
+                quote! { bits() }
+            } else {
+                quote! { bits}
+            };
             quote! {
                 #(#cfg_attrs)*
                 #[cfg_attr(target_os = "macos", link_section = ".defmt,end")]
@@ -84,7 +96,7 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
                     // causes a value such as `1 << 127` to be evaluated as an `i32`, which
                     // overflows. So we instead coerce (but don't cast) it to the bitflags' raw
                     // type, and then cast that to u128.
-                    let coerced_value: #repr_ty = #struct_name::#var_name.bits;
+                    let coerced_value: #repr_ty = #struct_name::#var_name.#bits_access;
                     coerced_value as u128
                 };
             }
