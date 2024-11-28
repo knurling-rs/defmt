@@ -4,8 +4,6 @@
 
 For more details about the framework check the book at <https://defmt.ferrous-systems.com>.
 
-The git version of the defmt book can be viewed at <https://defmt-next.ferrous-systems.com/>.
-
 This library contains the proc macros used by
 [`defmt`](https://crates.io/crates/defmt).
 

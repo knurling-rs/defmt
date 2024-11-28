@@ -4,8 +4,6 @@
 
 For more details about the framework check the book at <https://defmt.ferrous-systems.com>.
 
-The git version of the defmt book can be viewed at <https://defmt-next.ferrous-systems.com/>.
-
 This library decodes `defmt` frames into Rust structures. It is mainly used by
 [`defmt-decoder`](https://crates.io/crates/defmt-decoder), and you should prefer
 using that crate to this one.
