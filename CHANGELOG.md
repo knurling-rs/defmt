@@ -26,7 +26,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 > A highly efficient logging framework that targets resource-constrained devices, like microcontrollers
 
-[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.9...main
+[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v0.3.10...main
+[defmt-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.10
 [defmt-v0.3.9]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.9
 [defmt-v0.3.8]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.8
 [defmt-v0.3.7]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.7
@@ -48,7 +49,10 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+### [defmt-v0.3.10] (2024-11-29)
+
 * [#902] Minor change to Format impl for `core::panic::PanicInfo`, eliding a lifetime specifier to satisfy Clippy 1.83.
+* [#xxx] Pin the defmt-macro crate to avoid incompatible versions being used together
 
 ### [defmt-v0.3.9] (2024-11-27)
 
@@ -78,7 +82,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#839] `CI`: Fix tests
 * [#838] `defmt`: Switch to Cargo instruction compatible with older versions of Cargo
 
-### [defmt-v0.3.7] (2024-05-13)
+### [defmt-v0.3.7] (2024-05-13 (yanked))
 
 * [#831] `CI`: Fix CI
 * [#830] `book`: Add section about feature-gated derive Format
@@ -374,7 +378,8 @@ Initial release
 
 > Macros for [defmt](#defmt)
 
-[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.3.10...main
+[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v0.4.0...main
+[defmt-macros-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.4.0
 [defmt-macros-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.10
 [defmt-macros-v0.3.9]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.9
 [defmt-macros-v0.3.8]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.8
@@ -394,6 +399,10 @@ Initial release
 [defmt-macros-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.1.0
 
 ### [defmt-macros-next]
+
+### [defmt-macros-v0.4.0] (2024-11-29)
+
+* [#xxx] Just a major version bump to stop it being used by older defmt versions.
 
 ### [defmt-macros-v0.3.10] (2024-11-27)
 
