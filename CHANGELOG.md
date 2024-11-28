@@ -52,7 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 ### [defmt-v0.3.10] (2024-11-29)
 
 * [#902] Minor change to Format impl for `core::panic::PanicInfo`, eliding a lifetime specifier to satisfy Clippy 1.83.
-* [#xxx] Pin the defmt-macro crate to avoid incompatible versions being used together
+* [#899] Pin the defmt-macro crate to avoid incompatible versions being used together
 
 ### [defmt-v0.3.9] (2024-11-27)
 
@@ -402,7 +402,7 @@ Initial release
 
 ### [defmt-macros-v0.4.0] (2024-11-29)
 
-* [#xxx] Just a major version bump to stop it being used by older defmt versions.
+* [#899] Just a major version bump to stop it being used by older defmt versions.
 
 ### [defmt-macros-v0.3.10] (2024-11-27)
 
@@ -837,6 +837,7 @@ Initial release
 
 [#902]: https://github.com/knurling-rs/defmt/pull/902
 [#901]: https://github.com/knurling-rs/defmt/pull/901
+[#899]: https://github.com/knurling-rs/defmt/pull/899
 [#897]: https://github.com/knurling-rs/defmt/pull/897
 [#889]: https://github.com/knurling-rs/defmt/pull/889
 [#887]: https://github.com/knurling-rs/defmt/pull/887
