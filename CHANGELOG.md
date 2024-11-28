@@ -50,7 +50,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 * [#902] Minor change to Format impl for `core::panic::PanicInfo`, eliding a lifetime specifier to satisfy Clippy 1.83.
 
-### [defmt-v0.3.9] - 2024-11-27
+### [defmt-v0.3.9] (2024-11-27)
 
 * [#889] Add script for book hosting
 * [#887] Fix interning example in the book
@@ -72,13 +72,13 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#843] `defmt`: Sort IDs of log msgs by severity to allow runtime filtering by severity
 * [#822] `CI`: Run `cargo semver-checks` on every PR
 
-### [defmt-v0.3.8] - 2024-05-17
+### [defmt-v0.3.8] (2024-05-17)
 
 * [#840] `defmt`: Support pre-1.77
 * [#839] `CI`: Fix tests
 * [#838] `defmt`: Switch to Cargo instruction compatible with older versions of Cargo
 
-### [defmt-v0.3.7] - 2024-05-13
+### [defmt-v0.3.7] (2024-05-13)
 
 * [#831] `CI`: Fix CI
 * [#830] `book`: Add section about feature-gated derive Format
@@ -88,24 +88,24 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#811] `book`: Add some examples for byte slice/array hints as well
 * [#805] `defmt`: Drop ip_in_core feature and re-enable nightly snapshot tests
 
-### [defmt-v0.3.6] - 2024-02-05
+### [defmt-v0.3.6] (2024-02-05)
 
 * [#804] `CI`: Remove mdbook strategy
 * [#803] `CI`: Disable nightly qemu-snapshot tests
 * [#789] `defmt`: Add support for new time-related display hints
 
-### [defmt-v0.3.5] - 2023-06-19
+### [defmt-v0.3.5] (2023-06-19)
 
 * [#758] `defmt-print`: Tidy up
 * [#757] `defmt-print`: Allow reading from a tcp port
 * [#756] `CI`: Switch from bors to merge queue
 * [#753] `demft` Add `Format` impls for `core::ptr::NonNull` and `fn(Args...) -> Ret` (up to 12 arguments)
 
-### [defmt-v0.3.4] - 2023-04-05
+### [defmt-v0.3.4] (2023-04-05)
 
 * [#747] Bump wire version
 
-### [defmt-v0.3.3] - 2023-03-29 (yanked)
+### [defmt-v0.3.3] (2023-03-29 (yanked))
 
 * [#744] `defmt-parser`: Clean and simplify
 * [#743] `defmt-parser`: Simplify tests with `rstest`
@@ -116,11 +116,11 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#603] `defmt`: Raw pointers now print as `0x1234` instead of `1234`
 * [#536] `defmt-parser`: Switch to using an enum for errors, and add some help text pointing you to the defmt docs if you use the wrong type specifier in a format string.
 
-### [defmt-v0.3.2] - 2022-05-31
+### [defmt-v0.3.2] (2022-05-31)
 
 * [#669] Refine docs for `--json` flag
 
-### [defmt-v0.3.1] - 2022-03-10
+### [defmt-v0.3.1] (2022-03-10)
 
 #### Added
 
@@ -137,7 +137,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#633] make RTT buffer size configurable
 * [#626] Make errror message more meaningful in case of version-mismatch
 
-### [defmt-v0.3.0] - 2021-11-09
+### [defmt-v0.3.0] (2021-11-09)
 
 * [#618] Support #[ignore] attribute in defmt_test
 * [#621] Readme Diagram: Replace duplicate defmt-itm with defmt-rtt
@@ -209,7 +209,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#507] [2/n] - Remove code-size-costly optimizations
 * [#505] [1/n] - Logger trait v2.
 
-### [defmt-v0.2.3] - 2021-06-17
+### [defmt-v0.2.3] (2021-06-17)
 
 #### Added
 
@@ -229,7 +229,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 * [#497] `macros`: match unused vars if logging is disabled
 
-### [defmt-v0.2.2] - 2021-05-20
+### [defmt-v0.2.2] (2021-05-20)
 
 #### Added
 
@@ -243,7 +243,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 * [#477] Disable logging calls via conditional compilation when all defmt features are disabled
 
-### [defmt-v0.2.1] - 2021-03-08
+### [defmt-v0.2.1] (2021-03-08)
 
 #### Added
 
@@ -254,7 +254,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#413] Fix docs-rs build, by disabling feature "unstable-test"
 * [#427] Drop outdated note about `defmt v0.2.0` from book
 
-### [defmt-v0.2.0] - 2021-02-19
+### [defmt-v0.2.0] (2021-02-19)
 
 #### Added
 
@@ -330,14 +330,14 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#342] Fix a data corruption issue when using `bool`s in `write!`
 * [#357] Fix issue preventing `defmt` from compiling on MacOS.
 
-### [defmt-v0.1.3] - 2020-11-30
+### [defmt-v0.1.3] (2020-11-30)
 
 #### Fixed
 
 * [#290] fixed cross compilation to ARMv6-M and other targets that have no CAS (Compare-and-Swap)
   primitives when the "alloc" feature is enabled
 
-### [defmt-v0.1.2] - 2020-11-26
+### [defmt-v0.1.2] (2020-11-26)
 
 #### Added
 
@@ -360,13 +360,13 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#269] fixes compiler error that was thrown when using `defmt::panic` within e.g. a match expression
 * [#272] braces in format args passed to the new `defmt::panic!` and `defmt::assert!` macros do not cause unexpected errors anymore
 
-### [defmt-v0.1.1] - 2020-11-16
+### [defmt-v0.1.1] (2020-11-16)
 
 #### Fixed
 
 * [#259] crates.io version of `defmt` crates no longer require `git` to be built
 
-### [defmt-v0.1.0] - 2020-11-11
+### [defmt-v0.1.0] (2020-11-11)
 
 Initial release
 
