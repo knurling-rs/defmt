@@ -4,8 +4,6 @@
 
 For more details about the framework check the book at <https://defmt.ferrous-systems.com>.
 
-The git version of the defmt book can be viewed at <https://defmt-next.ferrous-systems.com/>.
-
 This library is for decoding [`defmt`](https://crates.io/crates/defmt) frames
 into formatted strings. It is used by
 [`defmt-print`](https://crates.io/crates/defmt-print) and other tools.
