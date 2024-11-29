@@ -640,6 +640,7 @@ Initial release
 ### [defmt-rtt-next]
 
 * [#902] Use `core::ptr::addr_of_mut!` instead of `&mut` on mutable statics. No observable change.
+* [#901] `defmt-rtt`: Update to critical-section 1.2
 
 ### [defmt-rtt-v0.4.1] (2024-05-13)
 
@@ -826,6 +827,7 @@ Initial release
 ---
 
 [#902]: https://github.com/knurling-rs/defmt/pull/902
+[#901]: https://github.com/knurling-rs/defmt/pull/901
 [#897]: https://github.com/knurling-rs/defmt/pull/897
 [#889]: https://github.com/knurling-rs/defmt/pull/889
 [#887]: https://github.com/knurling-rs/defmt/pull/887
