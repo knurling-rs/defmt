@@ -2,7 +2,7 @@ use core::panic;
 
 use super::*;
 
-impl<'a> Format for panic::PanicInfo<'a> {
+impl Format for panic::PanicInfo<'_> {
     fn format(&self, f: Formatter) {
         if let Some(location) = self.location() {
             crate::write!(f, "panicked at {}", location);
@@ -14,7 +14,7 @@ impl<'a> Format for panic::PanicInfo<'a> {
     }
 }
 
-impl<'a> Format for panic::Location<'a> {
+impl Format for panic::Location<'_> {
     fn format(&self, f: Formatter) {
         crate::write!(
             f,
