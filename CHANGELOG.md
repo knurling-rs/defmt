@@ -635,6 +635,8 @@ Initial release
 
 ### [defmt-rtt-next]
 
+* [#901] `defmt-rtt`: Update to critical-section 1.2
+
 ### [defmt-rtt-v0.4.1] (2024-05-13)
 
 ### [defmt-rtt-v0.4.0] (2022-10-07)
