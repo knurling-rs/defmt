@@ -49,6 +49,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#894] Add optional support for bitflags v2
+
 ### [defmt-v0.3.10] (2024-11-29)
 
 * [#902] Minor change to Format impl for `core::panic::PanicInfo`, eliding a lifetime specifier to satisfy Clippy 1.83.
@@ -839,6 +841,7 @@ Initial release
 [#901]: https://github.com/knurling-rs/defmt/pull/901
 [#899]: https://github.com/knurling-rs/defmt/pull/899
 [#897]: https://github.com/knurling-rs/defmt/pull/897
+[#894]: https://github.com/knurling-rs/defmt/pull/894
 [#889]: https://github.com/knurling-rs/defmt/pull/889
 [#887]: https://github.com/knurling-rs/defmt/pull/887
 [#884]: https://github.com/knurling-rs/defmt/pull/884
