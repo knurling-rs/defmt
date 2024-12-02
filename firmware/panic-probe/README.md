@@ -7,6 +7,8 @@
 `panic-probe` can optionally log the panic message using the [`defmt`] logging framework.
 This functionality can be enabled through the `print-defmt` Cargo feature.
 
+> Note this firmware only supports Cortex-M targets
+
 [`defmt`]: https://github.com/knurling-rs/defmt
 
 ## Support
