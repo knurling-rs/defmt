@@ -12,7 +12,7 @@
 
 #![cfg_attr(not(feature = "unstable-test"), no_std)]
 // NOTE if you change this URL you'll also need to update all other crates in this repo
-#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
+#![doc(html_logo_url = "https://defmt.ferrous-systems.com/assets/knurling_logo_light_text.svg")]
 #![warn(missing_docs)]
 
 #[cfg(feature = "alloc")]
