@@ -84,7 +84,7 @@ fn codegen_flag_statics(input: &Input, is_v2: bool) -> Vec<TokenStream2> {
             let bits_access = if is_v2 {
                 quote! { bits() }
             } else {
-                quote! { bits}
+                quote! { bits }
             };
             quote! {
                 #(#cfg_attrs)*
