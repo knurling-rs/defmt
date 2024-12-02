@@ -48,6 +48,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 [defmt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.0
 
 ### [defmt-next]
+
 * [#894] Add optional support for bitflags v2
 
 * [#938] Emit `option_env!("DEFMT_LOG")` so rustc depinfo can track it
