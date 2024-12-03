@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 name = "defmt-parser"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.4.1"
+version = "1.0.0-alpha"
 
 [dependencies]
 thiserror = "2"

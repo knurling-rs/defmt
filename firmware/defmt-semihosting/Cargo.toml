@@ -8,9 +8,9 @@ license = "MIT OR Apache-2.0"
 name = "defmt-semihosting"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.1.0"
+version = "0.2.0"
 
 [dependencies]
-defmt = { version = "0.3", path = "../../defmt" }
+defmt = { version = "1.0.0-alpha", path = "../../defmt" }
 cortex-m = "0.7"
 cortex-m-semihosting = "0.5"
