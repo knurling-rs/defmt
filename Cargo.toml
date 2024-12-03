@@ -1,5 +1,5 @@
 [workspace]
-exclude = ["firmware/*"]
+exclude = ["firmware/*", "defmt-03"]
 members = [
   "decoder",
   "decoder/defmt-json-schema",

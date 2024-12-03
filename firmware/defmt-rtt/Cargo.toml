@@ -8,8 +8,8 @@ license = "MIT OR Apache-2.0"
 name = "defmt-rtt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.4.1"
+version = "1.0.0-alpha"
 
 [dependencies]
-defmt = { version = "0.3", path = "../../defmt" }
+defmt = { version = "1.0.0-alpha", path = "../../defmt" }
 critical-section = "1.2"
