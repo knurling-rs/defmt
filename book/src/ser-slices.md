@@ -1,5 +1,7 @@
 # Slices
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 For slices (`{=[u8]}`) the length is LEB128 encoded and serialized first and then followed by the slice data.
 
 ``` rust
