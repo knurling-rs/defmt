@@ -1,5 +1,7 @@
 # Deserialization
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 The host has received the log data (binary data).
 How to make sense of it?
 

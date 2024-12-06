@@ -1,5 +1,7 @@
 # Arrays
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 For arrays (`{=[u8; N]}`) the length is not serialized.
 
 ``` rust

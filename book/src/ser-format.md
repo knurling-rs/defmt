@@ -1,5 +1,7 @@
 # Format
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 The untyped argument (`=?`) requires one level of indirection during serialization.
 
 First let's see how a primitive implements the `Format` trait:

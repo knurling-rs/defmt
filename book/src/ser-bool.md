@@ -1,5 +1,6 @@
 # Bool
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
 
 Booleans are compressed in bytes, bitflags-style.
 

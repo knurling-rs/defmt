@@ -1,5 +1,7 @@
 # Dealing with duplicates
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 The linker hates it when it finds two symbol that have the same name.
 For example, this is an error:
 

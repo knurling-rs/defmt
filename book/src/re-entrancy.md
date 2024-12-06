@@ -1,5 +1,7 @@
 # Re-entrancy
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 Where can re-entrancy occur?
 Turns out that with global singletons it can occur about anywhere; you don't need interrupts (preemption) to cause re-entrancy.
 See below:
