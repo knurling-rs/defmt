@@ -8,9 +8,9 @@ license = "MIT OR Apache-2.0"
 name = "defmt-itm"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.0"
+version = "0.4.0"
 
 [dependencies]
 cortex-m = "0.7"
 critical-section = "1.2.0"
-defmt = { version = "0.3", path = "../../defmt" }
+defmt = { version = "1.0.0-alpha", path = "../../defmt" }
