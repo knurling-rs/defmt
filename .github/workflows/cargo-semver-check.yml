@@ -14,11 +14,57 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Semver check host crates
+      - name: Semver check defmt
+        continue-on-error: true
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: default-features
+          manifest-path: defmt/
+      - name: Semver check defmt-json-schema
+        continue-on-error: true
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: decoder/defmt-json-schema/
+      - name: Semver check defmt-decoder
+        continue-on-error: true
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: decoder/
+      - name: Semver check defmt-parser
+        continue-on-error: true
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: parser/
+      - name: Semver check defmt-03
+        continue-on-error: true
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: defmt-03/
       - name: Semver check firmware crates
+        continue-on-error: true
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           manifest-path: firmware/
+      - name: Bonus run with main
+        continue-on-error: true
+        run: |
+          cargo install --git https://github.com/obi1kenobi/cargo-semver-checks.git --branch main cargo-semver-checks
+          cargo semver-checks --manifest-path defmt-03/ --default-features
+      - name: Print Logs
+        continue-on-error: true
+        run: cat /tmp/report-*.toml
+      - name: Bonus metadata
+        run: |
+          cd defmt-03
+          cargo metadata --no-deps --format-version=1 > ./output.json
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifacts
+          if-no-files-found: error
+          path: |
+            ./defmt-03/output.json
