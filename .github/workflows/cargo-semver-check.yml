@@ -18,6 +18,27 @@ jobs:
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: default-features
+          manifest-path: defmt
+      - name: Semver check host crates
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: defmt-03
+      - name: Semver check host crates
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: decoder
+      - name: Semver check host crates
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: decoder/defmt-json-schema
+      - name: Semver check host crates
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: default-features
+          manifest-path: parser
       - name: Semver check firmware crates
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
