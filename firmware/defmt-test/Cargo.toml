@@ -13,5 +13,5 @@ version = "0.4.0"
 [dependencies]
 cortex-m-rt = "0.7"
 cortex-m-semihosting = "0.5"
-defmt = { version = "1", path = "../../defmt" }
+defmt = { version = "1.0.0-rc.1", path = "../../defmt" }
 defmt-test-macros = { version = "=0.3.2", path = "macros" }
