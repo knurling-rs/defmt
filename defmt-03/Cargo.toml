@@ -14,10 +14,10 @@ name = "defmt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
 homepage = "https://knurling.ferrous-systems.com/"
-version = "0.3.100"
+version = "0.3.100-rc.1"
 
 [dependencies]
-defmt10 = { package = "defmt", version = "1.0.0-alpha", path = "../defmt" }
+defmt10 = { package = "defmt", version = "1.0.0-rc.1", path = "../defmt" }
 
 [features]
 alloc = ["defmt10/alloc"]
