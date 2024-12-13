@@ -50,7 +50,10 @@ enum TestCommand {
         /// Runs a single snapshot test in Debug mode
         single: Option<Snapshot>,
     },
-    TestPrintSnapshot,
+    TestPrintSnapshot {
+        /// Runs a single snapshot test in Debug mode
+        single: Option<Snapshot>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -80,7 +83,7 @@ fn main() -> anyhow::Result<()> {
                     test_book();
                     test_lint();
                 }
-                TestCommand::TestPrintSnapshot => test_print_snapshot("log"),
+                TestCommand::TestPrintSnapshot { single } => test_print_snapshot(single),
                 _ => unreachable!("get handled in outer `match`"),
             }
         }
