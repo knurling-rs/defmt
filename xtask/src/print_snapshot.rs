@@ -23,6 +23,8 @@ pub fn test_print_snapshot(name: &str) {
                 Command::new("defmt-print")
                     .arg("-e")
                     .arg(elf_path)
+                    .arg("--log-format")
+                    .arg("{L:4} {s}")
                     .stdin(Stdio::from(frames.stdout.unwrap())),
             )
             .with_context(|| name.to_string())?;
