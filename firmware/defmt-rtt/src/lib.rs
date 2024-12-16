@@ -18,6 +18,9 @@
 //!
 //! `defmt::flush` would also block forever in that case.
 //!
+//! If losing data is not an concern you can disable blocking mode by enabling the feature
+//! `disable-blocking-mode`
+//!
 //! # Critical section implementation
 //!
 //! This crate uses [`critical-section`](https://github.com/rust-embedded/critical-section) to ensure only one thread
