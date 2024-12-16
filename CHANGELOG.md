@@ -650,6 +650,7 @@ Initial release
 
 * [#902] Use `core::ptr::addr_of_mut!` instead of `&mut` on mutable statics. No observable change.
 * [#901] `defmt-rtt`: Update to critical-section 1.2
+* [#915] Introduced `disable-blocking-mode` feature
 
 ### [defmt-rtt-v0.4.1] (2024-05-13)
 
