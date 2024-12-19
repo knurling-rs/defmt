@@ -51,6 +51,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-v0.3.10] (2024-11-29)
 
+* [#914] Add cargo-deny as a CI action to check crate security and licensing
 * [#902] Minor change to Format impl for `core::panic::PanicInfo`, eliding a lifetime specifier to satisfy Clippy 1.83.
 * [#899] Pin the defmt-macro crate to avoid incompatible versions being used together
 
