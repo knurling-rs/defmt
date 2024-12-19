@@ -1,5 +1,7 @@
 # Acquire-release
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 One solution to the re-entrancy issue that's deadlock-free is to make the log macros *take* the logger and hold it until it's done with it.
 In case of nesting any inner take attempt will silently fail.
 
