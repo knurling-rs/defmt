@@ -60,3 +60,9 @@ To learn how to enable other logging levels and filters logs per modules read th
 ### Memory use
 
 When in a tight memory situation and logging over RTT, the buffer size (default: 1024 bytes) can be configured with the `DEFMT_RTT_BUFFER_SIZE` environment variable. Use a power of 2 for best performance.
+
+### Use on Windows/macOS/Linux
+
+You can use `defmt` without string-interning by enabling the `no-interning` feature. This will mean that format strings are included as literal strings and not hidden in the symbol name.
+
+You can optionally send the output to the `log` crate by enabling the `use-log-crate` feature.
