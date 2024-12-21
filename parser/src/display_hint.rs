@@ -40,6 +40,11 @@ pub enum DisplayHint {
         disambiguator: String,
         crate_name: Option<String>,
     },
+    /// `:cbor`: There is CBOR data encoded in those bytes, to be shown in diagnostic notation
+    // Should we have a flag to say "do a more display style stringification" (like, if you
+    // recognize the tag, just give the content)? Should we allow additional params that guide e''
+    // decoding?
+    Cbor,
     /// Display hints currently not supported / understood
     Unknown(String),
 }
@@ -108,6 +113,7 @@ impl DisplayHint {
             },
             "iso8601ms" => DisplayHint::ISO8601(TimePrecision::Millis),
             "iso8601s" => DisplayHint::ISO8601(TimePrecision::Seconds),
+            "cbor" => DisplayHint::Cbor,
             "?" => DisplayHint::Debug,
             _ => return None,
         })
