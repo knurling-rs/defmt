@@ -1,5 +1,7 @@
 # Timestamp
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 `defmt::timestamp!` needs to be as efficient as possible, because it is implicitly invoked on every single log invocation.
 
 The timestamp format string index is not transmitted over the wire.
