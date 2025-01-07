@@ -1,4 +1,6 @@
-//! This module provides interoperability utilities between [`defmt`] and the [`log`] crate.
+//! Handles the conversion of defmt frames to log messages (as strings).
+//!
+//! Also provides interoperability utilities between [`defmt`] and the [`log`] crate.
 //!
 //! If you are implementing a custom defmt decoding tool, this module can make it easier to
 //! integrate it with logs produced with the [`log`] crate.
@@ -6,16 +8,20 @@
 //! [`log`]: https://crates.io/crates/log
 //! [`defmt`]: https://crates.io/crates/defmt
 
-mod format;
+pub mod format;
 mod json_logger;
 mod stdout_logger;
 
-use log::{Level, LevelFilter, Log, Metadata, Record};
-use serde::{Deserialize, Serialize};
-
 use std::fmt;
 
-use self::{json_logger::JsonLogger, stdout_logger::StdoutLogger};
+use log::{Level, LevelFilter, Log, Metadata, Record as LogRecord};
+use serde::{Deserialize, Serialize};
+
+use self::{
+    format::{Formatter, HostFormatter},
+    json_logger::JsonLogger,
+    stdout_logger::StdoutLogger,
+};
 use crate::Frame;
 
 const DEFMT_TARGET_MARKER: &str = "defmt@";
@@ -27,18 +33,7 @@ pub fn log_defmt(
     line: Option<u32>,
     module_path: Option<&str>,
 ) {
-    let timestamp = frame
-        .display_timestamp()
-        .map(|ts| ts.to_string())
-        .unwrap_or_default();
-
-    let level = frame.level().map(|level| match level {
-        crate::Level::Trace => Level::Trace,
-        crate::Level::Debug => Level::Debug,
-        crate::Level::Info => Level::Info,
-        crate::Level::Warn => Level::Warn,
-        crate::Level::Error => Level::Error,
-    });
+    let (timestamp, level) = timestamp_and_level_from_frame(frame);
 
     let target = format!(
         "{}{}",
@@ -47,7 +42,7 @@ pub fn log_defmt(
     );
 
     log::logger().log(
-        &Record::builder()
+        &LogRecord::builder()
             .args(format_args!("{}", frame.display_message()))
             // .level(level) // no need to set the level, since it is transferred via payload
             .target(&target)
@@ -64,9 +59,21 @@ pub fn is_defmt_frame(metadata: &Metadata) -> bool {
 }
 
 /// A `log` record representing a defmt log frame.
-pub struct DefmtRecord<'a> {
-    log_record: &'a Record<'a>,
+struct DefmtRecord<'a> {
+    log_record: &'a LogRecord<'a>,
     payload: Payload,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum DefmtLoggerType {
+    Stdout,
+    Json,
+}
+
+pub struct DefmtLoggerConfig {
+    pub formatter: Formatter,
+    pub host_formatter: HostFormatter,
+    pub logger_type: DefmtLoggerType,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -77,7 +84,7 @@ struct Payload {
 
 impl<'a> DefmtRecord<'a> {
     /// If `record` was produced by [`log_defmt`], returns the corresponding `DefmtRecord`.
-    pub fn new(log_record: &'a Record<'a>) -> Option<Self> {
+    pub fn new(log_record: &'a LogRecord<'a>) -> Option<Self> {
         let target = log_record.metadata().target();
         target
             .strip_prefix(DEFMT_TARGET_MARKER)
@@ -119,54 +126,34 @@ impl<'a> DefmtRecord<'a> {
 ///
 /// The caller has to provide a `should_log` closure that determines whether a log record should be
 /// printed.
-///
-/// An optional `log_format` string can be provided to format the way
-/// logs are printed. A format string could look as follows:
-/// "{t} [{L}] Location<{f}:{l}> {s}"
-///
-/// The arguments between curly braces are placeholders for log metadata.
-/// The following arguments are supported:
-/// - {f} : file name (e.g. "main.rs")
-/// - {F} : file path (e.g. "src/bin/main.rs")
-/// - {l} : line number
-/// - {L} : log level (e.g. "INFO", "DEBUG", etc)
-/// - {m} : module path (e.g. "foo::bar::some_function")
-/// - {s} : the actual log
-/// - {t} : log timestamp
-///
-/// For example, with the log format shown above, a log would look like this:
-/// "23124 [INFO] Location<main.rs:23> Hello, world!"
 pub fn init_logger(
-    log_format: Option<&str>,
-    host_log_format: Option<&str>,
-    json: bool,
+    formatter: Formatter,
+    host_formatter: HostFormatter,
+    logger_type: DefmtLoggerType,
     should_log: impl Fn(&Metadata) -> bool + Sync + Send + 'static,
-) -> DefmtLoggerInfo {
-    let (logger, info): (Box<dyn Log>, DefmtLoggerInfo) = match json {
-        false => {
-            let logger = StdoutLogger::new(log_format, host_log_format, should_log);
-            let info = logger.info();
-            (logger, info)
-        }
-        true => {
+) {
+    let logger: Box<dyn Log> = match logger_type {
+        DefmtLoggerType::Stdout => StdoutLogger::new(formatter, host_formatter, should_log),
+        DefmtLoggerType::Json => {
             JsonLogger::print_schema_version();
-            let logger = JsonLogger::new(log_format, host_log_format, should_log);
-            let info = logger.info();
-            (logger, info)
+            JsonLogger::new(formatter, host_formatter, should_log)
         }
     };
-    log::set_boxed_logger(logger).unwrap();
-    log::set_max_level(LevelFilter::Trace);
-    info
+    alterable_logger::set_boxed_logger(logger);
+    alterable_logger::set_max_level(LevelFilter::Trace);
 }
 
-#[derive(Clone, Copy)]
-pub struct DefmtLoggerInfo {
-    has_timestamp: bool,
-}
-
-impl DefmtLoggerInfo {
-    pub fn has_timestamp(&self) -> bool {
-        self.has_timestamp
-    }
+fn timestamp_and_level_from_frame(frame: &Frame<'_>) -> (String, Option<Level>) {
+    let timestamp = frame
+        .display_timestamp()
+        .map(|ts| ts.to_string())
+        .unwrap_or_default();
+    let level = frame.level().map(|level| match level {
+        crate::Level::Trace => Level::Trace,
+        crate::Level::Debug => Level::Debug,
+        crate::Level::Info => Level::Info,
+        crate::Level::Warn => Level::Warn,
+        crate::Level::Error => Level::Error,
+    });
+    (timestamp, level)
 }

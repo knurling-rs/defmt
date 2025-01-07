@@ -1,7 +1,7 @@
 use defmt_parser::ParserMode;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use proc_macro_error::abort;
+use proc_macro_error2::abort;
 use quote::quote;
 use syn::parse_macro_input;
 
@@ -25,8 +25,8 @@ pub(crate) fn expand_parsed(args: Args) -> TokenStream2 {
 
     let formatting_exprs = args
         .formatting_args
-        .map(|punctuated| punctuated.into_iter().collect())
-        .unwrap_or_else(Vec::new);
+        .map(|punctuated| punctuated.into_iter().collect::<Vec<_>>())
+        .unwrap_or_default();
 
     let Codegen { patterns, exprs } = Codegen::new(
         &fragments,
@@ -34,16 +34,24 @@ pub(crate) fn expand_parsed(args: Args) -> TokenStream2 {
         args.format_string.span(),
     );
 
-    let header = construct::interned_string(&format_string, "println", true);
+    let header = construct::interned_string(&format_string, "println", true, None);
+    let content = if exprs.is_empty() {
+        quote!(
+            defmt::export::acquire_header_and_release(&#header);
+        )
+    } else {
+        quote!(
+            // safety: will be released a few lines further down
+            unsafe { defmt::export::acquire_and_header(&#header); };
+            #(#exprs;)*
+            // safety: acquire() was called a few lines above
+            unsafe { defmt::export::release() }
+        )
+    };
     quote!({
         match (#(&(#formatting_exprs)),*) {
             (#(#patterns),*) => {
-                // safety: will be released a few lines further down
-                unsafe { defmt::export::acquire(); }
-                defmt::export::header(&#header);
-                #(#exprs;)*
-                // safety: acquire() was called a few lines above
-                unsafe { defmt::export::release() }
+                #content
             }
         }
     })

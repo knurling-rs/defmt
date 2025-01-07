@@ -14,7 +14,6 @@
 // NOTE if you change this URL you'll also need to update all other crates in this repo
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 #![warn(missing_docs)]
-#![cfg_attr(feature = "ip_in_core", feature(ip_in_core))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -177,19 +176,32 @@ pub use defmt_macros::panic_ as panic;
 /// let x = result.unwrap();
 /// let x = unwrap!(result);
 ///
-/// # let value = result;
-/// let x = value.expect("text");
-/// let x = unwrap!(value, "text");
+/// let x = result.expect("text");
+/// let x = unwrap!(result, "text");
 ///
 /// # let arg = ();
-/// let x = value.expect(&format!("text {:?}", arg));
-/// let x = unwrap!(value, "text {:?}", arg); // arg must be implement `Format`
+/// let x = result.expect(&format!("text {:?}", arg));
+/// let x = unwrap!(result, "text {:?}", arg); // arg must be implement `Format`
 /// ```
 ///
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
 pub use defmt_macros::unwrap;
+
+/// This is an alias for defmt's [`unwrap`] macro which supports messages like std's except.
+/// ```
+/// use defmt::expect;
+///
+/// # let result = Ok::<(), ()>(());
+/// # let arg = ();
+/// let x = result.expect(&format!("text {:?}", arg));
+/// let x = expect!(result, "text {:?}", arg); // arg must be implement `Format`
+/// ```
+///
+/// For the complete documentation see that of defmt's *unwrap* macro.
+// note: Linking to unwrap is broken as of 2024-10-09, it links back to expect
+pub use defmt_macros::unwrap as expect;
 
 /// Overrides the panicking behavior of `defmt::panic!`
 ///
@@ -399,6 +411,52 @@ pub fn flush() {
                 _defmt_flush();
                 _defmt_release()
             }
+        }
+    }
+}
+
+#[cfg(not(feature = "unstable-test"))]
+#[doc(hidden)]
+pub struct IdRanges {
+    pub trace: core::ops::Range<u16>,
+    pub debug: core::ops::Range<u16>,
+    pub info: core::ops::Range<u16>,
+    pub warn: core::ops::Range<u16>,
+    pub error: core::ops::Range<u16>,
+}
+
+#[cfg(not(feature = "unstable-test"))]
+impl IdRanges {
+    pub fn get() -> Self {
+        extern "C" {
+            static __DEFMT_MARKER_TRACE_START: u8;
+            static __DEFMT_MARKER_TRACE_END: u8;
+            static __DEFMT_MARKER_DEBUG_START: u8;
+            static __DEFMT_MARKER_DEBUG_END: u8;
+            static __DEFMT_MARKER_INFO_START: u8;
+            static __DEFMT_MARKER_INFO_END: u8;
+            static __DEFMT_MARKER_WARN_START: u8;
+            static __DEFMT_MARKER_WARN_END: u8;
+            static __DEFMT_MARKER_ERROR_START: u8;
+            static __DEFMT_MARKER_ERROR_END: u8;
+        }
+
+        let trace_start = unsafe { &__DEFMT_MARKER_TRACE_START as *const u8 as u16 };
+        let trace_end = unsafe { &__DEFMT_MARKER_TRACE_END as *const u8 as u16 };
+        let debug_start = unsafe { &__DEFMT_MARKER_DEBUG_START as *const u8 as u16 };
+        let debug_end = unsafe { &__DEFMT_MARKER_DEBUG_END as *const u8 as u16 };
+        let info_start = unsafe { &__DEFMT_MARKER_INFO_START as *const u8 as u16 };
+        let info_end = unsafe { &__DEFMT_MARKER_INFO_END as *const u8 as u16 };
+        let warn_start = unsafe { &__DEFMT_MARKER_WARN_START as *const u8 as u16 };
+        let warn_end = unsafe { &__DEFMT_MARKER_WARN_END as *const u8 as u16 };
+        let error_start = unsafe { &__DEFMT_MARKER_ERROR_START as *const u8 as u16 };
+        let error_end = unsafe { &__DEFMT_MARKER_ERROR_END as *const u8 as u16 };
+        Self {
+            trace: trace_start..trace_end,
+            debug: debug_start..debug_end,
+            info: info_start..info_end,
+            warn: warn_start..warn_end,
+            error: error_start..error_end,
         }
     }
 }

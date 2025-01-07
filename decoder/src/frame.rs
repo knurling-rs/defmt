@@ -230,6 +230,13 @@ impl<'t> Frame<'t> {
                 true => write!(buf, "{x:#0zero_pad$b}")?,
                 false => write!(buf, "{x:0zero_pad$b}")?,
             },
+            Some(DisplayHint::Octal {
+                alternate,
+                zero_pad,
+            }) => match alternate {
+                true => write!(buf, "{x:#0zero_pad$o}")?,
+                false => write!(buf, "{x:0zero_pad$o}")?,
+            },
             Some(DisplayHint::Hexadecimal {
                 uppercase,
                 alternate,
@@ -240,10 +247,24 @@ impl<'t> Frame<'t> {
                 (true, false) => write!(buf, "{x:#0zero_pad$x}")?,
                 (true, true) => write!(buf, "{x:#0zero_pad$X}")?,
             },
-            Some(DisplayHint::Microseconds) => {
+            Some(DisplayHint::Seconds(TimePrecision::Micros)) => {
                 let seconds = x / 1_000_000;
                 let micros = x % 1_000_000;
                 write!(buf, "{seconds}.{micros:06}")?;
+            }
+            Some(DisplayHint::Seconds(TimePrecision::Millis)) => {
+                let seconds = x / 1_000;
+                let millis = x % 1_000;
+                write!(buf, "{seconds}.{millis:03}")?;
+            }
+            Some(DisplayHint::Time(TimePrecision::Micros)) => {
+                self.format_time(x, &TimePrecision::Micros, buf)?;
+            }
+            Some(DisplayHint::Time(TimePrecision::Millis)) => {
+                self.format_time(x, &TimePrecision::Millis, buf)?;
+            }
+            Some(DisplayHint::Time(TimePrecision::Seconds)) => {
+                self.format_time(x, &TimePrecision::Seconds, buf)?;
             }
             Some(DisplayHint::Bitflags {
                 name,
@@ -305,6 +326,13 @@ impl<'t> Frame<'t> {
                 true => write!(buf, "{x:#0zero_pad$b}")?,
                 false => write!(buf, "{x:0zero_pad$b}")?,
             },
+            Some(DisplayHint::Octal {
+                alternate,
+                zero_pad,
+            }) => match alternate {
+                true => write!(buf, "{x:#0zero_pad$o}")?,
+                false => write!(buf, "{x:0zero_pad$o}")?,
+            },
             Some(DisplayHint::Hexadecimal {
                 uppercase,
                 alternate,
@@ -354,7 +382,9 @@ impl<'t> Frame<'t> {
                 }
                 buf.push('\"');
             }
-            Some(DisplayHint::Hexadecimal { .. }) | Some(DisplayHint::Binary { .. }) => {
+            Some(DisplayHint::Hexadecimal { .. })
+            | Some(DisplayHint::Octal { .. })
+            | Some(DisplayHint::Binary { .. }) => {
                 // `core::write!` doesn't quite produce the output we want, for example
                 // `write!("{:#04x?}", bytes)` produces a multi-line output
                 // `write!("{:02x?}", bytes)` is single-line but each byte doesn't include the "0x" prefix
@@ -388,6 +418,54 @@ impl<'t> Frame<'t> {
         Ok(())
     }
 
+    fn format_time(
+        &self,
+        timestamp: u128,
+        precision: &TimePrecision,
+        buf: &mut String,
+    ) -> Result<(), fmt::Error> {
+        let div_rem = |x, y| (x / y, x % y);
+
+        let (timestamp, decimals) = match precision {
+            TimePrecision::Micros => div_rem(timestamp, 1_000_000),
+            TimePrecision::Millis => div_rem(timestamp, 1_000),
+            TimePrecision::Seconds => (timestamp, 0),
+        };
+
+        let (timestamp, seconds) = div_rem(timestamp, 60);
+        let (timestamp, minutes) = div_rem(timestamp, 60);
+        let (timestamp, hours) = div_rem(timestamp, 24);
+        let days = timestamp;
+
+        if days == 0 {
+            match precision {
+                TimePrecision::Micros => write!(
+                    buf,
+                    "{hours:0>2}:{minutes:0>2}:{seconds:0>2}.{decimals:0>6}"
+                ),
+                TimePrecision::Millis => write!(
+                    buf,
+                    "{hours:0>2}:{minutes:0>2}:{seconds:0>2}.{decimals:0>3}"
+                ),
+                TimePrecision::Seconds => write!(buf, "{hours:0>2}:{minutes:0>2}:{seconds:0>2}"),
+            }
+        } else {
+            match precision {
+                TimePrecision::Micros => write!(
+                    buf,
+                    "{days}:{hours:0>2}:{minutes:0>2}:{seconds:0>2}.{decimals:0>6}"
+                ),
+                TimePrecision::Millis => write!(
+                    buf,
+                    "{days}:{hours:0>2}:{minutes:0>2}:{seconds:0>2}.{decimals:0>3}"
+                ),
+                TimePrecision::Seconds => {
+                    write!(buf, "{days}:{hours:0>2}:{minutes:0>2}:{seconds:0>2}")
+                }
+            }
+        }
+    }
+
     fn format_iso8601(
         &self,
         timestamp: u64,
@@ -395,6 +473,9 @@ impl<'t> Frame<'t> {
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
         let format = match precision {
+            TimePrecision::Micros => format_description!(
+                "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:6]Z"
+            ),
             TimePrecision::Millis => format_description!(
                 "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
             ),
@@ -403,6 +484,7 @@ impl<'t> Frame<'t> {
             }
         };
         let date_time = OffsetDateTime::from_unix_timestamp_nanos(match precision {
+            TimePrecision::Micros => timestamp as i128 * 1_000,
             TimePrecision::Millis => timestamp as i128 * 1_000_000,
             TimePrecision::Seconds => timestamp as i128 * 1_000_000_000,
         })

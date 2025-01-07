@@ -19,6 +19,23 @@ SECTIONS
     /* Format implementations for primitives like u8 */
     *(.defmt.prim.*);
 
+    /* We order the ids of the log messages by severity and put markers in between, so that we can filter logs at runtime by severity */
+    __DEFMT_MARKER_TRACE_START = .;
+    *(.defmt.trace.*);
+    __DEFMT_MARKER_TRACE_END = .;
+    __DEFMT_MARKER_DEBUG_START = .;
+    *(.defmt.debug.*);
+    __DEFMT_MARKER_DEBUG_END = .;
+    __DEFMT_MARKER_INFO_START = .;
+    *(.defmt.info.*);
+    __DEFMT_MARKER_INFO_END = .;
+    __DEFMT_MARKER_WARN_START = .;
+    *(.defmt.warn.*);
+    __DEFMT_MARKER_WARN_END = .;
+    __DEFMT_MARKER_ERROR_START = .;
+    *(.defmt.error.*);
+    __DEFMT_MARKER_ERROR_END = .;
+
     /* Everything user-defined */
     *(.defmt.*);
 

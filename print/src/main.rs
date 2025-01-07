@@ -1,16 +1,28 @@
 use std::{
-    env, fs,
-    io::{self, Read, StdinLock},
-    net::TcpStream,
+    env,
     path::{Path, PathBuf},
 };
 
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
-use defmt_decoder::{DecodeError, Frame, Locations, Table, DEFMT_VERSIONS};
+use defmt_decoder::{
+    log::{
+        format::{Formatter, FormatterConfig, HostFormatter},
+        DefmtLoggerType,
+    },
+    DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
+};
+use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use tokio::{
+    fs,
+    io::{self, AsyncReadExt, Stdin},
+    net::TcpStream,
+    select,
+    sync::mpsc::Receiver,
+};
 
 /// Prints defmt-encoded logs to stdout
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[command(name = "defmt-print")]
 struct Opts {
     #[arg(short, required = true, conflicts_with("version"))]
@@ -34,11 +46,14 @@ struct Opts {
     #[arg(short = 'V', long)]
     version: bool,
 
+    #[arg(short, long)]
+    watch_elf: bool,
+
     #[command(subcommand)]
     command: Option<Command>,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Clone)]
 enum Command {
     /// Read defmt frames from stdin (default)
     Stdin,
@@ -53,36 +68,95 @@ enum Command {
 }
 
 enum Source {
-    Stdin(StdinLock<'static>),
+    Stdin(Stdin),
     Tcp(TcpStream),
 }
 
 impl Source {
     fn stdin() -> Self {
-        Source::Stdin(io::stdin().lock())
+        Source::Stdin(io::stdin())
     }
 
-    fn tcp(host: String, port: u16) -> anyhow::Result<Self> {
-        match TcpStream::connect((host, port)) {
+    async fn tcp(host: String, port: u16) -> anyhow::Result<Self> {
+        match TcpStream::connect((host, port)).await {
             Ok(stream) => Ok(Source::Tcp(stream)),
             Err(e) => Err(anyhow!(e)),
         }
     }
 
-    fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
+    async fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
         match self {
             Source::Stdin(stdin) => {
-                let n = stdin.read(buf)?;
+                let n = stdin.read(buf).await?;
                 Ok((n, n == 0))
             }
-            Source::Tcp(tcpstream) => Ok((tcpstream.read(buf)?, false)),
+            Source::Tcp(tcpstream) => Ok((tcpstream.read(buf).await?, false)),
         }
     }
 }
 
 const READ_BUFFER_SIZE: usize = 1024;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let opts = Opts::parse();
+
+    if opts.version {
+        return print_version();
+    }
+
+    // We create the source outside of the run command since recreating the stdin looses us some frames
+    let mut source = match opts.command.clone() {
+        None | Some(Command::Stdin) => Source::stdin(),
+        Some(Command::Tcp { host, port }) => Source::tcp(host, port).await?,
+    };
+
+    if opts.watch_elf {
+        run_and_watch(opts, &mut source).await
+    } else {
+        run(opts, &mut source).await
+    }
+}
+
+async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path: &PathBuf) -> bool {
+    loop {
+        if let Some(Ok(event)) = rx.recv().await {
+            if event.paths.contains(path) {
+                if let notify::EventKind::Create(_) | notify::EventKind::Modify(_) = event.kind {
+                    break;
+                }
+            }
+        }
+    }
+    true
+}
+
+async fn run_and_watch(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+
+    let path = opts.elf.clone().unwrap().canonicalize().unwrap();
+
+    // We want the elf directory instead of the elf, since some editors remove
+    // and recreate the file on save which will remove the notifier
+    let directory_path = path.parent().unwrap();
+
+    let mut watcher = RecommendedWatcher::new(
+        move |res| {
+            let _ = tx.blocking_send(res);
+        },
+        Config::default(),
+    )?;
+    watcher.watch(directory_path.as_ref(), RecursiveMode::NonRecursive)?;
+
+    loop {
+        select! {
+            r = run(opts.clone(), source) => r?,
+            _ = has_file_changed(&mut rx, &path) => ()
+        }
+    }
+}
+
+async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let Opts {
         elf,
         json,
@@ -90,26 +164,11 @@ fn main() -> anyhow::Result<()> {
         host_log_format,
         show_skipped_frames,
         verbose,
-        version,
-        command,
-    } = Opts::parse();
-
-    if version {
-        return print_version();
-    }
-
-    defmt_decoder::log::init_logger(
-        log_format.as_deref(),
-        host_log_format.as_deref(),
-        json,
-        move |metadata| match verbose {
-            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
-            true => true,                                          // We display *all* frames.
-        },
-    );
+        ..
+    } = opts;
 
     // read and parse elf file
-    let bytes = fs::read(elf.unwrap())?;
+    let bytes = fs::read(elf.unwrap()).await?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
 
@@ -121,18 +180,49 @@ fn main() -> anyhow::Result<()> {
         None
     };
 
+    let logger_type = if json {
+        DefmtLoggerType::Json
+    } else {
+        DefmtLoggerType::Stdout
+    };
+
+    let cloned_format = log_format.clone().unwrap_or_default();
+    let mut formatter_config = if log_format.is_some() {
+        FormatterConfig::custom(cloned_format.as_str())
+    } else if verbose {
+        FormatterConfig::default().with_location()
+    } else {
+        FormatterConfig::default()
+    };
+
+    formatter_config.is_timestamp_available = table.has_timestamp();
+
+    let cloned_host_format = host_log_format.clone().unwrap_or_default();
+    let host_formatter_config = if host_log_format.is_some() {
+        FormatterConfig::custom(cloned_host_format.as_str())
+    } else if verbose {
+        FormatterConfig::default().with_location()
+    } else {
+        FormatterConfig::default()
+    };
+
+    let formatter = Formatter::new(formatter_config);
+    let host_formatter = HostFormatter::new(host_formatter_config);
+
+    defmt_decoder::log::init_logger(formatter, host_formatter, logger_type, move |metadata| {
+        match verbose {
+            false => defmt_decoder::log::is_defmt_frame(metadata), // We display *all* defmt frames, but nothing else.
+            true => true,                                          // We display *all* frames.
+        }
+    });
+
     let mut buf = [0; READ_BUFFER_SIZE];
     let mut stream_decoder = table.new_stream_decoder();
     let current_dir = env::current_dir()?;
 
-    let mut source = match command {
-        None | Some(Command::Stdin) => Source::stdin(),
-        Some(Command::Tcp { host, port }) => Source::tcp(host, port)?,
-    };
-
     loop {
         // read from stdin or tcpstream and push it to the decoder
-        let (n, eof) = source.read(&mut buf)?;
+        let (n, eof) = source.read(&mut buf).await?;
 
         // if 0 bytes where read, we reached EOF, so quit
         if eof {

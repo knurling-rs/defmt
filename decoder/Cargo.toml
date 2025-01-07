@@ -5,14 +5,14 @@ edition = "2021"
 keywords = ["knurling", "defmt"]
 license = "MIT OR Apache-2.0"
 name = "defmt-decoder"
-readme = "../README.md"
+readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.7"
+version = "0.4.0"
 
 [dependencies]
 byteorder = "1"
 colored = "2"
-defmt-parser = { version = "=0.3.3", path = "../parser", features = ["unstable"] }
+defmt-parser = { version = "=0.4.1", path = "../parser" }
 ryu = "1"
 nom = "7"
 
@@ -31,22 +31,23 @@ defmt-json-schema = { version = "0.1", path = "./defmt-json-schema" }
 
 # elf2table
 anyhow = "1.0.65"
-gimli = { version = "0.27", default-features = false, features = [
+gimli = { version = "0.29", default-features = false, features = [
     "read",
     "std",
 ] }
-object = { version = "0.30", default-features = false, features = [
+object = { version = "0.35", default-features = false, features = [
     "read_core",
     "elf",
     "std",
 ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["arbitrary_precision"] }
+regex = "1"
+alterable_logger = "1"
 
 [features]
-# WARNING: API and wire format subject to change.
+# DEPRECATED: noop, will be removed in 1.0
 unstable = []
 
 [package.metadata.docs.rs]
-features = ["unstable"]
 rustdoc-args = ["--cfg=docsrs"]

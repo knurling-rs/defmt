@@ -13,9 +13,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSIONS};
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection, ObjectSymbol};
+
+use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSIONS};
 
 pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
@@ -108,12 +109,20 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     let mut bitflags_map = HashMap::new();
     let mut timestamp = None;
     for entry in elf.symbols() {
-        // Skipping symbols with empty string names, as they may be added by
-        // `objcopy`, and breaks JSON demangling
-        let name = match entry.name() {
-            Ok(name) if !name.is_empty() => name,
-            _ => continue,
+        let Ok(name) = entry.name() else {
+            continue;
         };
+
+        if name.is_empty() {
+            // Skipping symbols with empty string names, as they may be added by
+            // `objcopy`, and breaks JSON demangling
+            continue;
+        }
+
+        if name == "$d" || name.starts_with("$d.") {
+            // Skip AArch64 mapping symbols
+            continue;
+        }
 
         if name.starts_with("_defmt") || name.starts_with("__DEFMT_MARKER") {
             // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
@@ -264,15 +273,16 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
     };
     let load_section_sup = |_| Ok(Cow::Borrowed(&[][..]));
 
-    let mut dwarf_cow = gimli::Dwarf::<Cow<[u8]>>::load::<_, anyhow::Error>(&load_section)?;
-    dwarf_cow.load_sup::<_, anyhow::Error>(&load_section_sup)?;
+    let dwarf_sections =
+        gimli::DwarfSections::<Cow<[u8]>>::load::<_, anyhow::Error>(&load_section)?;
+    let dwarf_sup_sections = gimli::DwarfSections::load::<_, anyhow::Error>(&load_section_sup)?;
 
     let borrow_section: &dyn for<'a> Fn(
         &'a Cow<[u8]>,
     ) -> gimli::EndianSlice<'a, gimli::RunTimeEndian> =
         &|section| gimli::EndianSlice::new(section, endian);
 
-    let dwarf = dwarf_cow.borrow(&borrow_section);
+    let dwarf = dwarf_sections.borrow_with_sup(&dwarf_sup_sections, &borrow_section);
 
     let mut units = dwarf.debug_info.units();
 

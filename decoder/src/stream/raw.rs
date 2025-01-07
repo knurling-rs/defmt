@@ -15,7 +15,7 @@ impl<'a> Raw<'a> {
     }
 }
 
-impl<'a> StreamDecoder for Raw<'a> {
+impl StreamDecoder for Raw<'_> {
     fn received(&mut self, data: &[u8]) {
         self.data.extend_from_slice(data);
     }

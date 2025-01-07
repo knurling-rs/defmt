@@ -1,5 +1,7 @@
 # Integers
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 Integers will be serialized in little endian order using `to_le_bytes()`.
 `usize` and `isize` values will be subject to LEB128 compression.
 

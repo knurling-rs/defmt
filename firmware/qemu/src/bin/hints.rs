@@ -17,6 +17,8 @@ fn main() -> ! {
     defmt::info!("hex alt {=u8:#x}", x);
     defmt::info!("HEX     {=u8:X}", x);
     defmt::info!("HEX alt {=u8:#X}", x);
+    defmt::info!("octal   {=u8:o}", x);
+    defmt::info!("octal alt {=u8:#o}", x);
     defmt::info!("binary  {=u8:b}", x);
     defmt::info!("binary alt {=u8:#b}", x);
     defmt::info!("ASCII   {=u8:a}", x);
@@ -30,6 +32,8 @@ fn main() -> ! {
     defmt::info!("hex alt {=i8:#x}", x);
     defmt::info!("HEX     {=i8:X}", x);
     defmt::info!("HEX alt {=i8:#X}", x);
+    defmt::info!("octal   {=i8:o}", x);
+    defmt::info!("octal alt {=i8:#o}", x);
     defmt::info!("binary  {=i8:b}", x);
     defmt::info!("binary alt {=i8:#b}", x);
     defmt::info!("ASCII   {=i8:a}", x);
@@ -45,6 +49,8 @@ fn main() -> ! {
     defmt::info!("hex alt {:#x}", x);
     defmt::info!("HEX     {:X}", x);
     defmt::info!("HEX alt {:#X}", x);
+    defmt::info!("octal   {:o}", x);
+    defmt::info!("octal alt {:#o}", x);
     defmt::info!("binary  {:b}", x);
     defmt::info!("binary alt {:#b}", x);
     defmt::info!("ASCII   {:a}", x);
@@ -83,6 +89,8 @@ fn main() -> ! {
     defmt::info!("hex alt {=[u8]:#x}", *x);
     defmt::info!("HEX     {=[u8]:X}", *x);
     defmt::info!("HEX alt {=[u8]:#X}", *x);
+    defmt::info!("octal   {=[u8]:o}", *x);
+    defmt::info!("octal alt {=[u8]:#o}", *x);
     defmt::info!("binary  {=[u8]:b}", *x);
     defmt::info!("binary alt {=[u8]:#b}", *x);
     defmt::info!("ASCII   {=[u8]:a}", *x);
@@ -118,6 +126,8 @@ fn main() -> ! {
     defmt::info!("hex     {=0..4:#x}", x);
     defmt::info!("HEX     {=0..4:X}", x);
     defmt::info!("HEX     {=0..4:#X}", x);
+    defmt::info!("octal   {=0..4:o}", x);
+    defmt::info!("octal   {=0..4:#o}", x);
     defmt::info!("binary  {=0..4:b}", x);
     defmt::info!("binary  {=0..4:#b}", x);
     defmt::info!("ASCII   {=0..4:a}", x);
@@ -126,6 +136,15 @@ fn main() -> ! {
     // ISO 8601 timestamps
     defmt::info!("ISO8601 {:iso8601ms}", 1618910624804_u64);
     defmt::info!("ISO8601 {:iso8601s}", 1618910624804_u64);
+
+    // Timestamps with seconds
+    defmt::info!("Sec ms  {:ms}", 1_234_567_u64);
+    defmt::info!("Sec us  {:us}", 1_234_567_u64);
+
+    // Timestamps with time format
+    defmt::info!("Time s  {:ts}", 1_234_567_u64);
+    defmt::info!("Time ms {:tms}", 1_234_567_u64);
+    defmt::info!("Time us {:tus}", 1_234_567_u64);
 
     loop {
         debug::exit(debug::EXIT_SUCCESS)

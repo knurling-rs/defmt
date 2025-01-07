@@ -1,10 +1,12 @@
 # Interning
 
+> ⚠️ The design and implementation chapter is outdated ⚠️
+
 All string literals are interned in a custom ELF section.
 This has proven to be the way that requires the less post-processing and implementation work.
 It is not without downsides as we'll see.
 
-The basic pattern for interning a string is this:
+The basic pattern for interning a string is this (although note that what `defmt` actually does is more complicated - see the [Dealing with duplicates](./duplicates.md) section for more details):
 
 ``` rust,no_run,noplayground
 #[export_name = "the string that will be interned"]
@@ -21,15 +23,18 @@ A linker script is required to group all these strings into a single OUTPUT link
 ``` text
 SECTIONS
 {
-  /* NOTE: simplified */
-  .my_custom_section /* <- name of the OUTPUT linker section */
-    (INFO) /* <- metadata section: not placed in Flash */
-    : 0 /* <- start address of this section */
-  {
-    *(.my_custom_section.*); /* <- name of the INPUT linker section */
-  /*^                    ^ glob pattern */
-  /*^ from any object file (~= crate) */
-  }
+    /* NOTE: simplified */
+    .my_custom_section 0 (INFO) :
+    /*                    ^^^^^^ metadata section: not placed in Flash  */
+    /*                 ^ start address of this section                  */
+    /* ^^^^^^^^^^^^^^^ name of the OUTPUT linker section                */
+    {
+        *(.my_custom_section);  
+        *(.my_custom_section.*);
+    /*                       ^ glob pattern for sub-sections  */
+    /*     ^^^^^^^^^^^^^^^^^ name of the INPUT linker section */
+    /*  ^ from any object file (~= crate)                     */
+    }
 }
 ```
 

@@ -53,7 +53,7 @@ impl<'a> Rzcobs<'a> {
     }
 }
 
-impl<'a> StreamDecoder for Rzcobs<'a> {
+impl StreamDecoder for Rzcobs<'_> {
     fn received(&mut self, mut data: &[u8]) {
         // Trim zeros from the left, start storing at first non-zero byte.
         if self.raw.is_empty() {

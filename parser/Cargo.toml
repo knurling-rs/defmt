@@ -5,19 +5,19 @@ edition = "2021"
 keywords = ["knurling", "defmt"]
 license = "MIT OR Apache-2.0"
 name = "defmt-parser"
-readme = "../README.md"
+readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "0.3.3"
+version = "0.4.1"
 
 [dependencies]
-thiserror = "1.0"
+thiserror = "2"
 
 [dev-dependencies]
-rstest = { version = "0.17", default-features = false }
+rstest = { version = "0.19", default-features = false }
 
 [features]
+# DEPRECATED: noop, will be removed in 1.0
 unstable = []
 
 [package.metadata.docs.rs]
-features = ["unstable"]
 rustdoc-args = [ "--cfg=docsrs" ]

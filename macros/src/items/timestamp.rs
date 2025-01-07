@@ -1,6 +1,6 @@
 use defmt_parser::ParserMode;
 use proc_macro::TokenStream;
-use proc_macro_error::abort;
+use proc_macro_error2::abort;
 use quote::format_ident;
 use quote::quote;
 use syn::parse_macro_input;
@@ -29,13 +29,13 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     );
 
     let var_name = format_ident!("S");
-    let var_item = construct::static_variable(&var_name, &format_string, "timestamp");
+    let var_item = construct::static_variable(&var_name, &format_string, "timestamp", None);
 
     quote!(
         const _: () = {
             #[export_name = "_defmt_timestamp"]
             #[inline(never)]
-            fn defmt_timestamp(fmt: ::defmt::Formatter<'_>) {
+            fn defmt_timestamp(fmt: defmt::Formatter<'_>) {
                 match (#(&(#formatting_exprs)),*) {
                     (#(#patterns),*) => {
                     // NOTE: No format string index, and no finalize call.

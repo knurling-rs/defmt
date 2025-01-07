@@ -19,14 +19,14 @@ mod inner;
 /// Encodings may perform two functions:
 ///
 /// - Framing: Adds extra data to allow the encoder to know when each frame starts
-/// and ends in the stream. Unframed log frames already contain enough information for
-/// the decoder to know when they end, so framing is optional. However, without framing
-/// the decoder must receive all bytes intact or it may "lose sync". With framing, it can
-/// recover from missing/corrupted data, and can start decoding from the "middle" of an
-/// already-running stream.
+///   and ends in the stream. Unframed log frames already contain enough information for
+///   the decoder to know when they end, so framing is optional. However, without framing
+///   the decoder must receive all bytes intact or it may "lose sync". With framing, it can
+///   recover from missing/corrupted data, and can start decoding from the "middle" of an
+///   already-running stream.
 /// - Compression: The frame data has rather low entropy (for example, it contains many
-/// zero bytes due to encoding all integers in fixed with, and will likely contain many
-/// repetitions). Compression can decrease the on-the-wire required bandwidth.
+///   zero bytes due to encoding all integers in fixed with, and will likely contain many
+///   repetitions). Compression can decrease the on-the-wire required bandwidth.
 ///
 /// defmt provides the `Encoder` separately instead of feeding already-encoded bytes
 /// to the `Logger` because `Logger` implementations may decide to allow
@@ -39,6 +39,7 @@ pub struct Encoder {
 
 impl Encoder {
     /// Create a new `Encoder`.
+    #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
         Self {
             inner: inner::Encoder::new(),

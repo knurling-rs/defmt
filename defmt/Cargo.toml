@@ -12,13 +12,14 @@ keywords = [ "knurling", "logging", "logger", "formatting", "formatter" ]
 license = "MIT OR Apache-2.0"
 links = "defmt" # Prevent multiple versions of defmt being linked
 name = "defmt"
-readme = "../README.md"
+readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
 homepage = "https://knurling.ferrous-systems.com/"
-version = "0.3.5"
+version = "0.3.10"
 
 [features]
 alloc = []
+avoid-default-panic = []
 ip_in_core = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
@@ -42,7 +43,9 @@ encoding-rzcobs = []
 unstable-test = [ "defmt-macros/unstable-test" ]
 
 [dependencies]
-defmt-macros = { path = "../macros", version = "0.3.2" }
+# There is exactly one version of defmt-macros supported in this version of
+# defmt. Although, multiple versions of defmt might use the *same* defmt-macros.
+defmt-macros = { path = "../macros", version = "=0.4.0" }
 bitflags = "1"
 
 [dev-dependencies]

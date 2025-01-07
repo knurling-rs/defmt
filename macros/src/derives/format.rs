@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use proc_macro_error::abort_call_site;
+use proc_macro_error2::abort_call_site;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput};
 
@@ -15,7 +15,11 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         Data::Union(_) => abort_call_site!("`#[derive(Format)]` does not support unions"),
     };
 
-    let codegen::EncodeData { format_tag, stmts } = match encode_data {
+    let codegen::EncodeData {
+        format_tag,
+        stmts,
+        where_predicates,
+    } = match encode_data {
         Ok(data) => data,
         Err(e) => return e.into_compile_error().into(),
     };
@@ -24,7 +28,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         impl_generics,
         type_generics,
         where_clause,
-    } = codegen::Generics::codegen(&mut input.generics);
+    } = codegen::Generics::codegen(&mut input.generics, where_predicates);
 
     quote!(
         impl #impl_generics defmt::Format for #ident #type_generics #where_clause {

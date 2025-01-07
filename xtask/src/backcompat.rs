@@ -35,7 +35,10 @@ use anyhow::anyhow;
 use colored::Colorize as _;
 use tempfile::TempDir;
 
-use crate::{ALL_ERRORS, ALL_SNAPSHOT_TESTS, SNAPSHOT_TESTS_DIRECTORY};
+use crate::{
+    snapshot::{all_snapshot_tests, SNAPSHOT_TESTS_DIRECTORY},
+    ALL_ERRORS,
+};
 
 const DISABLED: bool = false;
 
@@ -68,9 +71,15 @@ pub fn test() {
         }
     };
 
-    for snapshot_test in ALL_SNAPSHOT_TESTS {
+    for snapshot_test in all_snapshot_tests() {
+        let feature = match snapshot_test {
+            "alloc" => "alloc",
+            "net" => "ip_in_core",
+            _ => "",
+        };
+
         super::do_test(
-            || qemu_run.run_snapshot(snapshot_test),
+            || qemu_run.run_snapshot(snapshot_test, feature),
             "backcompat (see xtask/src/backcompat.rs for FIXME instructions)",
         );
     }
@@ -95,7 +104,7 @@ impl QemuRun {
         })
     }
 
-    fn run_snapshot(&self, name: &str) -> anyhow::Result<()> {
+    fn run_snapshot(&self, name: &str, feature: &str) -> anyhow::Result<()> {
         println!("{}", name.bold());
 
         let is_test = name.contains("test");
@@ -104,6 +113,7 @@ impl QemuRun {
         run_silently(
             Command::new("cargo")
                 .args(["-q", command, name])
+                .args(["--features", feature])
                 .current_dir(SNAPSHOT_TESTS_DIRECTORY)
                 .env(RUNNER_ENV_VAR, self.path()),
             || anyhow!("{}", name.to_string()),

@@ -12,6 +12,11 @@ pub enum DisplayHint {
         uppercase: bool,
         zero_pad: usize,
     },
+    /// `:o`
+    Octal {
+        alternate: bool,
+        zero_pad: usize,
+    },
     /// `:b`
     Binary {
         alternate: bool,
@@ -21,8 +26,10 @@ pub enum DisplayHint {
     Ascii,
     /// `:?`
     Debug,
-    /// `:us`, formats integers as timestamps in microseconds
-    Microseconds,
+    /// `:us` `:ms`, formats integers as timestamps in seconds
+    Seconds(TimePrecision),
+    /// `:tus` `:tms` `:ts`, formats integers as human-readable time
+    Time(TimePrecision),
     /// `:iso8601{ms,s}`, formats integers as timestamp in ISO8601 date time format
     ISO8601(TimePrecision),
     /// `__internal_bitflags_NAME` instructs the decoder to print the flags that are set, instead of
@@ -75,9 +82,17 @@ impl DisplayHint {
 
         Some(match s {
             "" => DisplayHint::NoHint { zero_pad },
-            "us" => DisplayHint::Microseconds,
+            "us" => DisplayHint::Seconds(TimePrecision::Micros),
+            "ms" => DisplayHint::Seconds(TimePrecision::Millis),
+            "tus" => DisplayHint::Time(TimePrecision::Micros),
+            "tms" => DisplayHint::Time(TimePrecision::Millis),
+            "ts" => DisplayHint::Time(TimePrecision::Seconds),
             "a" => DisplayHint::Ascii,
             "b" => DisplayHint::Binary {
+                alternate,
+                zero_pad,
+            },
+            "o" => DisplayHint::Octal {
                 alternate,
                 zero_pad,
             },
@@ -99,9 +114,10 @@ impl DisplayHint {
     }
 }
 
-/// Precision of ISO8601 datetime
+/// Precision of timestamp
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TimePrecision {
+    Micros,
     Millis,
     Seconds,
 }
