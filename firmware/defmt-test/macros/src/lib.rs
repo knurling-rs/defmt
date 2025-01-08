@@ -35,6 +35,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
     };
 
     let mut init = None;
+    let mut teardown = None;
     let mut before_each = None;
     let mut after_each = None;
     let mut tests = vec![];
@@ -49,6 +50,9 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                 f.attrs.retain(|attr| {
                     if attr.path().is_ident("init") {
                         test_kind = Some(Attr::Init);
+                        false
+                    } else if attr.path().is_ident("teardown") {
+                        test_kind = Some(Attr::Teardown);
                         false
                     } else if attr.path().is_ident("test") {
                         test_kind = Some(Attr::Test);
@@ -75,7 +79,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                     None => {
                         return Err(parse::Error::new(
                             f.span(),
-                            "function requires `#[init]`, `#[before_each]`, `#[after_each]`, or `#[test]` attribute",
+                            "function requires `#[init]`, `#[teardown]`, `#[before_each]`, `#[after_each]`, or `#[test]` attribute",
                         ));
                     }
                 };
@@ -116,6 +120,56 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         };
 
                         init = Some(Init { func: f, state });
+                    }
+
+                    Attr::Teardown => {
+                        if teardown.is_some() {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "only a single `#[teardown]` function can be defined",
+                            ));
+                        }
+
+                        if should_error {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[should_error]` is not allowed on the `#[teardown]` function",
+                            ));
+                        }
+
+                        if ignore {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[ignore]` is not allowed on the `#[teardown]` function",
+                            ));
+                        }
+
+                        if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
+                            return Err(parse::Error::new(
+                                f.sig.ident.span(),
+                                "`#[teardown]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
+                            ));
+                        }
+
+                        let input = if f.sig.inputs.len() == 1 {
+                            let arg = &f.sig.inputs[0];
+
+                            // NOTE we cannot check the argument type matches `init.state` at this
+                            // point
+                            if let Some(ty) = get_mutable_reference_type(arg).cloned() {
+                                Some(Input { ty })
+                            } else {
+                                // was not `&mut T`
+                                return Err(parse::Error::new(
+                                    arg.span(),
+                                    "parameter must be a mutable reference (`&mut $Type`)",
+                                ));
+                            }
+                        } else {
+                            None
+                        };
+
+                        teardown = Some(Teardown { func: f, input });
                     }
 
                     Attr::Test => {
@@ -271,6 +325,39 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             Some(quote!(#init_func)),
             Some(quote!(#[allow(dead_code)] let mut state = #init_ident();)),
         )
+    } else {
+        (None, None)
+    };
+
+    let (teardown_fn, teardown_call) = if let Some(teardown) = teardown {
+        let teardown_func = &teardown.func;
+        let teardown_ident = &teardown.func.sig.ident;
+        let span = teardown.func.sig.ident.span();
+
+        let call = if let Some(input) = teardown.input.as_ref() {
+            if let Some(state) = &state_ty {
+                if input.ty != **state {
+                    return Err(parse::Error::new(
+                        input.ty.span(),
+                        format!(
+                            "this type must match `#[init]`s return type: {}",
+                            type_ident(state)
+                        ),
+                    ));
+                }
+            } else {
+                return Err(parse::Error::new(
+                    span,
+                    "no state was initialized by `#[init]`; signature must be `fn()`",
+                ));
+            }
+
+            quote!(#teardown_ident(&mut state))
+        } else {
+            quote!(#teardown_ident())
+        };
+
+        (Some(quote!(#teardown_func)), Some(quote!(#call)))
     } else {
         (None, None)
     };
@@ -433,10 +520,15 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             )*
 
             defmt::println!("all tests passed!");
+
+            #teardown_call
+
             #krate::export::exit()
         }
 
         #init_fn
+
+        #teardown_fn
 
         #before_each_fn
 
@@ -454,6 +546,7 @@ enum Attr {
     AfterEach,
     BeforeEach,
     Init,
+    Teardown,
     Test,
 }
 
@@ -470,6 +563,11 @@ struct BeforeEach {
 struct Init {
     func: ItemFn,
     state: Option<Box<Type>>,
+}
+
+struct Teardown {
+    func: ItemFn,
+    input: Option<Input>,
 }
 
 struct Test {
