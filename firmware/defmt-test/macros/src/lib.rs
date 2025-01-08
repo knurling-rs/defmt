@@ -329,7 +329,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
         (None, None)
     };
 
-    let (teardown_fn, teardown_call) = if let Some(teardown) = teardown {
+    let (teardown_fn, teardown_expr) = if let Some(teardown) = teardown {
         let teardown_func = &teardown.func;
         let teardown_ident = &teardown.func.sig.ident;
         let span = teardown.func.sig.ident.span();
@@ -357,7 +357,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             quote!(#teardown_ident())
         };
 
-        (Some(quote!(#teardown_func)), Some(quote!(#call)))
+        (Some(quote!(#teardown_func)), Some(quote!(#call;)))
     } else {
         (None, None)
     };
@@ -521,7 +521,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
 
             defmt::println!("all tests passed!");
 
-            #teardown_call
+            #teardown_expr
 
             #krate::export::exit()
         }
