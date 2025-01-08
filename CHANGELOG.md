@@ -741,6 +741,7 @@ Initial release
 > A test harness for embedded devices
 
 [defmt-test-next]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.2...main
+[defmt-test-v0.3.3]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.2...main
 [defmt-test-v0.3.2]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.2
 [defmt-test-v0.3.1]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.1
 [defmt-test-v0.3.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.0
@@ -752,6 +753,8 @@ Initial release
 [defmt-test-v0.1.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.1.0
 
 ### [defmt-test-next]
+
+### [defmt-test-v0.3.3] (unreleased)
 
 ### [defmt-test-v0.3.2] (2024-03-05)
 
