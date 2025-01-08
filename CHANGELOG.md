@@ -49,6 +49,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#914] Add cargo-deny as a CI action to check crate security and licensing
+
 ### [defmt-v0.3.10] (2024-11-29)
 
 * [#902] Minor change to Format impl for `core::panic::PanicInfo`, eliding a lifetime specifier to satisfy Clippy 1.83.
@@ -836,6 +838,7 @@ Initial release
 
 ---
 
+[#914]: https://github.com/knurling-rs/defmt/pull/914
 [#902]: https://github.com/knurling-rs/defmt/pull/902
 [#901]: https://github.com/knurling-rs/defmt/pull/901
 [#899]: https://github.com/knurling-rs/defmt/pull/899
