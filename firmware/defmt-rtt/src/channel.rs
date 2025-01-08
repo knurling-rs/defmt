@@ -27,6 +27,7 @@ impl Channel {
         // the host-connection-status is only modified after RAM initialization while the device is
         // halted, so we only need to check it once before the write-loop
         let write = match self.host_is_connected() {
+            _ if cfg!(feature = "disable-blocking-mode") => Self::nonblocking_write,
             true => Self::blocking_write,
             false => Self::nonblocking_write,
         };
