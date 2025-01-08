@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 /// All display hints
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum DisplayHint {
     NoHint {
         zero_pad: usize,
