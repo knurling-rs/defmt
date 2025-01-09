@@ -15,6 +15,16 @@ pub fn tests(args: TokenStream, input: TokenStream) -> TokenStream {
     }
 }
 
+macro_rules! fn_state_signature_msg {
+    ($name:literal) => {
+        concat!(
+            "`#[",
+            $name,
+            "]` function must have signature `fn()` or `fn(state: &mut T)`"
+        )
+    };
+}
+
 fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStream> {
     if !args.is_empty() {
         return Err(parse::Error::new(
@@ -147,7 +157,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[teardown]` function must have signature `fn()` or `fn(state: &mut T)`",
+                                fn_state_signature_msg!("teardown"),
                             ));
                         }
 
@@ -176,7 +186,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[test]` function must have signature `fn()` or `fn(state: &mut T)`",
+                                fn_state_signature_msg!("test"),
                             ));
                         }
 
@@ -231,7 +241,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[before_each]` function must have signature `fn()` or `fn(state: &mut T)`",
+                                fn_state_signature_msg!("before_each"),
                             ));
                         }
 
@@ -280,7 +290,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[after_each]` function must have signature `fn()` or `fn(state: &mut T)`",
+                                fn_state_signature_msg!("after_each"),
                             ));
                         }
 
