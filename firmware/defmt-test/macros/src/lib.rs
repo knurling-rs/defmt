@@ -110,7 +110,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || !f.sig.inputs.is_empty() {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[init]` function must have signature `fn() [-> Type]` (the return type is optional)",
+                                "`#[init]` function must have signature `fn()` or `fn() -> T`",
                             ));
                         }
 
@@ -147,7 +147,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[teardown]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
+                                "`#[teardown]` function must have signature `fn()` or `fn(state: &mut T)`",
                             ));
                         }
 
@@ -176,7 +176,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[test]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
+                                "`#[test]` function must have signature `fn()` or `fn(state: &mut T)`",
                             ));
                         }
 
@@ -231,7 +231,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[before_each]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
+                                "`#[before_each]` function must have signature `fn()` or `fn(state: &mut T)`",
                             ));
                         }
 
@@ -280,7 +280,7 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
                         if check_fn_sig(&f.sig).is_err() || f.sig.inputs.len() > 1 {
                             return Err(parse::Error::new(
                                 f.sig.ident.span(),
-                                "`#[after_each]` function must have signature `fn(state: &mut Type)` (parameter is optional)",
+                                "`#[after_each]` function must have signature `fn()` or `fn(state: &mut T)`",
                             ));
                         }
 

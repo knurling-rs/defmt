@@ -220,7 +220,7 @@ mod tests {
         defmt::println!("State flag in teardown is {}", state.flag);
     }
 
-    // but this test does
+    // this test accesses the state created in `init`
     #[test]
     fn assert_flag(state: &mut super::MyState) {
         assert!(state.flag)
