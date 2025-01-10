@@ -1,5 +1,9 @@
 # [Unreleased]
 
+- [#917] feat: add teardown fn for defmt-test
+
+[#917]: https://github.com/knurling-rs/defmt/pull/917
+
 # [v0.3.2]
 
 Updates `defmt-test-macros` and therefore actually support [#696].
