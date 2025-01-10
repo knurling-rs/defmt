@@ -10,7 +10,7 @@ The fastest way to get started with `defmt` is to use our [app-template] to set 
 
 [app-template]: https://github.com/knurling-rs/app-template
 
-For more details about the framework check the book at https://defmt.ferrous-systems.com
+For more details about the framework check the book at <https://defmt.ferrous-systems.com>.
 
 ## Memory use
 
@@ -28,10 +28,10 @@ Sponsors].
 
 Licensed under either of
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
-  http://www.apache.org/licenses/LICENSE-2.0)
+- Apache License, Version 2.0 ([LICENSE-APACHE](../../LICENSE-APACHE) or
+  <http://www.apache.org/licenses/LICENSE-2.0>)
 
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- MIT license ([LICENSE-MIT](../../LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
