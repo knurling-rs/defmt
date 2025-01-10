@@ -6,7 +6,7 @@
 
 `defmt` ("de format", short for "deferred formatting") is a highly efficient logging framework that targets resource-constrained devices, like microcontrollers.
 
-For more details about the framework check the book at https://defmt.ferrous-systems.com
+For more details about the framework check the book at <https://defmt.ferrous-systems.com>.
 
 Note that Semihosting operations are very slow. This is really only useful if
 you are running in QEMU can hence can't use RTT. See
@@ -25,10 +25,10 @@ Sponsors].
 
 Licensed under either of
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
-  http://www.apache.org/licenses/LICENSE-2.0)
+- Apache License, Version 2.0 ([LICENSE-APACHE](../../LICENSE-APACHE) or
+  <http://www.apache.org/licenses/LICENSE-2.0>)
 
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- MIT license ([LICENSE-MIT](../../LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
