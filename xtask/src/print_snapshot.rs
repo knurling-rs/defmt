@@ -30,11 +30,7 @@ pub fn test_single_print_snapshot(name: &str) -> anyhow::Result<()> {
     let frame_path = format!("xtask/output_files/{}.out", name);
     let elf_path = format!("xtask/snapshot_elfs/{}", name);
 
-    let frames = Command::new("cat")
-        .arg(frame_path)
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
+    let frames = std::fs::File::open(frame_path)?;
 
     let actual = run_capturing_stdout(
         Command::new("defmt-print")
@@ -42,7 +38,7 @@ pub fn test_single_print_snapshot(name: &str) -> anyhow::Result<()> {
             .arg(elf_path)
             .arg("--log-format")
             .arg("{L:4} {s}")
-            .stdin(Stdio::from(frames.stdout.unwrap())),
+            .stdin(Stdio::from(frames)),
     )
     .with_context(|| name.to_string())?;
 
