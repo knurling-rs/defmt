@@ -155,6 +155,17 @@ fn test_cross(deny_warnings: bool) {
                 },
                 "cross",
             );
+            do_test(
+                || {
+                    run_command(
+                        "cargo",
+                        &["check", "--target", target, "--features", feature],
+                        Some("defmt-03"),
+                        &env,
+                    )
+                },
+                "cross-03",
+            );
         }
     }
 
@@ -286,7 +297,7 @@ fn test_lint() {
     println!("🧪 lint");
 
     // rustfmt
-    for cwd in [None, Some("firmware/")] {
+    for cwd in [None, Some("defmt-03/"), Some("firmware/")] {
         do_test(
             || run_command("cargo", &["fmt", "--", "--check"], cwd, &[]),
             "lint",
