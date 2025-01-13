@@ -8,19 +8,20 @@ The hint follows the syntax `:Display` and must come after the type within the b
 
 The following display hints are currently supported:
 
-| hint   | name                                                     |
-| :----- | :------------------------------------------------------- |
-| `:x`   | lowercase hexadecimal                                    |
-| `:X`   | uppercase hexadecimal                                    |
-| `:?`   | `core::fmt::Debug`-like                                  |
-| `:b`   | binary                                                   |
-| `:o`   | octal                                                    |
-| `:a`   | ASCII                                                    |
-| `:ms`  | timestamp in seconds (input in milliseconds)             |
-| `:us`  | timestamp in seconds (input in microseconds)             |
-| `:ts`  | timestamp in human-readable time (input in seconds)      |
-| `:tms` | timestamp in human-readable time (input in milliseconds) |
-| `:tus` | timestamp in human-readable time (input in microseconds) |
+| hint    | name                                                     |
+| :------ | :------------------------------------------------------- |
+| `:x`    | lowercase hexadecimal                                    |
+| `:X`    | uppercase hexadecimal                                    |
+| `:?`    | `core::fmt::Debug`-like                                  |
+| `:b`    | binary                                                   |
+| `:o`    | octal                                                    |
+| `:a`    | ASCII                                                    |
+| `:ms`   | timestamp in seconds (input in milliseconds)             |
+| `:us`   | timestamp in seconds (input in microseconds)             |
+| `:ts`   | timestamp in human-readable time (input in seconds)      |
+| `:tms`  | timestamp in human-readable time (input in milliseconds) |
+| `:tus`  | timestamp in human-readable time (input in microseconds) |
+| `:cbor` | CBOR encoded items rendered in Diagnostic Notation (EDN) |
 
 The first 4 display hints resemble what's supported in `core::fmt`, for example:
 
@@ -42,6 +43,22 @@ The ASCII display hint formats byte slices (and arrays) using Rust's byte string
 let bytes = [104, 101, 255, 108, 108, 111];
 
 defmt::info!("{=[u8]:a}", bytes); // -> INFO b"he\xffllo"
+```
+
+The CBOR display hint is useful when CBOR data is in memory, especially before further processing:
+
+``` rust
+# extern crate defmt;
+# fn parse(slice: &[u8]) -> Result<(), ()> {
+#     Ok(())
+# }
+# fn main() -> Result<(), ()> {
+let id_cred = &[0xa1, 0x04, 0x44, 0x6b, 0x69, 0x64, 0x31];
+
+defmt::info!("Peer ID: {=[u8]:cbor}", id_cred); // -> INFO Peer ID: {4: 'kid1'}
+let parsed = parse(id_cred)?;
+# Ok(())
+# }
 ```
 
 ## Alternate printing
