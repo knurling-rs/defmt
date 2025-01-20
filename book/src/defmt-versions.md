@@ -5,6 +5,8 @@ Version* - also known as the *wire format version*. Because a compilation can
 only use one version of the `defmt` crate, each compilation will use a
 consistent *Defmt Version*.
 
+**Note**: Changing the *Defmt Version* used in the `defmt` crate will be a minor version change (e.g. from 1.0.0 to 1.1.0). If you wish to remain on a specific *Defmt Version* for compatibility with older versions of `defmt-decoder` and `defmt-print`, you should pin your `defmt` crate to a specific release.
+
 The *Defmt Version* used in any given ELF file is expressed using symbol (listed below).
 
 The `defmt-decoder` crate supports multiple *Defmt Version* values, and so can
