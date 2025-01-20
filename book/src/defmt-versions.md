@@ -41,3 +41,8 @@ This is a list of *Defmt Version* values and what they mean.
 - Symbol name: `_defmt_version_ = 3`
 - Withdrawal notice: This version will be supported in new releases of the `defmt-decoder` and `defmt-print` crates for at least the next 12 months, on a rolling basis. Notice will be given here when that 12 month period begins.
 
+## PUA Defmt Versions
+
+We have set-aside a range of Defmt Versions for private use. We guarantee that no official version of the defmt tools will use these versions, so you can unambiguously use them to add customised features to your private forks of defmt.
+
+The reserved versions are `_defmt_version_ = 1000` through to `_defmt_version_ = 1999`.
