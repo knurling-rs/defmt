@@ -27,6 +27,7 @@ This is a list of *Defmt Version* values and what they mean.
 - Supported encodings:
   - RZCOBS: with symbol `_defmt_encoding_ = rzcobs`
   - RAW: with symbol `_defmt_encoding_ = raw`
+- Withdrawal notice: This version will be supported in new releases of the `defmt-decoder` and `defmt-print` crates for at least the next 24 months, on a rolling basis. Notice will be given here when that 24 month period begins.
 
 ## Defmt Version 3
 
@@ -38,3 +39,5 @@ This is a list of *Defmt Version* values and what they mean.
   - `data`: the format string
   - `disambiguator`: a unique random number
 - Symbol name: `_defmt_version_ = 3`
+- Withdrawal notice: This version will be supported in new releases of the `defmt-decoder` and `defmt-print` crates for at least the next 12 months, on a rolling basis. Notice will be given here when that 12 month period begins.
+
