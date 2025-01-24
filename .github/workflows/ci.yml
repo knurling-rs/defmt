@@ -131,7 +131,7 @@ jobs:
       - name: Install QEMU_TARGET
         run: rustup target add ${{ env.QEMU_TARGET }}
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install qemu qemu-system-arm
+        run: sudo apt-get update && sudo apt-get install qemu-system-arm
       - name: Run QEMU snapshot tests
         run: cargo xtask test-snapshot
 
@@ -153,6 +153,23 @@ jobs:
       - name: Install QEMU_TARGET
         run: rustup target add ${{ env.QEMU_TARGET }}
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install qemu qemu-system-arm
+        run: sudo apt-get update && sudo apt-get install qemu-system-arm
       - name: Run backward compatibility test
         run: cargo xtask test-backcompat
+
+  ci-success:
+    name: CI finished successfully
+    runs-on: ubuntu-latest
+    if: success()
+    needs:
+        - host
+        - cross
+        - cargo-deny
+        - lint
+        - ui
+        - mdbook
+        - qemu-snapshot
+        - backcompat
+    steps:
+        - name: Mark the build as successful
+          run: exit 0

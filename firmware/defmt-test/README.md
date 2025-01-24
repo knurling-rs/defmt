@@ -190,6 +190,45 @@ $ cargo test -p testsuite
 └─ integration::tests::__defmt_test_entry @ tests/integration.rs:11
 ```
 
+## Teardown
+
+A `#[teardown]` function can be written within the `#[tests]` module.
+This function will be executed after all unit tests passed.
+The test suite *state* may be passed to the teardown function as an argument.
+
+``` rust
+// state shared across unit tests
+struct MyState {
+    flag: bool,
+}
+
+#[defmt_test::tests]
+mod tests {
+    #[init]
+    fn init() -> super::MyState {
+        // state initial value
+        super::MyState {
+            flag: true,
+        }
+    }
+
+    // This function is called after all test cases passed.
+    // It accesses the state created in `init`,
+    // though like with `test`, state access is optional.
+    #[teardown]
+    fn teardown(state: &mut super::MyState) {
+        defmt::println!("State flag in teardown is {}", state.flag);
+    }
+
+    // this test accesses the state created in `init`
+    #[test]
+    fn assert_flag(state: &mut super::MyState) {
+        assert!(state.flag)
+        state.flag = false;
+    }
+}
+```
+
 ## Test Outcome
 
 Test functions may either return `()` and panic on failure, or return any other type that implements the `TestOutcome` trait, such as `Result`.
@@ -211,10 +250,10 @@ Sponsors].
 
 Licensed under either of
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
-  http://www.apache.org/licenses/LICENSE-2.0)
+- Apache License, Version 2.0 ([LICENSE-APACHE](../../LICENSE-APACHE) or
+  <http://www.apache.org/licenses/LICENSE-2.0>)
 
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- MIT license ([LICENSE-MIT](../../LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 

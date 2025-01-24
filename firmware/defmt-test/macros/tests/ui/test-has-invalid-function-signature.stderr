@@ -1,4 +1,4 @@
-error: `#[test]` function must have signature `fn(state: &mut Type)` (parameter is optional)
+error: `#[test]` function must have signature `fn()` or `fn(state: &mut T)`
  --> tests/ui/test-has-invalid-function-signature.rs:6:8
   |
 6 |     fn hello(a: i32, b: i32) -> i32 {
