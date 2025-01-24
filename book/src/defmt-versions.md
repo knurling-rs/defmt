@@ -7,7 +7,7 @@ consistent *Defmt Version*.
 
 **Note**: Changing the *Defmt Version* used in the `defmt` crate will be a minor version change (e.g. from 1.0.0 to 1.1.0). If you wish to remain on a specific *Defmt Version* for compatibility with older versions of `defmt-decoder` and `defmt-print`, you should pin your `defmt` crate to a specific release.
 
-The *Defmt Version* used in any given ELF file is expressed using symbol (listed below).
+The *Defmt Version* used in any given ELF file is expressed using a symbol (listed below).
 
 The `defmt-decoder` crate supports multiple *Defmt Version* values, and so can
 work with newer and older firmware.
@@ -25,7 +25,7 @@ This is a list of *Defmt Version* values and what they mean.
   - `tag`: one of `defmt_prim`, `defmt_fmt`, `defmt_str`, `defmt_trace`, `defmt_debug`, `defmt_info`, `defmt_warn`, or `defmt_error`
   - `data`: the format string
   - `disambiguator`: a unique random number
-  - `crate_name`: the crate the emitted the log (might not be the package name if this is a binary within a package)
+  - `crate_name`: the crate that emitted the log (might not be the package name if this is a binary within a package)
 - Supported encodings:
   - RZCOBS: noted by presence of the symbol `_defmt_encoding_ = rzcobs`
   - RAW: noted by presence of the symbol `_defmt_encoding_ = raw`
