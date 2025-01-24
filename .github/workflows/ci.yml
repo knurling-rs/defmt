@@ -156,3 +156,20 @@ jobs:
         run: sudo apt-get update && sudo apt-get install qemu-system-arm
       - name: Run backward compatibility test
         run: cargo xtask test-backcompat
+
+  ci-success:
+    name: CI finished successfully
+    runs-on: ubuntu-latest
+    if: success()
+    needs:
+        - host
+        - cross
+        - cargo-deny
+        - lint
+        - ui
+        - mdbook
+        - qemu-snapshot
+        - backcompat
+    steps:
+        - name: Mark the build as successful
+          run: exit 0
