@@ -56,7 +56,7 @@ to print with it.
 This library is a *logging transport* for `defmt` that sends data over
 SEGGER's RTT transport protocol.
 
-This is a good choice when using `probe-run` because support is built-in to that
+This is a good choice when using `probe-rs` because support is built-in to that
 runner.
 
 ### [`defmt-itm`](https://crates.io/crates/defmt-itm) 📟
