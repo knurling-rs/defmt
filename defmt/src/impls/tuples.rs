@@ -28,7 +28,7 @@ macro_rules! tuple {
             fn _format_data(&self) {
                 let ($(ref $name,)+) = *self;
                 $(
-                    export::istr(&self._format_tag());
+                    export::istr(&$name._format_tag());
                     $name._format_data();
                 )+
             }
