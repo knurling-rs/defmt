@@ -36,7 +36,7 @@ where
             None => export::u8(&0),
             Some(x) => {
                 export::u8(&1);
-                export::istr(&self._format_tag());
+                export::istr(&x._format_tag());
                 x._format_data()
             }
         }
