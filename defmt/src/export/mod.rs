@@ -185,7 +185,13 @@ pub fn u8_array(a: &[u8]) {
 
 // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
 pub fn fmt_array<T: Format>(a: &[T]) {
-    fmt_slice(a)
+    if let Some((first, remainder)) = a.split_first() {
+        istr(&first._format_tag());
+        first._format_data();
+        for value in remainder {
+            value._format_data();
+        }
+    }
 }
 
 /// Implementation detail
