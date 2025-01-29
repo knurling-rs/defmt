@@ -16,7 +16,7 @@ where
     default_format!();
 
     #[inline]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         internp!("RefCell {{ value: <borrowed> }}|RefCell {{ value: {=?} }}")
     }
 
@@ -26,7 +26,7 @@ where
             Err(_) => export::u8(&0),
             Ok(x) => {
                 export::u8(&1);
-                export::istr(&T::_format_tag());
+                export::istr(&self._format_tag());
                 x._format_data()
             }
         }

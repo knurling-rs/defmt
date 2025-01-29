@@ -26,7 +26,7 @@ where
     default_format!();
 
     #[inline]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         internp!("None|Some({=?})")
     }
 
@@ -36,7 +36,7 @@ where
             None => export::u8(&0),
             Some(x) => {
                 export::u8(&1);
-                export::istr(&T::_format_tag());
+                export::istr(&self._format_tag());
                 x._format_data()
             }
         }
@@ -51,7 +51,7 @@ where
     default_format!();
 
     #[inline]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         internp!("Err({=?})|Ok({=?})")
     }
 
@@ -60,12 +60,12 @@ where
         match self {
             Err(e) => {
                 export::u8(&0);
-                export::istr(&E::_format_tag());
+                export::istr(&e._format_tag());
                 e._format_data()
             }
             Ok(x) => {
                 export::u8(&1);
-                export::istr(&T::_format_tag());
+                export::istr(&x._format_tag());
                 x._format_data()
             }
         }
@@ -76,7 +76,7 @@ impl<T> Format for core::marker::PhantomData<T> {
     default_format!();
 
     #[inline]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         internp!("PhantomData")
     }
 
@@ -88,7 +88,7 @@ impl Format for core::convert::Infallible {
     default_format!();
 
     #[inline]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         unreachable!();
     }
 

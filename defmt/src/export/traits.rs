@@ -44,7 +44,7 @@ impl Format for NoneError {
         unreachable!();
     }
 
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         defmt_macros::internp!("Unwrap of a None option value")
     }
 

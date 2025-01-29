@@ -44,7 +44,7 @@ fn inc(index: u16, n: u16) -> u16 {
 }
 
 fn write_format<T: Format + ?Sized>(val: &T) {
-    defmt::export::istr(&T::_format_tag());
+    defmt::export::istr(&val._format_tag());
     val._format_data();
 }
 

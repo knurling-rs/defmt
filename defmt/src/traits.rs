@@ -48,7 +48,7 @@ pub trait Format {
     fn format(&self, fmt: Formatter);
 
     #[doc(hidden)]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         internp!("{=__internal_FormatSequence}")
     }
 

@@ -8,7 +8,7 @@ macro_rules! prim {
             default_format!();
 
             #[inline]
-            fn _format_tag() -> Str {
+            fn _format_tag(&self) -> Str {
                 internp!($fmt)
             }
 
@@ -46,7 +46,7 @@ where
     default_format!();
 
     #[inline]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         internp!("{=[?]}")
     }
 

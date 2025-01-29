@@ -135,16 +135,21 @@ pub fn panic() -> ! {
 
 /// Implementation detail
 pub fn fmt<T: Format + ?Sized>(f: &T) {
-    istr(&T::_format_tag());
+    istr(&f._format_tag());
     f._format_data();
 }
 
 /// Implementation detail
 pub fn fmt_slice<T: Format>(values: &[T]) {
-    usize(&values.len());
-    istr(&T::_format_tag());
-    for value in values {
-        value._format_data();
+    if let Some((first, remainder)) = values.split_first() {
+        usize(&values.len());
+        istr(&first._format_tag());
+        first._format_data();
+        for value in remainder {
+            value._format_data();
+        }
+    } else {
+        usize(&0);
     }
 }
 
@@ -180,10 +185,7 @@ pub fn u8_array(a: &[u8]) {
 
 // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
 pub fn fmt_array<T: Format>(a: &[T]) {
-    istr(&T::_format_tag());
-    for value in a {
-        value._format_data();
-    }
+    fmt_slice(a)
 }
 
 /// Implementation detail

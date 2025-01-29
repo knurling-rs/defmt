@@ -36,7 +36,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
                 defmt::unreachable!()
             }
 
-            fn _format_tag() -> defmt::Str {
+            fn _format_tag(&self) -> defmt::Str {
                 #format_tag
             }
 

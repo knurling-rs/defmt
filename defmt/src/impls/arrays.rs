@@ -10,7 +10,7 @@ macro_rules! arrays {
             default_format!();
 
             #[inline]
-            fn _format_tag() -> Str {
+            fn _format_tag(&self) -> Str {
                 match N {
                     $(
                         $len => internp!($fmt),

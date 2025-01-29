@@ -33,7 +33,7 @@ impl<T: fmt::Debug + ?Sized> fmt::Debug for Debug2Format<'_, T> {
 impl<T: fmt::Debug + ?Sized> Format for Debug2Format<'_, T> {
     default_format!();
 
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         defmt_macros::internp!("{=__internal_Debug}")
     }
 
@@ -77,7 +77,7 @@ impl<T: fmt::Display + ?Sized> fmt::Display for Display2Format<'_, T> {
 impl<T: fmt::Display + ?Sized> Format for Display2Format<'_, T> {
     default_format!();
 
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         defmt_macros::internp!("{=__internal_Display}")
     }
 

@@ -5,7 +5,7 @@ impl Format for () {
     default_format!();
 
     #[inline]
-    fn _format_tag() -> Str {
+    fn _format_tag(&self) -> Str {
         internp!("()")
     }
 
@@ -19,7 +19,7 @@ macro_rules! tuple {
             default_format!();
 
             #[inline]
-            fn _format_tag() -> Str {
+            fn _format_tag(&self) -> Str {
                 internp!($format)
             }
 
@@ -28,7 +28,7 @@ macro_rules! tuple {
             fn _format_data(&self) {
                 let ($(ref $name,)+) = *self;
                 $(
-                    export::istr(&$name::_format_tag());
+                    export::istr(&self._format_tag());
                     $name._format_data();
                 )+
             }
