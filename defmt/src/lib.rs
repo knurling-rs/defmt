@@ -370,7 +370,7 @@ pub use defmt_macros::bitflags;
 /// Generates a bitflags structure that can be formatted with defmt (using version 2 of the bitflags crate)
 ///
 
-/// Users of the defmt crate can enable the bitflagsv2 feature by adding defmt = { features = ["bitflagsv2"] }
+/// Users of the defmt crate can enable the bitflagsv2 feature by adding `defmt = {version = "1", features = ["bitflagsv2"] }`
 /// to their Cargo.toml. Bitflags version 2 introduces significant improvements over version 1, including a safer
 /// API with the replacement of the unsafe from_bits_unchecked method by the safe from_bits_retain method
 /// and enhanced serialization support via an optional serde feature.
