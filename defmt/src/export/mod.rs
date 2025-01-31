@@ -142,13 +142,7 @@ pub fn fmt<T: Format + ?Sized>(f: &T) {
 /// Implementation detail
 pub fn fmt_slice<T: Format>(values: &[T]) {
     usize(&values.len());
-    if values.is_empty() {
-        return;
-    }
-    istr(&T::_format_tag());
-    for value in values {
-        value._format_data();
-    }
+    fmt_array(values);
 }
 
 /// Implementation detail
