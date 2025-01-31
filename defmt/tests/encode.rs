@@ -557,7 +557,16 @@ fn slice() {
             23u8,             // val[0]
             42u8,             // val[1]
         ],
-    )
+    );
+
+    let val: &[u8] = &[];
+    check_format!(
+        val,
+        [
+            inc(index, 2),    // "{=[?]}"
+            val.len() as u32, // length
+        ],
+    );
 }
 
 #[test]
@@ -737,7 +746,6 @@ fn format_arrays() {
         &array,
         [
             index,         // "{=[?;0]}"
-            inc(index, 1), // "{=u16}"
         ]
     );
 

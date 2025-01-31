@@ -50,6 +50,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 ### [defmt-next]
 
 * [#914] Add cargo-deny as a CI action to check crate security and licensing
+* [#929] Change the wire format to omit the inner type tag for empty slices and empty arrays.
 
 ### [defmt-v0.3.10] (2024-11-29)
 
