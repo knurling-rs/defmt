@@ -1,5 +1,7 @@
 # [Unreleased]
 
+# [v0.3.3]
+
 - [#917] feat: add teardown fn for defmt-test
 
 [#917]: https://github.com/knurling-rs/defmt/pull/917
@@ -62,7 +64,11 @@ No changes.
 
 Initial release.
 
-[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.3...main
+[Unreleased]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.3...main
+[v0.3.3]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.2...defmt-test-v0.3.3
+[v0.3.2]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.1...defmt-test-v0.3.2
+[v0.3.1]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.3.0...defmt-test-v0.3.1
+[v0.3.0]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.3...defmt-test-v0.3.0
 [v0.2.3]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.2...defmt-test-v0.2.3
 [v0.2.2]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.1...defmt-test-v0.2.2
 [v0.2.1]: https://github.com/knurling-rs/defmt/compare/defmt-test-v0.2.0...defmt-test-v0.2.1
