@@ -21,7 +21,7 @@ This repository contains the following packages:
 | `panic-probe`       | [`./firmware/panic-probe`](./firmware/panic-probe)             | On-target library for sending `panic!` over `defmt`                        |
 | `defmt-test`        | [`./firmware/defmt-test`](./firmware/defmt-test)               | Framework for running tests on-target                                      |
 | `defmt-test-macros` | [`./firmware/defmt-test/macros`](./firmware/defmt-test/macros) | Proc Macros for `defmt-test`                                               |
-| `defmt-json-schema` | [`./defmt/defmt-json-schema`](./defmt/defmt-json-schema)       | Describes the JSON emitted by `defmt-decoder`                              |
+| `defmt-json-schema` | [`./decoder/defmt-json-schema`](./decoder/defmt-json-schema)   | Describes the JSON emitted by `defmt-decoder`                              |
 
 ## MSRV
 
