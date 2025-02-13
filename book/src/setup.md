@@ -34,6 +34,10 @@ rustflags = [
 ]
 ```
 
+> Note :
+> If you intend on linking your project as a **static library** the linkerscript contents should be applied to the final binary.
+> Adding the `-C link-arg=` option to static libraries has no effect because they are only archived, not linked.
+
 ### `#[global_logger]`
 
 The application must link to or define a `global_logger`.
