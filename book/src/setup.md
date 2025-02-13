@@ -34,6 +34,10 @@ rustflags = [
 ]
 ```
 
+> Note :
+> If you intend on linking your project as a **static library** the linkerscript contents should be applied to the final binary.
+> Applying `defmt.x` to the static lib has no effect.
+
 ### `#[global_logger]`
 
 The application must link to or define a `global_logger`.
