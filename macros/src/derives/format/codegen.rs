@@ -61,3 +61,28 @@ impl<'a> Generics<'a> {
         }
     }
 }
+
+#[derive(Default)]
+pub(crate) struct DefmtAttr {
+    pub(crate) transparent: bool,
+}
+impl TryFrom<syn::Attribute> for DefmtAttr {
+    type Error = syn::Error;
+
+    fn try_from(attr: syn::Attribute) -> Result<Self, Self::Error> {
+        let options = attr.meta.require_list()?;
+
+        let mut attr = Self::default();
+
+        options.parse_nested_meta(|meta| {
+            if meta.path.is_ident("transparent") {
+                attr.transparent = true;
+            } else {
+                return Err(meta.error("Unknown attribute option"));
+            }
+            Ok(())
+        })?;
+
+        Ok(attr)
+    }
+}
