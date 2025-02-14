@@ -368,7 +368,7 @@ pub use defmt_macros::timestamp;
 pub use defmt_macros::bitflags;
 
 #[doc(hidden)] // documented as the `Format` trait instead
-pub use defmt_macros::Format;
+pub use defmt_macros::{Format, FormatTransparent};
 
 // There is no default timestamp format. Instead, the decoder looks for a matching ELF symbol. If
 // absent, timestamps are turned off.
