@@ -2,7 +2,7 @@ use codegen::DefmtAttr;
 use proc_macro::TokenStream;
 use proc_macro_error2::abort_call_site;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput};
+use syn::{parse_macro_input, parse_quote, Data, DeriveInput};
 
 mod codegen;
 
@@ -64,9 +64,10 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     .into()
 }
 
-pub(crate) fn expand_transparent(input: DeriveInput) -> TokenStream {
+pub(crate) fn expand_transparent(mut input: DeriveInput) -> TokenStream {
     let ident = &input.ident;
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let mut where_clause = input.generics.make_where_clause().clone();
+    let (impl_generics, ty_generics, ..) = input.generics.split_for_impl();
 
     let call = match &input.data {
         Data::Enum(data) => {
@@ -99,6 +100,16 @@ pub(crate) fn expand_transparent(input: DeriveInput) -> TokenStream {
         }
         Data::Union(_) => abort_call_site!("`#[derive(Format)]` does not support unions"),
     };
+
+    let generic_bounds: Vec<syn::WherePredicate> = input
+        .generics
+        .type_params()
+        .map(|t| {
+            let generic_name = &t.ident;
+            parse_quote! { #generic_name: defmt::Format }
+        })
+        .collect();
+    where_clause.predicates.extend(generic_bounds);
 
     quote! {
         impl #impl_generics defmt::Format for #ident #ty_generics #where_clause {
