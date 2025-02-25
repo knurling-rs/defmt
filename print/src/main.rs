@@ -68,11 +68,7 @@ enum Command {
         port: u16,
     },
     Serial {
-        #[arg(
-            long,
-            env = "SERIAL_PORT",
-            default_value = "/dev/tty.usbserial-1132210"
-        )]
+        #[arg(long, env = "SERIAL_PORT", default_value = "/dev/ttyUSB0")]
         path: PathBuf,
 
         #[arg(long, env = "SERIAL_BAUD", default_value_t = 115200)]
