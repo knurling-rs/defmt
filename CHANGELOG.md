@@ -49,6 +49,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#940] `defmt-print`: Allow reading from a serial port
 * [#935] Add note in book's setup chapter to clarify staticlib setup
 * [#914] Add cargo-deny as a CI action to check crate security and licensing
 
