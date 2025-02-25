@@ -1,6 +1,7 @@
 use std::{
     env,
     path::{Path, PathBuf},
+    time::Duration,
 };
 
 use anyhow::anyhow;
@@ -20,6 +21,7 @@ use tokio::{
     select,
     sync::mpsc::Receiver,
 };
+use tokio_serial::{SerialPort, SerialPortBuilderExt, SerialStream};
 
 /// Prints defmt-encoded logs to stdout
 #[derive(Parser, Clone)]
@@ -65,11 +67,23 @@ enum Command {
         #[arg(long, env = "RTT_PORT", default_value_t = 19021)]
         port: u16,
     },
+    Serial {
+        #[arg(
+            long,
+            env = "SERIAL_PORT",
+            default_value = "/dev/tty.usbserial-1132210"
+        )]
+        path: PathBuf,
+
+        #[arg(long, env = "SERIAL_BAUD", default_value_t = 115200)]
+        baud: u32,
+    },
 }
 
 enum Source {
     Stdin(Stdin),
     Tcp(TcpStream),
+    Serial(SerialStream),
 }
 
 impl Source {
@@ -84,6 +98,12 @@ impl Source {
         }
     }
 
+    fn serial(path: PathBuf, baud: u32) -> anyhow::Result<Self> {
+        let mut ser = tokio_serial::new(path.to_string_lossy(), baud).open_native_async()?;
+        ser.set_timeout(Duration::from_millis(500))?;
+        Ok(Source::Serial(ser))
+    }
+
     async fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
         match self {
             Source::Stdin(stdin) => {
@@ -91,6 +111,7 @@ impl Source {
                 Ok((n, n == 0))
             }
             Source::Tcp(tcpstream) => Ok((tcpstream.read(buf).await?, false)),
+            Source::Serial(serial) => Ok((serial.read(buf).await?, false)),
         }
     }
 }
@@ -109,6 +130,7 @@ async fn main() -> anyhow::Result<()> {
     let mut source = match opts.command.clone() {
         None | Some(Command::Stdin) => Source::stdin(),
         Some(Command::Tcp { host, port }) => Source::tcp(host, port).await?,
+        Some(Command::Serial { path, baud }) => Source::serial(path, baud)?,
     };
 
     if opts.watch_elf {
