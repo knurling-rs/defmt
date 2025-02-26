@@ -49,6 +49,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#938] Emit `option_env!("DEFMT_LOG")` so rustc depinfo can track it
 * [#935] Add note in book's setup chapter to clarify staticlib setup
 * [#914] Add cargo-deny as a CI action to check crate security and licensing
 

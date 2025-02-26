@@ -56,10 +56,13 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
         };
 
         quote!(
-            match (#(&(#formatting_exprs)),*) {
-                (#(#patterns),*) => {
-                    if #filter_check {
-                        #content
+            {
+                option_env!("DEFMT_LOG");
+                match (#(&(#formatting_exprs)),*) {
+                    (#(#patterns),*) => {
+                        if #filter_check {
+                            #content
+                        }
                     }
                 }
             }
@@ -67,8 +70,11 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
     } else {
         // if logging is disabled match args, so they are not considered "unused"
         quote!(
-            match (#(&(#formatting_exprs)),*) {
-                _ => {}
+            {
+                option_env!("DEFMT_LOG");
+                match (#(&(#formatting_exprs)),*) {
+                    _ => {}
+                }
             }
         )
     }
