@@ -337,7 +337,7 @@ pub use defmt_macros::timestamp;
 
 /// Generates a bitflags structure that can be formatted with defmt.
 ///
-/// This macro is a wrapper around the [`bitflags!`] crate, and provides an (almost) identical
+/// This macro is a wrapper around the [`bitflags!`] macro of the bitflags version 1 crate, and provides an (almost) identical
 /// interface. Refer to [its documentation] for an explanation of the syntax.
 ///
 /// [its documentation]: https://docs.rs/bitflags/1/bitflags/
@@ -366,6 +366,44 @@ pub use defmt_macros::timestamp;
 /// defmt::info!("Flags::empty(): {}", Flags::empty());
 /// ```
 pub use defmt_macros::bitflags;
+
+/// Generates a bitflags structure that can be formatted with defmt (using version 2 of the bitflags crate)
+///
+
+/// Users of the defmt crate can enable the bitflagsv2 feature by adding `defmt = {version = "1", features = ["bitflagsv2"] }`
+/// to their Cargo.toml. Bitflags version 2 introduces significant improvements over version 1, including a safer
+/// API with the replacement of the unsafe from_bits_unchecked method by the safe from_bits_retain method
+/// and enhanced serialization support via an optional serde feature.
+/// This macro is a wrapper around the [`bitflags!`][bitflagsv2] macro of the bitflags version 2 crate, and provides an (almost) identical
+/// interface. Refer to [its documentation][bitflagsv2] for an explanation of the syntax.
+///
+/// [bitflagsv2]: https://docs.rs/bitflags/2/bitflags/macro.bitflags.html
+///
+/// # Limitations
+///
+/// This macro only supports bitflags structs represented as one of Rust's built-in unsigned integer
+/// types (`u8`, `u16`, `u32`, `u64`, or `u128`). Custom types are not supported. This restriction
+/// is necessary to support defmt's efficient encoding.
+///
+/// # Examples
+///
+/// The example from the bitflagsv2 crate works as-is:
+///
+/// ```
+/// #[cfg(feature = "bitflagsv2")]
+/// defmt::bitflagsv2! {
+///     struct Flags: u32 {
+///         const A = 0b00000001;
+///         const B = 0b00000010;
+///         const C = 0b00000100;
+///         const ABC = Self::A.bits() | Self::B.bits() | Self::C.bits()
+///     }
+/// }
+/// defmt::info!("Flags::ABC: {}", Flags::ABC);
+/// defmt::info!("Flags::empty(): {}", Flags::empty());
+/// ```
+#[cfg(feature = "bitflagsv2")]
+pub use defmt_macros::bitflagsv2;
 
 #[doc(hidden)] // documented as the `Format` trait instead
 pub use defmt_macros::Format;

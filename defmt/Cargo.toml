@@ -21,6 +21,7 @@ version = "0.3.10"
 alloc = []
 avoid-default-panic = []
 ip_in_core = []
+bitflagsv2 = ["dep:bitflagsv2"]
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #
@@ -47,6 +48,7 @@ unstable-test = [ "defmt-macros/unstable-test" ]
 # defmt. Although, multiple versions of defmt might use the *same* defmt-macros.
 defmt-macros = { path = "../macros", version = "=0.4.0" }
 bitflags = "1"
+bitflagsv2 = { package = "bitflags", version = "2", optional = true }
 
 [dev-dependencies]
 rustc_version = "0.4"

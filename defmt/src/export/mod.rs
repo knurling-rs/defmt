@@ -8,6 +8,9 @@ use crate::{Format, Formatter, Str};
 pub use self::integers::*;
 pub use bitflags::bitflags;
 
+#[cfg(feature = "bitflagsv2")]
+pub use bitflagsv2::bitflags as bitflagsv2;
+
 pub trait UnsignedInt {}
 impl UnsignedInt for u8 {}
 impl UnsignedInt for u16 {}
