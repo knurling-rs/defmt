@@ -399,6 +399,16 @@ impl<'t> Frame<'t> {
                 }
                 buf.push(']');
             }
+            Some(DisplayHint::Cbor) => {
+                use core::fmt::Write;
+                let parsed = cbor_edn::Sequence::from_cbor(bytes);
+                match parsed {
+                    Ok(parsed) => buf.write_str(&parsed.serialize())?,
+                    Err(err) => {
+                        write!(buf, "invalid CBOR (error: {}, bytes: {:02x?})", err, bytes)?
+                    }
+                }
+            }
             _ => write!(buf, "{bytes:?}")?,
         }
         Ok(())

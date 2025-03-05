@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 /// All display hints
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum DisplayHint {
     NoHint {
         zero_pad: usize,
@@ -40,6 +41,17 @@ pub enum DisplayHint {
         disambiguator: String,
         crate_name: Option<String>,
     },
+    /// `:cbor`: There is CBOR data encoded in those bytes, to be shown in diagnostic notation.
+    ///
+    /// Technically, the byte string interpreted as a CBOR sequence, and shown in the diagnostic
+    /// notation of a sequence. That is identical to processing a single CBOR item if there is just
+    /// one present, but also allows reporting multiple items from consecutive memory; diagnostic
+    /// notation turns those into comma separated items.
+    // Should we have a flag to say "do a more display style stringification" (like, if you
+    // recognize `54([64,h'20010db8'])`, don't show "IP'2001:db8::/64'" but just "2001:db8::64")?
+    // Should we allow additional params that give a CDDL that further guides processing (like,
+    // when data is not tagged but the shape is known for processing anyway)?
+    Cbor,
     /// Display hints currently not supported / understood
     Unknown(String),
 }
@@ -108,6 +120,7 @@ impl DisplayHint {
             },
             "iso8601ms" => DisplayHint::ISO8601(TimePrecision::Millis),
             "iso8601s" => DisplayHint::ISO8601(TimePrecision::Seconds),
+            "cbor" => DisplayHint::Cbor,
             "?" => DisplayHint::Debug,
             _ => return None,
         })

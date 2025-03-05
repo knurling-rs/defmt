@@ -547,6 +547,7 @@ Initial release
 ### [defmt-decoder-next]
 
 * [#902] Minor change to `impl StreamDecoder` for `Raw` and `Rzcobs`, eliding a lifetime specifier to satisfy Clippy 1.83. No observable change.
+* [#916] Support the ":cbor" display hint, adding new dependency `cbor-edn`.
 
 ### [defmt-decoder-v0.4.0] (2024-11-27)
 
@@ -611,6 +612,9 @@ Initial release
 [defmt-parser-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.1.0
 
 ### [defmt-parser-next]
+
+* [#916] Mark `DisplayHint` as `non_exhaustive`. This is a breaking change.
+* [#916] Add display hint ":cbor", indicating RFC8949 encoded data to be displayed in diagnostic notation.
 
 ### [defmt-parser-v0.4.1] (2024-11-27)
 
