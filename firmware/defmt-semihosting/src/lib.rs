@@ -12,7 +12,6 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use cortex_m::{interrupt, register};
 use cortex_m_semihosting::hio;
 
 #[defmt::global_logger]
