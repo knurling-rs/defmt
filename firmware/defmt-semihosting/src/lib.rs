@@ -19,13 +19,13 @@ use cortex_m_semihosting::hio;
 struct Logger;
 
 static TAKEN: AtomicBool = AtomicBool::new(false);
-static INTERRUPTS_ACTIVE: AtomicBool = AtomicBool::new(false);
+static mut CS_RESTORE: critical_section::RestoreState = critical_section::RestoreState::invalid();
 static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
-        let primask = register::primask::read();
-        interrupt::disable();
+        // safety: Must be paired with corresponding call to release(), see below
+        let restore = unsafe { critical_section::acquire() };
 
         if TAKEN.load(Ordering::Relaxed) {
             panic!("defmt logger taken reentrantly")
@@ -34,7 +34,8 @@ unsafe impl defmt::Logger for Logger {
         // no need for CAS because interrupts are disabled
         TAKEN.store(true, Ordering::Relaxed);
 
-        INTERRUPTS_ACTIVE.store(primask.is_active(), Ordering::Relaxed);
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
+        unsafe { CS_RESTORE = restore };
 
         // safety: accessing the `static mut` is OK because we have disabled interrupts.
         unsafe { ENCODER.start_frame(do_write) }
@@ -52,10 +53,12 @@ unsafe impl defmt::Logger for Logger {
         ENCODER.end_frame(do_write);
 
         TAKEN.store(false, Ordering::Relaxed);
-        if INTERRUPTS_ACTIVE.load(Ordering::Relaxed) {
-            // re-enable interrupts
-            interrupt::enable()
-        }
+
+        // safety: accessing the `static mut` is OK because we have acquired a critical section.
+        let restore = unsafe { CS_RESTORE };
+
+        // safety: Must be paired with corresponding call to acquire(), see above
+        unsafe { critical_section::release(restore) };
     }
 
     unsafe fn write(bytes: &[u8]) {

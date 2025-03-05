@@ -14,3 +14,4 @@ version = "0.1.0"
 defmt = { version = "0.3", path = "../../defmt" }
 cortex-m = "0.7"
 cortex-m-semihosting = "0.5"
+critical-section = "1.2"
