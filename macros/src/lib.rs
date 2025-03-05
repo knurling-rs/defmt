@@ -40,6 +40,13 @@ pub fn format(input: TokenStream) -> TokenStream {
     derives::format::expand(input)
 }
 
+#[proc_macro_derive(FormatTransparent)]
+#[proc_macro_error]
+pub fn format_transparent(input: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+    derives::format::expand_transparent(input)
+}
+
 /* # Function-like */
 #[proc_macro]
 #[proc_macro_error]
