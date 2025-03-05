@@ -4,6 +4,19 @@
 //!
 //! WARNING using `cortex_m_semihosting`'s `hprintln!` macro or `HStdout` API will corrupt `defmt`
 //! log frames so don't use those APIs.
+//!
+//! # Critical section implementation
+//!
+//! This crate uses [`critical-section`](https://github.com/rust-embedded/critical-section) to ensure only one thread
+//! is writing to the buffer at a time. You must import a crate that provides a `critical-section` implementation
+//! suitable for the current target. See the `critical-section` README for details.
+//!
+//! For example, for single-core privileged-mode Cortex-M targets, you can add the following to your Cargo.toml.
+//!
+//! ```toml
+//! [dependencies]
+//! cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}
+//! ```
 
 #![no_std]
 // nightly warns about static_mut_refs, but 1.76 (our MSRV) does not know about

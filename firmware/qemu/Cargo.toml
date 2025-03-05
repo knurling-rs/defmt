@@ -14,7 +14,7 @@ harness = false
 defmt = { path = "../../defmt" }
 defmt-semihosting = { path = "../defmt-semihosting" }
 defmt-test = { path = "../defmt-test" }
-cortex-m = "0.7"
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
 cortex-m-semihosting = "0.5"
 alloc-cortex-m = { version = "0.4", optional = true }
