@@ -710,6 +710,7 @@ Initial release
 ### [defmt-semihosting-next]
 
 * [#943] use critical_section for synchronization.
+* [#945] switch to using semihosting crate and `UnsafeCell`
 
 ### [defmt-semihosting-v0.1.0] (2024-11-27)
 
