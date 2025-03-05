@@ -705,6 +705,8 @@ Initial release
 
 ### [defmt-semihosting-next]
 
+* [#943] use critical_section for synchronization.
+
 ### [defmt-semihosting-v0.1.0] (2024-11-27)
 
 Initial release
