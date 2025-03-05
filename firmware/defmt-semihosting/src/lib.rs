@@ -19,38 +19,56 @@
 //! ```
 
 #![no_std]
-// nightly warns about static_mut_refs, but 1.76 (our MSRV) does not know about
-// that lint yet, so we ignore it it but also ignore if it is unknown
-#![allow(unknown_lints, static_mut_refs)]
 
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::{
+    cell::UnsafeCell,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use cortex_m_semihosting::hio;
+
+struct ContextInner {
+    restore_state: critical_section::RestoreState,
+    encoder: defmt::Encoder,
+}
+
+struct Context {
+    taken: AtomicBool,
+    inner: UnsafeCell<ContextInner>,
+}
+
+// safety: assumes contents are accessed under an isolating critical section.
+unsafe impl Sync for Context {}
 
 #[defmt::global_logger]
 struct Logger;
 
-static TAKEN: AtomicBool = AtomicBool::new(false);
-static mut CS_RESTORE: critical_section::RestoreState = critical_section::RestoreState::invalid();
-static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
+static CONTEXT: Context = Context {
+    taken: AtomicBool::new(false),
+    inner: UnsafeCell::new(ContextInner {
+        restore_state: critical_section::RestoreState::invalid(),
+        encoder: defmt::Encoder::new(),
+    }),
+};
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
         // safety: Must be paired with corresponding call to release(), see below
         let restore = unsafe { critical_section::acquire() };
 
-        if TAKEN.load(Ordering::Relaxed) {
+        if CONTEXT.taken.load(Ordering::Relaxed) {
             panic!("defmt logger taken reentrantly")
         }
 
         // no need for CAS because interrupts are disabled
-        TAKEN.store(true, Ordering::Relaxed);
+        CONTEXT.taken.store(true, Ordering::Relaxed);
 
-        // safety: accessing the `static mut` is OK because we have acquired a critical section.
-        unsafe { CS_RESTORE = restore };
-
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
-        unsafe { ENCODER.start_frame(do_write) }
+        // safety: this assumes the critical section we're in isolates execution
+        unsafe {
+            let inner = &mut *CONTEXT.inner.get();
+            inner.restore_state = restore;
+            inner.encoder.start_frame(do_write);
+        }
     }
 
     unsafe fn flush() {
@@ -61,21 +79,21 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn release() {
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
-        ENCODER.end_frame(do_write);
-
-        TAKEN.store(false, Ordering::Relaxed);
-
-        // safety: accessing the `static mut` is OK because we have acquired a critical section.
-        let restore = unsafe { CS_RESTORE };
+        // safety: this assumes the critical section we're in isolates execution
+        let restore = unsafe {
+            let inner = &mut *CONTEXT.inner.get();
+            inner.encoder.end_frame(do_write);
+            inner.restore_state
+        };
+        CONTEXT.taken.store(false, Ordering::Relaxed);
 
         // safety: Must be paired with corresponding call to acquire(), see above
         unsafe { critical_section::release(restore) };
     }
 
     unsafe fn write(bytes: &[u8]) {
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
-        ENCODER.write(bytes, do_write);
+        // safety: this assumes the critical section we're in isolates execution
+        unsafe { (*CONTEXT.inner.get()).encoder.write(bytes, do_write) };
     }
 }
 
