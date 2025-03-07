@@ -1,17 +1,18 @@
 //! `defmt` global logger over semihosting
 //!
-//! NOTE this is meant to only be used with QEMU
-//!
-//! WARNING using `cortex_m_semihosting`'s `hprintln!` macro or `HStdout` API will corrupt `defmt`
-//! log frames so don't use those APIs.
+//! WARNING using `semihosting`'s `println!` macro or `Stdout` API will corrupt
+//! `defmt` log frames so don't use those APIs.
 //!
 //! # Critical section implementation
 //!
-//! This crate uses [`critical-section`](https://github.com/rust-embedded/critical-section) to ensure only one thread
-//! is writing to the buffer at a time. You must import a crate that provides a `critical-section` implementation
-//! suitable for the current target. See the `critical-section` README for details.
+//! This crate uses
+//! [`critical-section`](https://github.com/rust-embedded/critical-section) to
+//! ensure only one thread is writing to the buffer at a time. You must import a
+//! crate that provides a `critical-section` implementation suitable for the
+//! current target. See the `critical-section` README for details.
 //!
-//! For example, for single-core privileged-mode Cortex-M targets, you can add the following to your Cargo.toml.
+//! For example, for single-core privileged-mode Cortex-M targets, you can add
+//! the following to your Cargo.toml.
 //!
 //! ```toml
 //! [dependencies]
@@ -19,38 +20,123 @@
 //! ```
 
 #![no_std]
-// nightly warns about static_mut_refs, but 1.76 (our MSRV) does not know about
-// that lint yet, so we ignore it it but also ignore if it is unknown
-#![allow(unknown_lints, static_mut_refs)]
 
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::{
+    cell::UnsafeCell,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
-use cortex_m_semihosting::hio;
+use semihosting::io::{Stdout, Write as _};
 
 #[defmt::global_logger]
 struct Logger;
 
-static TAKEN: AtomicBool = AtomicBool::new(false);
-static mut CS_RESTORE: critical_section::RestoreState = critical_section::RestoreState::invalid();
-static mut ENCODER: defmt::Encoder = defmt::Encoder::new();
+static SEMIHOSTING_ENCODER: SemihostingEncoder = SemihostingEncoder::new();
 
-unsafe impl defmt::Logger for Logger {
-    fn acquire() {
+struct SemihostingEncoder {
+    /// A boolean lock
+    ///
+    /// Is `true` when `acquire` has been called and we have exclusive access to
+    /// the rest of this structure.
+    taken: AtomicBool,
+    /// We need to remember this to exit a critical section
+    cs_restore: UnsafeCell<critical_section::RestoreState>,
+    /// A defmt::Encoder for encoding frames
+    encoder: UnsafeCell<defmt::Encoder>,
+    /// A semihosting handle for outputting encoded data
+    handle: UnsafeCell<Option<Stdout>>,
+}
+
+impl SemihostingEncoder {
+    /// Create a new semihosting-based defmt-encoder
+    const fn new() -> SemihostingEncoder {
+        SemihostingEncoder {
+            taken: AtomicBool::new(false),
+            cs_restore: UnsafeCell::new(critical_section::RestoreState::invalid()),
+            encoder: UnsafeCell::new(defmt::Encoder::new()),
+            handle: UnsafeCell::new(None),
+        }
+    }
+
+    /// Acquire the defmt encoder.
+    fn acquire(&self) {
         // safety: Must be paired with corresponding call to release(), see below
         let restore = unsafe { critical_section::acquire() };
 
-        if TAKEN.load(Ordering::Relaxed) {
+        // NB: You can re-enter critical sections but we need to make sure
+        // no-one does that.
+        if self.taken.load(Ordering::Relaxed) {
             panic!("defmt logger taken reentrantly")
         }
 
-        // no need for CAS because interrupts are disabled
-        TAKEN.store(true, Ordering::Relaxed);
+        // no need for CAS because we are in a critical section
+        self.taken.store(true, Ordering::Relaxed);
 
-        // safety: accessing the `static mut` is OK because we have acquired a critical section.
-        unsafe { CS_RESTORE = restore };
+        // safety: accessing the cell is OK because we have acquired a critical
+        // section.
+        unsafe {
+            self.cs_restore.get().write(restore);
+            let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
+            let handle: &mut Option<Stdout> = &mut *self.handle.get();
+            if handle.is_none() {
+                *handle = semihosting::io::stdout().ok();
+            }
+            encoder.start_frame(|b| {
+                if let Some(h) = handle {
+                    _ = h.write_all(b);
+                }
+            });
+        }
+    }
 
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
-        unsafe { ENCODER.start_frame(do_write) }
+    /// Release the defmt encoder.
+    unsafe fn release(&self) {
+        if !self.taken.load(Ordering::Relaxed) {
+            panic!("defmt release out of context")
+        }
+
+        // safety: accessing the cell is OK because we have acquired a critical
+        // section.
+        unsafe {
+            let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
+            let handle: &mut Option<Stdout> = &mut *self.handle.get();
+            encoder.end_frame(|b| {
+                if let Some(h) = handle {
+                    _ = h.write_all(b);
+                }
+            });
+            let restore = self.cs_restore.get().read();
+            self.taken.store(false, Ordering::Relaxed);
+            // paired with exactly one acquire call
+            critical_section::release(restore);
+        }
+    }
+
+    /// Write bytes to the defmt encoder.
+    unsafe fn write(&self, bytes: &[u8]) {
+        if !self.taken.load(Ordering::Relaxed) {
+            panic!("defmt write out of context")
+        }
+
+        // safety: accessing the cell is OK because we have acquired a critical
+        // section.
+        unsafe {
+            let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
+            let handle: &mut Option<Stdout> = &mut *self.handle.get();
+            encoder.write(bytes, |b| {
+                if let Some(h) = handle {
+                    _ = h.write_all(b);
+                }
+            });
+        }
+    }
+}
+
+unsafe impl Sync for SemihostingEncoder {}
+
+unsafe impl defmt::Logger for Logger {
+    fn acquire() {
+        SEMIHOSTING_ENCODER.acquire();
     }
 
     unsafe fn flush() {
@@ -61,27 +147,14 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn release() {
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
-        ENCODER.end_frame(do_write);
-
-        TAKEN.store(false, Ordering::Relaxed);
-
-        // safety: accessing the `static mut` is OK because we have acquired a critical section.
-        let restore = unsafe { CS_RESTORE };
-
-        // safety: Must be paired with corresponding call to acquire(), see above
-        unsafe { critical_section::release(restore) };
+        unsafe {
+            SEMIHOSTING_ENCODER.release();
+        }
     }
 
     unsafe fn write(bytes: &[u8]) {
-        // safety: accessing the `static mut` is OK because we have disabled interrupts.
-        ENCODER.write(bytes, do_write);
-    }
-}
-
-fn do_write(bytes: &[u8]) {
-    // using QEMU; it shouldn't mind us opening several handles (I hope)
-    if let Ok(mut hstdout) = hio::hstdout() {
-        hstdout.write_all(bytes).ok();
+        unsafe {
+            SEMIHOSTING_ENCODER.write(bytes);
+        }
     }
 }
