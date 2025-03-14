@@ -209,20 +209,28 @@ pub fn display(val: &dyn core::fmt::Display) {
 }
 
 #[inline(never)]
-pub unsafe fn acquire_and_header(s: &Str) {
-    acquire();
-    istr(s);
-    timestamp(make_formatter());
+#[must_use]
+pub unsafe fn check_acquire_and_header(s: &Str) -> bool {
+    if s.level_above_global_log_level() {
+        acquire();
+        istr(s);
+        timestamp(make_formatter());
+        true
+    } else {
+        false
+    }
 }
 
 #[inline(never)]
 pub fn acquire_header_and_release(s: &Str) {
-    // safety: will be released a few lines further down
-    unsafe { acquire() };
-    istr(s);
-    timestamp(make_formatter());
-    // safety: acquire() was called a few lines above
-    unsafe { release() };
+    if s.level_above_global_log_level() {
+        // safety: will be released a few lines further down
+        unsafe { acquire() };
+        istr(s);
+        timestamp(make_formatter());
+        // safety: acquire() was called a few lines above
+        unsafe { release() };
+    }
 }
 
 struct FmtWrite;
