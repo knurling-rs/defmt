@@ -415,6 +415,40 @@ pub fn flush() {
     }
 }
 
+/// Log Level of a defmt message
+/// Use `set_global_log_level` to set the global log level used to filter messages at runtime.
+/// Note: Use the environment variable `DEFMT_LOG` to disable certain log levels already at compile time
+#[repr(u8)]
+pub enum LogLevel {
+    /// Trace level
+    Trace = 0,
+    /// Debug level
+    Debug = 1,
+    /// Info level
+    Info = 2,
+    /// Warn level
+    Warn = 3,
+    /// Error level
+    Error = 4,
+}
+
+static LOG_LEVEL: core::sync::atomic::AtomicU8 =
+    core::sync::atomic::AtomicU8::new(LogLevel::Trace as u8);
+
+/// Sets the global log level used to filter messages at runtime.
+/// Messages below the passed level will never reach the defmt `global_logger`
+/// Note: Use the environment variable `DEFMT_LOG` to disable certain log levels already at compile time
+pub fn set_global_log_level(min_level: LogLevel) {
+    LOG_LEVEL.store(min_level as u8, core::sync::atomic::Ordering::Relaxed);
+}
+
+/// Gets the global log level used to filter messages at runtime.
+/// Messages below the returned level will never reach the defmt `global_logger`
+pub fn get_global_log_level() -> LogLevel {
+    let level = LOG_LEVEL.load(core::sync::atomic::Ordering::Relaxed);
+    unsafe { core::mem::transmute(level) }
+}
+
 #[cfg(not(feature = "unstable-test"))]
 #[doc(hidden)]
 pub struct IdRanges {
