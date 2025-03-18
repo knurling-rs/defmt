@@ -15,13 +15,21 @@ pub(crate) struct EncodeData {
     pub(crate) where_predicates: Vec<WherePredicate>,
 }
 
-pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> syn::Result<EncodeData> {
+pub(crate) fn encode_struct_data(
+    ident: &Ident,
+    data: &DataStruct,
+    defmt_path: &syn::Path,
+) -> syn::Result<EncodeData> {
     let mut format_string = ident.to_string();
     let mut stmts = vec![];
     let mut field_patterns = vec![];
 
-    let (encode_fields_stmts, where_predicates) =
-        fields::codegen(&data.fields, &mut format_string, &mut field_patterns)?;
+    let (encode_fields_stmts, where_predicates) = fields::codegen(
+        &data.fields,
+        &mut format_string,
+        &mut field_patterns,
+        defmt_path,
+    )?;
 
     stmts.push(quote!(match self {
         Self { #(#field_patterns),* } => {
@@ -29,7 +37,7 @@ pub(crate) fn encode_struct_data(ident: &Ident, data: &DataStruct) -> syn::Resul
         }
     }));
 
-    let format_tag = construct::interned_string(&format_string, "derived", false, None);
+    let format_tag = construct::interned_string(&format_string, "derived", false, None, defmt_path);
     Ok(EncodeData {
         format_tag,
         stmts,

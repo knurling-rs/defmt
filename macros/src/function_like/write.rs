@@ -2,7 +2,7 @@ use defmt_parser::ParserMode;
 use proc_macro::TokenStream;
 use proc_macro_error2::abort;
 use quote::quote;
-use syn::parse_macro_input;
+use syn::{parse_macro_input, parse_quote};
 
 use crate::{construct, function_like::log};
 
@@ -34,7 +34,8 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         log_args.format_string.span(),
     );
 
-    let format_tag = construct::interned_string(&format_string, "write", false, None);
+    let format_tag =
+        construct::interned_string(&format_string, "write", false, None, &parse_quote!(defmt));
     quote!({
         let _typecheck_formatter: defmt::Formatter<'_> = #formatter;
         match (#(&(#formatting_exprs)),*) {

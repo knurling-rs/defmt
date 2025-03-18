@@ -31,6 +31,7 @@ pub(crate) fn interned_string(
     tag: &str,
     is_log_statement: bool,
     prefix: Option<&str>,
+    defmt_path: &syn::Path,
 ) -> TokenStream2 {
     // NOTE we rely on this variable name when extracting file location information from the DWARF
     // without it we have no other mean to differentiate static variables produced by `info!` vs
@@ -42,7 +43,7 @@ pub(crate) fn interned_string(
     };
 
     let var_addr = if cfg!(feature = "unstable-test") {
-        quote!({ defmt::export::fetch_add_string_index() })
+        quote!({ #defmt_path::export::fetch_add_string_index() })
     } else {
         let var_item = static_variable(&var_name, string, tag, prefix);
         quote!({
@@ -52,7 +53,7 @@ pub(crate) fn interned_string(
     };
 
     quote!({
-        defmt::export::make_istr(#var_addr)
+        #defmt_path::export::make_istr(#var_addr)
     })
 }
 

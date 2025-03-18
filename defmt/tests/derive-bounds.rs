@@ -1,3 +1,5 @@
+extern crate defmt as defmt2;
+
 fn main() {
     let baz: Baz<Qux> = Default::default();
     defmt::info!("{}", baz);
@@ -27,3 +29,8 @@ enum Quux<T: Foo> {
     },
     Variant3(T::Bar),
 }
+
+#[allow(dead_code)]
+#[derive(defmt::Format)]
+#[defmt(crate = defmt2)]
+struct Quz;

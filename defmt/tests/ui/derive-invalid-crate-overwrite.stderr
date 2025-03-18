@@ -1,0 +1,17 @@
+error: expected identifier
+ --> tests/ui/derive-invalid-crate-overwrite.rs:6:17
+  |
+6 | #[defmt(crate = "not a path")]
+  |                 ^^^^^^^^^^^^
+
+error: expected `=`
+  --> tests/ui/derive-invalid-crate-overwrite.rs:10:14
+   |
+10 | #[defmt(crate(defmt))]
+   |              ^
+
+error[E0433]: failed to resolve: use of undeclared crate or module `unresolved`
+ --> tests/ui/derive-invalid-crate-overwrite.rs:2:17
+  |
+2 | #[defmt(crate = unresolved)]
+  |                 ^^^^^^^^^^ use of undeclared crate or module `unresolved`
