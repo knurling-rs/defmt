@@ -29,6 +29,17 @@ Like built-in derives (e.g. `#[derive(Debug)]`), `#[derive(Format)]` will add `F
 
 > ⚠️ Do *not* use the API used by the expansion of the `derive(Format)` macro; it is *unstable*.
 
+By default the derive assumes `defmt` to exist in your crate's extern prelude.
+If that is not the case you can overwrite the crate path the derive should use in its expansion via the `defmt(crate = path)` helper attribute.
+
+```rust
+extern crate defmt as other_defmt;
+
+#[derive(Format)]
+#[defmt(crate = other_defmt)]
+struct Header;
+```
+
 ## Feature-gated `#[derive(Format)]`
 
 It is also possible to feature-gate the implementation by defining
