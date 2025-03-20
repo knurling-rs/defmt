@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, ToTokens};
-use syn::parse_macro_input;
+use syn::{parse_macro_input, parse_quote};
 
 use crate::{cargo, construct};
 
@@ -23,7 +23,13 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         construct::crate_local_disambiguator(),
         cargo::crate_name(),
     );
-    let format_tag = construct::interned_string(&format_string, "bitflags", false, None);
+    let format_tag = construct::interned_string(
+        &format_string,
+        "bitflags",
+        false,
+        None,
+        &parse_quote!(defmt),
+    );
 
     let ident = input.ident();
     let ty = input.ty();

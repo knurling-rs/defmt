@@ -7,11 +7,15 @@ use crate::construct;
 
 use super::EncodeData;
 
-pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> {
+pub(crate) fn encode(
+    ident: &Ident,
+    data: &DataEnum,
+    defmt_path: &syn::Path,
+) -> syn::Result<EncodeData> {
     if data.variants.is_empty() {
         return Ok(EncodeData {
             stmts: vec![quote!(match *self {})],
-            format_tag: construct::interned_string("!", "derived", false, None),
+            format_tag: construct::interned_string("!", "derived", false, None, defmt_path),
             where_predicates: vec![],
         });
     }
@@ -34,12 +38,16 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
         format_string.push_str(&variant_ident.to_string());
 
         let mut field_patterns = vec![];
-        let (encode_fields_stmts, encode_field_where_predicates) =
-            super::fields::codegen(&variant.fields, &mut format_string, &mut field_patterns)?;
+        let (encode_fields_stmts, encode_field_where_predicates) = super::fields::codegen(
+            &variant.fields,
+            &mut format_string,
+            &mut field_patterns,
+            defmt_path,
+        )?;
         where_predicates.extend(encode_field_where_predicates.into_iter());
         let pattern = quote!( { #(#field_patterns),* } );
 
-        let encode_discriminant_stmt = discriminant_encoder.encode(index);
+        let encode_discriminant_stmt = discriminant_encoder.encode(index, defmt_path);
 
         match_arms.push(quote!(
             #enum_ident::#variant_ident #pattern => {
@@ -49,7 +57,7 @@ pub(crate) fn encode(ident: &Ident, data: &DataEnum) -> syn::Result<EncodeData> 
         ))
     }
 
-    let format_tag = construct::interned_string(&format_string, "derived", false, None);
+    let format_tag = construct::interned_string(&format_string, "derived", false, None, defmt_path);
     let stmts = vec![quote!(match self {
         #(#match_arms)*
     })];
@@ -92,25 +100,25 @@ impl DiscriminantEncoder {
     }
 
     // NOTE this assumes `index` < `number_of_variants` used to construct `self`
-    fn encode(&self, index: usize) -> TokenStream2 {
+    fn encode(&self, index: usize, defmt_path: &syn::Path) -> TokenStream2 {
         match self {
             // For single-variant enums, there is no need to encode the discriminant.
             DiscriminantEncoder::Nop => quote!(),
             DiscriminantEncoder::U8 => {
                 let index = index as u8;
-                quote!(defmt::export::u8(&#index);)
+                quote!(#defmt_path::export::u8(&#index);)
             }
             DiscriminantEncoder::U16 => {
                 let index = index as u16;
-                quote!(defmt::export::u16(&#index);)
+                quote!(#defmt_path::export::u16(&#index);)
             }
             DiscriminantEncoder::U32 => {
                 let index = index as u32;
-                quote!(defmt::export::u32(&#index);)
+                quote!(#defmt_path::export::u32(&#index);)
             }
             DiscriminantEncoder::U64 => {
                 let index = index as u64;
-                quote!(defmt::export::u64(&#index);)
+                quote!(#defmt_path::export::u64(&#index);)
             }
         }
     }

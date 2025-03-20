@@ -37,7 +37,11 @@ enum TestCommand {
     TestBackcompat,
     TestBook,
     TestCross,
-    TestHost,
+    TestHost {
+        /// Whether to skip running ui tests
+        #[arg(long)]
+        skip_ui_tests: bool,
+    },
     TestLint,
     TestUi,
     /// Run snapshot tests or optionally overwrite the expected output
@@ -57,7 +61,7 @@ fn main() -> anyhow::Result<()> {
     match opt.cmd {
         TestCommand::TestBook => test_book(),
         TestCommand::TestBackcompat => backcompat::test(),
-        TestCommand::TestHost => test_host(opt.deny_warnings),
+        TestCommand::TestHost { skip_ui_tests } => test_host(opt.deny_warnings, skip_ui_tests),
         TestCommand::TestLint => test_lint(),
         TestCommand::TestUi => test_ui(),
 
@@ -70,7 +74,7 @@ fn main() -> anyhow::Result<()> {
                     test_snapshot(overwrite, single);
                 }
                 TestCommand::TestAll => {
-                    test_host(opt.deny_warnings);
+                    test_host(opt.deny_warnings, false);
                     test_cross(opt.deny_warnings);
                     test_snapshot(false, None);
                     backcompat::test();
@@ -101,13 +105,16 @@ fn do_test(test: impl FnOnce() -> anyhow::Result<()>, context: &str) {
     test().unwrap_or_else(|e| ALL_ERRORS.lock().unwrap().push(format!("{context}: {e}")));
 }
 
-fn test_host(deny_warnings: bool) {
+fn test_host(deny_warnings: bool, skip_ui_tests: bool) {
     println!("🧪 host");
 
-    let env = match deny_warnings {
-        true => vec![("RUSTFLAGS", "--deny warnings")],
-        false => vec![],
-    };
+    let mut env = vec![];
+    if skip_ui_tests {
+        env.push(("SKIP_UI_TESTS", "1"));
+    }
+    if deny_warnings {
+        env.push(("RUSTFLAGS", "--deny warnings"));
+    }
 
     for feat in ["", "unstable-test", "alloc"] {
         do_test(

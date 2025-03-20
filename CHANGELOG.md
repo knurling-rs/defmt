@@ -405,6 +405,8 @@ Initial release
 
 ### [defmt-macros-next]
 
+* [#948] Add support for specifying the `defmt` crate path for the `Format` derive via a `#[defmt(crate = path )]` helper attribute
+
 ### [defmt-macros-v0.4.0] (2024-11-29)
 
 * [#899] Just a major version bump to stop it being used by older defmt versions.
@@ -848,6 +850,7 @@ Initial release
 
 ---
 
+[#948]: https://github.com/knurling-rs/defmt/pull/948
 [#914]: https://github.com/knurling-rs/defmt/pull/914
 [#902]: https://github.com/knurling-rs/defmt/pull/902
 [#901]: https://github.com/knurling-rs/defmt/pull/901
