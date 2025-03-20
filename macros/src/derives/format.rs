@@ -41,8 +41,10 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     } = codegen::Generics::codegen(&mut generics, where_predicates);
 
     quote!(
+        #[automatically_derived]
         impl #impl_generics #defmt_path::Format for #ident #type_generics #where_clause {
             fn format(&self, f: #defmt_path::Formatter) {
+                use #defmt_path as defmt;
                 #defmt_path::unreachable!()
             }
 

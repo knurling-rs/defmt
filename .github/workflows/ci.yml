@@ -36,7 +36,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
       - name: Check that all crates that can be compiled for the host build, check that defmt compiles with different features, run all unit tests on the host
-        run: cargo xtask -d test-host
+        run: cargo xtask -d test-host ${{ matrix.toolchain == '1.76' && '--skip-ui-tests' || '' }}
 
   cross:
     strategy:
@@ -162,14 +162,14 @@ jobs:
     runs-on: ubuntu-latest
     if: success()
     needs:
-        - host
-        - cross
-        - cargo-deny
-        - lint
-        - ui
-        - mdbook
-        - qemu-snapshot
-        - backcompat
+      - host
+      - cross
+      - cargo-deny
+      - lint
+      - ui
+      - mdbook
+      - qemu-snapshot
+      - backcompat
     steps:
-        - name: Mark the build as successful
-          run: exit 0
+      - name: Mark the build as successful
+        run: exit 0

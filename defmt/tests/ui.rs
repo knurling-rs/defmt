@@ -4,6 +4,7 @@ fn ui() {
     if rustc_version::version_meta()
         .map(|meta| meta.channel == rustc_version::Channel::Stable)
         .unwrap_or(false)
+        && std::env::var_os("SKIP_UI_TESTS").is_none()
     {
         let t = trybuild::TestCases::new();
         t.compile_fail("tests/ui/*.rs");
