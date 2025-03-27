@@ -61,7 +61,7 @@ const MODE_BLOCK_IF_FULL: usize = 2;
 const MODE_NON_BLOCKING_TRIM: usize = 1;
 
 /// The defmt global logger
-/// 
+///
 /// The defmt crate requires that this be a unit type, so our state is stored in
 /// [`RTT_ENCODER`] instead.
 #[defmt::global_logger]
@@ -71,7 +71,7 @@ struct Logger;
 static RTT_ENCODER: RttEncoder = RttEncoder::new();
 
 /// Our shared header structure.
-/// 
+///
 /// The host will read this structure so it must be arranged as expected.
 ///
 /// NOTE the `rtt-target` API is too permissive. It allows writing arbitrary
@@ -99,7 +99,7 @@ static _SEGGER_RTT: Header = Header {
 static BUFFER: Buffer = Buffer::new();
 
 /// The name of our channel.
-/// 
+///
 /// This is in a data section, so the whole RTT header can be read from RAM.
 /// This is useful if flash access gets disabled by the firmware at runtime.
 #[link_section = ".data"]
@@ -253,4 +253,3 @@ impl Buffer {
 }
 
 unsafe impl Sync for Buffer {}
-
