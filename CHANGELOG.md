@@ -649,6 +649,7 @@ Initial release
 > Transmit defmt log messages over the RTT (Real-Time Transfer) protocol
 
 [defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v0.4.1...main
+[defmt-rtt-v0.4.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.2
 [defmt-rtt-v0.4.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.1
 [defmt-rtt-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.0
 [defmt-rtt-v0.3.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.3.2
@@ -658,6 +659,8 @@ Initial release
 [defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
 ### [defmt-rtt-next]
+
+### [defmt-rtt-v0.4.2] (2025-03-27)
 
 * [#902] Use `core::ptr::addr_of_mut!` instead of `&mut` on mutable statics. No observable change.
 * [#901] `defmt-rtt`: Update to critical-section 1.2
@@ -708,10 +711,13 @@ Initial release
 
 > Transmit defmt log messages using semi-hosting breakpoints
 
-[defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.1.0...main
+[defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.2.0...main
+[defmt-semihosting-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.2.0
 [defmt-semihosting-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.1.0
 
 ### [defmt-semihosting-next]
+
+### [defmt-semihosting-v0.2.0] (2025-03-27)
 
 * [#943] use critical_section for synchronization.
 * [#945] switch to using semihosting crate and `UnsafeCell`
