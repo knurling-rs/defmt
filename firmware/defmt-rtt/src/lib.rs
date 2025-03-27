@@ -153,11 +153,11 @@ impl RttEncoder {
     }
 
     /// Write bytes to the defmt encoder.
+    ///
+    /// # Safety
+    ///
+    /// Do not call unless you have called `acquire`.
     unsafe fn write(&self, bytes: &[u8]) {
-        if !self.taken.load(Ordering::Relaxed) {
-            panic!("defmt write out of context")
-        }
-
         // safety: accessing the cell is OK because we have acquired a critical
         // section.
         unsafe {
@@ -169,17 +169,23 @@ impl RttEncoder {
     }
 
     /// Flush the encoder
+    ///
+    /// # Safety
+    ///
+    /// Do not call unless you have called `acquire`.
     unsafe fn flush(&self) {
-        if !self.taken.load(Ordering::Relaxed) {
-            panic!("defmt write out of context")
-        }
-
         // safety: accessing the `&'static _` is OK because we have acquired a
         // critical section.
         _SEGGER_RTT.up_channel.flush();
     }
 
     /// Release the defmt encoder.
+    ///
+    /// # Safety
+    ///
+    /// Do not call unless you have called `acquire`. This will release
+    /// your lock - do not call `flush` and `write` until you have done another
+    /// `acquire`.
     unsafe fn release(&self) {
         if !self.taken.load(Ordering::Relaxed) {
             panic!("defmt release out of context")

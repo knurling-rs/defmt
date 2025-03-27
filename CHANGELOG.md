@@ -663,6 +663,7 @@ Initial release
 * [#901] `defmt-rtt`: Update to critical-section 1.2
 * [#915] Introduced `disable-blocking-mode` feature
 * [#949] Re-worked to remove all usage of `static mut`
+* [#950] Removed some redundant checks from `write` and `flush`
 
 ### [defmt-rtt-v0.4.1] (2024-05-13)
 
@@ -851,6 +852,7 @@ Initial release
 
 ---
 
+[#950]: https://github.com/knurling-rs/defmt/pull/950
 [#949]: https://github.com/knurling-rs/defmt/pull/949
 [#948]: https://github.com/knurling-rs/defmt/pull/948
 [#914]: https://github.com/knurling-rs/defmt/pull/914
