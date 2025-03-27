@@ -662,6 +662,7 @@ Initial release
 * [#902] Use `core::ptr::addr_of_mut!` instead of `&mut` on mutable statics. No observable change.
 * [#901] `defmt-rtt`: Update to critical-section 1.2
 * [#915] Introduced `disable-blocking-mode` feature
+* [#949] Re-worked to remove all usage of `static mut`
 
 ### [defmt-rtt-v0.4.1] (2024-05-13)
 
@@ -704,7 +705,7 @@ Initial release
 
 ## defmt-semihosting
 
-> Transmit defmt log messages over the semihosting (Instrumentation Trace Macrocell) stimulus port
+> Transmit defmt log messages using semi-hosting breakpoints
 
 [defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.1.0...main
 [defmt-semihosting-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.1.0
@@ -850,6 +851,7 @@ Initial release
 
 ---
 
+[#949]: https://github.com/knurling-rs/defmt/pull/949
 [#948]: https://github.com/knurling-rs/defmt/pull/948
 [#914]: https://github.com/knurling-rs/defmt/pull/914
 [#902]: https://github.com/knurling-rs/defmt/pull/902
