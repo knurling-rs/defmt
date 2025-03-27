@@ -704,7 +704,7 @@ Initial release
 
 ## defmt-semihosting
 
-> Transmit defmt log messages over the semihosting (Instrumentation Trace Macrocell) stimulus port
+> Transmit defmt log messages using semi-hosting breakpoints
 
 [defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.1.0...main
 [defmt-semihosting-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.1.0
