@@ -73,6 +73,9 @@ enum Command {
 
         #[arg(long, env = "SERIAL_BAUD", default_value_t = 115200)]
         baud: u32,
+
+        #[arg(long, env = "SERIAL_DTR", default_value_t = false)]
+        dtr: bool,
     },
 }
 
@@ -94,9 +97,12 @@ impl Source {
         }
     }
 
-    fn serial(path: PathBuf, baud: u32) -> anyhow::Result<Self> {
+    fn serial(path: PathBuf, baud: u32, dtr: bool) -> anyhow::Result<Self> {
         let mut ser = tokio_serial::new(path.to_string_lossy(), baud).open_native_async()?;
         ser.set_timeout(Duration::from_millis(500))?;
+        if dtr {
+            ser.write_data_terminal_ready(true)?;
+        }
         Ok(Source::Serial(ser))
     }
 
@@ -126,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
     let mut source = match opts.command.clone() {
         None | Some(Command::Stdin) => Source::stdin(),
         Some(Command::Tcp { host, port }) => Source::tcp(host, port).await?,
-        Some(Command::Serial { path, baud }) => Source::serial(path, baud)?,
+        Some(Command::Serial { path, baud, dtr }) => Source::serial(path, baud, dtr)?,
     };
 
     if opts.watch_elf {
