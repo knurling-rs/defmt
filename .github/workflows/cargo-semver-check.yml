@@ -34,7 +34,10 @@ jobs:
         with:
           feature-group: default-features
           manifest-path: parser
+      # FIXME: Un-exclude and enable the rust-target once https://github.com/obi1kenobi/cargo-semver-checks-action/issues/98 is fixed
       - name: Semver check firmware crates
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           manifest-path: firmware/
+          exclude: defmt-semihosting
+          # rust-target: thumbv7em-none-eabihf
