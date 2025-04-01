@@ -6,6 +6,10 @@
 //!
 //! # Compatibility
 //!
+//! This is a defmt-0.3 compatbility crate. It depends upon `defmt-1.0` and
+//! re-exports the items that were available in `defmt-0.3`. This allows you to
+//! mix defmt-0.3 and defmt-1.0 within the same compilation.
+//!
 //! The `defmt` wire format might change between minor versions. Attempting to
 //! read a defmt stream with an incompatible version will result in an error,
 //! and any tool used to process that stream should first check for a symbol
@@ -15,60 +19,7 @@
 //! Updating your version of defmt might mean you also have to update your
 //! version of `defmt-print` or `defmt-decoder`.
 
-#![cfg_attr(not(feature = "unstable-test"), no_std)]
-// NOTE if you change this URL you'll also need to update all other crates in this repo
-#![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
-#![warn(missing_docs)]
-
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
-// This must be in the root lib.rs, otherwise it doesn't appear in the final binary.
-
-/// The defmt ABI and wire format version.
-///
-/// This number has to be updated every time there is a backwards-incompatible change to
-/// - the symbol naming scheme
-/// - the symbol and section layout
-/// - the data encoding / wire format
-#[used]
-#[cfg_attr(target_os = "macos", link_section = ".defmt,end.VERSION")]
-#[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
-#[export_name = "_defmt_version_ = 4"]
-static DEFMT_VERSION: u8 = 0;
-
-#[used]
-#[cfg_attr(target_os = "macos", link_section = ".defmt,end.ENCODING")]
-#[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
-#[cfg_attr(feature = "encoding-raw", export_name = "_defmt_encoding_ = raw")]
-#[cfg_attr(
-    not(feature = "encoding-raw"),
-    export_name = "_defmt_encoding_ = rzcobs"
-)]
-#[allow(missing_docs)]
-#[doc(hidden)]
-pub static DEFMT_ENCODING: u8 = 0;
-
-mod encoding;
-#[doc(hidden)]
-pub mod export;
-mod formatter;
-mod impls;
-#[cfg(all(test, feature = "unstable-test"))]
-mod tests;
-mod traits;
-
-pub use crate::{
-    encoding::Encoder,
-    formatter::{Formatter, Str},
-    impls::adapter::{Debug2Format, Display2Format},
-    traits::{Format, Logger},
-};
-
-#[cfg(all(test, not(feature = "unstable-test")))]
-compile_error!(
-    "to run unit tests enable the `unstable-test` feature, e.g. `cargo t --features unstable-test`"
-);
+#![no_std]
 
 /// Just like the [`core::assert!`] macro but `defmt` is used to log the panic message
 ///
@@ -77,7 +28,7 @@ compile_error!(
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::assert_ as assert;
+pub use defmt10::assert;
 
 /// Just like the [`core::assert_eq!`] macro but `defmt` is used to log the panic message
 ///
@@ -86,7 +37,7 @@ pub use defmt_macros::assert_ as assert;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::assert_eq_ as assert_eq;
+pub use defmt10::assert_eq;
 
 /// Just like the [`core::assert_ne!`] macro but `defmt` is used to log the panic message
 ///
@@ -95,7 +46,7 @@ pub use defmt_macros::assert_eq_ as assert_eq;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::assert_ne_ as assert_ne;
+pub use defmt10::assert_ne;
 
 /// Just like the [`core::debug_assert!`] macro but `defmt` is used to log the panic message
 ///
@@ -104,7 +55,7 @@ pub use defmt_macros::assert_ne_ as assert_ne;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::debug_assert_ as debug_assert;
+pub use defmt10::debug_assert;
 
 /// Just like the [`core::debug_assert_eq!`] macro but `defmt` is used to log the panic message
 ///
@@ -113,7 +64,7 @@ pub use defmt_macros::debug_assert_ as debug_assert;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::debug_assert_eq_ as debug_assert_eq;
+pub use defmt10::debug_assert_eq;
 
 /// Just like the [`core::debug_assert_ne!`] macro but `defmt` is used to log the panic message
 ///
@@ -122,7 +73,7 @@ pub use defmt_macros::debug_assert_eq_ as debug_assert_eq;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::debug_assert_ne_ as debug_assert_ne;
+pub use defmt10::debug_assert_ne;
 
 /// Just like the [`core::unreachable!`] macro but `defmt` is used to log the panic message
 ///
@@ -131,7 +82,7 @@ pub use defmt_macros::debug_assert_ne_ as debug_assert_ne;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::unreachable_ as unreachable;
+pub use defmt10::unreachable;
 
 /// Just like the [`core::todo!`] macro but `defmt` is used to log the panic message
 ///
@@ -140,7 +91,7 @@ pub use defmt_macros::unreachable_ as unreachable;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::todo_ as todo;
+pub use defmt10::todo;
 
 /// Just like the [`core::unimplemented!`] macro but `defmt` is used to log the panic message
 ///
@@ -149,7 +100,7 @@ pub use defmt_macros::todo_ as todo;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::todo_ as unimplemented;
+pub use defmt10::todo as unimplemented;
 
 /// Just like the [`core::panic!`] macro but `defmt` is used to log the panic message
 ///
@@ -158,7 +109,7 @@ pub use defmt_macros::todo_ as unimplemented;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::panic_ as panic;
+pub use defmt10::panic;
 
 /// Unwraps an `Option` or `Result`, panicking if it is `None` or `Err`.
 ///
@@ -192,7 +143,7 @@ pub use defmt_macros::panic_ as panic;
 /// If used, the format string must follow the defmt syntax (documented in [the manual])
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::unwrap;
+pub use defmt10::unwrap;
 
 /// This is an alias for defmt's [`unwrap`] macro which supports messages like std's except.
 /// ```
@@ -206,7 +157,7 @@ pub use defmt_macros::unwrap;
 ///
 /// For the complete documentation see that of defmt's *unwrap* macro.
 // note: Linking to unwrap is broken as of 2024-10-09, it links back to expect
-pub use defmt_macros::unwrap as expect;
+pub use defmt10::unwrap as expect;
 
 /// Overrides the panicking behavior of `defmt::panic!`
 ///
@@ -219,7 +170,7 @@ pub use defmt_macros::unwrap as expect;
 /// # Inter-operation with built-in attributes
 ///
 /// This attribute cannot be used together with the `export_name` or `no_mangle` attributes
-pub use defmt_macros::panic_handler;
+pub use defmt10::panic_handler;
 
 /// Creates an interned string ([`Str`]) from a string literal.
 ///
@@ -234,55 +185,55 @@ pub use defmt_macros::panic_handler;
 /// ```
 ///
 /// [`Str`]: struct.Str.html
-pub use defmt_macros::intern;
+pub use defmt10::intern;
 
 /// Always logs data irrespective of log level.
 ///
 /// Please refer to [the manual] for documentation on the syntax.
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::println;
+pub use defmt10::println;
 
 /// Logs data at *debug* level.
 ///
 /// Please refer to [the manual] for documentation on the syntax.
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::debug;
+pub use defmt10::debug;
 /// Logs data at *error* level.
 ///
 /// Please refer to [the manual] for documentation on the syntax.
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::error;
+pub use defmt10::error;
 /// Logs data at *info* level.
 ///
 /// Please refer to [the manual] for documentation on the syntax.
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::info;
+pub use defmt10::info;
 /// Logs data at *trace* level.
 ///
 /// Please refer to [the manual] for documentation on the syntax.
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::trace;
+pub use defmt10::trace;
 /// Logs data at *warn* level.
 ///
 /// Please refer to [the manual] for documentation on the syntax.
 ///
 /// [the manual]: https://defmt.ferrous-systems.com/macros.html
-pub use defmt_macros::warn;
+pub use defmt10::warn;
 
 /// Just like the [`std::dbg!`] macro but `defmt` is used to log the message at `TRACE` level.
 ///
 /// [`std::dbg!`]: https://doc.rust-lang.org/std/macro.dbg.html
-pub use defmt_macros::dbg;
+pub use defmt10::dbg;
 
 /// Writes formatted data to a [`Formatter`].
 ///
 /// [`Formatter`]: struct.Formatter.html
-pub use defmt_macros::write;
+pub use defmt10::write;
 
 /// Defines the global defmt logger.
 ///
@@ -318,7 +269,7 @@ pub use defmt_macros::write;
 /// ```
 ///
 /// [`Logger`]: trait.Logger.html
-pub use defmt_macros::global_logger;
+pub use defmt10::global_logger;
 
 /// Defines the global timestamp provider for defmt.
 ///
@@ -338,7 +289,7 @@ pub use defmt_macros::global_logger;
 /// static COUNT: AtomicU32 = AtomicU32::new(0);
 /// defmt::timestamp!("{=u32:us}", COUNT.fetch_add(1, Ordering::Relaxed));
 /// ```
-pub use defmt_macros::timestamp;
+pub use defmt10::timestamp;
 
 /// Generates a bitflags structure that can be formatted with defmt.
 ///
@@ -370,98 +321,16 @@ pub use defmt_macros::timestamp;
 /// defmt::info!("Flags::ABC: {}", Flags::ABC);
 /// defmt::info!("Flags::empty(): {}", Flags::empty());
 /// ```
-pub use defmt_macros::bitflags;
+pub use defmt10::bitflags;
 
-#[doc(hidden)] // documented as the `Format` trait instead
-pub use defmt_macros::Format;
+#[doc(inline)]
+pub use defmt10::{Debug2Format, Display2Format, Encoder, Formatter, Str};
 
-// There is no default timestamp format. Instead, the decoder looks for a matching ELF symbol. If
-// absent, timestamps are turned off.
-#[export_name = "__defmt_default_timestamp"]
-fn default_timestamp(_f: Formatter<'_>) {}
+#[doc(inline)]
+pub use defmt10::{Format, Logger};
 
-#[export_name = "__defmt_default_panic"]
-fn default_panic() -> ! {
-    core::panic!()
-}
-
-/// Block until host has read all pending data.
-///
-/// The flush operation will not fail, but might not succeed in flushing _all_ pending data. It is
-/// implemented as a "best effort" operation.
-///
-/// This calls the method `flush` of the used "global [`Logger`]". The logger is likely provided by
-/// [`defmt-rtt`](https://crates.io/crates/defmt-rtt) or [`defmt-itm`](https://crates.io/crates/defmt-itm).
-pub fn flush() {
-    match () {
-        #[cfg(feature = "unstable-test")]
-        () => {
-            // no-op when run on host
-        }
-
-        #[cfg(not(feature = "unstable-test"))]
-        () => {
-            extern "Rust" {
-                fn _defmt_acquire();
-                fn _defmt_flush();
-                fn _defmt_release();
-            }
-            // SAFETY:
-            // * we call these function in the correct order: first acquire the lock, then flush and
-            //   finally release the lock
-            // * these function should be provided by the macro `#[global_logger]` and therefore
-            //   trustworthy to call through FFI-bounds
-            unsafe {
-                _defmt_acquire();
-                _defmt_flush();
-                _defmt_release()
-            }
-        }
-    }
-}
-
-#[cfg(not(feature = "unstable-test"))]
 #[doc(hidden)]
-pub struct IdRanges {
-    pub trace: core::ops::Range<u16>,
-    pub debug: core::ops::Range<u16>,
-    pub info: core::ops::Range<u16>,
-    pub warn: core::ops::Range<u16>,
-    pub error: core::ops::Range<u16>,
-}
+pub use defmt10::export;
 
-#[cfg(not(feature = "unstable-test"))]
-impl IdRanges {
-    pub fn get() -> Self {
-        extern "C" {
-            static __DEFMT_MARKER_TRACE_START: u8;
-            static __DEFMT_MARKER_TRACE_END: u8;
-            static __DEFMT_MARKER_DEBUG_START: u8;
-            static __DEFMT_MARKER_DEBUG_END: u8;
-            static __DEFMT_MARKER_INFO_START: u8;
-            static __DEFMT_MARKER_INFO_END: u8;
-            static __DEFMT_MARKER_WARN_START: u8;
-            static __DEFMT_MARKER_WARN_END: u8;
-            static __DEFMT_MARKER_ERROR_START: u8;
-            static __DEFMT_MARKER_ERROR_END: u8;
-        }
-
-        let trace_start = unsafe { &__DEFMT_MARKER_TRACE_START as *const u8 as u16 };
-        let trace_end = unsafe { &__DEFMT_MARKER_TRACE_END as *const u8 as u16 };
-        let debug_start = unsafe { &__DEFMT_MARKER_DEBUG_START as *const u8 as u16 };
-        let debug_end = unsafe { &__DEFMT_MARKER_DEBUG_END as *const u8 as u16 };
-        let info_start = unsafe { &__DEFMT_MARKER_INFO_START as *const u8 as u16 };
-        let info_end = unsafe { &__DEFMT_MARKER_INFO_END as *const u8 as u16 };
-        let warn_start = unsafe { &__DEFMT_MARKER_WARN_START as *const u8 as u16 };
-        let warn_end = unsafe { &__DEFMT_MARKER_WARN_END as *const u8 as u16 };
-        let error_start = unsafe { &__DEFMT_MARKER_ERROR_START as *const u8 as u16 };
-        let error_end = unsafe { &__DEFMT_MARKER_ERROR_END as *const u8 as u16 };
-        Self {
-            trace: trace_start..trace_end,
-            debug: debug_start..debug_end,
-            info: info_start..info_end,
-            warn: warn_start..warn_end,
-            error: error_start..error_end,
-        }
-    }
-}
+#[doc(inline)]
+pub use defmt10::flush;
