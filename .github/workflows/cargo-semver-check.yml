@@ -14,22 +14,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Semver check host crates
+      - name: Semver check defmt
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: default-features
           manifest-path: defmt
-      - name: Semver check host crates
+      - name: Semver check decoder
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: default-features
           manifest-path: decoder
-      - name: Semver check host crates
+      - name: Semver check decoder/defmt-json-schema
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: default-features
           manifest-path: decoder/defmt-json-schema
-      - name: Semver check host crates
+      - name: Semver check parser
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: default-features
