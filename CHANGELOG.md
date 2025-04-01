@@ -53,7 +53,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 * No changes
 
-### [defmt-v1.0.0] (2025-01-01)
+### [defmt-v1.0.0] (2025-04-01)
 
 * [#909] First 1.0 stable release :tada:
 * [#940] `defmt-print`: Allow reading from a serial port
@@ -61,7 +61,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#935] Add note in book's setup chapter to clarify staticlib setup
 * [#914] Add cargo-deny as a CI action to check crate security and licensing
 
-### [defmt-v0.3.100] (2025-01-01)
+### [defmt-v0.3.100] (2025-04-01)
 
 * [#909] Re-exports defmt-1.0.0
 
@@ -417,8 +417,9 @@ Initial release
 
 ### [defmt-macros-next]
 
+* No changes
 
-### [defmt-macros-v1.0.0] (2025-01-01)
+### [defmt-macros-v1.0.0] (2025-04-01)
 
 * [#948] Add support for specifying the `defmt` crate path for the `Format` derive via a `#[defmt(crate = path )]` helper attribute
 * [#909] First 1.0 stable release :tada:
@@ -492,7 +493,9 @@ Initial release
 
 ### [defmt-print-next]
 
-### [defmt-print-v1.0.0] (2025-01-01)
+* No changes
+
+### [defmt-print-v1.0.0] (2025-04-01)
 
 * [#909] First 1.0 stable release :tada:
 
@@ -570,7 +573,9 @@ Initial release
 
 ### [defmt-decoder-next]
 
-### [defmt-decoder-v1.0.0] (2025-01-01)
+* No changes
+
+### [defmt-decoder-v1.0.0] (2025-04-01)
 
 * [#909] First 1.0 stable release :tada:
 * [#902] Minor change to `impl StreamDecoder` for `Raw` and `Rzcobs`, eliding a lifetime specifier to satisfy Clippy 1.83. No observable change.
@@ -641,7 +646,9 @@ Initial release
 
 ### [defmt-parser-next]
 
-### [defmt-parser-v1.0.0] (2025-01-01)
+* No changes
+
+### [defmt-parser-v1.0.0] (2025-04-01)
 
 * [#916] Mark `DisplayHint` as `non_exhaustive`. This is a breaking change.
 * [#916] Add display hint ":cbor", indicating RFC8949 encoded data to be displayed in diagnostic notation.
@@ -690,7 +697,9 @@ Initial release
 
 ### [defmt-rtt-next]
 
-### [defmt-rtt-v1.0.0] (2025-01-01)
+* No changes
+
+### [defmt-rtt-v1.0.0] (2025-04-01)
 
 * [#909] First 1.0 stable release :tada:
 
@@ -734,7 +743,9 @@ Initial release
 
 ### [defmt-itm-next]
 
-### [defmt-itm-v0.4.0] (2025-01-01)
+* No changes
+
+### [defmt-itm-v0.4.0] (2025-04-01)
 
 * [#909] Switch to using defmt-1.0
 * [#902] Switch to using critical-section, and copy implementation over from defmt-rtt.
@@ -749,11 +760,16 @@ Initial release
 
 > Transmit defmt log messages using semi-hosting breakpoints
 
-[defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.2.0...main
+[defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.3.0...main
+[defmt-semihosting-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.3.0
 [defmt-semihosting-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.2.0
 [defmt-semihosting-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.1.0
 
 ### [defmt-semihosting-next]
+
+* No changes
+
+### [defmt-semihosting-v0.3.0] (2025-04-01)
 
 * [#909] Switch to using defmt-1.0
 
@@ -781,7 +797,9 @@ Initial release
 
 ### [panic-probe-next]
 
-### [panic-probe-v1.0.0] (2025-01-01)
+* No changes
+
+### [panic-probe-v1.0.0] (2025-04-01)
 
 * [#909] Switch to using defmt-1.0
 
@@ -819,7 +837,9 @@ Initial release
 
 ### [defmt-test-next]
 
-### [defmt-test-v0.4.0] (2025-01-01)
+* No changes
+
+### [defmt-test-v0.4.0] (2025-04-01)
 
 * [#909] Switch to using defmt-1.0
 
@@ -857,6 +877,8 @@ Initial release
 
 ### [defmt-test-macros-next]
 
+* No changes
+
 ### [defmt-test-macros-v0.3.1] (2024-03-05)
 
 ### [defmt-test-macros-v0.3.0] (2021-11-26)
@@ -879,6 +901,8 @@ Initial release
 [defmt-json-schema-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-json-schema-v0.1.0
 
 ### [defmt-json-schema-next]
+
+* No changes
 
 ### [defmt-json-schema-v0.1.0] (2022-03-10)
 
@@ -911,6 +935,12 @@ Initial release
 [#950]: https://github.com/knurling-rs/defmt/pull/950
 [#949]: https://github.com/knurling-rs/defmt/pull/949
 [#948]: https://github.com/knurling-rs/defmt/pull/948
+[#945]: https://github.com/knurling-rs/defmt/pull/945
+[#943]: https://github.com/knurling-rs/defmt/pull/943
+[#940]: https://github.com/knurling-rs/defmt/pull/940
+[#938]: https://github.com/knurling-rs/defmt/pull/938
+[#935]: https://github.com/knurling-rs/defmt/pull/935
+[#916]: https://github.com/knurling-rs/defmt/pull/916
 [#915]: https://github.com/knurling-rs/defmt/pull/915
 [#914]: https://github.com/knurling-rs/defmt/pull/914
 [#909]: https://github.com/knurling-rs/defmt/pull/909
@@ -940,7 +970,9 @@ Initial release
 [#840]: https://github.com/knurling-rs/defmt/pull/840
 [#839]: https://github.com/knurling-rs/defmt/pull/839
 [#838]: https://github.com/knurling-rs/defmt/pull/838
+[#835]: https://github.com/knurling-rs/defmt/pull/835
 [#831]: https://github.com/knurling-rs/defmt/pull/831
+[#830]: https://github.com/knurling-rs/defmt/pull/830
 [#822]: https://github.com/knurling-rs/defmt/pull/822
 [#821]: https://github.com/knurling-rs/defmt/pull/821
 [#813]: https://github.com/knurling-rs/defmt/pull/813
@@ -973,6 +1005,7 @@ Initial release
 [#683]: https://github.com/knurling-rs/defmt/pull/683
 [#682]: https://github.com/knurling-rs/defmt/pull/682
 [#681]: https://github.com/knurling-rs/defmt/pull/681
+[#669]: https://github.com/knurling-rs/defmt/pull/669
 [#662]: https://github.com/knurling-rs/defmt/pull/662
 [#661]: https://github.com/knurling-rs/defmt/pull/661
 [#659]: https://github.com/knurling-rs/defmt/pull/659
