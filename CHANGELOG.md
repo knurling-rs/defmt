@@ -26,7 +26,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 > A highly efficient logging framework that targets resource-constrained devices, like microcontrollers
 
-[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.0.0...main
+[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.0.1...main
+[defmt-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.1
 [defmt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.0
 [defmt-v0.3.100]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.100
 [defmt-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.10
@@ -52,6 +53,10 @@ We have several packages which live in this repository. Changes are tracked sepa
 ### [defmt-next]
 
 * No changes
+
+### [defmt-v1.0.1] (2025-04-01)
+
+* [#954]: Fix accidental breaking change in `Format` macro
 
 ### [defmt-v1.0.0] (2025-04-01)
 
@@ -394,7 +399,8 @@ Initial release
 
 > Macros for [defmt](#defmt)
 
-[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.0.0...main
+[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.0.1...main
+[defmt-macros-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.0.1
 [defmt-macros-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.0.0
 [defmt-macros-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.4.0
 [defmt-macros-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.3.10
@@ -418,6 +424,10 @@ Initial release
 ### [defmt-macros-next]
 
 * No changes
+
+### [defmt-macros-v1.0.1] (2025-04-01)
+
+* [#954]: Fix accidental breaking change in `Format` macro
 
 ### [defmt-macros-v1.0.0] (2025-04-01)
 
@@ -932,6 +942,7 @@ Initial release
 
 ---
 
+[#954]: https://github.com/knurling-rs/defmt/pull/954
 [#950]: https://github.com/knurling-rs/defmt/pull/950
 [#949]: https://github.com/knurling-rs/defmt/pull/949
 [#948]: https://github.com/knurling-rs/defmt/pull/948
