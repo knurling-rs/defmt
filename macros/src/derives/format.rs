@@ -61,7 +61,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
 }
 
 fn defmt_crate_path(attrs: &[syn::Attribute]) -> Result<syn::Path, syn::Error> {
-    let mut defmt_path = parse_quote!(::defmt);
+    let mut defmt_path = parse_quote!(defmt);
     let res = attrs
         .iter()
         .filter(|attr| attr.path().is_ident("defmt"))
