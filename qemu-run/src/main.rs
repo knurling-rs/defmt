@@ -5,7 +5,7 @@
 
 use std::{
     env, fs,
-    io::Read as _,
+    io::{self, Read as _, Write},
     process::{self, Command, Stdio},
 };
 
@@ -70,8 +70,12 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     let exit_code;
     loop {
         let n = stdout.read(&mut readbuf)?;
-        decoder.received(&readbuf[..n]);
-        decode(&mut *decoder)?;
+        if cfg!(feature = "no-decode") {
+            io::stdout().write_all(&readbuf[..n])?;
+        } else {
+            decoder.received(&readbuf[..n]);
+            decode(&mut *decoder)?;
+        }
 
         if let Some(status) = child.0.try_wait()? {
             exit_code = status.code();

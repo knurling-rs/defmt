@@ -1,4 +1,5 @@
 mod backcompat;
+mod print_snapshot;
 mod snapshot;
 mod targets;
 mod utils;
@@ -9,6 +10,7 @@ use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use utils::rustc_is_msrv;
 
+use crate::print_snapshot::test_print_snapshot;
 use crate::{
     snapshot::{test_snapshot, Snapshot},
     utils::{run_capturing_stdout, run_command},
@@ -52,6 +54,10 @@ enum TestCommand {
         /// Runs a single snapshot test in Debug mode
         single: Option<Snapshot>,
     },
+    TestPrintSnapshot {
+        /// Runs a single snapshot test in Debug mode
+        single: Option<Snapshot>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -81,6 +87,7 @@ fn main() -> anyhow::Result<()> {
                     test_book();
                     test_lint();
                 }
+                TestCommand::TestPrintSnapshot { single } => test_print_snapshot(single),
                 _ => unreachable!("get handled in outer `match`"),
             }
         }
