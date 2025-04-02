@@ -475,6 +475,8 @@ Initial release
 
 ### [defmt-print-next]
 
+* [#952] Support sending dtr on connection for serial port input
+
 ### [defmt-print-v0.3.13] (2024-11-27)
 
 * [#807] Add `watch_elf` flag to allow ELF file reload without restarting `defmt-print`
