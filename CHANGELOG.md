@@ -503,7 +503,7 @@ Initial release
 
 ### [defmt-print-next]
 
-* No changes
+* [#952] Support sending dtr on connection for serial port input
 
 ### [defmt-print-v1.0.0] (2025-04-01)
 
