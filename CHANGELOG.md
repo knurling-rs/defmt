@@ -52,7 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-* No changes
+* [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -942,6 +942,7 @@ Initial release
 
 ---
 
+[#955]: https://github.com/knurling-rs/defmt/pull/955
 [#954]: https://github.com/knurling-rs/defmt/pull/954
 [#950]: https://github.com/knurling-rs/defmt/pull/950
 [#949]: https://github.com/knurling-rs/defmt/pull/949
