@@ -52,6 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#956]: Link LICENSE-* in the crate folder
 * [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 
 ### [defmt-v1.0.1] (2025-04-01)
@@ -423,7 +424,8 @@ Initial release
 
 ### [defmt-macros-next]
 
-* No changes
+* [#956]: Link LICENSE-* in the crate folder
+
 
 ### [defmt-macros-v1.0.1] (2025-04-01)
 
@@ -656,7 +658,7 @@ Initial release
 
 ### [defmt-parser-next]
 
-* No changes
+* [#956]: Link LICENSE-* in the crate folder
 
 ### [defmt-parser-v1.0.0] (2025-04-01)
 
@@ -942,6 +944,7 @@ Initial release
 
 ---
 
+[#956]: https://github.com/knurling-rs/defmt/pull/956
 [#955]: https://github.com/knurling-rs/defmt/pull/955
 [#954]: https://github.com/knurling-rs/defmt/pull/954
 [#950]: https://github.com/knurling-rs/defmt/pull/950
