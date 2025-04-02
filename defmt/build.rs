@@ -23,7 +23,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         | "riscv32i-unknown-none-elf"
         | "riscv32imc-unknown-none-elf"
         | "thumbv4t-none-eabi"
-        | "thumbv6m-none-eabi" => {
+        | "thumbv6m-none-eabi"
+        | "xtensa-esp32s2-none-elf" => {
             println!("cargo:rustc-cfg=no_cas");
         }
         _ => {}
