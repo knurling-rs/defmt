@@ -585,7 +585,7 @@ Initial release
 
 ### [defmt-decoder-next]
 
-* No changes
+* [#958] Update to object 0.36
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -944,6 +944,7 @@ Initial release
 
 ---
 
+[#958]: https://github.com/knurling-rs/defmt/pull/958
 [#956]: https://github.com/knurling-rs/defmt/pull/956
 [#955]: https://github.com/knurling-rs/defmt/pull/955
 [#954]: https://github.com/knurling-rs/defmt/pull/954
