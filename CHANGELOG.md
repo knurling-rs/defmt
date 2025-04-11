@@ -52,6 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#957]: add `rust-toolchain.toml` file
 * [#956]: Link LICENSE-* in the crate folder
 * [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 
