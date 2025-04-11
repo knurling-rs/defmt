@@ -1,0 +1,3 @@
+[toolchain]
+# https://github.com/dtolnay/trybuild?tab=readme-ov-file#troubleshooting
+components = ["rust-src"]
