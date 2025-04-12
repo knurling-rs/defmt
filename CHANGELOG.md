@@ -52,6 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#959]: Missing "unstable-test" cfg in tests module
 * [#956]: Link LICENSE-* in the crate folder
 * [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 
@@ -425,7 +426,6 @@ Initial release
 ### [defmt-macros-next]
 
 * [#956]: Link LICENSE-* in the crate folder
-
 
 ### [defmt-macros-v1.0.1] (2025-04-01)
 
@@ -944,6 +944,7 @@ Initial release
 
 ---
 
+[#959]: https://github.com/knurling-rs/defmt/pull/959
 [#958]: https://github.com/knurling-rs/defmt/pull/958
 [#956]: https://github.com/knurling-rs/defmt/pull/956
 [#955]: https://github.com/knurling-rs/defmt/pull/955

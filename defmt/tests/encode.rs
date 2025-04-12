@@ -1,3 +1,5 @@
+#![cfg(feature = "unstable-test")]
+
 // NOTE these tests should live in `defmt-macros` but the expansion of the macros defined there
 // depend on `defmt` and `defmt` depends on `defmt-macros` -- the circular dependency may get in
 // the way of `cargo test`
