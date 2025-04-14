@@ -1,7 +1,8 @@
 use codegen::DefmtAttr;
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use proc_macro_error2::{abort, abort_call_site};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Generics, Ident};
 
 mod codegen;
@@ -87,13 +88,28 @@ pub(crate) fn expand_transparent(
     let body = match data {
         Data::Enum(data) => {
             let match_arms = data.variants.iter().map(|v| -> syn::Arm {
-                let variant_name = &v.ident;
-                if v.fields.len() != 1 {
-                    abort_call_site!("Transparent format can only be applied when all variants have exactly one field.")
-                }
+                let mut fields = v.fields.iter();
+                let field = fields.next();
+                let one_or_less = fields.next().is_none();
+                let Some(field) = field.filter(|_| one_or_less) else {
+                    abort_call_site!(
+                        "Transparent format can only be applied \
+                        when all variants have exactly one field.
+                    "
+                    )
+                };
 
-                member_types.push(v.fields.iter().next().unwrap().ty.clone());
-                let field = v.fields.members().next().unwrap();
+                member_types.push(field.ty.clone());
+                let field = field.ident.clone().map_or_else(
+                    || {
+                        syn::Member::Unnamed(syn::Index {
+                            index: 0,
+                            span: Span::call_site(),
+                        })
+                    },
+                    syn::Member::Named,
+                );
+                let variant_name = &v.ident;
                 parse_quote! {
                     Self::#variant_name{ #field: inner } => inner.format(f)
                 }
@@ -105,16 +121,29 @@ pub(crate) fn expand_transparent(
             }
         }
         Data::Struct(data) => {
-            if !data.fields.len() == 1 {
+            let mut fields = data.fields.iter();
+            let field = fields.next();
+            let one_or_less = fields.next().is_none();
+            let Some(field) = field.filter(|_| one_or_less) else {
                 abort_call_site!(
-                    "Transparent format can only be applied to structs with one field."
-                );
-            }
+                    "Transparent format can only be applied \
+                    when all variants have exactly one field.
+                "
+                )
+            };
 
-            member_types.push(data.fields.iter().next().unwrap().ty.clone());
-            let members = data.fields.members();
+            member_types.push(field.ty.clone());
+            let field = field.ident.clone().map_or_else(
+                || {
+                    syn::Member::Unnamed(syn::Index {
+                        index: 0,
+                        span: Span::call_site(),
+                    })
+                },
+                syn::Member::Named,
+            );
             quote! {
-                #(self.#members.format(f));*
+                self.#field.format(f);
             }
         }
         Data::Union(_) => abort_call_site!("`#[derive(Format)]` does not support unions"),
