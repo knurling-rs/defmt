@@ -52,6 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#960]: Fix `Format` not accepting multiple helper attribute instances
 * [#937]: add support for `#[defmt(transparent)]` on `Format` derive
 * [#959]: Missing "unstable-test" cfg in tests module
 * [#956]: Link LICENSE-* in the crate folder
@@ -945,6 +946,7 @@ Initial release
 
 ---
 
+[#960]: https://github.com/knurling-rs/defmt/pull/959
 [#959]: https://github.com/knurling-rs/defmt/pull/959
 [#958]: https://github.com/knurling-rs/defmt/pull/958
 [#956]: https://github.com/knurling-rs/defmt/pull/956
