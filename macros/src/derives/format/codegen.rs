@@ -77,36 +77,35 @@ pub(crate) struct DefmtAttr {
     pub(crate) defmt_path: syn::Path,
 }
 
-impl Default for DefmtAttr {
-    fn default() -> Self {
-        Self {
-            transparent: false,
-            defmt_path: parse_quote! { ::defmt },
-        }
-    }
-}
+impl DefmtAttr {
+    pub(crate) fn from_attrs(attrs: &[syn::Attribute]) -> syn::Result<Self> {
+        let (transparent, defmt_path) = attrs
+            .iter()
+            .filter(|attr| attr.path().is_ident("defmt"))
+            .try_fold(
+            (false, None),
+            |(mut transparent, mut defmt_path), attr| -> syn::Result<_> {
+                let options = attr.meta.require_list()?;
+                options.parse_nested_meta(|meta| {
+                    if meta.path.is_ident("transparent") {
+                        transparent = true;
+                    } else if meta.path.is_ident("crate") {
+                        meta.input.parse::<syn::Token![=]>()?;
+                        defmt_path = Some(meta.input.parse::<syn::Path>()?);
+                    } else {
+                        let path = meta.path.to_token_stream().to_string().replace(' ', "");
+                        return Err(meta.error(format_args!("unknown defmt attribute `{path}`")));
+                    }
+                    Ok(())
+                })?;
 
-impl TryFrom<syn::Attribute> for DefmtAttr {
-    type Error = syn::Error;
-
-    fn try_from(attr: syn::Attribute) -> Result<Self, Self::Error> {
-        let options = attr.meta.require_list()?;
-
-        let mut attr = Self::default();
-
-        options.parse_nested_meta(|meta| {
-            if meta.path.is_ident("transparent") {
-                attr.transparent = true;
-            } else if meta.path.is_ident("crate") {
-                meta.input.parse::<syn::Token![=]>()?;
-                attr.defmt_path = meta.input.parse::<syn::Path>()?;
-            } else {
-                let path = meta.path.to_token_stream().to_string().replace(' ', "");
-                return Err(meta.error(format_args!("unknown defmt attribute `{path}`")));
-            }
-            Ok(())
-        })?;
-
-        Ok(attr)
+                Ok((transparent, defmt_path))
+            },
+        )?;
+        let defmt_path = defmt_path.unwrap_or_else(|| parse_quote! { ::defmt });
+        Ok(Self {
+            transparent,
+            defmt_path,
+        })
     }
 }

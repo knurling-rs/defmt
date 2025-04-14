@@ -49,3 +49,10 @@ enum TransparentEnum<T: Foo> {
 #[defmt(transparent)]
 #[allow(dead_code)]
 struct Transparent<T: Foo>(Quux<T>);
+
+#[derive(defmt::Format)]
+#[defmt(transparent)]
+#[defmt(transparent, crate = defmt4)]
+#[defmt(crate = defmt3, crate = defmt2)]
+#[allow(dead_code)]
+struct Variations<T: Foo>(Quux<T>);

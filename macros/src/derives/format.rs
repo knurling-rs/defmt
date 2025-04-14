@@ -2,7 +2,7 @@ use codegen::DefmtAttr;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use proc_macro_error2::{abort, abort_call_site};
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Generics, Ident};
 
 mod codegen;
@@ -19,13 +19,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let DefmtAttr {
         transparent,
         defmt_path,
-    } = match attrs
-        .iter()
-        .find(|meta| meta.path().is_ident("defmt"))
-        .cloned()
-        .map(DefmtAttr::try_from)
-        .unwrap_or_else(|| Ok(DefmtAttr::default()))
-    {
+    } = match DefmtAttr::from_attrs(&attrs) {
         Ok(maybe_attr) => maybe_attr,
         Err(err) => abort!(err),
     };
@@ -94,8 +88,7 @@ pub(crate) fn expand_transparent(
                 let Some(field) = field.filter(|_| one_or_less) else {
                     abort_call_site!(
                         "Transparent format can only be applied \
-                        when all variants have exactly one field.
-                    "
+                        when all variants have exactly one field."
                     )
                 };
 
@@ -126,9 +119,7 @@ pub(crate) fn expand_transparent(
             let one_or_less = fields.next().is_none();
             let Some(field) = field.filter(|_| one_or_less) else {
                 abort_call_site!(
-                    "Transparent format can only be applied \
-                    when all variants have exactly one field.
-                "
+                    "Transparent format can only be applied to structs with one field."
                 )
             };
 
