@@ -34,3 +34,18 @@ enum Quux<T: Foo> {
 #[derive(defmt::Format)]
 #[defmt(crate = defmt2)]
 struct Quz;
+
+#[derive(defmt::Format)]
+#[defmt(transparent)]
+#[allow(dead_code)]
+enum TransparentEnum<T: Foo> {
+    Quz(Quz),
+    Quux(Quux<T>),
+    Baz(Baz<T>),
+    U16(u16),
+}
+
+#[derive(defmt::Format)]
+#[defmt(transparent)]
+#[allow(dead_code)]
+struct Transparent<T: Foo>(Quux<T>);

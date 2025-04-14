@@ -1,6 +1,8 @@
 use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
-use syn::{DataStruct, Ident, ImplGenerics, TypeGenerics, WhereClause, WherePredicate};
+use quote::{quote, ToTokens};
+use syn::{
+    parse_quote, DataStruct, Ident, ImplGenerics, TypeGenerics, WhereClause, WherePredicate,
+};
 
 pub(crate) use enum_data::encode as encode_enum_data;
 
@@ -67,5 +69,44 @@ impl<'a> Generics<'a> {
             type_generics,
             where_clause,
         }
+    }
+}
+
+pub(crate) struct DefmtAttr {
+    pub(crate) transparent: bool,
+    pub(crate) defmt_path: syn::Path,
+}
+
+impl Default for DefmtAttr {
+    fn default() -> Self {
+        Self {
+            transparent: false,
+            defmt_path: parse_quote! { ::defmt },
+        }
+    }
+}
+
+impl TryFrom<syn::Attribute> for DefmtAttr {
+    type Error = syn::Error;
+
+    fn try_from(attr: syn::Attribute) -> Result<Self, Self::Error> {
+        let options = attr.meta.require_list()?;
+
+        let mut attr = Self::default();
+
+        options.parse_nested_meta(|meta| {
+            if meta.path.is_ident("transparent") {
+                attr.transparent = true;
+            } else if meta.path.is_ident("crate") {
+                meta.input.parse::<syn::Token![=]>()?;
+                attr.defmt_path = meta.input.parse::<syn::Path>()?;
+            } else {
+                let path = meta.path.to_token_stream().to_string().replace(' ', "");
+                return Err(meta.error(format_args!("unknown defmt attribute `{path}`")));
+            }
+            Ok(())
+        })?;
+
+        Ok(attr)
     }
 }
