@@ -508,6 +508,7 @@ Initial release
 ### [defmt-print-next]
 
 * [#952] Support sending dtr on connection for serial port input
+* [#965] Also support `--log-format=online` or  `--log-format=default`
 
 ### [defmt-print-v1.0.0] (2025-04-01)
 
@@ -946,7 +947,8 @@ Initial release
 
 ---
 
-[#960]: https://github.com/knurling-rs/defmt/pull/959
+[#965]: https://github.com/knurling-rs/defmt/pull/965
+[#960]: https://github.com/knurling-rs/defmt/pull/960
 [#959]: https://github.com/knurling-rs/defmt/pull/959
 [#958]: https://github.com/knurling-rs/defmt/pull/958
 [#956]: https://github.com/knurling-rs/defmt/pull/956

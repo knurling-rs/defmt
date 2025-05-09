@@ -384,7 +384,8 @@ impl<'a> FormatterConfig<'a> {
     /// "Custom Log Output" section of the defmt book for details of the format.
     pub fn custom(format: &'a str) -> Self {
         FormatterConfig {
-            format: FormatterFormat::Custom(format),
+            format: FormatterFormat::from_string(format, true)
+                .unwrap_or(FormatterFormat::Custom(format)),
             is_timestamp_available: false,
         }
     }
