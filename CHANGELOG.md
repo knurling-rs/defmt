@@ -589,6 +589,7 @@ Initial release
 ### [defmt-decoder-next]
 
 * [#958] Update to object 0.36
+* [#966] Add Frame::fragments() and Frame::display_fragments()
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -947,6 +948,7 @@ Initial release
 
 ---
 
+[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960
 [#959]: https://github.com/knurling-rs/defmt/pull/959
