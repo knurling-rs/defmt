@@ -712,7 +712,7 @@ Initial release
 
 ### [defmt-rtt-next]
 
-* No changes
+* [#968] Add `in_blocking_mode` public method
 
 ### [defmt-rtt-v1.0.0] (2025-04-01)
 
@@ -947,6 +947,7 @@ Initial release
 
 ---
 
+[#968]: https://github.com/knurling-rs/defmt/pull/968
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960
 [#959]: https://github.com/knurling-rs/defmt/pull/959
