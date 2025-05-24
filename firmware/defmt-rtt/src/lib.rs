@@ -93,6 +93,17 @@ static _SEGGER_RTT: Header = Header {
     },
 };
 
+/// Report whether the SEGGER RTT up channel is in blocking mode.
+///
+/// Returns true if the mode bitfield within the flags value has been set to
+/// `SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL`.
+///
+/// Currently we start-up in non-blocking mode, so if it's been set to blocking
+/// mode then the connected client (e.g. probe-rs) must have done it.
+pub fn in_blocking_mode() -> bool {
+    (_SEGGER_RTT.up_channel.flags.load(Ordering::Relaxed) & MODE_MASK) == MODE_BLOCK_IF_FULL
+}
+
 /// Our shared buffer
 #[cfg_attr(target_os = "macos", link_section = ".uninit,defmt-rtt.BUFFER")]
 #[cfg_attr(not(target_os = "macos"), link_section = ".uninit.defmt-rtt.BUFFER")]
