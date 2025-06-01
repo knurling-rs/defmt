@@ -2,14 +2,14 @@
 
 The following **primitive types** are available:
 
-| type hint                | name                                |
-| :----------------------- | :---------------------------------- |
-| `=bool`                  | boolean                             |
-| `={i,u}{8,16,32,64,128}` | standard integer types              |
-| `=f{32, 64}`             | 32-bit / 64-bit floating point type |
-| `=[u8; N]`               | byte array                          |
-| `=[u8]`                  | byte slice                          |
-| `=str`                   | string slice                        |
+| type hint                     | name                                |
+| :---------------------------- | :---------------------------------- |
+| `=bool`                       | boolean                             |
+| `={i,u}{8,16,32,64,128,size}` | standard integer types              |
+| `=f{32, 64}`                  | 32-bit / 64-bit floating point type |
+| `=[u8; N]`                    | byte array                          |
+| `=[u8]`                       | byte slice                          |
+| `=str`                        | string slice                        |
 
 They can be used like this:
 
