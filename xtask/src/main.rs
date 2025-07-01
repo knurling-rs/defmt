@@ -37,6 +37,7 @@ enum TestCommand {
     TestBackcompat,
     TestBook,
     TestCross,
+    TestLintCross,
     TestHost {
         /// Whether to skip running ui tests
         #[arg(long)]
@@ -70,6 +71,7 @@ fn main() -> anyhow::Result<()> {
             added_targets = Some(targets::install().expect("Error while installing required targets"));
             match cmd {
                 TestCommand::TestCross => test_cross(opt.deny_warnings),
+                TestCommand::TestLintCross => test_lint_cross(opt.deny_warnings),
                 TestCommand::TestSnapshot { overwrite, single } => {
                     test_snapshot(overwrite, single);
                 }
@@ -222,6 +224,15 @@ fn test_cross(deny_warnings: bool) {
             "cross",
         );
     }
+}
+
+fn test_lint_cross(deny_warnings: bool) {
+    println!("🧪 lint-cross");
+
+    let env = match deny_warnings {
+        true => vec![("RUSTFLAGS", "--deny warnings")],
+        false => vec![],
+    };
 
     do_test(
         || {

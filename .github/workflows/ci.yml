@@ -54,6 +54,22 @@ jobs:
       - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
         run: cargo xtask test-cross
 
+  lint-cross:
+    strategy:
+      matrix:
+        toolchain:
+          - "1.87" # we pin clippy because it keeps adding new lints
+          - "1.76" # MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set Rust version
+        uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - name: Install Rust targets, lint defmt crates for no_std targets
+        run: cargo xtask test-lint-cross
+
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +80,7 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "stable"
+          - "1.87" # we pin clippy because it keeps adding new lints
           - "1.76" # MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
