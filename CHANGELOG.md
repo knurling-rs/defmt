@@ -57,6 +57,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#959]: Missing "unstable-test" cfg in tests module
 * [#956]: Link LICENSE-* in the crate folder
 * [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
+* [#972]: Fix logic bug in env_filter
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -947,6 +948,7 @@ Initial release
 
 ---
 
+[#972]: https://github.com/knurling-rs/defmt/pull/972
 [#968]: https://github.com/knurling-rs/defmt/pull/968
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960

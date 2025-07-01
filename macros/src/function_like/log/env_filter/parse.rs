@@ -53,7 +53,7 @@ pub(crate) enum Entry {
 
 impl ModulePath {
     pub(crate) fn from_crate_name(input: &str) -> Self {
-        if input.is_empty() && input.contains("::") {
+        if input.is_empty() || input.contains("::") {
             panic!(
                 "DEFMT_LOG env var: crate name cannot be an empty string or contain path separators"
             )
