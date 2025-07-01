@@ -64,7 +64,7 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "stable"
+          - "1.87" # we pin clippy because it keeps adding new lints
           - "1.76" # MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
