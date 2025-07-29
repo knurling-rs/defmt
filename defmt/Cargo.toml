@@ -18,6 +18,7 @@ homepage = "https://knurling.ferrous-systems.com/"
 version = "1.0.1"
 
 [features]
+std = ["alloc"]
 alloc = []
 avoid-default-panic = []
 ip_in_core = []

@@ -58,6 +58,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#956]: Link LICENSE-* in the crate folder
 * [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 * [#972]: Fix logic bug in env_filter
+* [#978]: Add `std` feature and add initial `Format` impl for `Mutex` and `MutexGuard`
 
 ### [defmt-v1.0.1] (2025-04-01)
 

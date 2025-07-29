@@ -33,6 +33,8 @@ mod alloc_;
 mod arrays;
 mod core_;
 mod primitives;
+#[cfg(feature = "std")]
+mod std_;
 mod tuples;
 
 use defmt_macros::internp;
