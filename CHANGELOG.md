@@ -52,7 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-* [#982]: Add `Format` impl for core::num::Wrapping<T>
+* [#983]: Add `Format` implementation for core::num::Wrapping<T>
 * [#960]: Fix `Format` not accepting multiple helper attribute instances
 * [#937]: add support for `#[defmt(transparent)]` on `Format` derive
 * [#959]: Missing "unstable-test" cfg in tests module
