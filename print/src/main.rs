@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use clap::{Parser, Subcommand};
 use defmt_decoder::{
     log::{
@@ -13,10 +13,11 @@ use defmt_decoder::{
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
+use goblin::elf::Elf;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::{
     fs,
-    io::{self, AsyncReadExt, Stdin},
+    io::{self, AsyncReadExt, AsyncWriteExt, Stdin},
     net::TcpStream,
     select,
     sync::mpsc::Receiver,
@@ -104,6 +105,24 @@ impl Source {
             ser.write_data_terminal_ready(true)?;
         }
         Ok(Source::Serial(ser))
+    }
+
+    async fn set_rtt_addr(&mut self, elf_bytes: &[u8]) -> anyhow::Result<()> {
+        if let Source::Tcp(tcpstream) = self {
+            let elf = Elf::parse(elf_bytes).context("can not get rtt control block")?;
+            let sym = elf.syms.iter().find(|sym| {
+                let name = elf.strtab.get_at(sym.st_name).unwrap_or("");
+                name == "_SEGGER_RTT"
+            });
+            if let Some(sym) = sym {
+                let addr = sym.st_value;
+                let cmd = format!("$$SEGGER_TELNET_ConfigStr=SetRTTAddr;{:#x}$$", addr);
+                tcpstream.write(cmd.as_bytes()).await?;
+            } else {
+                return Err(anyhow!("not fount _SEGGER_RTT"));
+            }
+        }
+        Ok(())
     }
 
     async fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
@@ -195,6 +214,9 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let bytes = fs::read(elf.unwrap()).await?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
+
+    // set the _SEGGER_RTT address actively
+    source.set_rtt_addr(&bytes).await?;
 
     // check if the locations info contains all the indicies
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {

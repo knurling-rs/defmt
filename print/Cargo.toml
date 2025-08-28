@@ -16,6 +16,7 @@ version = "1.0.0"
 anyhow = "1"
 clap = { version = "4.0", features = ["derive", "env"] }
 defmt-decoder = { version = "=1.0.0", path = "../decoder" }
+goblin = "0.10.1"
 log = "0.4"
 notify = "8"
 tokio = { version = "1.38", features = ["full"] }
