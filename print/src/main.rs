@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use defmt_decoder::{
     log::{
@@ -108,20 +108,23 @@ impl Source {
     }
 
     async fn set_rtt_addr(&mut self, elf_bytes: &[u8]) -> anyhow::Result<()> {
-        if let Source::Tcp(tcpstream) = self {
-            let elf = Elf::parse(elf_bytes).context("can not get rtt control block")?;
-            let sym = elf.syms.iter().find(|sym| {
-                let name = elf.strtab.get_at(sym.st_name).unwrap_or("");
-                name == "_SEGGER_RTT"
-            });
-            if let Some(sym) = sym {
-                let addr = sym.st_value;
-                let cmd = format!("$$SEGGER_TELNET_ConfigStr=SetRTTAddr;{:#x}$$", addr);
-                tcpstream.write(cmd.as_bytes()).await?;
-            } else {
-                return Err(anyhow!("not fount _SEGGER_RTT"));
-            }
-        }
+        let Source::Tcp(tcpstream) = self else {
+            return Ok(());
+        };
+
+        let elf = Elf::parse(elf_bytes)?;
+        let rtt_symbol = elf
+            .syms
+            .iter()
+            .find(|sym| elf.strtab.get_at(sym.st_name) == Some("_SEGGER_RTT"))
+            .ok_or_else(|| anyhow!("Symbol '_SEGGER_RTT' not found in ELF file"))?;
+
+        let cmd = format!(
+            "$$SEGGER_TELNET_ConfigStr=SetRTTAddr;{:#x}$$",
+            rtt_symbol.st_value
+        );
+        tcpstream.write_all(cmd.as_bytes()).await?;
+
         Ok(())
     }
 
