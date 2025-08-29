@@ -105,9 +105,11 @@ confidence-threshold = 0.8
 # Allow 1 or more licenses on a per-crate basis, so that particular licenses
 # aren't accepted for every possible crate as with the normal allow list
 exceptions = [
-    # Each entry is the crate and version constraint, and its specific allow
-    # list
-    #{ allow = ["Zlib"], crate = "adler32" },
+    # These crates are only used host-side so we are more flexible with
+    # the licences. We only need to avoid copyleft on the firmware side.
+    { allow = ["MPL-2.0"], crate = "serialport" },
+    { allow = ["MPL-2.0"], crate = "colored" },
+    { allow = ["MPL-2.0"], crate = "alterable_logger" },
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
