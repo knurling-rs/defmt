@@ -510,6 +510,7 @@ Initial release
 
 * [#952] Support sending dtr on connection for serial port input
 * [#965] Also support `--log-format=online` or  `--log-format=default`
+* [#986] Bump MSRV to 1.78
 
 ### [defmt-print-v1.0.0] (2025-04-01)
 
@@ -590,6 +591,7 @@ Initial release
 ### [defmt-decoder-next]
 
 * [#958] Update to object 0.36
+* [#986] Bump MSRV to 1.78
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -663,6 +665,7 @@ Initial release
 ### [defmt-parser-next]
 
 * [#956]: Link LICENSE-* in the crate folder
+* [#986] Bump MSRV to 1.78
 
 ### [defmt-parser-v1.0.0] (2025-04-01)
 
@@ -918,7 +921,7 @@ Initial release
 
 ### [defmt-json-schema-next]
 
-* No changes
+* [#986] Bump MSRV to 1.78
 
 ### [defmt-json-schema-v0.1.0] (2022-03-10)
 
@@ -948,6 +951,7 @@ Initial release
 
 ---
 
+[#986]: https://github.com/knurling-rs/defmt/pull/986
 [#972]: https://github.com/knurling-rs/defmt/pull/972
 [#968]: https://github.com/knurling-rs/defmt/pull/968
 [#965]: https://github.com/knurling-rs/defmt/pull/965
