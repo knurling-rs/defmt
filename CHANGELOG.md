@@ -52,7 +52,6 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-* [#985]: set the _SEGGER_RTT address actively
 * [#960]: Fix `Format` not accepting multiple helper attribute instances
 * [#937]: add support for `#[defmt(transparent)]` on `Format` derive
 * [#959]: Missing "unstable-test" cfg in tests module
@@ -509,6 +508,7 @@ Initial release
 
 ### [defmt-print-next]
 
+* [#985]: set the _SEGGER_RTT address actively
 * [#952] Support sending dtr on connection for serial port input
 * [#965] Also support `--log-format=online` or  `--log-format=default`
 * [#986] Bump MSRV to 1.81
