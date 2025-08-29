@@ -91,6 +91,52 @@ impl<'t> Frame<'t> {
         DisplayMessage { frame: self }
     }
 
+    /// Returns an iterator over the fragments of the message contained in this log frame.
+    ///
+    /// Collecting this into a String will yield the same result as [`Self::display_message`], but
+    /// this iterator will yield interpolated fragments on their own. For example, the log:
+    ///
+    /// ```ignore
+    /// defmt::info!("foo = {}, bar = {}", 1, 2);
+    /// ```
+    ///
+    /// Will yield the following strings:
+    ///
+    /// ```ignore
+    /// vec!["foo = ", "1", ", bar = ", "2"]
+    /// ```
+    ///
+    /// Note that nested fragments will not yield separately:
+    ///
+    /// ```ignore
+    /// defmt::info!("foo = {}", Foo { bar: 1 });
+    /// ```
+    ///
+    /// Will yield:
+    ///
+    /// ```ignore
+    /// vec!["foo = ", "Foo { bar: 1 }"]
+    /// ```
+    ///
+    /// This iterator yields the same fragments as [`Self::fragments`], so you can zip them
+    /// together to get both representations.
+    pub fn display_fragments(&'t self) -> DisplayFragments<'t> {
+        DisplayFragments {
+            frame: self,
+            iter: self.fragments().into_iter(),
+        }
+    }
+
+    /// Returns the fragments of the message contained in this log frame.
+    ///
+    /// Each fragment represents a part of the log message. See [`Fragment`] for more details.
+    ///
+    /// This iterator yields the same fragments as [`Self::display_fragments`], so you can zip them
+    /// together to get both representations.
+    pub fn fragments(&'t self) -> Vec<Fragment<'t>> {
+        defmt_parser::parse(self.format, ParserMode::ForwardsCompatible).unwrap()
+    }
+
     pub fn level(&self) -> Option<Level> {
         self.level
     }
@@ -100,119 +146,120 @@ impl<'t> Frame<'t> {
     }
 
     fn format_args(&self, format: &str, args: &[Arg], parent_hint: Option<&DisplayHint>) -> String {
-        self.format_args_real(format, args, parent_hint).unwrap() // cannot fail, we only write to a `String`
-    }
-
-    fn format_args_real(
-        &self,
-        format: &str,
-        args: &[Arg],
-        parent_hint: Option<&DisplayHint>,
-    ) -> Result<String, fmt::Error> {
         let params = defmt_parser::parse(format, ParserMode::ForwardsCompatible).unwrap();
         let mut buf = String::new();
         for param in params {
-            match param {
-                Fragment::Literal(lit) => {
-                    buf.push_str(&lit);
-                }
-                Fragment::Parameter(param) => {
-                    let hint = param.hint.as_ref().or(parent_hint);
+            self.format_fragment(param, &mut buf, args, parent_hint)
+                .unwrap(); // cannot fail, we only write to a `String`
+        }
+        buf
+    }
 
-                    match &args[param.index] {
-                        Arg::Bool(x) => write!(buf, "{x}")?,
-                        Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
-                        Arg::F64(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
-                        Arg::Uxx(x) => {
-                            match param.ty {
-                                Type::BitField(range) => {
-                                    let left_zeroes =
-                                        mem::size_of::<u128>() * 8 - range.end as usize;
-                                    let right_zeroes = left_zeroes + range.start as usize;
-                                    // isolate the desired bitfields
-                                    let bitfields = (*x << left_zeroes) >> right_zeroes;
+    fn format_fragment(
+        &self,
+        param: Fragment<'_>,
+        buf: &mut String,
+        args: &[Arg],
+        parent_hint: Option<&DisplayHint>,
+    ) -> Result<(), fmt::Error> {
+        match param {
+            Fragment::Literal(lit) => {
+                buf.push_str(&lit);
+            }
+            Fragment::Parameter(param) => {
+                let hint = param.hint.as_ref().or(parent_hint);
 
-                                    if let Some(DisplayHint::Ascii) = hint {
-                                        let bstr = bitfields
-                                            .to_be_bytes()
-                                            .iter()
-                                            .skip(right_zeroes / 8)
-                                            .copied()
-                                            .collect::<Vec<u8>>();
-                                        self.format_bytes(&bstr, hint, &mut buf)?
-                                    } else {
-                                        self.format_u128(bitfields, hint, &mut buf)?;
-                                    }
-                                }
-                                _ => match hint {
-                                    Some(DisplayHint::ISO8601(precision)) => {
-                                        self.format_iso8601(*x as u64, precision, &mut buf)?
-                                    }
-                                    Some(DisplayHint::Debug) => {
-                                        self.format_u128(*x, parent_hint, &mut buf)?
-                                    }
-                                    _ => self.format_u128(*x, hint, &mut buf)?,
-                                },
-                            }
-                        }
-                        Arg::Ixx(x) => self.format_i128(*x, param.ty, hint, &mut buf)?,
-                        Arg::Str(x) | Arg::Preformatted(x) => self.format_str(x, hint, &mut buf)?,
-                        Arg::IStr(x) => self.format_str(x, hint, &mut buf)?,
-                        Arg::Format { format, args } => match parent_hint {
-                            Some(DisplayHint::Ascii) => {
-                                buf.push_str(&self.format_args(format, args, parent_hint));
-                            }
-                            _ => buf.push_str(&self.format_args(format, args, hint)),
-                        },
-                        Arg::FormatSequence { args } => {
-                            for arg in args {
-                                buf.push_str(&self.format_args("{=?}", &[arg.clone()], hint))
-                            }
-                        }
-                        Arg::FormatSlice { elements } => {
-                            match hint {
-                                // Filter Ascii Hints, which contains u8 byte slices
-                                Some(DisplayHint::Ascii)
-                                    if elements.iter().filter(|e| e.format == "{=u8}").count()
-                                        != 0 =>
-                                {
-                                    let vals = elements
+                match &args[param.index] {
+                    Arg::Bool(x) => write!(buf, "{x}")?,
+                    Arg::F32(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
+                    Arg::F64(x) => write!(buf, "{}", ryu::Buffer::new().format(*x))?,
+                    Arg::Uxx(x) => {
+                        match param.ty {
+                            Type::BitField(range) => {
+                                let left_zeroes = mem::size_of::<u128>() * 8 - range.end as usize;
+                                let right_zeroes = left_zeroes + range.start as usize;
+                                // isolate the desired bitfields
+                                let bitfields = (*x << left_zeroes) >> right_zeroes;
+
+                                if let Some(DisplayHint::Ascii) = hint {
+                                    let bstr = bitfields
+                                        .to_be_bytes()
                                         .iter()
-                                        .map(|e| match e.args.as_slice() {
-                                            [Arg::Uxx(v)] => u8::try_from(*v)
-                                                .expect("the value must be in u8 range"),
-                                            _ => panic!(
-                                                "FormatSlice should only contain one argument"
-                                            ),
-                                        })
+                                        .skip(right_zeroes / 8)
+                                        .copied()
                                         .collect::<Vec<u8>>();
-                                    self.format_bytes(&vals, hint, &mut buf)?
-                                }
-                                _ => {
-                                    buf.write_str("[")?;
-                                    let mut is_first = true;
-                                    for element in elements {
-                                        if !is_first {
-                                            buf.write_str(", ")?;
-                                        }
-                                        is_first = false;
-                                        buf.write_str(&self.format_args(
-                                            element.format,
-                                            &element.args,
-                                            hint,
-                                        ))?;
-                                    }
-                                    buf.write_str("]")?;
+                                    self.format_bytes(&bstr, hint, buf)?
+                                } else {
+                                    self.format_u128(bitfields, hint, buf)?;
                                 }
                             }
+                            _ => match hint {
+                                Some(DisplayHint::ISO8601(precision)) => {
+                                    self.format_iso8601(*x as u64, precision, buf)?
+                                }
+                                Some(DisplayHint::Debug) => {
+                                    self.format_u128(*x, parent_hint, buf)?
+                                }
+                                _ => self.format_u128(*x, hint, buf)?,
+                            },
                         }
-                        Arg::Slice(x) => self.format_bytes(x, hint, &mut buf)?,
-                        Arg::Char(c) => write!(buf, "{c}")?,
                     }
+                    Arg::Ixx(x) => self.format_i128(*x, param.ty, hint, buf)?,
+                    Arg::Str(x) | Arg::Preformatted(x) => self.format_str(x, hint, buf)?,
+                    Arg::IStr(x) => self.format_str(x, hint, buf)?,
+                    Arg::Format { format, args } => match parent_hint {
+                        Some(DisplayHint::Ascii) => {
+                            buf.push_str(&self.format_args(format, args, parent_hint));
+                        }
+                        _ => buf.push_str(&self.format_args(format, args, hint)),
+                    },
+                    Arg::FormatSequence { args } => {
+                        for arg in args {
+                            buf.push_str(&self.format_args("{=?}", &[arg.clone()], hint))
+                        }
+                    }
+                    Arg::FormatSlice { elements } => {
+                        match hint {
+                            // Filter Ascii Hints, which contains u8 byte slices
+                            Some(DisplayHint::Ascii)
+                                if elements.iter().filter(|e| e.format == "{=u8}").count() != 0 =>
+                            {
+                                let vals = elements
+                                    .iter()
+                                    .map(|e| match e.args.as_slice() {
+                                        [Arg::Uxx(v)] => {
+                                            u8::try_from(*v).expect("the value must be in u8 range")
+                                        }
+                                        _ => panic!("FormatSlice should only contain one argument"),
+                                    })
+                                    .collect::<Vec<u8>>();
+                                self.format_bytes(&vals, hint, buf)?
+                            }
+                            _ => {
+                                buf.write_str("[")?;
+                                let mut is_first = true;
+                                for element in elements {
+                                    if !is_first {
+                                        buf.write_str(", ")?;
+                                    }
+                                    is_first = false;
+                                    buf.write_str(&self.format_args(
+                                        element.format,
+                                        &element.args,
+                                        hint,
+                                    ))?;
+                                }
+                                buf.write_str("]")?;
+                            }
+                        }
+                    }
+                    Arg::Slice(x) => self.format_bytes(x, hint, buf)?,
+                    Arg::Char(c) => write!(buf, "{c}")?,
                 }
             }
         }
-        Ok(buf)
+
+        Ok(())
     }
 
     fn format_u128(
@@ -528,6 +575,26 @@ impl fmt::Display for DisplayMessage<'_> {
             .frame
             .format_args(self.frame.format, &self.frame.args, None);
         f.write_str(&args)
+    }
+}
+
+/// An iterator over the fragments of a log message, formatted as strings.
+///
+/// See [`Frame::display_fragments`].
+pub struct DisplayFragments<'t> {
+    frame: &'t Frame<'t>,
+    iter: std::vec::IntoIter<Fragment<'t>>,
+}
+
+impl Iterator for DisplayFragments<'_> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut buf = String::new();
+        self.frame
+            .format_fragment(self.iter.next()?, &mut buf, &self.frame.args, None)
+            .ok()?;
+        Some(buf)
     }
 }
 
