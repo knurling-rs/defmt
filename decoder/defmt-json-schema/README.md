@@ -9,7 +9,7 @@ This library describes the JSON output from
 
 ## MSRV
 
-The minimum supported Rust version is 1.78. `defmt` is tested against the latest stable Rust version and the MSRV.
+The minimum supported Rust version is 1.81. `defmt` is tested against the latest stable Rust version and the MSRV.
 
 ## Support
 

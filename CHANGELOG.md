@@ -510,7 +510,7 @@ Initial release
 
 * [#952] Support sending dtr on connection for serial port input
 * [#965] Also support `--log-format=online` or  `--log-format=default`
-* [#986] Bump MSRV to 1.78
+* [#986] Bump MSRV to 1.81
 
 ### [defmt-print-v1.0.0] (2025-04-01)
 
@@ -591,7 +591,7 @@ Initial release
 ### [defmt-decoder-next]
 
 * [#958] Update to object 0.36
-* [#986] Bump MSRV to 1.78
+* [#986] Bump MSRV to 1.81
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -665,7 +665,7 @@ Initial release
 ### [defmt-parser-next]
 
 * [#956]: Link LICENSE-* in the crate folder
-* [#986] Bump MSRV to 1.78
+* [#986] Bump MSRV to 1.81
 
 ### [defmt-parser-v1.0.0] (2025-04-01)
 
