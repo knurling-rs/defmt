@@ -664,7 +664,7 @@ Initial release
 
 ### [defmt-parser-next]
 
-* [#956]: Link LICENSE-* in the crate folder
+* [#956] Link `LICENSE-*` in the crate folder
 * [#986] Bump MSRV to 1.81
 
 ### [defmt-parser-v1.0.0] (2025-04-01)
