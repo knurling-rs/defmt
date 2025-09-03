@@ -43,10 +43,11 @@ pub(crate) fn expand_parsed(args: Args) -> TokenStream2 {
     } else {
         quote!(
             // safety: will be released a few lines further down
-            unsafe { defmt::export::acquire_and_header(&#header); };
-            #(#exprs;)*
-            // safety: acquire() was called a few lines above
-            unsafe { defmt::export::release() }
+            if (unsafe { defmt::export::check_acquire_and_header(&#header) }){
+                #(#exprs;)*
+                // safety: acquire() was called a few lines above
+                unsafe { defmt::export::release() }
+            }
         )
     };
     quote!({
