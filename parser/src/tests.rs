@@ -32,8 +32,10 @@ fn all_parse_param_cases(
 #[case(":#o", DisplayHint::Octal { alternate: true, zero_pad: 0 })]
 #[case(":x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 0 })]
 #[case(":02x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 2 })]
+#[case(":0>2x", DisplayHint::Hexadecimal { alternate: false, uppercase: false, zero_pad: 2 })]
 #[case(":#x", DisplayHint::Hexadecimal { alternate: true, uppercase: false, zero_pad: 0 })]
 #[case(":#04x", DisplayHint::Hexadecimal { alternate: true, uppercase: false, zero_pad: 4 })]
+#[case(":0>#4x", DisplayHint::Hexadecimal { alternate: true, uppercase: false, zero_pad: 4 })]
 #[case(":X", DisplayHint::Hexadecimal { alternate: false, uppercase: true, zero_pad: 0 })]
 #[case(":#X", DisplayHint::Hexadecimal { alternate: true, uppercase: true, zero_pad: 0 })]
 #[case(":ms", DisplayHint::Seconds(TimePrecision::Millis))]
@@ -45,6 +47,8 @@ fn all_parse_param_cases(
 #[case(":iso8601s", DisplayHint::ISO8601(TimePrecision::Seconds))]
 #[case(":?", DisplayHint::Debug)]
 #[case(":02", DisplayHint::NoHint { zero_pad: 2 })]
+#[case(":0>2", DisplayHint::NoHint { zero_pad: 2 })]
+#[case(":0>16", DisplayHint::NoHint { zero_pad: 16 })]
 fn all_display_hints(#[case] input: &str, #[case] hint: DisplayHint) {
     assert_eq!(
         parse_param(input, ParserMode::Strict),
@@ -54,6 +58,33 @@ fn all_display_hints(#[case] input: &str, #[case] hint: DisplayHint) {
             hint: Some(hint),
         })
     );
+}
+
+// This test ensures that some valid formatting strings that currently cannot be captured in the DisplayHint struct
+// do indeed result in a parser error.
+#[rstest]
+// Check center alignment.
+#[case(":0^2x")]
+#[case(":0^#4x")]
+#[case(":0^2")]
+#[case(":0^16")]
+// Check left alignment.
+#[case(":0<2x")]
+#[case(":0<#4x")]
+#[case(":0<2")]
+#[case(":0<16")]
+// Check non-zero fill.
+#[case(": >2x")]
+#[case(": >#4x")]
+#[case(": >2")]
+#[case(": >16")]
+// Check no fill, this defaults to ' ', so should fail.
+#[case(":>2x")]
+#[case(":>#4x")]
+#[case(":>2")]
+#[case(":>16")]
+fn failing_display_hints(#[case] input: &str) {
+    assert!(parse_param(input, ParserMode::Strict).is_err());
 }
 
 #[test]
@@ -68,7 +99,6 @@ fn display_hint_unknown() {
         })
     );
 }
-
 #[rstest]
 #[case("=i8", Type::I8)]
 #[case("=i16", Type::I16)]

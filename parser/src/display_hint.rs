@@ -56,10 +56,78 @@ pub enum DisplayHint {
     Unknown(String),
 }
 
+// https://github.com/rust-lang/rust/blob/99317ef14d0be42fa4039eea7c5ce50cb4e9aee7/library/core/src/fmt/mod.rs#L25
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum Alignment {
+    /// Indication that contents should be left-aligned.
+    Left,
+
+    /// Indication that contents should be right-aligned.
+    Right,
+
+    /// Indication that contents should be center-aligned.
+    Center,
+}
+impl std::convert::TryFrom<char> for Alignment {
+    type Error = ();
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            '<' => Ok(Alignment::Left),
+            '^' => Ok(Alignment::Center),
+            '>' => Ok(Alignment::Right),
+            _ => Err(()),
+        }
+    }
+}
+
 impl DisplayHint {
     /// Parses the display hint (e.g. the `#x` in `{=u8:#x}`)
     pub(crate) fn parse(mut s: &str) -> Option<Self> {
         const BITFLAGS_HINT_START: &str = "__internal_bitflags_";
+
+        // https://doc.rust-lang.org/std/fmt/index.html#syntax
+        // format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
+
+        let mut align = Alignment::Right; // Default alignment is to the right.
+        let mut fill: Option<char> = None;
+
+        // If "[fill]align" is specified, that goes before everything else.
+        // We can try to parse the fill and align, if it is filled with 0 and right aligned it can be treated as a
+        // format we can support, supporting other fill & aligns requires modifying the DisplayHint struct and will be
+        // a breaking change.
+        if s.len() > 1 {
+            let first_char = s.chars().next()?;
+            if let Ok(align_specification) = Alignment::try_from(first_char) {
+                // String starts with alignment character.
+                align = align_specification;
+                fill = Some(' '); // This is the default if no fill is specified.
+                s = s.split_at(1).1;
+            } else {
+                if s.len() > 2 {
+                    // String may start with fill, followed by alignment character.
+                    let second_char = s.chars().skip(1).next()?;
+                    if let Ok(align_specification) = Alignment::try_from(second_char) {
+                        align = align_specification;
+                        fill = Some(first_char);
+                        s = s.split_at(2).1;
+                    }
+                }
+            }
+        }
+
+        // If a fill/align was specified, check if it can be handled.
+        if let Some(fill) = fill {
+            if fill != '0' {
+                // We can't handle this without breaking changes to the DisplayHint enum, so we fail.
+                return None;
+            }
+        }
+
+        if align != Alignment::Right {
+            // We can't handle this without breaking changes to the DisplayHint enum, so we fail.
+            return None;
+        }
 
         // The `#` comes before any padding hints (I think this matches core::fmt).
         // It is ignored for types that don't have an alternate representation.
@@ -70,7 +138,14 @@ impl DisplayHint {
             false
         };
 
-        let zero_pad = if let Some(rest) = s.strip_prefix('0') {
+        // If fill isn't specified yet, we may need to read the '0' with strip_prefix here.
+        let stripped_prefix = if fill.is_some() {
+            Some(s)
+        } else {
+            s.strip_prefix('0')
+        };
+
+        let zero_pad = if let Some(rest) = stripped_prefix {
             let (rest, columns) = parse_integer::<usize>(rest)?;
             s = rest;
             columns
