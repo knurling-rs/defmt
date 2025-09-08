@@ -40,6 +40,10 @@ struct Opts {
     #[arg(long)]
     host_log_format: Option<String>,
 
+    /// Use Segger RTT server instead of OpenOCD
+    #[arg(long)]
+    segger_server: bool,
+
     #[arg(long)]
     show_skipped_frames: bool,
 
@@ -208,6 +212,7 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
         json,
         log_format,
         host_log_format,
+        segger_server,
         show_skipped_frames,
         verbose,
         ..
@@ -218,8 +223,10 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
 
-    // set the _SEGGER_RTT address actively
-    source.set_rtt_addr(&bytes).await?;
+    if segger_server {
+        // Using Segger RTT server, set the _SEGGER_RTT address actively.
+        source.set_rtt_addr(&bytes).await?;
+    }
 
     // check if the locations info contains all the indicies
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
