@@ -1,7 +1,7 @@
 #[test]
-fn ui() {
-    // Run UI tests with logging enabled
-    std::env::set_var("DEFMT_LOG", "trace");
+fn ui_logs_off() {
+    // Run UI tests with logging disabled to ensure compiler errors are the same
+    std::env::set_var("DEFMT_LOG", "off");
 
     // only test error messages on the stable channel (nightly may change too often)
     if rustc_version::version_meta()

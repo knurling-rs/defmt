@@ -53,7 +53,7 @@ The CBOR display hint is useful when CBOR data is in memory, especially before f
 #     Ok(())
 # }
 # fn main() -> Result<(), ()> {
-let id_cred = &[0xa1, 0x04, 0x44, 0x6b, 0x69, 0x64, 0x31];
+let id_cred = [0xa1, 0x04, 0x44, 0x6b, 0x69, 0x64, 0x31].as_slice();
 
 defmt::info!("Peer ID: {=[u8]:cbor}", id_cred); // -> INFO Peer ID: {4: 'kid1'}
 let parsed = parse(id_cred)?;
