@@ -28,15 +28,19 @@ use tokio_serial::{SerialPort, SerialPortBuilderExt, SerialStream};
 #[derive(Parser, Clone)]
 #[command(name = "defmt-print")]
 struct Opts {
+    /// The firmware running on the device being logged
     #[arg(short, required = true, conflicts_with("version"))]
     elf: Option<PathBuf>,
 
+    /// Emit logs in JSON format
     #[arg(long)]
     json: bool,
 
+    /// A format string for target-generated logs
     #[arg(long)]
     log_format: Option<String>,
 
+    /// A format string for host-generated logs
     #[arg(long)]
     host_log_format: Option<String>,
 
@@ -44,18 +48,23 @@ struct Opts {
     #[arg(long)]
     set_addr: bool,
 
+    /// Log any malformed defmt frames that are being skipped
     #[arg(long)]
     show_skipped_frames: bool,
 
+    /// Print extra detail
     #[arg(short, long)]
     verbose: bool,
 
+    /// Print the version number, and quit
     #[arg(short = 'V', long)]
     version: bool,
 
+    /// Reload the ELF file when it changes
     #[arg(short, long)]
     watch_elf: bool,
 
+    /// Which operation to perform
     #[command(subcommand)]
     command: Option<Command>,
 }
@@ -64,7 +73,7 @@ struct Opts {
 enum Command {
     /// Read defmt frames from stdin (default)
     Stdin,
-    /// Read defmt frames from tcp
+    /// Read defmt frames from a TCP server
     Tcp {
         #[arg(long, env = "RTT_HOST", default_value = "localhost")]
         host: String,
@@ -72,6 +81,7 @@ enum Command {
         #[arg(long, env = "RTT_PORT", default_value_t = 19021)]
         port: u16,
     },
+    /// Read defmt frames from a serial port
     Serial {
         #[arg(long, env = "SERIAL_PORT", default_value = "/dev/ttyUSB0")]
         path: PathBuf,
