@@ -52,6 +52,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#974]: Ensure typechecking is still performed on disabled log statement.
 * [#960]: Fix `Format` not accepting multiple helper attribute instances
 * [#937]: add support for `#[defmt(transparent)]` on `Format` derive
 * [#959]: Missing "unstable-test" cfg in tests module
