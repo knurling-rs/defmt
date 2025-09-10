@@ -509,7 +509,7 @@ Initial release
 
 ### [defmt-print-next]
 
-* [#985] set the _SEGGER_RTT address actively
+* [#985] Add `--set-addr` option to actively set the `_SEGGER_RTT` address
 * [#952] Support sending dtr on connection for serial port input
 * [#965] Also support `--log-format=online` or  `--log-format=default`
 * [#986] Bump MSRV to 1.81
