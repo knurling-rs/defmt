@@ -40,9 +40,9 @@ struct Opts {
     #[arg(long)]
     host_log_format: Option<String>,
 
-    /// Use Segger RTT server instead of OpenOCD
+    /// Tell Segger J-Link what the RTT address is
     #[arg(long)]
-    segger_server: bool,
+    set_addr: bool,
 
     #[arg(long)]
     show_skipped_frames: bool,
@@ -212,7 +212,7 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
         json,
         log_format,
         host_log_format,
-        segger_server,
+        set_addr,
         show_skipped_frames,
         verbose,
         ..
@@ -223,7 +223,7 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
 
-    if segger_server {
+    if set_addr {
         // Using Segger RTT server, set the _SEGGER_RTT address actively.
         source.set_rtt_addr(&bytes).await?;
     }
