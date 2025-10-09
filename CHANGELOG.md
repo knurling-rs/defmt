@@ -52,17 +52,17 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-* [#974]: Ensure typechecking is still performed on disabled log statement.
-* [#960]: Fix `Format` not accepting multiple helper attribute instances
-* [#937]: add support for `#[defmt(transparent)]` on `Format` derive
-* [#959]: Missing "unstable-test" cfg in tests module
-* [#956]: Link LICENSE-* in the crate folder
-* [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
-* [#972]: Fix logic bug in env_filter
+* [#974] Ensure typechecking is still performed on disabled log statement.
+* [#960] Fix `Format` not accepting multiple helper attribute instances
+* [#937] add support for `#[defmt(transparent)]` on `Format` derive
+* [#959] Missing "unstable-test" cfg in tests module
+* [#956] Link LICENSE-* in the crate folder
+* [#955] Allow using the `defmt/alloc` feature on bare metal ESP32-S2
+* [#972] Fix logic bug in env_filter
 
 ### [defmt-v1.0.1] (2025-04-01)
 
-* [#954]: Fix accidental breaking change in `Format` macro
+* [#954] Fix accidental breaking change in `Format` macro
 
 ### [defmt-v1.0.0] (2025-04-01)
 
@@ -93,7 +93,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#871] Set MSRV to Rust 1.76
 * [#869] `macros`: Add missing type hints
 * [#865] `defmt`: Replace proc-macro-error with proc-macro-error2
-* [#858] `defmt`: Implement "passthrough" trait impls for *2Format wrappers
+* [#858] `defmt`: Implement "passthrough" trait impls for `*2Format` wrappers
 * [#857] Add an octal display hint (`:o`)
 * [#856] `defmt`: Add a `Format` impl for `PanicInfo` and related types.
 * [#852] `CI`: Update mdbook to v0.4.40
@@ -954,7 +954,9 @@ Initial release
 
 ---
 
+[#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
+[#974]: https://github.com/knurling-rs/defmt/pull/974
 [#972]: https://github.com/knurling-rs/defmt/pull/972
 [#968]: https://github.com/knurling-rs/defmt/pull/968
 [#965]: https://github.com/knurling-rs/defmt/pull/965
@@ -970,6 +972,7 @@ Initial release
 [#945]: https://github.com/knurling-rs/defmt/pull/945
 [#943]: https://github.com/knurling-rs/defmt/pull/943
 [#940]: https://github.com/knurling-rs/defmt/pull/940
+[#937]: https://github.com/knurling-rs/defmt/pull/937
 [#938]: https://github.com/knurling-rs/defmt/pull/938
 [#935]: https://github.com/knurling-rs/defmt/pull/935
 [#916]: https://github.com/knurling-rs/defmt/pull/916
