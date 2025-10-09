@@ -706,7 +706,8 @@ Initial release
 
 > Transmit defmt log messages over the RTT (Real-Time Transfer) protocol
 
-[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.0.0...main
+[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.1.0...main
+[defmt-rtt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.1.0
 [defmt-rtt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.0.0
 [defmt-rtt-v0.4.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.2
 [defmt-rtt-v0.4.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.1
@@ -718,6 +719,8 @@ Initial release
 [defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
 ### [defmt-rtt-next]
+
+### [defmt-rtt-v1.1.0] (2025-10-09)
 
 * [#968] Add `in_blocking_mode` public method
 
