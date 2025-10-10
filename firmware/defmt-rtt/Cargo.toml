@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 name = "defmt-rtt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
-version = "1.0.0"
+version = "1.1.0"
 
 [features]
 disable-blocking-mode = []
