@@ -56,7 +56,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#960] Fix `Format` not accepting multiple helper attribute instances
 * [#937] add support for `#[defmt(transparent)]` on `Format` derive
 * [#959] Missing "unstable-test" cfg in tests module
-* [#956] Link LICENSE-* in the crate folder
+* [#956] Link `LICENSE-*` in the crate folder
 * [#955] Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 * [#972] Fix logic bug in env_filter
 
