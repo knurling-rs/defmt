@@ -37,6 +37,7 @@ gimli = { version = "0.29", default-features = false, features = [
 ] }
 object = { version = "0.36", default-features = false, features = [
     "read_core",
+    "macho",
     "elf",
     "std",
 ] }
