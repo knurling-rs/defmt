@@ -44,6 +44,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
                 }
             }
 
+            #[used]
             #var_item;
 
             // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.

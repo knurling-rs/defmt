@@ -82,6 +82,7 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
 
             quote! {
                 #(#cfg_attrs)*
+                #[used]
                 #[cfg_attr(target_os = "macos", link_section = ".defmt,end")]
                 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
                 #[export_name = #sym_name]
