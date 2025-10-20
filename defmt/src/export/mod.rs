@@ -98,9 +98,49 @@ pub fn timestamp(fmt: crate::Formatter<'_>) {
     unsafe { _defmt_timestamp(fmt) }
 }
 
+#[cfg(target_os = "none")]
+fn main_binary_base_address() -> u16 {
+    0
+}
+
+#[cfg(not(target_os = "none"))]
+fn main_binary_base_address() -> u16 {
+    fn same_file(a: &std::path::Path, b: &std::path::Path) -> bool {
+        // Prefer canonical paths; if the on-disk file moved and /proc shows
+        // " (deleted)" suffix, fall back to a cleaned string comparison.
+        if let (Ok(ac), Ok(bc)) = (a.canonicalize(), b.canonicalize()) {
+            return ac == bc;
+        }
+        let clean = |p: &std::path::Path| {
+            let s = p.to_string_lossy();
+            let s = s.strip_suffix(" (deleted)").unwrap_or(&s);
+            std::path::PathBuf::from(s)
+        };
+        clean(a) == clean(b)
+    }
+
+    let exe: std::path::PathBuf = std::env::current_exe().unwrap();
+    let pid: proc_maps::Pid = std::process::id() as proc_maps::Pid;
+    let maps = proc_maps::get_process_maps(pid).unwrap();
+
+    let base = maps
+        .iter()
+        .filter_map(|m| m.filename().map(|p| (m.start(), p)))
+        .filter(|(_, p)| same_file(p, &exe))
+        .map(|(start, _)| start)
+        .min()
+        .unwrap();
+
+    base as u16
+}
+
+static PID: std::sync::LazyLock<u16> = std::sync::LazyLock::new(main_binary_base_address);
+
 /// Returns the interned string at `address`.
 pub fn make_istr(address: u16) -> Str {
-    Str { address }
+    Str {
+        address: address.wrapping_sub(*PID),
+    }
 }
 
 /// Create a Formatter.
