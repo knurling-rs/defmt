@@ -36,8 +36,20 @@ pub(super) enum SymbolTag {
     Custom(()),
 }
 
+#[cfg(target_os = "macos")]
+fn strip_prefix(raw: &str) -> &str {
+    raw.strip_prefix("_")
+        .expect("macos symbol should start with _")
+}
+
+#[cfg(not(target_os = "macos"))]
+fn strip_prefix(raw: &str) -> &str {
+    raw
+}
+
 impl Symbol {
     pub fn demangle(raw: &str) -> anyhow::Result<Self> {
+        let raw: &str = strip_prefix(raw);
         serde_json::from_str(raw)
             .map_err(|j| anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", raw, j))
     }
