@@ -592,6 +592,7 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
 * [#990] improve version mismatch error message, don't mention probe-run.
 * [#958] Update to object 0.36
 * [#986] Bump MSRV to 1.81
