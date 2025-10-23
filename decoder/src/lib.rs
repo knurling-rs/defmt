@@ -493,16 +493,16 @@ mod tests {
                     vec![],
                     FMT,
                     vec![
-                        Arg::Uxx(42),                      // u8
-                        Arg::Uxx(u16::max_value().into()), // u16
-                        Arg::Uxx(u32::max_value().into()), // u32
-                        Arg::Uxx(u64::max_value().into()), // u64
-                        Arg::Uxx(u128::max_value()),       // u128
-                        Arg::Ixx(-1),                      // i8
-                        Arg::Ixx(-1),                      // i16
-                        Arg::Ixx(-1),                      // i32
-                        Arg::Ixx(-1),                      // i64
-                        Arg::Ixx(-1),                      // i128
+                        Arg::Uxx(42),              // u8
+                        Arg::Uxx(u16::MAX.into()), // u16
+                        Arg::Uxx(u32::MAX.into()), // u32
+                        Arg::Uxx(u64::MAX.into()), // u64
+                        Arg::Uxx(u128::MAX),       // u128
+                        Arg::Ixx(-1),              // i8
+                        Arg::Ixx(-1),              // i16
+                        Arg::Ixx(-1),              // i32
+                        Arg::Ixx(-1),              // i64
+                        Arg::Ixx(-1),              // i128
                     ],
                 ),
                 bytes.len(),
