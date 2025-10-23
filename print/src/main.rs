@@ -13,10 +13,11 @@ use defmt_decoder::{
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
+use goblin::elf::Elf;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::{
     fs,
-    io::{self, AsyncReadExt, Stdin},
+    io::{self, AsyncReadExt, AsyncWriteExt, Stdin},
     net::TcpStream,
     select,
     sync::mpsc::Receiver,
@@ -27,30 +28,39 @@ use tokio_serial::{SerialPort, SerialPortBuilderExt, SerialStream};
 #[derive(Parser, Clone)]
 #[command(name = "defmt-print")]
 struct Opts {
+    /// The firmware running on the device being logged
     #[arg(short, required = true, conflicts_with("version"))]
     elf: Option<PathBuf>,
 
+    /// Emit logs in JSON format
     #[arg(long)]
     json: bool,
 
+    /// A format string for target-generated logs
     #[arg(long)]
     log_format: Option<String>,
 
+    /// A format string for host-generated logs
     #[arg(long)]
     host_log_format: Option<String>,
 
+    /// Log any malformed defmt frames that are being skipped
     #[arg(long)]
     show_skipped_frames: bool,
 
+    /// Print extra detail
     #[arg(short, long)]
     verbose: bool,
 
+    /// Print the version number, and quit
     #[arg(short = 'V', long)]
     version: bool,
 
+    /// Reload the ELF file when it changes
     #[arg(short, long)]
     watch_elf: bool,
 
+    /// Which operation to perform
     #[command(subcommand)]
     command: Option<Command>,
 }
@@ -59,14 +69,21 @@ struct Opts {
 enum Command {
     /// Read defmt frames from stdin (default)
     Stdin,
-    /// Read defmt frames from tcp
+    /// Read defmt frames from a TCP server
     Tcp {
+        /// Which host to connect to
         #[arg(long, env = "RTT_HOST", default_value = "localhost")]
         host: String,
 
+        /// Which port to connect to (uses the J-Link port by default)
         #[arg(long, env = "RTT_PORT", default_value_t = 19021)]
         port: u16,
+
+        /// Tell Segger J-Link what the RTT address is
+        #[arg(long)]
+        set_addr: bool,
     },
+    /// Read defmt frames from a serial port
     Serial {
         #[arg(long, env = "SERIAL_PORT", default_value = "/dev/ttyUSB0")]
         path: PathBuf,
@@ -81,7 +98,7 @@ enum Command {
 
 enum Source {
     Stdin(Stdin),
-    Tcp(TcpStream),
+    Tcp(TcpStream, bool),
     Serial(SerialStream),
 }
 
@@ -90,9 +107,9 @@ impl Source {
         Source::Stdin(io::stdin())
     }
 
-    async fn tcp(host: String, port: u16) -> anyhow::Result<Self> {
+    async fn tcp(host: String, port: u16, set_addr: bool) -> anyhow::Result<Self> {
         match TcpStream::connect((host, port)).await {
-            Ok(stream) => Ok(Source::Tcp(stream)),
+            Ok(stream) => Ok(Source::Tcp(stream, set_addr)),
             Err(e) => Err(anyhow!(e)),
         }
     }
@@ -106,13 +123,39 @@ impl Source {
         Ok(Source::Serial(ser))
     }
 
+    async fn set_rtt_addr(&mut self, elf_bytes: &[u8]) -> anyhow::Result<()> {
+        let Source::Tcp(tcpstream, set_addr) = self else {
+            return Ok(());
+        };
+
+        // if they don't want to set the addr, do nothing
+        if !*set_addr {
+            return Ok(());
+        }
+
+        let elf = Elf::parse(elf_bytes)?;
+        let rtt_symbol = elf
+            .syms
+            .iter()
+            .find(|sym| elf.strtab.get_at(sym.st_name) == Some("_SEGGER_RTT"))
+            .ok_or_else(|| anyhow!("Symbol '_SEGGER_RTT' not found in ELF file"))?;
+
+        let cmd = format!(
+            "$$SEGGER_TELNET_ConfigStr=SetRTTAddr;{:#x}$$",
+            rtt_symbol.st_value
+        );
+        tcpstream.write_all(cmd.as_bytes()).await?;
+
+        Ok(())
+    }
+
     async fn read(&mut self, buf: &mut [u8]) -> anyhow::Result<(usize, bool)> {
         match self {
             Source::Stdin(stdin) => {
                 let n = stdin.read(buf).await?;
                 Ok((n, n == 0))
             }
-            Source::Tcp(tcpstream) => Ok((tcpstream.read(buf).await?, false)),
+            Source::Tcp(tcpstream, ..) => Ok((tcpstream.read(buf).await?, false)),
             Source::Serial(serial) => Ok((serial.read(buf).await?, false)),
         }
     }
@@ -131,7 +174,11 @@ async fn main() -> anyhow::Result<()> {
     // We create the source outside of the run command since recreating the stdin looses us some frames
     let mut source = match opts.command.clone() {
         None | Some(Command::Stdin) => Source::stdin(),
-        Some(Command::Tcp { host, port }) => Source::tcp(host, port).await?,
+        Some(Command::Tcp {
+            host,
+            port,
+            set_addr,
+        }) => Source::tcp(host, port, set_addr).await?,
         Some(Command::Serial { path, baud, dtr }) => Source::serial(path, baud, dtr)?,
     };
 
@@ -195,6 +242,9 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let bytes = fs::read(elf.unwrap()).await?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
     let locs = table.get_locations(&bytes)?;
+
+    // Give the _SEGGER_RTT address to the source.
+    source.set_rtt_addr(&bytes).await?;
 
     // check if the locations info contains all the indicies
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
