@@ -111,9 +111,7 @@ impl Channel {
 fn available_buffer_size(read_cursor: usize, write_cursor: usize) -> usize {
     if read_cursor > write_cursor {
         read_cursor - write_cursor - 1
-    } else if read_cursor == 0 {
-        BUF_SIZE - write_cursor - 1
     } else {
-        BUF_SIZE - write_cursor
+        BUF_SIZE - write_cursor - 1 + read_cursor
     }
 }
