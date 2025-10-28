@@ -719,7 +719,9 @@ Initial release
 [defmt-rtt-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.2.0
 [defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
-### [defmt-rtt-next]
+### [defmt-rtt-v1.1.1] (2025-10-28)
+
+* [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
 
 ### [defmt-rtt-v1.1.0] (2025-10-09)
 
