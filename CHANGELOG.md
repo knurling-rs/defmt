@@ -59,6 +59,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#956] Link `LICENSE-*` in the crate folder
 * [#955] Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 * [#972] Fix logic bug in env_filter
+* [#1007] `defmt`: impl `Format` for `core::fmt::Error`
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -958,6 +959,7 @@ Initial release
 
 ---
 
+[#1007]: https://github.com/knurling-rs/defmt/pull/1007
 [#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
 [#974]: https://github.com/knurling-rs/defmt/pull/974
