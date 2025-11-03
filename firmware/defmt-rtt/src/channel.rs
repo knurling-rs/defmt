@@ -115,3 +115,62 @@ fn available_buffer_size(read_cursor: usize, write_cursor: usize) -> usize {
         BUF_SIZE - write_cursor - 1 + read_cursor
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::available_buffer_size;
+    use crate::consts::BUF_SIZE;
+
+    #[test]
+    fn test_rtt_available_buffer_size() {
+        // Helper to simulate RTT buffer state
+        let avail = |read: usize, write: usize| available_buffer_size(read, write);
+
+        // --- Case 1: Buffer is EMPTY (write == read) ---
+        // Should have maximum available space: BUF_SIZE - 1
+        assert_eq!(avail(0, 0), BUF_SIZE - 1);
+        assert_eq!(avail(10, 10), BUF_SIZE - 1);
+        assert_eq!(avail(BUF_SIZE - 1, BUF_SIZE - 1), BUF_SIZE - 1);
+
+        // --- Case 2: Buffer is FULL ---
+        // Full condition: (write + 1) % BUF_SIZE == read
+        // i.e., write == (read - 1 + BUF_SIZE) % BUF_SIZE
+        assert_eq!(avail(0, BUF_SIZE - 1), 0); // write=BUF_SIZE-1, read=0 → full
+        assert_eq!(avail(5, 4), 0); // write=4, read=5 → full
+        assert_eq!(avail(1, 0), 0); // write=0, read=1 → full
+
+        // --- Case 3: Read ahead of Write (no wrap-around) ---
+        // e.g., read=10, write=5 → free space = [5..9] → size = 10 - 5 - 1 = 4
+        assert_eq!(avail(10, 5), 10 - 5 - 1);
+        assert_eq!(avail(BUF_SIZE - 1, 0), (BUF_SIZE - 1) - 0 - 1); // = BUF_SIZE - 2
+
+        // --- Case 4: Write has wrapped around, Read behind (wrap-around case) ---
+        // e.g., read=5, write=10 → free space = [10..BUF_SIZE-1] + [0..4]
+        // size = (BUF_SIZE - 10 - 1) + (5) = BUF_SIZE - 10 - 1 + 5
+        assert_eq!(avail(5, 10), BUF_SIZE - 10 - 1 + 5);
+        assert_eq!(avail(0, 1), BUF_SIZE - 1 - 1 + 0); // = BUF_SIZE - 2
+        assert_eq!(avail(1, BUF_SIZE - 1), BUF_SIZE - (BUF_SIZE - 1) - 1 + 1); // = 1
+
+        // --- Edge: Single byte free ---
+        // After filling BUF_SIZE - 2 bytes from empty, 1 byte remains
+        assert_eq!(avail(1, BUF_SIZE - 1), 1); // one byte free
+        assert_eq!(avail(2, BUF_SIZE - 1), 2); // one byte free: only position BUF_SIZE-1 is free? No.
+                                               // Actually: write=BUF_SIZE-1, read=2 → free = [BUF_SIZE-1] + [0,1] → but [0,1] is 2 bytes?
+                                               // Let's recompute: total free = (BUF_SIZE - (BUF_SIZE-1) - 1) + 2 = (0) + 2 = 2 → wait.
+
+        // Better: use invariant
+        // Total data in buffer = (write - read + BUF_SIZE) % BUF_SIZE
+        // Free = BUF_SIZE - 1 - data
+        let data_in_buffer = |read: usize, write: usize| (write + BUF_SIZE - read) % BUF_SIZE;
+        let free_should_be = |read: usize, write: usize| BUF_SIZE - 1 - data_in_buffer(read, write);
+
+        // Validate our function against this invariant
+        for read in 0..BUF_SIZE.min(64) {
+            for write in 0..BUF_SIZE.min(64) {
+                let expected = free_should_be(read, write);
+                let actual = avail(read, write);
+                assert_eq!(actual, expected, "Mismatch at read={read}, write={write}");
+            }
+        }
+    }
+}
