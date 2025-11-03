@@ -116,7 +116,7 @@ impl QemuRun {
                 .args(["--features", feature])
                 .current_dir(SNAPSHOT_TESTS_DIRECTORY)
                 .env(RUNNER_ENV_VAR, self.path()),
-            || anyhow!("{}", name.to_string()),
+            || anyhow!("{}", name),
         )?;
 
         Ok(())

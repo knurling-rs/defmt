@@ -23,7 +23,7 @@ jobs:
           - windows-latest
         toolchain:
           - "stable"
-          - "1.76" # MSRV
+          - "1.81" # host MSRV
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -36,14 +36,14 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
       - name: Check that all crates that can be compiled for the host build, check that defmt compiles with different features, run all unit tests on the host
-        run: cargo xtask -d test-host ${{ matrix.toolchain == '1.76' && '--skip-ui-tests' || '' }}
+        run: cargo xtask -d test-host ${{ matrix.toolchain == '1.81' && '--skip-ui-tests' || '' }}
 
   cross:
     strategy:
       matrix:
         toolchain:
           - "stable"
-          - "1.76" # MSRV
+          - "1.76" # firmware MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
       matrix:
         toolchain:
           - "1.87" # we pin clippy because it keeps adding new lints
-          - "1.76" # MSRV
+          - "1.76" # firmware MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,17 +71,27 @@ jobs:
         run: cargo xtask test-lint-cross
 
   cargo-deny:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        checks:
+          - advisories
+          - bans licenses sources
+    # Prevent sudden announcement of a new advisory from failing ci:
+    continue-on-error: ${{ matrix.checks == 'advisories' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1
+    - uses: actions/checkout@v4
+    - uses: EmbarkStudios/cargo-deny-action@v2
+      with:
+        command: check ${{ matrix.checks }}
+        rust-version: stable
 
   lint:
     strategy:
       matrix:
         toolchain:
           - "1.87" # we pin clippy because it keeps adding new lints
-          - "1.76" # MSRV
+          - "1.81" # host MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -98,7 +108,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.76" # MSRV
+          - "1.81" # host MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -114,7 +124,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.76" # MSRV
+          - "1.81" # host MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -135,8 +145,8 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - "1.76" # MSRV
-          - nightly # some tests use unstable features
+          - "1.81" # host MSRV
+          - nightly
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -156,7 +166,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.76" # MSRV
+          - "1.81" # host MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
