@@ -722,6 +722,8 @@ Initial release
 
 ### [defmt-rtt-next]
 
+* [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
+
 ### [defmt-rtt-v1.1.0] (2025-10-09)
 
 * [#968] Add `in_blocking_mode` public method
