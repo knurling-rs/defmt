@@ -962,6 +962,7 @@ Initial release
 ---
 
 [#1007]: https://github.com/knurling-rs/defmt/pull/1007
+[#1006]: https://github.com/knurling-rs/defmt/pull/1006
 [#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
 [#974]: https://github.com/knurling-rs/defmt/pull/974
