@@ -595,8 +595,9 @@ Initial release
 
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
 * [#990] improve version mismatch error message, don't mention probe-run.
-* [#958] Update to object 0.36
 * [#986] Bump MSRV to 1.81
+* [#966] Add Frame::fragments() and Frame::display_fragments()
+* [#958] Update to object 0.36
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -967,6 +968,7 @@ Initial release
 [#986]: https://github.com/knurling-rs/defmt/pull/986
 [#974]: https://github.com/knurling-rs/defmt/pull/974
 [#972]: https://github.com/knurling-rs/defmt/pull/972
+[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#968]: https://github.com/knurling-rs/defmt/pull/968
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960
