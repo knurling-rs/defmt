@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# Cargo Workspaces
+
+* [#1011] Add a Cargo.lock to the root workspace to support reproducible binary crate builds such as `defmt-print`. Resolves [#1000]
+
+# Packages
 We have several packages which live in this repository. Changes are tracked separately.
 
 * [defmt](#defmt)
