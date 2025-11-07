@@ -167,7 +167,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
             log::info!("Bound UART data socket to {:?}", uart_socket_addr);
         }
         std::thread::spawn(move || {
-            let _ = print_loop(uart_socket);
+            print_loop(uart_socket);
         });
         command.arg("-chardev");
         command.arg(format!(
@@ -244,7 +244,7 @@ fn decode_and_print(
     loop {
         match decoder.decode() {
             Ok(frame) => {
-                let (file, line, mod_path) = location_info(&locs, &frame, &current_dir);
+                let (file, line, mod_path) = location_info(locs, &frame, current_dir);
                 defmt_decoder::log::log_defmt(&frame, file.as_deref(), line, mod_path.as_deref());
             }
             Err(DecodeError::UnexpectedEof) => return Ok(()),
@@ -310,19 +310,17 @@ fn print_version() -> anyhow::Result<Option<i32>> {
 
 /// Dumps UTF-8 data received on a socket to stdout, line by line
 fn print_loop(socket: std::net::TcpListener) {
-    for maybe_connection in socket.incoming() {
-        if let Ok(conn) = maybe_connection {
-            conn.set_read_timeout(Some(std::time::Duration::from_millis(100)))
-                .expect("Setting socket timeout");
-            let mut reader = std::io::BufReader::new(conn);
-            loop {
-                let mut buffer = String::new();
-                let Ok(_len) = reader.read_line(&mut buffer) else {
-                    break;
-                };
-                if !buffer.is_empty() {
-                    log::info!("UART got {:?}", buffer);
-                }
+    for conn in socket.incoming().flatten() {
+        conn.set_read_timeout(Some(std::time::Duration::from_millis(100)))
+            .expect("Setting socket timeout");
+        let mut reader = std::io::BufReader::new(conn);
+        loop {
+            let mut buffer = String::new();
+            let Ok(_len) = reader.read_line(&mut buffer) else {
+                break;
+            };
+            if !buffer.is_empty() {
+                log::info!("UART got {:?}", buffer);
             }
         }
     }
