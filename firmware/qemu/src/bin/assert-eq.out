@@ -1,3 +1,4 @@
 ERROR panicked at 'assertion failed: `(left == right)`: dev'
- left: `41`
-right: `43`
+diff < left / right >
+<41
+>43
