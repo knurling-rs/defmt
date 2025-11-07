@@ -14,3 +14,4 @@ version = "0.1.0"
 anyhow = "1"
 clap = { version = "4.0", features = ["derive", "env"] }
 defmt-decoder = { version = "=1.0.0", path = "../decoder" }
+log = "0.4.28"
