@@ -57,13 +57,6 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-* [#960]: Fix `Format` not accepting multiple helper attribute instances
-* [#937]: add support for `#[defmt(transparent)]` on `Format` derive
-* [#959]: Missing "unstable-test" cfg in tests module
-* [#956]: Link LICENSE-* in the crate folder
-* [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
-* [#972]: Fix logic bug in env_filter
-* [#983]: Add `Format` implementation for core::num::Wrapping<T>
 * [#974] Ensure typechecking is still performed on disabled log statement.
 * [#960] Fix `Format` not accepting multiple helper attribute instances
 * [#937] add support for `#[defmt(transparent)]` on `Format` derive
@@ -72,6 +65,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#955] Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 * [#972] Fix logic bug in env_filter
 * [#1007] `defmt`: impl `Format` for `core::fmt::Error`
+* [#983] Add `Format` implementation for core::num::Wrapping<T>
 
 ### [defmt-v1.0.1] (2025-04-01)
 
