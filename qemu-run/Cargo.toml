@@ -1,11 +1,16 @@
 [package]
 authors = ["The Knurling-rs developers"]
+categories = ["embedded"]
+description = "Runs qemu-system-arm but decodes defmt data sent to semihosting"
 edition = "2021"
+keywords = ["knurling", "logging", "formatting", "qemu"]
 license = "MIT OR Apache-2.0"
 name = "qemu-run"
-publish = false
-version = "0.0.0"
+readme = "README.md"
+repository = "https://github.com/knurling-rs/defmt"
+version = "0.1.0"
 
 [dependencies]
 anyhow = "1"
+clap = { version = "4.0", features = ["derive", "env"] }
 defmt-decoder = { version = "=1.0.0", path = "../decoder" }
