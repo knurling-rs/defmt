@@ -430,7 +430,7 @@ impl InternalFormatter {
                     DefaultStyle::get_string(with_location, config.is_timestamp_available)
                         .to_string();
                 if source == Source::Host {
-                    format.insert_str(0, "(HOST) ");
+                    format.push_str(" (HOST)");
                 }
 
                 format
@@ -441,7 +441,7 @@ impl InternalFormatter {
                         .to_string();
 
                 if source == Source::Host {
-                    format.insert_str(0, "(HOST) ");
+                    format.push_str(" (HOST)");
                 }
 
                 format
