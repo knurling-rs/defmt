@@ -46,6 +46,14 @@ struct Opts {
     #[arg(short = 'V', long)]
     version: bool,
 
+    /// Set up UART0 as a telnet server instead of piping to the console
+    #[arg(short = 't', long, alias = "uart-telnet")]
+    uart_telnet: bool,
+
+    /// Use qemu-system-aarch64 instead of qemu-system-arm
+    #[arg(long)]
+    aarch64: bool,
+
     /// Print the version number, and quit
     #[arg(short = 'v', long)]
     verbose: bool,
@@ -127,26 +135,14 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     defmt_decoder::log::init_logger(formatter, host_formatter, DefmtLoggerType::Stdout, |_| true);
 
     //
-    // Open the TCP Server for UART traffic
-    //
-
-    let uart_socket = std::net::TcpListener::bind("localhost:0")
-        .with_context(|| "Binding free port on localhost")?;
-    let uart_socket_addr = uart_socket
-        .local_addr()
-        .with_context(|| "Getting socket address")?;
-    if opts.verbose {
-        log::info!("Bound UART data socket to {:?}", uart_socket_addr);
-    }
-    std::thread::spawn(move || {
-        let _ = print_loop(uart_socket);
-    });
-
-    //
     // Set up the qemu-system-arm command line
     //
 
-    let mut command = Command::new("qemu-system-arm");
+    let mut command = Command::new(if opts.aarch64 {
+        "qemu-system-aarch64"
+    } else {
+        "qemu-system-arm"
+    });
     // set the mandatory machine type
     command.args(["-machine", &machine]);
     // set the optional CPU type
@@ -155,11 +151,30 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
         command.arg(cpu);
     }
     // create a character device connected to `uart_socket`
-    command.arg("-chardev");
-    command.arg(format!(
-        "socket,id=sock0,server=off,telnet=off,port={},host=localhost",
-        uart_socket_addr.port()
-    ));
+    if opts.uart_telnet {
+        command.arg("-chardev");
+        command.arg("socket,id=sock0,server=on,telnet=on,port=4321,host=localhost");
+        log::info!(
+            "Told QEMU to start telnet server on localhost:4321. Connect to interact with UART0."
+        );
+    } else {
+        let uart_socket = std::net::TcpListener::bind("localhost:0")
+            .with_context(|| "Binding free port on localhost")?;
+        let uart_socket_addr = uart_socket
+            .local_addr()
+            .with_context(|| "Getting socket address")?;
+        if opts.verbose {
+            log::info!("Bound UART data socket to {:?}", uart_socket_addr);
+        }
+        std::thread::spawn(move || {
+            let _ = print_loop(uart_socket);
+        });
+        command.arg("-chardev");
+        command.arg(format!(
+            "socket,id=sock0,server=off,telnet=off,port={},host=localhost",
+            uart_socket_addr.port()
+        ));
+    }
     // send UART0 output to the chardev we just made
     command.args(["-serial", "chardev:sock0"]);
     // disable the graphical output
@@ -173,10 +188,6 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     command.arg(elf_path);
     // grab stdout
     command.stdout(Stdio::piped());
-
-    if opts.verbose {
-        log::debug!("Running: {:?}", command);
-    }
 
     //
     // Run QEMU
