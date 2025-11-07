@@ -24,6 +24,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [defmt-test](#defmt-test)
 * [defmt-test-macros](#defmt-test-macros)
 * [defmt-json-schema](#defmt-json-schema)
+* [qemu-run](#qemu-run)
 * [defmt-elf2table](#defmt-elf2table)
 * [defmt-logger](#defmt-logger)
 
@@ -940,6 +941,21 @@ Initial release
 * [#986] Bump MSRV to 1.78
 
 ### [defmt-json-schema-v0.1.0] (2022-03-10)
+
+Initial release
+
+## qemu-run
+
+> Runs [`qemu-system-arm`] but decodes [`defmt`] data sent to semihosting
+
+[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.1.0...main
+[qemu-run-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.0
+
+### [qemu-run-next]
+
+* No changes
+
+### [qemu-run-v0.1.0]
 
 Initial release
 
