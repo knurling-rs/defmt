@@ -46,19 +46,19 @@ mod consts;
 
 use core::{
     cell::UnsafeCell,
-    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+    sync::atomic::{AtomicBool, AtomicU32, Ordering},
 };
 
 use crate::{channel::Channel, consts::BUF_SIZE};
 
 /// The relevant bits in the mode field in the Header
-const MODE_MASK: usize = 0b11;
+const MODE_MASK: u32 = 0b11;
 
 /// Block the application if the RTT buffer is full, wait for the host to read data.
-const MODE_BLOCK_IF_FULL: usize = 2;
+const MODE_BLOCK_IF_FULL: u32 = 2;
 
 /// Don't block if the RTT buffer is full. Truncate data to output as much as fits.
-const MODE_NON_BLOCKING_TRIM: usize = 1;
+const MODE_NON_BLOCKING_TRIM: u32 = 1;
 
 /// The defmt global logger
 ///
@@ -86,10 +86,10 @@ static _SEGGER_RTT: Header = Header {
     up_channel: Channel {
         name: NAME.as_ptr(),
         buffer: BUFFER.get(),
-        size: BUF_SIZE,
-        write: AtomicUsize::new(0),
-        read: AtomicUsize::new(0),
-        flags: AtomicUsize::new(MODE_NON_BLOCKING_TRIM),
+        size: BUF_SIZE as u32,
+        write: AtomicU32::new(0),
+        read: AtomicU32::new(0),
+        flags: AtomicU32::new(MODE_NON_BLOCKING_TRIM),
     },
 };
 
@@ -247,8 +247,8 @@ unsafe impl defmt::Logger for Logger {
 #[repr(C)]
 struct Header {
     id: [u8; 16],
-    max_up_channels: usize,
-    max_down_channels: usize,
+    max_up_channels: u32,
+    max_down_channels: u32,
     up_channel: Channel,
 }
 
