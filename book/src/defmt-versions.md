@@ -14,6 +14,23 @@ work with newer and older firmware.
 
 This is a list of *Defmt Version* values and what they mean.
 
+## Defmt Version 5
+
+- Supported by defmt-decoder versions: 1.x.x onwards
+- Supported by defmt-print versions: 1.x.x onwards
+- Supported by defmt versions: 1.x.x onwards
+- Symbol name: `_defmt_version_ = 5`
+- Interned strings are [*mangled*](https://crates.io/crates/mangling/0.2.4) JSON, with fields:
+  - `package`: the name of the package (as defined in `Cargo.toml`) that emitted the log
+  - `tag`: one of `defmt_prim`, `defmt_fmt`, `defmt_str`, `defmt_trace`, `defmt_debug`, `defmt_info`, `defmt_warn`, or `defmt_error`
+  - `data`: the format string
+  - `disambiguator`: a unique random number
+  - `crate_name`: the crate that emitted the log (might not be the package name if this is a binary within a package)
+- Supported encodings:
+  - RZCOBS: noted by presence of the symbol `_defmt_encoding_ = rzcobs`
+  - RAW: noted by presence of the symbol `_defmt_encoding_ = raw`
+- Withdrawal notice: This version will be supported in new releases of the `defmt-decoder` and `defmt-print` crates for at least the next 24 months, on a rolling basis. Notice will be given here when that 24 month period begins.
+
 ## Defmt Version 4
 
 - Supported by defmt-decoder versions: 0.3.6 onwards

@@ -45,6 +45,7 @@ serde_json = { version = "1", features = ["arbitrary_precision"] }
 regex = "1"
 alterable_logger = "1"
 cbor-edn = { version = "0.0.6", default-features = false }
+mangling = "0.2.4"
 
 [features]
 # DEPRECATED: noop, will be removed in 1.0

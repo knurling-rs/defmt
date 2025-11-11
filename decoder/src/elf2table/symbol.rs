@@ -37,9 +37,22 @@ pub(super) enum SymbolTag {
 }
 
 impl Symbol {
+    /// Demangle a defmt symbol name into a [`Symbol`] object.
+    ///
+    /// This supports `defmt-v4` JSON encoded symbols *and* `defmt-v5` mangled JSON encoded symbols.
     pub fn demangle(raw: &str) -> anyhow::Result<Self> {
-        serde_json::from_str(raw)
-            .map_err(|j| anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", raw, j))
+        if !raw.starts_with('{') {
+            let Ok(demangled) = mangling::demangle(raw) else {
+                anyhow::bail!("Failed to demangle {:?}", raw);
+            };
+            let decoded = std::str::from_utf8(&demangled)?;
+            serde_json::from_str(decoded).map_err(|j| {
+                anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", decoded, j)
+            })
+        } else {
+            serde_json::from_str(raw)
+                .map_err(|j| anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", raw, j))
+        }
     }
 
     pub fn tag(&self) -> SymbolTag {

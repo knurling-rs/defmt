@@ -18,6 +18,7 @@ unstable-test = []
 
 [dependencies]
 defmt-parser = { version = "=1.0.0", path = "../parser" }
+mangling = "0.2.4"
 proc-macro-error2 = "2"
 proc-macro2 = "1"
 quote = "1"

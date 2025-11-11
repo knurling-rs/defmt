@@ -5,10 +5,10 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(html_logo_url = "https://knurling.ferrous-systems.com/knurling_logo_light_text.svg")]
 
-pub const DEFMT_VERSIONS: &[&str] = &["3", "4"];
+pub const DEFMT_VERSIONS: &[&str] = &["3", "4", "5"];
 // To avoid a breaking change, still provide `DEFMT_VERSION`.
 #[deprecated = "Please use DEFMT_VERSIONS instead"]
-pub const DEFMT_VERSION: &str = DEFMT_VERSIONS[1];
+pub const DEFMT_VERSION: &str = DEFMT_VERSIONS[2];
 
 mod decoder;
 mod elf2table;

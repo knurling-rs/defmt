@@ -52,14 +52,15 @@ impl<'a> Symbol<'a> {
     }
 
     fn mangle(&self) -> String {
-        format!(
+        let json = format!(
             r#"{{"package":"{}","tag":"{}","data":"{}","disambiguator":"{}","crate_name":"{}"}}"#,
             json_escape(&self.package),
             json_escape(&self.tag),
             json_escape(self.data),
             self.disambiguator,
             json_escape(&self.crate_name),
-        )
+        );
+        mangling::mangle(json.bytes())
     }
 }
 
