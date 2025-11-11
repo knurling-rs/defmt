@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# Cargo Workspaces
+
+* [#1011] Add a Cargo.lock to the root workspace to support reproducible binary crate builds such as `defmt-print`. Resolves [#1000]
+
+# Packages
 We have several packages which live in this repository. Changes are tracked separately.
 
 * [defmt](#defmt)
@@ -52,18 +57,20 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-- [#879]: Load string indices with inline asm to save space.
-* [#974]: Ensure typechecking is still performed on disabled log statement.
-* [#960]: Fix `Format` not accepting multiple helper attribute instances
-* [#937]: add support for `#[defmt(transparent)]` on `Format` derive
-* [#959]: Missing "unstable-test" cfg in tests module
-* [#956]: Link LICENSE-* in the crate folder
-* [#955]: Allow using the `defmt/alloc` feature on bare metal ESP32-S2
-* [#972]: Fix logic bug in env_filter
+* [#974] Ensure typechecking is still performed on disabled log statement.
+* [#960] Fix `Format` not accepting multiple helper attribute instances
+* [#937] add support for `#[defmt(transparent)]` on `Format` derive
+* [#959] Missing "unstable-test" cfg in tests module
+* [#956] Link `LICENSE-*` in the crate folder
+* [#955] Allow using the `defmt/alloc` feature on bare metal ESP32-S2
+* [#972] Fix logic bug in env_filter
+* [#1007] `defmt`: impl `Format` for `core::fmt::Error`
+* [#983] Add `Format` implementation for core::num::Wrapping<T>
+* [#879] Load string indices with inline asm to save space.
 
 ### [defmt-v1.0.1] (2025-04-01)
 
-* [#954]: Fix accidental breaking change in `Format` macro
+* [#954] Fix accidental breaking change in `Format` macro
 
 ### [defmt-v1.0.0] (2025-04-01)
 
@@ -94,7 +101,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#871] Set MSRV to Rust 1.76
 * [#869] `macros`: Add missing type hints
 * [#865] `defmt`: Replace proc-macro-error with proc-macro-error2
-* [#858] `defmt`: Implement "passthrough" trait impls for *2Format wrappers
+* [#858] `defmt`: Implement "passthrough" trait impls for `*2Format` wrappers
 * [#857] Add an octal display hint (`:o`)
 * [#856] `defmt`: Add a `Format` impl for `PanicInfo` and related types.
 * [#852] `CI`: Update mdbook to v0.4.40
@@ -593,9 +600,11 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
 * [#990] improve version mismatch error message, don't mention probe-run.
-* [#958] Update to object 0.36
 * [#986] Bump MSRV to 1.81
+* [#966] Add Frame::fragments() and Frame::display_fragments()
+* [#958] Update to object 0.36
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -707,7 +716,8 @@ Initial release
 
 > Transmit defmt log messages over the RTT (Real-Time Transfer) protocol
 
-[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.0.0...main
+[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.1.0...main
+[defmt-rtt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.1.0
 [defmt-rtt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.0.0
 [defmt-rtt-v0.4.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.2
 [defmt-rtt-v0.4.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.1
@@ -719,6 +729,10 @@ Initial release
 [defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
 ### [defmt-rtt-next]
+
+* [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
+
+### [defmt-rtt-v1.1.0] (2025-10-09)
 
 * [#968] Add `in_blocking_mode` public method
 
@@ -955,8 +969,14 @@ Initial release
 
 ---
 
+[#1007]: https://github.com/knurling-rs/defmt/pull/1007
+[#1006]: https://github.com/knurling-rs/defmt/pull/1006
+[#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
+[#983]: https://github.com/knurling-rs/defmt/pull/983
+[#974]: https://github.com/knurling-rs/defmt/pull/974
 [#972]: https://github.com/knurling-rs/defmt/pull/972
+[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#968]: https://github.com/knurling-rs/defmt/pull/968
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960
@@ -971,6 +991,7 @@ Initial release
 [#945]: https://github.com/knurling-rs/defmt/pull/945
 [#943]: https://github.com/knurling-rs/defmt/pull/943
 [#940]: https://github.com/knurling-rs/defmt/pull/940
+[#937]: https://github.com/knurling-rs/defmt/pull/937
 [#938]: https://github.com/knurling-rs/defmt/pull/938
 [#935]: https://github.com/knurling-rs/defmt/pull/935
 [#916]: https://github.com/knurling-rs/defmt/pull/916

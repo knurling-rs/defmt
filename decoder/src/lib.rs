@@ -262,7 +262,7 @@ impl Table {
         Ok((frame, consumed))
     }
 
-    pub fn new_stream_decoder(&self) -> Box<dyn StreamDecoder + '_> {
+    pub fn new_stream_decoder(&self) -> Box<dyn StreamDecoder + Send + Sync + '_> {
         match self.encoding {
             Encoding::Raw => Box::new(stream::Raw::new(self)),
             Encoding::Rzcobs => Box::new(stream::Rzcobs::new(self)),
@@ -493,16 +493,16 @@ mod tests {
                     vec![],
                     FMT,
                     vec![
-                        Arg::Uxx(42),                      // u8
-                        Arg::Uxx(u16::max_value().into()), // u16
-                        Arg::Uxx(u32::max_value().into()), // u32
-                        Arg::Uxx(u64::max_value().into()), // u64
-                        Arg::Uxx(u128::max_value()),       // u128
-                        Arg::Ixx(-1),                      // i8
-                        Arg::Ixx(-1),                      // i16
-                        Arg::Ixx(-1),                      // i32
-                        Arg::Ixx(-1),                      // i64
-                        Arg::Ixx(-1),                      // i128
+                        Arg::Uxx(42),              // u8
+                        Arg::Uxx(u16::MAX.into()), // u16
+                        Arg::Uxx(u32::MAX.into()), // u32
+                        Arg::Uxx(u64::MAX.into()), // u64
+                        Arg::Uxx(u128::MAX),       // u128
+                        Arg::Ixx(-1),              // i8
+                        Arg::Ixx(-1),              // i16
+                        Arg::Ixx(-1),              // i32
+                        Arg::Ixx(-1),              // i64
+                        Arg::Ixx(-1),              // i128
                     ],
                 ),
                 bytes.len(),
@@ -677,6 +677,47 @@ mod tests {
     }
 
     #[test]
+    fn display_message() {
+        let entries = vec![
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
+        ];
+
+        let table = test_table(entries);
+
+        let bytes = [
+            0, 0, // index
+            1, 0,  // index of the struct
+            42, // Foo.x
+        ];
+
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(frame.display_message().to_string(), "x=Foo { x: 42 }");
+    }
+
+    #[test]
+    fn display_fragments() {
+        let entries = vec![
+            TableEntry::new_without_symbol(Tag::Info, "x={=?}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "Foo {{ x: {=u8} }}".to_owned()),
+        ];
+
+        let table = test_table(entries);
+
+        let bytes = [
+            0, 0, // index
+            1, 0,  // index of the struct
+            42, // Foo.x
+        ];
+
+        let frame = table.decode(&bytes).unwrap().0;
+        assert_eq!(
+            frame.display_fragments().collect::<Vec<String>>(),
+            ["x=", "Foo { x: 42 }"],
+        );
+    }
+
+    #[test]
     fn display_i16_with_hex_hint() {
         // defmt::info!("x: {=i16:#x},y: {=i16:#x},z: {=i16:#x}", -1_i16, -100_i16, -1000_i16);
         let bytes = [
@@ -715,6 +756,10 @@ mod tests {
             frame.display(false).to_string(),
             "0.000002 INFO x=S { x: 2a }",
         );
+        assert_eq!(
+            frame.display_fragments().collect::<Vec<String>>(),
+            ["x=", "S { x: 2a }"],
+        );
     }
 
     #[test]
@@ -738,6 +783,10 @@ mod tests {
             frame.display(false).to_string(),
             "0.000002 INFO x=S { x: 101010 }",
         );
+        assert_eq!(
+            frame.display_fragments().collect::<Vec<String>>(),
+            ["x=", "S { x: 101010 }"],
+        );
     }
 
     #[test]
@@ -760,6 +809,10 @@ mod tests {
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO S { x: \"Hello\" }",
+        );
+        assert_eq!(
+            frame.display_fragments().collect::<Vec<String>>(),
+            ["S { x: \"Hello\" }"],
         );
     }
 
@@ -789,6 +842,10 @@ mod tests {
         assert_eq!(
             frame.display(false).to_string(),
             "0.000002 INFO [Data { name: b\"Hi\" }]",
+        );
+        assert_eq!(
+            frame.display_fragments().collect::<Vec<String>>(),
+            ["[Data { name: b\"Hi\" }]"],
         );
     }
 
@@ -1112,6 +1169,11 @@ mod tests {
 
         let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(frame.display(false).to_string(), "0.000000 INFO x=Some(42)");
+        assert_eq!(frame.display_message().to_string(), "x=Some(42)");
+        assert_eq!(
+            frame.display_fragments().collect::<Vec<String>>(),
+            ["x=", "Some(42)"],
+        );
 
         let bytes = [
             4, 0, // string index (INFO)
@@ -1122,5 +1184,10 @@ mod tests {
 
         let frame = table.decode(&bytes).unwrap().0;
         assert_eq!(frame.display(false).to_string(), "0.000001 INFO x=None");
+        assert_eq!(frame.display_message().to_string(), "x=None");
+        assert_eq!(
+            frame.display_fragments().collect::<Vec<String>>(),
+            ["x=", "None"],
+        );
     }
 }
