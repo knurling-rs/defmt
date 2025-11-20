@@ -66,6 +66,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#955] Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 * [#972] Fix logic bug in env_filter
 * [#1007] `defmt`: impl `Format` for `core::fmt::Error`
+* [#983] Add `Format` implementation for core::num::Wrapping<T>
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -987,6 +988,7 @@ Initial release
 [#1006]: https://github.com/knurling-rs/defmt/pull/1006
 [#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
+[#983]: https://github.com/knurling-rs/defmt/pull/983
 [#974]: https://github.com/knurling-rs/defmt/pull/974
 [#972]: https://github.com/knurling-rs/defmt/pull/972
 [#966]: https://github.com/knurling-rs/defmt/pull/966
