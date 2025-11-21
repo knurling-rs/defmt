@@ -1,6 +1,7 @@
 # Single Format trait
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 `core::fmt` has several formatting traits, like `Hex` and `Bin`.
 These appear as different formatting parameters, like `:x` and `:b`, in format strings and change how integers are formatted: `15` vs `0xF` vs `0b1111`.

@@ -1,6 +1,7 @@
 # Preemption
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 Preemption can also result in re-entrancy.
 How to deal with it?
