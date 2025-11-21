@@ -5,7 +5,7 @@
 Building the book requires mdBook. To get it:
 
 ```
-$ cargo install mdbook
+$ cargo install mdbook@0.5.1 --locked
 ```
 
 To build the book:

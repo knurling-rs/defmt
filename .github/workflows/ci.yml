@@ -134,9 +134,10 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
       - name: Setup mdBook
-        uses: peaceiris/actions-mdbook@v1
-        with:
-          mdbook-version: latest
+        run: |
+          cd ~/.cargo/bin
+          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.5.1/mdbook-v0.5.1-x86_64-unknown-linux-gnu.tar.gz | tar xvzf -
+          echo "818d38d93524154bcb4847444bc0645b14da9ad729dacc7155ce477c26ac9470  mdbook" | sha256sum -c -
       - name: Run book tests
         run: cargo xtask test-book
 
