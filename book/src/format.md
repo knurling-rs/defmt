@@ -27,7 +27,8 @@ enum Request {
 
 Like built-in derives (e.g. `#[derive(Debug)]`), `#[derive(Format)]` will add `Format` bounds to the generic type parameters of the struct.
 
-> ⚠️ Do *not* use the API used by the expansion of the `derive(Format)` macro; it is *unstable*.
+> [!IMPORTANT]
+> Do *not* use the API used by the expansion of the `derive(Format)` macro; it is *unstable*.
 
 By default the derive assumes `defmt` to exist in your crate's dependencies (extern crate prelude).
 If that is not the case you can overwrite the crate path the derive should use in its expansion via the `defmt(crate = path)` helper attribute.
@@ -101,7 +102,9 @@ impl defmt::Format for MyU8 {
 
 If you quickly want to get some code running and do not care about it being efficient you can use the two adapter types [`Display2Format`] and [`Debug2Format`].
 
-> ⚠️ These adapters disable compression and use the `core::fmt` code on-device! You should always prefer `defmt::Format` over `Debug` whenever possible!
+> [!IMPORTANT]
+>> [!IMPORTANT]
+> These adapters disable compression and use the `core::fmt` code on-device! You should always prefer `defmt::Format` over `Debug` whenever possible!
 
 Note that this always uses `{:?}` to format the contained value, meaning that any provided defmt display hints will be ignored.
 

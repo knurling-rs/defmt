@@ -19,7 +19,8 @@ defmt::info!("{=istr}", interned);
 //                      ^^^^^^^^^ bandwidth-use <= 2 bytes
 ```
 
-> ⚠️ This was a contrived example to show the difference in bandwidth use.
+> [!IMPORTANT]
+> This was a contrived example to show the difference in bandwidth use.
 >
 > In practice you should use the following, which also interns the log string and uses as little bandwidth as the `{=istr}` version:
 >

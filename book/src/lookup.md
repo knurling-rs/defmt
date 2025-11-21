@@ -1,6 +1,7 @@
 # Lookup
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 We have so far looked at the string table using `nm`.
 Programmatically the table can be found in the `.symtab` section.

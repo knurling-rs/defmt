@@ -1,6 +1,7 @@
 # Timestamp
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 `defmt::timestamp!` needs to be as efficient as possible, because it is implicitly invoked on every single log invocation.
 
