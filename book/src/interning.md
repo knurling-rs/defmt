@@ -1,6 +1,7 @@
 # Interning
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 All string literals are interned in a custom ELF section.
 This has proven to be the way that requires the less post-processing and implementation work.

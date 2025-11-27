@@ -42,7 +42,8 @@ If you are using the `panic-probe` crate then you should "abort" (call `cortex_m
 
 > 💡 Even if you don't run into the "double panic message printed" issue you may still want to use `#[defmt::panic_handler]` because this way `defmt::panic` and `defmt::assert` will *not* go through the `core::panic` machinery and that *may* reduce code size (we recommend you measure the effect of the change).
 
-> ⚠️ The `#[panic_handler]` attribute cannot be used together with the `export_name` or `no_mangle` attributes
+> [!IMPORTANT]
+> The `#[panic_handler]` attribute cannot be used together with the `export_name` or `no_mangle` attributes
 
 [`panic-probe`]: https://crates.io/crates/panic-probe
 [`panic-abort`]: https://crates.io/crates/panic-abort

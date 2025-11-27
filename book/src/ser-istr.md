@@ -1,6 +1,7 @@
 # Interned strings
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 Let's ignore timestamps for now and also ignore how access to the global logger is synchronized.
 This is the simplest case: logging a string literal with no formatting.

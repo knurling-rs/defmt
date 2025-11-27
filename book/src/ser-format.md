@@ -1,6 +1,7 @@
 # Format
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 The untyped argument (`=?`) requires one level of indirection during serialization.
 
