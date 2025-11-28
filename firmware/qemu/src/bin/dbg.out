@@ -1,6 +1,6 @@
 TRACE x + 1 = 43
 TRACE x - 1 = 41
-INFO the answer is 41
+INFO  the answer is 41
 TRACE x - 2 = 40
 TRACE x + 2 = 44
 TRACE 
