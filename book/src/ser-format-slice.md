@@ -1,6 +1,7 @@
 # Format Slices
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 `{=[?]}` will serialize the length (LEB128 compressed) first, then the first element will be serialized in (recursively) *tagged* format. The rest of elements will be serialized *untagged*.
 

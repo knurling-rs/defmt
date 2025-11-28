@@ -1,6 +1,7 @@
 # Evaluation order
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 Consider this log invocation:
 

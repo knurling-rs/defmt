@@ -62,7 +62,8 @@ unsafe impl defmt::Logger for Logger {
 }
 ```
 
-> ⚠️ Only a single `#[global_logger]` struct can appear in the dependency graph of an application.
+> [!IMPORTANT]
+> Only a single `#[global_logger]` struct can appear in the dependency graph of an application.
 >
 > Therefore the `global_logger` should be selected *at the top* of the dependency graph, that is in the application crate.
 

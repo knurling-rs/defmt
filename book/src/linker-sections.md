@@ -1,6 +1,7 @@
 # Logging levels
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 `defmt` supports several logging levels.
 To avoid serializing the logging level at runtime (that would reduce throughput), interned strings are clustered by logging level.

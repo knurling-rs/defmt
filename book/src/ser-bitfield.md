@@ -1,6 +1,7 @@
 # Bitfield
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 The integer argument is serialized in little endian format (`to_le_bytes`).
 

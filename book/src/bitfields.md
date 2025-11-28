@@ -24,7 +24,8 @@ Bitfields are not range inclusive, e.g. following statement will evaluate to `5`
 defmt::trace!("first three bits: {0=0..3}", 254u32);
 ```
 
-> ⚠️ You can not reuse the same argument in a bitfield- and a non bitfield parameter.
+> [!IMPORTANT]
+> You can not reuse the same argument in a bitfield- and a non bitfield parameter.
 > 
 > This will not compile:
 > ``` rust,compile_fail

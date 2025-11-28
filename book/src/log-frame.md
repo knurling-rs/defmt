@@ -1,6 +1,7 @@
 # Log frames
 
-> ⚠️ The design and implementation chapter is outdated ⚠️
+> [!IMPORTANT]
+> The design and implementation chapter is outdated
 
 Each log statement produces one log frame.
 Consider this log call:
