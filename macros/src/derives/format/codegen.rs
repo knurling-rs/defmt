@@ -102,7 +102,7 @@ impl DefmtAttr {
                 Ok((transparent, defmt_path))
             },
         )?;
-        let defmt_path = defmt_path.unwrap_or_else(|| parse_quote! { ::defmt });
+        let defmt_path = defmt_path.unwrap_or_else(|| parse_quote! { defmt });
         Ok(Self {
             transparent,
             defmt_path,
