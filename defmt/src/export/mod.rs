@@ -98,48 +98,46 @@ pub fn timestamp(fmt: crate::Formatter<'_>) {
     unsafe { _defmt_timestamp(fmt) }
 }
 
+/// For bare-metal targets there is no ASLR, so the base address is always 0.
 #[cfg(target_os = "none")]
-fn main_binary_base_address() -> u16 {
+fn binary_base() -> u16 {
     0
 }
 
-#[cfg(not(target_os = "none"))]
-fn main_binary_base_address() -> u16 {
-    fn same_file(a: &std::path::Path, b: &std::path::Path) -> bool {
-        // Prefer canonical paths; if the on-disk file moved and /proc shows
-        // " (deleted)" suffix, fall back to a cleaned string comparison.
-        if let (Ok(ac), Ok(bc)) = (a.canonicalize(), b.canonicalize()) {
-            return ac == bc;
-        }
-        let clean = |p: &std::path::Path| {
-            let s = p.to_string_lossy();
-            let s = s.strip_suffix(" (deleted)").unwrap_or(&s);
-            std::path::PathBuf::from(s)
-        };
-        clean(a) == clean(b)
+/// For Linux (ELF), use the linker-provided `__executable_start` symbol.
+#[cfg(target_os = "linux")]
+fn binary_base() -> u16 {
+    extern "C" {
+        static __executable_start: u8;
     }
-
-    let exe: std::path::PathBuf = std::env::current_exe().unwrap();
-    let pid: proc_maps::Pid = std::process::id() as proc_maps::Pid;
-    let maps = proc_maps::get_process_maps(pid).unwrap();
-
-    let base = maps
-        .iter()
-        .filter_map(|m| m.filename().map(|p| (m.start(), p)))
-        .filter(|(_, p)| same_file(p, &exe))
-        .map(|(start, _)| start)
-        .min()
-        .unwrap();
-
-    base as u16
+    // SAFETY: `__executable_start` is a linker-provided symbol marking the start of the executable.
+    (unsafe { core::ptr::addr_of!(__executable_start) as usize }) as u16
 }
 
-static PID: std::sync::LazyLock<u16> = std::sync::LazyLock::new(main_binary_base_address);
+/// For macOS (Mach-O), use the linker-provided `_mh_execute_header` symbol.
+#[cfg(target_os = "macos")]
+fn binary_base() -> u16 {
+    extern "C" {
+        static _mh_execute_header: u8;
+    }
+    // SAFETY: `_mh_execute_header` is a linker-provided symbol marking the Mach-O header.
+    (unsafe { core::ptr::addr_of!(_mh_execute_header) as usize }) as u16
+}
+
+/// For Windows, use the DOS header address from the PE format.
+#[cfg(target_os = "windows")]
+fn binary_base() -> u16 {
+    extern "C" {
+        static __ImageBase: u8;
+    }
+    // SAFETY: `__ImageBase` is a linker-provided symbol marking the base of the PE image.
+    (unsafe { core::ptr::addr_of!(__ImageBase) as usize }) as u16
+}
 
 /// Returns the interned string at `address`.
 pub fn make_istr(address: u16) -> Str {
     Str {
-        address: address.wrapping_sub(*PID),
+        address: address.wrapping_sub(binary_base()),
     }
 }
 
