@@ -27,23 +27,23 @@ use process::Child;
 #[command(name = "qemu-run")]
 struct Opts {
     /// The firmware running on the device being logged
-    #[arg(required = false, conflicts_with("version"))]
+    #[arg(required = true)]
     elf: Option<std::path::PathBuf>,
 
     /// Specify the QEMU machine type
-    #[arg(long, required = false)]
+    #[arg(long, required = true)]
     machine: Option<String>,
 
-    /// Specify the QEMU CPU type
+    /// Optionally specify the QEMU CPU type
     #[arg(long, required = false)]
     cpu: Option<String>,
 
-    /// Custom defmt log format
+    /// Optionally specify a custom defmt log format
     #[arg(short = 'l', required = false, alias = "log-format")]
     log_format: Option<String>,
 
     /// Print the version number, and quit
-    #[arg(short = 'V', long)]
+    #[arg(short = 'V', long, exclusive = true)]
     version: bool,
 
     /// Set up UART0 as a telnet server instead of piping to the console
@@ -54,7 +54,7 @@ struct Opts {
     #[arg(long)]
     aarch64: bool,
 
-    /// Print the version number, and quit
+    /// Print verbose log output
     #[arg(short = 'v', long)]
     verbose: bool,
 }
@@ -115,7 +115,7 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
         Some(locs)
     } else {
-        eprintln!("(BUG) location info is incomplete; it will be omitted from the output");
+        eprintln!("(NOTE) location info is incomplete; it will be omitted from the output");
         None
     };
 
@@ -320,7 +320,7 @@ fn print_loop(socket: std::net::TcpListener) {
                 break;
             };
             if !buffer.is_empty() {
-                log::info!("UART got {:?}", buffer);
+                log::info!("UART got: {:?}", buffer);
             }
         }
     }
