@@ -22,7 +22,7 @@ Run `qemu-run --help` to see a list of other command-line arguments available.
 
 ## Support
 
-`defmt-print` is part of the [Knurling] project, [Ferrous Systems]' effort at
+`qemu-run` is part of the [Knurling] project, [Ferrous Systems]' effort at
 improving tooling used to develop for embedded systems.
 
 If you think that our work is useful, consider sponsoring it via [GitHub
