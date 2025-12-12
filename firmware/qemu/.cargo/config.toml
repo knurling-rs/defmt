@@ -5,7 +5,7 @@ rrb = "-q run --target thumbv7m-none-eabi --release --bin"
 
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 # runner = "qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel"
-runner = "cargo -q run --manifest-path ../../qemu-run/Cargo.toml"
+runner = "cargo -q run --manifest-path ../../qemu-run/Cargo.toml -- --machine lm3s6965evb --verbose"
 
 rustflags = [
   # LLD (shipped with the Rust toolchain) is used as the default linker
