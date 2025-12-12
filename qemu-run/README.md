@@ -18,6 +18,8 @@ It will execute `qemu-system-arm`, pass the given `-machine` argument, pass
 additional arguments to configure semihosting, and pipe semihosting data into
 `defmt-decoder` to be decoded and printed to the console.
 
+Run `qemu-run --help` to see a list of other command-line arguments available.
+
 ## Support
 
 `defmt-print` is part of the [Knurling] project, [Ferrous Systems]' effort at
