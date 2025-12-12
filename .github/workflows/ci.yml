@@ -107,7 +107,7 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "stable"
+          - "1.91" # pinned because compiler output changes
           - "1.81" # host MSRV
     runs-on: ubuntu-latest
     steps:
