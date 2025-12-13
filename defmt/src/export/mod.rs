@@ -99,7 +99,7 @@ pub fn timestamp(fmt: crate::Formatter<'_>) {
 }
 
 /// Returns the interned string at `address`.
-pub fn make_istr(address: u16) -> Str {
+pub fn make_istr(address: usize) -> Str {
     Str { address }
 }
 

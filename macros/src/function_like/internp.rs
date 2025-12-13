@@ -13,14 +13,21 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     let section_for_macos = construct::linker_section(true, prefix, &sym_name);
 
     let var_addr = if cfg!(feature = "unstable-test") {
-        quote!({ defmt::export::fetch_add_string_index() as u16 })
+        quote!({ defmt::export::fetch_add_string_index() as usize })
+    } else if cfg!(feature = "no-interning") {
+        quote!({
+            #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
+            #[cfg_attr(not(target_os = "macos"), link_section = #section)]
+            static S: &'static str = #sym_name;
+            &S as *const _ as usize
+        })
     } else {
         quote!({
             #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
             #[cfg_attr(not(target_os = "macos"), link_section = #section)]
             #[export_name = #sym_name]
             static S: u8 = 0;
-            &S as *const u8 as u16
+            &S as *const _ as usize
         })
     };
 

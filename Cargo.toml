@@ -4,6 +4,7 @@ members = [
   "decoder",
   "decoder/defmt-json-schema",
   "defmt",
+  "defmt-log",
   "macros",
   "parser",
   "print",

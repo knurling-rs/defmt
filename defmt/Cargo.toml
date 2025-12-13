@@ -21,6 +21,8 @@ version = "1.0.1"
 alloc = []
 avoid-default-panic = []
 ip_in_core = []
+no-interning = [ "defmt-macros/no-interning" ]
+use-log-crate = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #
