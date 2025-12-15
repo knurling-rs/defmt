@@ -46,10 +46,41 @@ pub(crate) fn interned_string(
         quote!({ #defmt_path::export::fetch_add_string_index() })
     } else {
         let var_item = static_variable(&var_name, string, tag, prefix);
-        quote!({
-            #var_item
+
+        // defmt string indices are 16 bits, which can be loaded with a single `movw`.
+        // However, the compiler doesn't know that, so it generates `movw+movt` or `ldr rX, [pc, #offs]`
+        // because it sees we're loading an address of a symbol, which could be any 32bit value.
+        // This wastes space, so we load the value with asm manually to avoid this.
+        let val_arm_optimized = quote!(
+            let res: u16;
+            unsafe { ::core::arch::asm!(
+                "movw {res}, #:lower16:{y}",
+                res = lateout(reg) res,
+                y = sym #var_name,
+                options(pure, nomem, nostack, preserves_flags)
+            )};
+            res
+        );
+        let val_standard = quote!(
             &#var_name as *const u8 as u16
-        })
+        );
+
+        // using symbols with quotes in `asm!(sym)` only works in Rust 1.91+
+        if cfg!(rustc_ge_1_91) {
+            quote!({
+                #var_item
+
+                #[cfg(target_arch = "arm")]
+                { #val_arm_optimized }
+                #[cfg(not(target_arch = "arm"))]
+                { #val_standard }
+            })
+        } else {
+            quote!({
+                #var_item
+                #val_standard
+            })
+        }
     };
 
     quote!({
