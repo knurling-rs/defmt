@@ -731,6 +731,7 @@ Initial release
 ### [defmt-rtt-next]
 
 * [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
+* [#1013] Switch to fixed 32-bit types, to support 64-bit targets
 
 ### [defmt-rtt-v1.1.0] (2025-10-09)
 
@@ -984,6 +985,7 @@ Initial release
 
 ---
 
+[#1013]: https://github.com/knurling-rs/defmt/pull/1013
 [#1007]: https://github.com/knurling-rs/defmt/pull/1007
 [#1006]: https://github.com/knurling-rs/defmt/pull/1006
 [#990]: https://github.com/knurling-rs/defmt/pull/990
