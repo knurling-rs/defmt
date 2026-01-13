@@ -28,10 +28,14 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
     // makes it keep the quotes from the linker script.
     let try_get_version = |name: &str| {
-        if name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ") {
+        if name.starts_with("\"_defmt_version_ = ")
+            || name.starts_with("_defmt_version_ = ")
+            || name.starts_with("__defmt_version_ = ")
+        {
             Some(
                 name.trim_start_matches("\"_defmt_version_ = ")
                     .trim_start_matches("_defmt_version_ = ")
+                    .trim_start_matches("__defmt_version_ = ")
                     .trim_end_matches('"')
                     .to_string(),
             )
@@ -44,6 +48,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // using `#[export_name = "_defmt_encoding_ = x"]`, never in linker scripts.
     let try_get_encoding = |name: &str| {
         name.strip_prefix("_defmt_encoding_ = ")
+            .or_else(|| name.strip_prefix("__defmt_encoding_ = "))
             .map(ToString::to_string)
     };
 
@@ -146,7 +151,10 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             continue;
         }
 
-        if name.starts_with("_defmt") || name.starts_with("__DEFMT_MARKER") {
+        if name.starts_with("_defmt")
+            || name.starts_with("__DEFMT_MARKER")
+            || name.starts_with("__defmt")
+        {
             // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
             // LLD and GNU LD behave differently here. LLD doesn't include `_defmt_version_`
             // (defined in a linker script) in the `.defmt` section but GNU LD does.
@@ -172,10 +180,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     ));
                 }
                 symbol::SymbolTag::Defmt(Tag::BitflagsValue) => {
-                    let defmt_data = defmt_sections.get(&section_index).unwrap().data()?;
-                    let addr = (entry.address()
-                        - defmt_sections.get(&section_index).unwrap().address())
-                        as usize;
+                    let section = defmt_sections.get(&section_index).unwrap();
+                    let defmt_data = section.data()?;
+                    let addr = (entry.address() - section.address()) as usize;
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
