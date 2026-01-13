@@ -78,9 +78,6 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         }
     }
 
-    // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
-    // Otherwise probe-run won't work with apps that don't use defmt.
-
     let mut defmt_sections = HashMap::new();
     if is_mac {
         let defmt_segment = elf.segments().find(|segment| {
@@ -103,6 +100,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             defmt_sections.insert(defmt_section.index(), defmt_section);
         }
     }
+
+    // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
+    // Otherwise probe-run won't work with apps that don't use defmt.
 
     let (defmt_section, version) = match (defmt_sections.values().next(), version) {
         (None, None) => return Ok(None), // defmt is not used
