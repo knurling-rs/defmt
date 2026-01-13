@@ -223,8 +223,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
-                            "bitflags value at {:?}, {:#x} outside of defmt section",
-                            defmt_data,
+                            "bitflags value at {:#x} outside of defmt section",
                             entry.address()
                         ),
                     };
