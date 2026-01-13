@@ -68,7 +68,6 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     new_version
                 ));
             }
-            println!("version: {}", new_version);
             version = Some(new_version);
         }
 
@@ -80,7 +79,6 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     new_encoding
                 ));
             }
-            println!("encoding: {}", new_encoding);
             encoding = Some(new_encoding);
         }
     }
