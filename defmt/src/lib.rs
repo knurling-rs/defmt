@@ -34,16 +34,16 @@ extern crate alloc;
 #[used]
 #[cfg_attr(target_os = "macos", link_section = ".defmt,end.VERSION")]
 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
-#[export_name = "\x01_defmt_version_ = 4"]
+#[export_name = "_defmt_version_ = 4"]
 static DEFMT_VERSION: u8 = 0;
 
 #[used]
 #[cfg_attr(target_os = "macos", link_section = ".defmt,end.ENCODING")]
 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
-#[cfg_attr(feature = "encoding-raw", export_name = "\x01_defmt_encoding_ = raw")]
+#[cfg_attr(feature = "encoding-raw", export_name = "_defmt_encoding_ = raw")]
 #[cfg_attr(
     not(feature = "encoding-raw"),
-    export_name = "\x01_defmt_encoding_ = rzcobs"
+    export_name = "_defmt_encoding_ = rzcobs"
 )]
 #[allow(missing_docs)]
 #[doc(hidden)]
