@@ -82,8 +82,8 @@ pub fn get_version_and_relevant_sections<'a>(
     };
 
     for section in elf.sections() {
-        // check if the section is in the segment without calling sections(), which is not a method on Segment
-        // instead, iterate over elf.sections() and check if the section is in the segment by comparing the section's address
+        // check if the section is in the segment by comparing the section's address with the
+        // segment's address and size
         if section.address() >= defmt_segment.address()
             && section.address() < defmt_segment.address() + defmt_segment.size()
         {
