@@ -82,8 +82,8 @@ pub fn get_version_and_relevant_sections<'a>(
     };
 
     for section in elf.sections() {
-        // check if the section is in the segment without calling sections(), which is not a method on Segment
-        // instead, iterate over elf.sections() and check if the section is in the segment by comparing the section's address
+        // check if the section is in the segment by comparing the section's address with the
+        // segment's address and size
         if section.address() >= defmt_segment.address()
             && section.address() < defmt_segment.address() + defmt_segment.size()
         {
@@ -96,6 +96,7 @@ pub fn get_version_and_relevant_sections<'a>(
 
 pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
+    let is_mac = elf.format() == object::BinaryFormat::MachO;
     // first pass to extract the `_defmt_version`
     let mut version = None;
     let mut encoding = None;
@@ -203,7 +204,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 continue;
             }
 
-            let sym = symbol::Symbol::demangle(name)?;
+            let sym = symbol::Symbol::demangle(name, is_mac)?;
             match sym.tag() {
                 symbol::SymbolTag::Defmt(Tag::Timestamp) => {
                     if timestamp.is_some() {
@@ -222,8 +223,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
-                            "bitflags value at {:?}, {:#x} outside of defmt section",
-                            defmt_data,
+                            "bitflags value at {:#x} outside of defmt section",
                             entry.address()
                         ),
                     };
