@@ -14,85 +14,9 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure};
-use object::{Object, ObjectSection, ObjectSymbol};
+use object::{Object, ObjectSection, ObjectSegment, ObjectSymbol};
 
 use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSIONS};
-
-#[cfg(not(target_os = "macos"))]
-pub fn get_version_and_relevant_sections<'a>(
-    elf: &'a object::File<'a>,
-    version: Option<String>,
-) -> Result<
-    (
-        String,
-        HashMap<object::SectionIndex, object::Section<'a, 'a>>,
-    ),
-    anyhow::Error,
-> {
-    let defmt_section = elf.section_by_name(".defmt");
-
-    let (defmt_section, version) = match (defmt_section, version) {
-        (None, None) => return Err(anyhow!("defmt is not used")),
-        (Some(defmt_section), Some(version)) => (defmt_section, version),
-        (None, Some(_)) => {
-            bail!("defmt version found, but no `.defmt` section - check your linker configuration");
-        }
-        (Some(_), None) => {
-            bail!(
-                "`.defmt` section found, but no version symbol - check your linker configuration"
-            );
-        }
-    };
-
-    let mut sections = HashMap::new();
-    sections.insert(defmt_section.index(), defmt_section);
-
-    Ok((version, sections))
-}
-
-#[cfg(target_os = "macos")]
-pub fn get_version_and_relevant_sections<'a>(
-    elf: &'a object::File<'a>,
-    version: Option<String>,
-) -> Result<
-    (
-        String,
-        HashMap<object::SectionIndex, object::Section<'a, 'a>>,
-    ),
-    anyhow::Error,
-> {
-    use object::ObjectSegment;
-    // store all relevant sections in a map
-    let mut sections = HashMap::new();
-    let defmt_segment = elf.segments().find(|segment| {
-        object::ObjectSegment::name(segment).is_ok_and(|name| name == Some(".defmt"))
-    });
-
-    let (defmt_segment, version) = match (defmt_segment, version) {
-        (None, None) => return Err(anyhow!("defmt is not used")),
-        (Some(defmt_segment), Some(version)) => (defmt_segment, version),
-        (None, Some(_)) => {
-            bail!("defmt version found, but no `.defmt` section - check your linker configuration");
-        }
-        (Some(_), None) => {
-            bail!(
-                "`.defmt` section found, but no version symbol - check your linker configuration"
-            );
-        }
-    };
-
-    for section in elf.sections() {
-        // check if the section is in the segment by comparing the section's address with the
-        // segment's address and size
-        if section.address() >= defmt_segment.address()
-            && section.address() < defmt_segment.address() + defmt_segment.size()
-        {
-            sections.insert(section.index(), section);
-        }
-    }
-
-    Ok((version, sections))
-}
 
 pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
@@ -157,9 +81,40 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
     // Otherwise probe-run won't work with apps that don't use defmt.
 
-    let (version, sections) = match get_version_and_relevant_sections(&elf, version) {
-        Ok((version, sections)) => (version, sections),
-        Err(_) => return Ok(None),
+    let mut defmt_sections = HashMap::new();
+    if is_mac {
+        let defmt_segment = elf.segments().find(|segment| {
+            object::ObjectSegment::name(segment).is_ok_and(|name| name == Some(".defmt"))
+        });
+        if let Some(defmt_segment) = defmt_segment {
+            for section in elf.sections() {
+                // check if the section is in the segment by comparing the section's address
+                // with the segment's address and size
+                if section.address() >= defmt_segment.address()
+                    && section.address() < defmt_segment.address() + defmt_segment.size()
+                {
+                    defmt_sections.insert(section.index(), section);
+                }
+            }
+        }
+    } else {
+        let defmt_section = elf.section_by_name(".defmt");
+        if let Some(defmt_section) = defmt_section {
+            defmt_sections.insert(defmt_section.index(), defmt_section);
+        }
+    }
+
+    let (defmt_section, version) = match (defmt_sections.values().next(), version) {
+        (None, None) => return Ok(None), // defmt is not used
+        (Some(defmt_section), Some(version)) => (defmt_section, version),
+        (None, Some(_)) => {
+            bail!("defmt version found, but no `.defmt` section - check your linker configuration");
+        }
+        (Some(_), None) => {
+            bail!(
+                "`.defmt` section found, but no version symbol - check your linker configuration"
+            );
+        }
     };
 
     if check_version {
@@ -198,9 +153,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             continue;
         }
 
-        // find the relevant segment using segments
+        // find the relevant section using the section index
         if let Some(section_index) = entry.section_index() {
-            if !sections.contains_key(&section_index) {
+            if !defmt_sections.contains_key(&section_index) {
                 continue;
             }
 
@@ -217,8 +172,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     ));
                 }
                 symbol::SymbolTag::Defmt(Tag::BitflagsValue) => {
-                    let defmt_data = sections.get(&section_index).unwrap().data()?;
-                    let addr = (entry.address() - sections.get(&section_index).unwrap().address())
+                    let defmt_data = defmt_sections.get(&section_index).unwrap().data()?;
+                    let addr = (entry.address()
+                        - defmt_sections.get(&section_index).unwrap().address())
                         as usize;
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
