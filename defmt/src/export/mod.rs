@@ -134,6 +134,12 @@ fn binary_base() -> u16 {
     (unsafe { core::ptr::addr_of!(__ImageBase) as usize }) as u16
 }
 
+/// Fallback for other platforms - assume no ASLR, so the base address is always 0.
+#[cfg(not(any(target_os = "none", target_os = "linux", target_os = "macos", target_os = "windows")))]
+fn binary_base() -> u16 {
+    0
+}
+
 /// Returns the interned string at `address`.
 pub fn make_istr(address: u16) -> Str {
     Str {
