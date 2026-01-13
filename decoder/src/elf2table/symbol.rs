@@ -41,7 +41,7 @@ impl Symbol {
         let raw = if is_mac {
             // remove the prefix from the raw string
             raw.strip_prefix("_")
-                .expect("macos symbol should start with _")
+                .ok_or_else(|| anyhow::anyhow!("macos symbol `{}` should start with `_`", raw))?
         } else {
             raw
         };
