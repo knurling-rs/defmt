@@ -96,6 +96,7 @@ pub fn get_version_and_relevant_sections<'a>(
 
 pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
+    let is_mac = elf.format() == object::BinaryFormat::MachO;
     // first pass to extract the `_defmt_version`
     let mut version = None;
     let mut encoding = None;
@@ -203,7 +204,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 continue;
             }
 
-            let sym = symbol::Symbol::demangle(name)?;
+            let sym = symbol::Symbol::demangle(name, is_mac)?;
             match sym.tag() {
                 symbol::SymbolTag::Defmt(Tag::Timestamp) => {
                     if timestamp.is_some() {
