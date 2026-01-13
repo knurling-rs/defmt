@@ -207,7 +207,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 }
                 symbol::SymbolTag::Defmt(tag) => {
                     map.insert(
-                        (entry.address() as u16) as usize,
+                        entry.address() as usize,
                         TableEntry::new(
                             StringEntry::new(tag, sym.data().to_string()),
                             name.to_string(),
