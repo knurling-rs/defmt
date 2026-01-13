@@ -172,10 +172,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     ));
                 }
                 symbol::SymbolTag::Defmt(Tag::BitflagsValue) => {
-                    let defmt_data = defmt_sections.get(&section_index).unwrap().data()?;
-                    let addr = (entry.address()
-                        - defmt_sections.get(&section_index).unwrap().address())
-                        as usize;
+                    let section = defmt_sections.get(&section_index).unwrap();
+                    let defmt_data = section.data()?;
+                    let addr = (entry.address() - section.address()) as usize;
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
