@@ -1,4 +1,4 @@
-use core::num;
+use core::num::{self, Wrapping};
 
 use super::*;
 
@@ -28,5 +28,11 @@ non_zero! {num::NonZeroUsize, "{=usize}"}
 impl Format for num::TryFromIntError {
     fn format(&self, fmt: Formatter) {
         crate::write!(fmt, "TryFromIntError(())");
+    }
+}
+
+impl<T: Format> Format for Wrapping<T> {
+    fn format(&self, fmt: Formatter) {
+        self.0.format(fmt);
     }
 }

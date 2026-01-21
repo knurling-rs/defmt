@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# Cargo Workspaces
+
+* [#1011] Add a Cargo.lock to the root workspace to support reproducible binary crate builds such as `defmt-print`. Resolves [#1000]
+
+# Packages
 We have several packages which live in this repository. Changes are tracked separately.
 
 * [defmt](#defmt)
@@ -19,6 +24,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [defmt-test](#defmt-test)
 * [defmt-test-macros](#defmt-test-macros)
 * [defmt-json-schema](#defmt-json-schema)
+* [qemu-run](#qemu-run)
 * [defmt-elf2table](#defmt-elf2table)
 * [defmt-logger](#defmt-logger)
 
@@ -59,6 +65,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#956] Link `LICENSE-*` in the crate folder
 * [#955] Allow using the `defmt/alloc` feature on bare metal ESP32-S2
 * [#972] Fix logic bug in env_filter
+* [#1007] `defmt`: impl `Format` for `core::fmt::Error`
+* [#983] Add `Format` implementation for core::num::Wrapping<T>
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -592,9 +600,11 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
 * [#990] improve version mismatch error message, don't mention probe-run.
-* [#958] Update to object 0.36
 * [#986] Bump MSRV to 1.81
+* [#966] Add Frame::fragments() and Frame::display_fragments()
+* [#958] Update to object 0.36
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -719,6 +729,8 @@ Initial release
 [defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
 ### [defmt-rtt-next]
+
+* [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
 
 ### [defmt-rtt-v1.1.0] (2025-10-09)
 
@@ -933,6 +945,21 @@ Initial release
 
 Initial release
 
+## qemu-run
+
+> Runs [`qemu-system-arm`] but decodes [`defmt`] data sent to semihosting
+
+[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.1.0...main
+[qemu-run-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.0
+
+### [qemu-run-next]
+
+* No changes
+
+### [qemu-run-v0.1.0]
+
+Initial release
+
 ## defmt-elf2table
 
 > Reads ELF metadata and builds a defmt interner table
@@ -957,10 +984,14 @@ Initial release
 
 ---
 
+[#1007]: https://github.com/knurling-rs/defmt/pull/1007
+[#1006]: https://github.com/knurling-rs/defmt/pull/1006
 [#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
+[#983]: https://github.com/knurling-rs/defmt/pull/983
 [#974]: https://github.com/knurling-rs/defmt/pull/974
 [#972]: https://github.com/knurling-rs/defmt/pull/972
+[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#968]: https://github.com/knurling-rs/defmt/pull/968
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960

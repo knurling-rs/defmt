@@ -2,8 +2,13 @@ error[E0277]: the trait bound `Foo: Format` is not satisfied
  --> tests/ui/log-missing-format-impl.rs:4:5
   |
 4 |     defmt::info!("{}", Foo)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^ the trait `Format` is not implemented for `Foo`
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
   |
+help: the trait `Format` is not implemented for `Foo`
+ --> tests/ui/log-missing-format-impl.rs:1:1
+  |
+1 | struct Foo;
+  | ^^^^^^^^^^
   = help: the following other types implement trait `Format`:
             &T
             &mut T

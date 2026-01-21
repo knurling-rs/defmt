@@ -24,7 +24,8 @@ version = "0.3.0"
 features = ["encoding-rzcobs"] # <- encoding
 ```
 
-> ⚠️ Note that libraries (dependencies) MUST not select the encoder so that applications (top-level crates) can.
+> [!IMPORTANT]
+> Note that libraries (dependencies) MUST not select the encoder so that applications (top-level crates) can.
 
 If no `enocding-*` feature is enabled then the default encoding is used.
 
