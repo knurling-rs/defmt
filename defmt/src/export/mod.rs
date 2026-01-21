@@ -135,7 +135,12 @@ fn binary_base() -> u16 {
 }
 
 /// Fallback for other platforms - assume no ASLR, so the base address is always 0.
-#[cfg(not(any(target_os = "none", target_os = "linux", target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(
+    target_os = "none",
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "windows"
+)))]
 fn binary_base() -> u16 {
     0
 }
