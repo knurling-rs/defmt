@@ -109,7 +109,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
     // Otherwise probe-run won't work with apps that don't use defmt.
 
-    let (defmt_section, version) = match (defmt_sections.values().next(), version) {
+    let (_defmt_section, version) = match (defmt_sections.values().next(), version) {
         (None, None) => return Ok(None), // defmt is not used
         (Some(defmt_section), Some(version)) => (defmt_section, version),
         (None, Some(_)) => {
