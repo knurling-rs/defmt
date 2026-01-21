@@ -106,6 +106,7 @@ fn binary_base() -> u16 {
 
 /// For Linux (ELF), use the linker-provided `__executable_start` symbol.
 #[cfg(target_os = "linux")]
+#[allow(unused_unsafe)]
 fn binary_base() -> u16 {
     extern "C" {
         static __executable_start: u8;
@@ -116,6 +117,7 @@ fn binary_base() -> u16 {
 
 /// For macOS (Mach-O), use the linker-provided `_mh_execute_header` symbol.
 #[cfg(target_os = "macos")]
+#[allow(unused_unsafe)]
 fn binary_base() -> u16 {
     extern "C" {
         static _mh_execute_header: u8;
@@ -126,6 +128,7 @@ fn binary_base() -> u16 {
 
 /// For Windows, use the DOS header address from the PE format.
 #[cfg(target_os = "windows")]
+#[allow(unused_unsafe)]
 fn binary_base() -> u16 {
     extern "C" {
         static __ImageBase: u8;
