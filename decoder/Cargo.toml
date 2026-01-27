@@ -17,7 +17,7 @@ ryu = "1"
 nom = "7"
 
 # display
-time = { version = "0.3", default-features = false, features = [
+time = { version = "=0.3.44", default-features = false, features = [
     "alloc",
     "formatting",
     "large-dates",
