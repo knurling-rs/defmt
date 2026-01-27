@@ -115,7 +115,10 @@ impl QemuRun {
                 .args(["-q", command, name])
                 .args(["--features", feature])
                 .current_dir(SNAPSHOT_TESTS_DIRECTORY)
-                .env(RUNNER_ENV_VAR, self.path()),
+                .env(
+                    RUNNER_ENV_VAR,
+                    format!("{} --machine lm3s6965evb", self.path().display()),
+                ),
             || anyhow!("{}", name),
         )?;
 
