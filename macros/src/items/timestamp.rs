@@ -44,7 +44,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
                 }
             }
 
-            #[used]
+            #[cfg_attr(target_os = "macos", used)]
             #var_item;
 
             // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
