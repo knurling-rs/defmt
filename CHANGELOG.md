@@ -68,6 +68,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#1007] `defmt`: impl `Format` for `core::fmt::Error`
 * [#983] Add `Format` implementation for `core::num::Wrapping<T>`
 * [#1022] Re-fix accidental breaking change in `Format` macro
+* [#1031] Fix backcompat test
 
 ### [defmt-v1.0.1] (2025-04-01)
 
