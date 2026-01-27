@@ -25,6 +25,7 @@ thread_local! {
 #[cfg(feature = "unstable-test")]
 pub fn fetch_string_index() -> u16 {
     I.with(|i| i.load(core::sync::atomic::Ordering::Relaxed))
+        .wrapping_sub(binary_base())
 }
 
 /// For testing purposes
