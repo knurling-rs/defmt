@@ -606,6 +606,7 @@ Initial release
 * [#986] Bump MSRV to 1.81
 * [#966] Add Frame::fragments() and Frame::display_fragments()
 * [#958] Update to object 0.36
+* [#1033] Impl `serde::{Serialize, Deserialize}` and `Clone` on `Table` and related types
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -986,16 +987,21 @@ Initial release
 
 ---
 
+[#1033]: https://github.com/knurling-rs/defmt/pull/1033
+[#1022]: https://github.com/knurling-rs/defmt/pull/1022
 [#1013]: https://github.com/knurling-rs/defmt/pull/1013
+[#1011]: https://github.com/knurling-rs/defmt/pull/1011
 [#1007]: https://github.com/knurling-rs/defmt/pull/1007
 [#1006]: https://github.com/knurling-rs/defmt/pull/1006
+[#1004]: https://github.com/knurling-rs/defmt/pull/1004
 [#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
+[#985]: https://github.com/knurling-rs/defmt/pull/985
 [#983]: https://github.com/knurling-rs/defmt/pull/983
 [#974]: https://github.com/knurling-rs/defmt/pull/974
 [#972]: https://github.com/knurling-rs/defmt/pull/972
-[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#968]: https://github.com/knurling-rs/defmt/pull/968
+[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960
 [#959]: https://github.com/knurling-rs/defmt/pull/959
@@ -1003,14 +1009,15 @@ Initial release
 [#956]: https://github.com/knurling-rs/defmt/pull/956
 [#955]: https://github.com/knurling-rs/defmt/pull/955
 [#954]: https://github.com/knurling-rs/defmt/pull/954
+[#952]: https://github.com/knurling-rs/defmt/pull/952
 [#950]: https://github.com/knurling-rs/defmt/pull/950
 [#949]: https://github.com/knurling-rs/defmt/pull/949
 [#948]: https://github.com/knurling-rs/defmt/pull/948
 [#945]: https://github.com/knurling-rs/defmt/pull/945
 [#943]: https://github.com/knurling-rs/defmt/pull/943
 [#940]: https://github.com/knurling-rs/defmt/pull/940
-[#937]: https://github.com/knurling-rs/defmt/pull/937
 [#938]: https://github.com/knurling-rs/defmt/pull/938
+[#937]: https://github.com/knurling-rs/defmt/pull/937
 [#935]: https://github.com/knurling-rs/defmt/pull/935
 [#916]: https://github.com/knurling-rs/defmt/pull/916
 [#915]: https://github.com/knurling-rs/defmt/pull/915
