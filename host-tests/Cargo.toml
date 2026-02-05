@@ -1,0 +1,8 @@
+[package]
+name = "host-tests"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+critical-section = { version = "1.2.0", features = ["std"] }
+defmt = { version = "1.0.1", path = "../defmt" }
