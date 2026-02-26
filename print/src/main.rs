@@ -13,8 +13,8 @@ use defmt_decoder::{
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
-use goblin::elf::Elf;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use object::{Object, ObjectSymbol};
 use tokio::{
     fs,
     io::{self, AsyncReadExt, AsyncWriteExt, Stdin},
@@ -133,16 +133,15 @@ impl Source {
             return Ok(());
         }
 
-        let elf = Elf::parse(elf_bytes)?;
-        let rtt_symbol = elf
-            .syms
-            .iter()
-            .find(|sym| elf.strtab.get_at(sym.st_name) == Some("_SEGGER_RTT"))
-            .ok_or_else(|| anyhow!("Symbol '_SEGGER_RTT' not found in ELF file"))?;
+        let obj = object::File::parse(elf_bytes)?;
+        let rtt_symbol = obj
+            .symbols()
+            .find(|sym| matches!(sym.name(), Ok("_SEGGER_RTT") | Ok("__SEGGER_RTT")))
+            .ok_or_else(|| anyhow!("Symbol '_SEGGER_RTT' not found in binary"))?;
 
         let cmd = format!(
             "$$SEGGER_TELNET_ConfigStr=SetRTTAddr;{:#x}$$",
-            rtt_symbol.st_value
+            rtt_symbol.address()
         );
         tcpstream.write_all(cmd.as_bytes()).await?;
 
