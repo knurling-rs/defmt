@@ -498,6 +498,7 @@ Initial release
 > A tool that decodes defmt logs and prints them to the console
 
 [defmt-print-next]: https://github.com/knurling-rs/defmt/compare/defmt-print-v1.0.0...main
+[defmt-print-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v1.1.0
 [defmt-print-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v1.0.0
 [defmt-print-v0.3.13]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.13
 [defmt-print-v0.3.12]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.12
@@ -518,10 +519,15 @@ Initial release
 
 ### [defmt-print-next]
 
+* No changes
+
+### [defmt-print-v1.1.0] (2026-01-20)
+
 * [#985] Add `--set-addr` option to actively set the `_SEGGER_RTT` address
 * [#952] Support sending dtr on connection for serial port input
 * [#965] Also support `--log-format=online` or  `--log-format=default`
 * [#986] Bump MSRV to 1.81
+* [#1028] Bump MSRV to 1.83
 
 ### [defmt-print-v1.0.0] (2025-04-01)
 
@@ -577,7 +583,8 @@ Initial release
 
 > Decodes defmt log frames
 
-[defmt-decoder-next]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v1.0.0...main
+[defmt-decoder-next]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v1.0.1...main
+[defmt-decoder-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v1.1.0
 [defmt-decoder-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v1.0.0
 [defmt-decoder-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.4.0
 [defmt-decoder-v0.3.11]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.3.11
@@ -601,11 +608,15 @@ Initial release
 
 ### [defmt-decoder-next]
 
+### [defmt-decoder-v1.1.0] (2026-01-20)
+
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
 * [#990] improve version mismatch error message, don't mention probe-run.
 * [#986] Bump MSRV to 1.81
 * [#966] Add Frame::fragments() and Frame::display_fragments()
 * [#958] Update to object 0.36
+* [#1028] Bump MSRV to 1.83
+* [#1036] Impl `serde::{Serialize, Deserialize}` and `Clone` on `Table` and related types
 
 ### [defmt-decoder-v1.0.0] (2025-04-01)
 
@@ -679,7 +690,7 @@ Initial release
 ### [defmt-parser-next]
 
 * [#956] Link `LICENSE-*` in the crate folder
-* [#986] Bump MSRV to 1.81
+* [#1028] Clarify that MSRV is 1.76
 
 ### [defmt-parser-v1.0.0] (2025-04-01)
 
@@ -952,11 +963,17 @@ Initial release
 > Runs [`qemu-system-arm`] but decodes [`defmt`] data sent to semihosting
 
 [qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.1.0...main
+[qemu-run-v0.1.1]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.1
 [qemu-run-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.0
 
 ### [qemu-run-next]
 
 * No changes
+
+### [qemu-run-v0.1.1]
+
+* [#1028] Bump MSRV to 1.83
+* [#1028] Use latest `defmt-decoder` (moves location of `(HOST)` in log messages to end of line)
 
 ### [qemu-run-v0.1.0]
 
@@ -986,16 +1003,22 @@ Initial release
 
 ---
 
+[#1036]: https://github.com/knurling-rs/defmt/pull/1036
+[#1028]: https://github.com/knurling-rs/defmt/pull/1028
+[#1022]: https://github.com/knurling-rs/defmt/pull/1022
 [#1013]: https://github.com/knurling-rs/defmt/pull/1013
+[#1011]: https://github.com/knurling-rs/defmt/pull/1011
 [#1007]: https://github.com/knurling-rs/defmt/pull/1007
 [#1006]: https://github.com/knurling-rs/defmt/pull/1006
+[#1004]: https://github.com/knurling-rs/defmt/pull/1004
 [#990]: https://github.com/knurling-rs/defmt/pull/990
 [#986]: https://github.com/knurling-rs/defmt/pull/986
+[#985]: https://github.com/knurling-rs/defmt/pull/985
 [#983]: https://github.com/knurling-rs/defmt/pull/983
 [#974]: https://github.com/knurling-rs/defmt/pull/974
 [#972]: https://github.com/knurling-rs/defmt/pull/972
-[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#968]: https://github.com/knurling-rs/defmt/pull/968
+[#966]: https://github.com/knurling-rs/defmt/pull/966
 [#965]: https://github.com/knurling-rs/defmt/pull/965
 [#960]: https://github.com/knurling-rs/defmt/pull/960
 [#959]: https://github.com/knurling-rs/defmt/pull/959
@@ -1003,14 +1026,15 @@ Initial release
 [#956]: https://github.com/knurling-rs/defmt/pull/956
 [#955]: https://github.com/knurling-rs/defmt/pull/955
 [#954]: https://github.com/knurling-rs/defmt/pull/954
+[#952]: https://github.com/knurling-rs/defmt/pull/952
 [#950]: https://github.com/knurling-rs/defmt/pull/950
 [#949]: https://github.com/knurling-rs/defmt/pull/949
 [#948]: https://github.com/knurling-rs/defmt/pull/948
 [#945]: https://github.com/knurling-rs/defmt/pull/945
 [#943]: https://github.com/knurling-rs/defmt/pull/943
 [#940]: https://github.com/knurling-rs/defmt/pull/940
-[#937]: https://github.com/knurling-rs/defmt/pull/937
 [#938]: https://github.com/knurling-rs/defmt/pull/938
+[#937]: https://github.com/knurling-rs/defmt/pull/937
 [#935]: https://github.com/knurling-rs/defmt/pull/935
 [#916]: https://github.com/knurling-rs/defmt/pull/916
 [#915]: https://github.com/knurling-rs/defmt/pull/915

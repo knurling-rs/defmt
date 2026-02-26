@@ -15,6 +15,7 @@ use std::{
 
 use anyhow::{anyhow, bail, ensure};
 use object::{Object, ObjectSection, ObjectSymbol};
+use serde::{Deserialize, Serialize};
 
 use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSIONS};
 
@@ -240,7 +241,7 @@ fn check_version(version: &str) -> Result<(), String> {
 }
 
 /// Location of a defmt log statement in the elf-file
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Location {
     pub file: PathBuf,
     pub line: u64,

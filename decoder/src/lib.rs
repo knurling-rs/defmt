@@ -25,6 +25,7 @@ use std::{
 
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::Level;
+use serde::{Deserialize, Serialize};
 
 use crate::{decoder::Decoder, elf2table::parse_impl};
 
@@ -35,7 +36,7 @@ pub use crate::{
 };
 
 /// Specifies the origin of a format string
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
 pub enum Tag {
     /// Defmt-controlled format string for primitive types.
     Prim,
@@ -76,7 +77,7 @@ impl Tag {
 }
 
 /// Entry in [`Table`] combining a format string with its raw symbol
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TableEntry {
     string: StringEntry,
     raw_symbol: String,
@@ -97,7 +98,7 @@ impl TableEntry {
 }
 
 /// A format string and it's [`Tag`]
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StringEntry {
     tag: Tag,
     string: String,
@@ -110,7 +111,7 @@ impl StringEntry {
 }
 
 /// Data that uniquely identifies a `defmt::bitflags!` invocation.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 struct BitflagsKey {
     /// Name of the bitflags struct (this is really redundant with `disambig`).
     ident: String,
@@ -120,7 +121,7 @@ struct BitflagsKey {
 }
 
 /// How a defmt frame is encoded
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Encoding {
     /// raw data, that is no encoding.
@@ -152,7 +153,7 @@ impl Encoding {
 }
 
 /// Internal table that holds log levels and maps format strings to indices
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Table {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,

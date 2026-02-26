@@ -7,6 +7,10 @@
 There's no stable library API to decode `defmt` log frames but this tool can be used to decode defmt
 data and print it to the console.
 
+## MSRV
+
+The minimum supported Rust version is 1.83. This crate is tested against the latest stable Rust version and the MSRV.
+
 ## Support
 
 `defmt-print` is part of the [Knurling] project, [Ferrous Systems]' effort at
