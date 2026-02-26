@@ -20,6 +20,10 @@ additional arguments to configure semihosting, and pipe semihosting data into
 
 Run `qemu-run --help` to see a list of other command-line arguments available.
 
+## MSRV
+
+The minimum supported Rust version is 1.83. This crate is tested against the latest stable Rust version and the MSRV.
+
 ## Support
 
 `qemu-run` is part of the [Knurling] project, [Ferrous Systems]' effort at
