@@ -68,6 +68,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#1007] `defmt`: impl `Format` for `core::fmt::Error`
 * [#983] Add `Format` implementation for `core::num::Wrapping<T>`
 * [#1022] Re-fix accidental breaking change in `Format` macro
+* [#1039] Add support for `PanicInfo::message` if the message is a static string
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -1003,6 +1004,7 @@ Initial release
 
 ---
 
+[#1039]: https://github.com/knurling-rs/defmt/pull/1039
 [#1036]: https://github.com/knurling-rs/defmt/pull/1036
 [#1028]: https://github.com/knurling-rs/defmt/pull/1028
 [#1022]: https://github.com/knurling-rs/defmt/pull/1022
