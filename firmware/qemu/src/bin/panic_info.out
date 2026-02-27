@@ -1,1 +1,1 @@
-INFO  PanicInfo: panicked at qemu/src/bin/panic_info.rs:16:5
+INFO  PanicInfo: panicked at qemu/src/bin/panic_info.rs:16:5: aaah!
