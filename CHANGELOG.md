@@ -68,6 +68,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#1007] `defmt`: impl `Format` for `core::fmt::Error`
 * [#983] Add `Format` implementation for `core::num::Wrapping<T>`
 * [#1022] Re-fix accidental breaking change in `Format` macro
+* [#1041] Ignore RUSTSEC-2026-0009
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -1003,6 +1004,7 @@ Initial release
 
 ---
 
+[#1041]: https://github.com/knurling-rs/defmt/pull/1041
 [#1036]: https://github.com/knurling-rs/defmt/pull/1036
 [#1028]: https://github.com/knurling-rs/defmt/pull/1028
 [#1022]: https://github.com/knurling-rs/defmt/pull/1022
