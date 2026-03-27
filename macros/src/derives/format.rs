@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use proc_macro_error2::{abort, abort_call_site};
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Generics, Ident};
+use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Generics, Ident, WhereClause};
 
 mod codegen;
 
@@ -19,13 +19,14 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
     let DefmtAttr {
         transparent,
         defmt_path,
+        where_clause: custom_where_clause,
     } = match DefmtAttr::from_attrs(&attrs) {
         Ok(maybe_attr) => maybe_attr,
         Err(err) => abort!(err),
     };
 
     if transparent {
-        return expand_transparent(ident, data, generics, defmt_path);
+        return expand_transparent(ident, data, generics, defmt_path, custom_where_clause);
     }
 
     let encode_data = match &data {
@@ -49,6 +50,7 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         where_clause,
     } = codegen::Generics::codegen(&mut generics, where_predicates);
 
+    let where_clause = custom_where_clause.unwrap_or(where_clause);
     quote!(
         #[automatically_derived]
         impl #impl_generics #defmt_path::Format for #ident #type_generics #where_clause {
@@ -74,6 +76,7 @@ pub(crate) fn expand_transparent(
     data: Data,
     mut generics: Generics,
     defmt_path: syn::Path,
+    custom_where_clause: Option<WhereClause>,
 ) -> TokenStream {
     let mut where_clause = generics.make_where_clause().clone();
     let (impl_generics, ty_generics, ..) = generics.split_for_impl();
@@ -146,6 +149,7 @@ pub(crate) fn expand_transparent(
         .collect();
     where_clause.predicates.extend(generic_bounds);
 
+    let where_clause = custom_where_clause.unwrap_or(where_clause);
     quote! {
         impl #impl_generics #defmt_path::Format for #ident #ty_generics #where_clause {
             fn format(&self, f: #defmt_path::Formatter) {
