@@ -1,0 +1,8 @@
+[package]
+name = "native-app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+defmt = { path = "../defmt", features = ["encoding-raw"] }
+stdout-logger = { path = "../stdout-logger/" }

@@ -5,9 +5,11 @@ members = [
   "decoder/defmt-json-schema",
   "defmt",
   "macros",
+  "native-app",
   "parser",
   "print",
   "qemu-run",
+  "stdout-logger",
   "xtask",
 ]
 resolver = "2"

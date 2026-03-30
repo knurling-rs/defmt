@@ -1,0 +1,9 @@
+[package]
+name = "stdout-logger"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+defmt = { version = "1", path = "../defmt" }
+defmt-decoder = { path = "../decoder" }
+lazy_static = "1.5.0"
