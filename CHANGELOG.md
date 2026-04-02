@@ -891,6 +891,7 @@ Initial release
 ### [defmt-test-next]
 
 * [#1049] Pin trybuild to 1.0.89
+* [#1046] Replace `cortex-m-semihosting` with generic `semihosting` crate to support non-Cortex-M thumb targets
 
 ### [defmt-test-v0.4.0] (2025-04-01)
 
@@ -1010,6 +1011,7 @@ Initial release
 [#1049]: https://github.com/knurling-rs/defmt/pull/1049
 [#1048]: https://github.com/knurling-rs/defmt/pull/1048
 [#1047]: https://github.com/knurling-rs/defmt/pull/1047
+[#1046]: https://github.com/knurling-rs/defmt/pull/1046
 [#1044]: https://github.com/knurling-rs/defmt/pull/1044
 [#1041]: https://github.com/knurling-rs/defmt/pull/1041
 [#1036]: https://github.com/knurling-rs/defmt/pull/1036
