@@ -2,9 +2,10 @@
 #![no_main]
 
 use core::{marker::PhantomData, num};
+use cortex_m as _;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::debug;
 use defmt::{Debug2Format, Display2Format, Format, Formatter};
+use semihosting::process::ExitCode;
 
 use defmt_semihosting as _; // global logger
 
@@ -780,9 +781,7 @@ fn main() -> ! {
 
     defmt::info!("QEMU test finished!");
 
-    loop {
-        debug::exit(debug::EXIT_SUCCESS)
-    }
+    ExitCode::SUCCESS.exit_process()
 }
 
 #[derive(Format)]
@@ -811,7 +810,5 @@ impl Format for True {
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {
-        debug::exit(debug::EXIT_FAILURE)
-    }
+    ExitCode::FAILURE.exit_process()
 }
