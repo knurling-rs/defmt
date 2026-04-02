@@ -1,8 +1,9 @@
 #![no_std]
 #![no_main]
 
+use cortex_m as _;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::debug;
+use semihosting::process::ExitCode;
 
 use defmt::dbg;
 use defmt_semihosting as _; // global logger
@@ -28,9 +29,7 @@ fn main() -> ! {
     #[allow(clippy::double_parens)]
     foo(dbg!(x,));
 
-    loop {
-        debug::exit(debug::EXIT_SUCCESS)
-    }
+    ExitCode::SUCCESS.exit_process()
 }
 
 fn foo(_: i32) {}
@@ -39,7 +38,5 @@ fn foo(_: i32) {}
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {
-        debug::exit(debug::EXIT_FAILURE)
-    }
+    ExitCode::FAILURE.exit_process()
 }

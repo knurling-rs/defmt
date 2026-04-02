@@ -5,8 +5,9 @@ use core::net::{
     AddrParseError, IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
 };
 
+use cortex_m as _;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::debug;
+use semihosting::process::ExitCode;
 
 use defmt_semihosting as _; // global logger
 
@@ -26,16 +27,12 @@ fn main() -> ! {
 
     defmt::dbg!(a, b, c, d, e, f, g, h, i);
 
-    loop {
-        debug::exit(debug::EXIT_SUCCESS)
-    }
+    ExitCode::SUCCESS.exit_process()
 }
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {
-        debug::exit(debug::EXIT_FAILURE)
-    }
+    ExitCode::FAILURE.exit_process()
 }
