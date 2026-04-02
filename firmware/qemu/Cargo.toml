@@ -16,7 +16,7 @@ defmt-semihosting = { path = "../defmt-semihosting" }
 defmt-test = { path = "../defmt-test" }
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
-cortex-m-semihosting = "0.5"
+semihosting = { version = "0.1" }
 alloc-cortex-m = { version = "0.4", optional = true }
 linked_list_allocator = { version = "0.10.2", optional = true }
 

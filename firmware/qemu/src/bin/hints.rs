@@ -3,8 +3,9 @@
 
 use core::sync::atomic::{AtomicU32, Ordering};
 
+use cortex_m as _;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::debug;
+use semihosting::process::ExitCode;
 
 use defmt::{intern, write, Format, Formatter};
 use defmt_semihosting as _; // global logger
@@ -146,9 +147,7 @@ fn main() -> ! {
     defmt::info!("Time ms {:tms}", 1_234_567_u64);
     defmt::info!("Time us {:tus}", 1_234_567_u64);
 
-    loop {
-        debug::exit(debug::EXIT_SUCCESS)
-    }
+    ExitCode::SUCCESS.exit_process()
 }
 
 static COUNT: AtomicU32 = AtomicU32::new(0);
@@ -158,7 +157,5 @@ defmt::timestamp!("{=u32:us}", COUNT.fetch_add(1, Ordering::Relaxed));
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {
-        debug::exit(debug::EXIT_FAILURE)
-    }
+    ExitCode::FAILURE.exit_process()
 }
