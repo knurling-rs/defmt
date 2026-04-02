@@ -11,7 +11,6 @@ repository = "https://github.com/knurling-rs/defmt"
 version = "0.4.0"
 
 [dependencies]
-cortex-m-rt = "0.7"
-cortex-m-semihosting = "0.5"
+semihosting = { version = "0.1" }
 defmt = { version = "1", path = "../../defmt" }
 defmt-test-macros = { version = "=0.3.2", path = "macros" }
