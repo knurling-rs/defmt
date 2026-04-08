@@ -969,7 +969,7 @@ Initial release
 
 ### [qemu-run-next]
 
-* No changes
+* [#1048] Fixed UART read timeout issue ([#1047])
 
 ### [qemu-run-v0.1.1]
 
@@ -1004,6 +1004,8 @@ Initial release
 
 ---
 
+[#1048]: https://github.com/knurling-rs/defmt/pull/1048
+[#1047]: https://github.com/knurling-rs/defmt/pull/1047
 [#1041]: https://github.com/knurling-rs/defmt/pull/1041
 [#1036]: https://github.com/knurling-rs/defmt/pull/1036
 [#1028]: https://github.com/knurling-rs/defmt/pull/1028
