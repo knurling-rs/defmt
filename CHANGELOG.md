@@ -888,7 +888,7 @@ Initial release
 
 ### [defmt-test-next]
 
-* No changes
+* [#1049] Pin trybuild to 1.0.89
 
 ### [defmt-test-v0.4.0] (2025-04-01)
 
@@ -1004,6 +1004,7 @@ Initial release
 
 ---
 
+[#1049]: https://github.com/knurling-rs/defmt/pull/1049
 [#1048]: https://github.com/knurling-rs/defmt/pull/1048
 [#1047]: https://github.com/knurling-rs/defmt/pull/1047
 [#1041]: https://github.com/knurling-rs/defmt/pull/1041
