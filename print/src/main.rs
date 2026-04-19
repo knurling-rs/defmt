@@ -238,9 +238,30 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     } = opts;
 
     // read and parse elf file
-    let bytes = fs::read(elf.unwrap()).await?;
+    let elf_path = elf.unwrap();
+    let bytes = fs::read(&elf_path).await?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
-    let locs = table.get_locations(&bytes)?;
+    
+    // On macOS, check for .dSYM bundle which contains DWARF debug info
+    let mut dwarf_bytes = bytes.clone();
+
+    #[cfg(target_os = "macos")]
+    {
+        let dsym_bundle = format!("{}.dSYM", elf_path.display());
+        let dwarf_dir = std::path::Path::new(&dsym_bundle).join("Contents/Resources/DWARF");
+
+        // Attempt to read the first DWARF file within the bundle directory
+        if let Ok(mut entries) = std::fs::read_dir(dwarf_dir) {
+            if let Some(Ok(entry)) = entries.next() {
+                // Note: defmt-print uses async tokio::fs::read
+                if let Ok(bundle_bytes) = fs::read(entry.path()).await {
+                    dwarf_bytes = bundle_bytes;
+                }
+            }
+        }
+    }
+    
+    let locs = table.get_locations(&dwarf_bytes)?;
 
     // Give the _SEGGER_RTT address to the source.
     source.set_rtt_addr(&bytes).await?;
