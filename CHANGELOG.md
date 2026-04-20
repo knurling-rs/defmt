@@ -969,7 +969,7 @@ Initial release
 
 ### [qemu-run-next]
 
-* No changes
+* Specifying the `--verbose` / `-v` option now also prints the actual QEMU command being run.
 
 ### [qemu-run-v0.1.1]
 

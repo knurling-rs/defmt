@@ -189,15 +189,22 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
     // grab stdout
     command.stdout(Stdio::piped());
 
+    if opts.verbose {
+        println!("Running QEMU command: {}", pretty(&command));
+    }
+
     //
     // Run QEMU
     //
-
-    let mut child = KillOnDrop(
-        command
-            .spawn()
-            .expect("Error running qemu-system-arm; perhaps you haven't installed it yet?"),
-    );
+    let mut child = match command.spawn() {
+        Ok(child) => KillOnDrop(child),
+        Err(e) => {
+            bail!(
+                "Error running QEMU: {}; perhaps you haven't installed it yet?",
+                e
+            );
+        }
+    };
 
     //
     // Decode stdout as defmt data
@@ -233,6 +240,20 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
 
     // pass back qemu exit code (if any)
     Ok(exit_code)
+}
+
+fn pretty(cmd: &Command) -> String {
+    let mut out = String::new();
+    if let Some(prog) = cmd.get_program().to_str() {
+        out.push_str(prog);
+    }
+    for arg in cmd.get_args() {
+        if let Some(s) = arg.to_str() {
+            out.push(' ');
+            out.push_str(s);
+        }
+    }
+    out
 }
 
 /// Pump the decoder and print any new frames
