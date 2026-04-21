@@ -2,12 +2,7 @@ use std::{env, error::Error, fs, path::PathBuf};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Read the linker script
-    let mut linker_script = fs::read_to_string("defmt.x.in")?;
-
-    // Optionally exclude default panic handler
-    if cfg!(feature = "avoid-default-panic") {
-        linker_script = avoid_default_panic(linker_script);
-    }
+    let linker_script = fs::read_to_string("defmt.x.in")?;
 
     // Put the linker script somewhere the linker can find it
     let out = &PathBuf::from(env::var("OUT_DIR")?);
@@ -36,8 +31,4 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
-}
-
-fn avoid_default_panic(linker_script: String) -> String {
-    linker_script.replacen("PROVIDE(_defmt_panic = __defmt_default_panic);", "", 1)
 }

@@ -380,8 +380,9 @@ pub use defmt_macros::Format;
 #[export_name = "__defmt_default_timestamp"]
 fn default_timestamp(_f: Formatter<'_>) {}
 
-#[export_name = "__defmt_default_panic"]
-fn default_panic() -> ! {
+#[cfg(not(feature = "avoid-default-panic"))]
+#[export_name = "_defmt_panic"]
+fn defmt_panic() -> ! {
     core::panic!()
 }
 
