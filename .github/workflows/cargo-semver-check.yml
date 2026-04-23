@@ -39,5 +39,5 @@ jobs:
         uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           manifest-path: firmware/
-          exclude: defmt-semihosting
+          exclude: defmt-semihosting,defmt-test
           # rust-target: thumbv7em-none-eabihf
