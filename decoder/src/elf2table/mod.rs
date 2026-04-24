@@ -14,13 +14,14 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure};
-use object::{Object, ObjectSection, ObjectSymbol};
+use object::{Object, ObjectSection, ObjectSegment, ObjectSymbol};
 use serde::{Deserialize, Serialize};
 
 use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSIONS};
 
 pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
+    let is_mac = elf.format() == object::BinaryFormat::MachO;
     // first pass to extract the `_defmt_version`
     let mut version = None;
     let mut encoding = None;
@@ -28,10 +29,14 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
     // makes it keep the quotes from the linker script.
     let try_get_version = |name: &str| {
-        if name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ") {
+        if name.starts_with("\"_defmt_version_ = ")
+            || name.starts_with("_defmt_version_ = ")
+            || name.starts_with("__defmt_version_ = ")
+        {
             Some(
                 name.trim_start_matches("\"_defmt_version_ = ")
                     .trim_start_matches("_defmt_version_ = ")
+                    .trim_start_matches("__defmt_version_ = ")
                     .trim_end_matches('"')
                     .to_string(),
             )
@@ -44,6 +49,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // using `#[export_name = "_defmt_encoding_ = x"]`, never in linker scripts.
     let try_get_encoding = |name: &str| {
         name.strip_prefix("_defmt_encoding_ = ")
+            .or_else(|| name.strip_prefix("__defmt_encoding_ = "))
             .map(ToString::to_string)
     };
 
@@ -78,12 +84,33 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         }
     }
 
+    let mut defmt_sections = HashMap::new();
+    if is_mac {
+        let defmt_segment = elf.segments().find(|segment| {
+            object::ObjectSegment::name(segment).is_ok_and(|name| name == Some(".defmt"))
+        });
+        if let Some(defmt_segment) = defmt_segment {
+            for section in elf.sections() {
+                // check if the section is in the segment by comparing the section's address
+                // with the segment's address and size
+                if section.address() >= defmt_segment.address()
+                    && section.address() < defmt_segment.address() + defmt_segment.size()
+                {
+                    defmt_sections.insert(section.index(), section);
+                }
+            }
+        }
+    } else {
+        let defmt_section = elf.section_by_name(".defmt");
+        if let Some(defmt_section) = defmt_section {
+            defmt_sections.insert(defmt_section.index(), defmt_section);
+        }
+    }
+
     // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
     // Otherwise probe-run won't work with apps that don't use defmt.
 
-    let defmt_section = elf.section_by_name(".defmt");
-
-    let (defmt_section, version) = match (defmt_section, version) {
+    let (_defmt_section, version) = match (defmt_sections.values().next(), version) {
         (None, None) => return Ok(None), // defmt is not used
         (Some(defmt_section), Some(version)) => (defmt_section, version),
         (None, Some(_)) => {
@@ -125,15 +152,23 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             continue;
         }
 
-        if name.starts_with("_defmt") || name.starts_with("__DEFMT_MARKER") {
+        if name.starts_with("_defmt")
+            || name.starts_with("__DEFMT_MARKER")
+            || name.starts_with("__defmt")
+        {
             // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
             // LLD and GNU LD behave differently here. LLD doesn't include `_defmt_version_`
             // (defined in a linker script) in the `.defmt` section but GNU LD does.
             continue;
         }
 
-        if entry.section_index() == Some(defmt_section.index()) {
-            let sym = symbol::Symbol::demangle(name)?;
+        // find the relevant section using the section index
+        if let Some(section_index) = entry.section_index() {
+            if !defmt_sections.contains_key(&section_index) {
+                continue;
+            }
+
+            let sym = symbol::Symbol::demangle(name, is_mac)?;
             match sym.tag() {
                 symbol::SymbolTag::Defmt(Tag::Timestamp) => {
                     if timestamp.is_some() {
@@ -146,18 +181,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     ));
                 }
                 symbol::SymbolTag::Defmt(Tag::BitflagsValue) => {
-                    // Bitflags values always occupy 128 bits / 16 bytes.
-                    const BITFLAGS_VALUE_SIZE: u64 = 16;
-
-                    if entry.size() != BITFLAGS_VALUE_SIZE {
-                        bail!(
-                            "bitflags value does not occupy 16 bytes (symbol `{}`)",
-                            name
-                        );
-                    }
-
-                    let defmt_data = defmt_section.data()?;
-                    let addr = entry.address() as usize;
+                    let section = defmt_sections.get(&section_index).unwrap();
+                    let defmt_data = section.data()?;
+                    let addr = (entry.address() - section.address()) as usize;
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
@@ -190,7 +216,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 }
                 symbol::SymbolTag::Defmt(tag) => {
                     map.insert(
-                        entry.address() as usize,
+                        (entry.address() as u16) as usize,
                         TableEntry::new(
                             StringEntry::new(tag, sym.data().to_string()),
                             name.to_string(),
