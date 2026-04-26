@@ -2,6 +2,8 @@
 #![no_main]
 
 use core::sync::atomic::{AtomicBool, Ordering};
+use cortex_m as _;
+use cortex_m_rt as _;
 
 use defmt_semihosting as _; // global logger
 
@@ -98,14 +100,12 @@ mod tests {
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    use cortex_m_semihosting::debug;
+    use semihosting::process::ExitCode;
 
-    loop {
-        let exit_code = if MAY_PANIC.load(Ordering::Relaxed) {
-            debug::EXIT_SUCCESS
-        } else {
-            debug::EXIT_FAILURE
-        };
-        debug::exit(exit_code)
-    }
+    let exit_code = if MAY_PANIC.load(Ordering::Relaxed) {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    };
+    exit_code.exit_process();
 }
