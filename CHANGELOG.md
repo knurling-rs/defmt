@@ -610,6 +610,8 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1040] Fix tag lookup failure when `.defmt` section has a non-zero base address
+
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
