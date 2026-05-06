@@ -285,6 +285,7 @@ pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
     let object = object::File::parse(elf)?;
+    let is_mac = object.format() == object::BinaryFormat::MachO;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
     } else {
@@ -314,6 +315,23 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
     let mut units = dwarf.debug_info.units();
 
     let mut map = BTreeMap::new();
+
+    // macos groups log sections, so we map the secondary location marker's hash to its table index
+    let mut hash_to_index = std::collections::BTreeMap::new();
+    if is_mac {
+        use std::hash::{Hash, Hasher};
+        for (idx, entry) in table.entries.iter() {
+            let symbol = entry
+                .raw_symbol
+                .strip_prefix('_')
+                .unwrap_or(&entry.raw_symbol);
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            symbol.hash(&mut hasher);
+            let hash = hasher.finish();
+            hash_to_index.insert(hash, *idx as u64);
+        }
+    }
+
     while let Some(header) = units.next()? {
         let unit = dwarf.unit(header)?;
         let abbrev = header.abbreviations(&dwarf.debug_abbrev)?;
@@ -384,33 +402,41 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                     }
                 }
 
-                if let (
-                    Some(name_index),
-                    Some(linkage_name_index),
-                    Some(file_index),
-                    Some(line),
-                    Some(loc),
-                ) = (name, linkage_name, decl_file, decl_line, location)
+                if let (Some(name_index), Some(file_index), Some(line)) =
+                    (name, decl_file, decl_line)
                 {
                     let name_slice = dwarf.string(name_index)?;
-                    let name = core::str::from_utf8(&name_slice)?;
-                    let linkage_name_slice = dwarf.string(linkage_name_index)?;
-                    let linkage_name = core::str::from_utf8(&linkage_name_slice)?;
+                    let name_str = core::str::from_utf8(&name_slice)?;
 
-                    if name == "DEFMT_LOG_STATEMENT" {
-                        if table.raw_symbols().any(|i| i == linkage_name) {
-                            let addr = exprloc2address(unit.encoding(), &loc)?;
-                            let file = file_index_to_path(file_index, &unit, &dwarf)?;
-                            let module = segments.join("::");
-
-                            let loc = Location { file, line, module };
-
-                            if let Some(old) = map.insert(addr, loc.clone()) {
-                                bail!("BUG in DWARF variable filter: index collision for addr 0x{:08x} (old = {:?}, new = {:?})", addr, old, loc);
+                    if is_mac {
+                        // Bypass memory addresses entirely: parse the hash directly from the variable name
+                        if let Some(hash_str) = name_str.strip_prefix("DEFMT_LOC_MARKER_") {
+                            if let Ok(hash) = u64::from_str_radix(hash_str, 16) {
+                                if let Some(&index) = hash_to_index.get(&hash) {
+                                    let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                                    let module = segments.join("::");
+                                    map.insert(index, Location { file, line, module });
+                                }
                             }
-                        } else {
-                            // this symbol was GC-ed by the linker (but remains in the DWARF info)
-                            // so we discard it (its `addr` info is also wrong which causes collisions)
+                        }
+                    } else {
+                        // --- STANDARD ELF LOGIC (Preserved) ---
+                        if let (Some(loc), Some(linkage_name_index)) = (location, linkage_name) {
+                            let linkage_name_slice = dwarf.string(linkage_name_index)?;
+                            let linkage_name_str = core::str::from_utf8(&linkage_name_slice)?;
+
+                            if name_str == "DEFMT_LOG_STATEMENT" {
+                                if table.raw_symbols().any(|i| i == linkage_name_str) {
+                                    let addr = exprloc2address(unit.encoding(), &loc)?;
+                                    let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                                    let module = segments.join("::");
+                                    let loc_data = Location { file, line, module };
+
+                                    if let Some(_old) = map.insert(addr, loc_data.clone()) {
+                                        bail!("BUG in DWARF variable filter: index collision for addr 0x{:08x}", addr);
+                                    }
+                                }
+                            }
                         }
                     }
                 }

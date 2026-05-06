@@ -91,11 +91,28 @@ pub(crate) fn static_variable(
     let section = linker_section(false, prefix, &sym_name);
     let section_for_macos = linker_section(true, prefix, &sym_name);
 
+    // macos restricts segments to 255 sections. we group logs into a single section and emit
+    // a secondary location marker symbol to allow the decoder to resolve addresses via DWARF.
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = DefaultHasher::new();
+    sym_name.hash(&mut hasher);
+    let hash_val = hasher.finish();
+    let loc_sym_name = format!("__defmt_loc_{:x}", hash_val);
+    let loc_ident = format_ident!("DEFMT_LOC_MARKER_{:x}", hash_val);
+
     quote!(
         #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
         #[cfg_attr(not(target_os = "macos"), link_section = #section)]
         #[export_name = #sym_name]
         static #name: u8 = 0;
+
+        #[cfg(target_os = "macos")]
+        #[link_section = "__DATA,__defmt_loc"]
+        #[used]
+        #[export_name = #loc_sym_name]
+        static #loc_ident: u8 = 0;
     )
 }
 
