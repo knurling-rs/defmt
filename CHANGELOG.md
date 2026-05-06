@@ -69,6 +69,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#983] Add `Format` implementation for `core::num::Wrapping<T>`
 * [#1022] Re-fix accidental breaking change in `Format` macro
 * [#1041] Ignore RUSTSEC-2026-0009
+* [#1052] Pin UI tests to host MSRV
 
 ### [defmt-v1.0.1] (2025-04-01)
 
@@ -439,6 +440,7 @@ Initial release
 
 ### [defmt-macros-next]
 
+* [#1044]: Add support for `bound` attribute via a `#[defmt(bound(T: MyCustomBound))]`
 * [#956]: Link LICENSE-* in the crate folder
 
 ### [defmt-macros-v1.0.1] (2025-04-01)
@@ -888,7 +890,8 @@ Initial release
 
 ### [defmt-test-next]
 
-* No changes
+* [#1049] Pin trybuild to 1.0.89
+* [#1046] Replace `cortex-m-semihosting` with generic `semihosting` crate to support non-Cortex-M thumb targets
 
 ### [defmt-test-v0.4.0] (2025-04-01)
 
@@ -969,7 +972,7 @@ Initial release
 
 ### [qemu-run-next]
 
-* No changes
+* [#1048] Fixed UART read timeout issue ([#1047])
 
 ### [qemu-run-v0.1.1]
 
@@ -1004,6 +1007,12 @@ Initial release
 
 ---
 
+[#1052]: https://github.com/knurling-rs/defmt/pull/1052
+[#1049]: https://github.com/knurling-rs/defmt/pull/1049
+[#1048]: https://github.com/knurling-rs/defmt/pull/1048
+[#1047]: https://github.com/knurling-rs/defmt/pull/1047
+[#1046]: https://github.com/knurling-rs/defmt/pull/1046
+[#1044]: https://github.com/knurling-rs/defmt/pull/1044
 [#1041]: https://github.com/knurling-rs/defmt/pull/1041
 [#1036]: https://github.com/knurling-rs/defmt/pull/1036
 [#1028]: https://github.com/knurling-rs/defmt/pull/1028

@@ -12,9 +12,10 @@ use alloc::sync::Arc;
 use alloc::vec;
 use core::sync::atomic::{AtomicU32, Ordering};
 
+use cortex_m as _;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::debug;
 use defmt::Format;
+use semihosting::process::ExitCode;
 
 use defmt_semihosting as _; // global logger
 
@@ -43,9 +44,7 @@ fn main() -> ! {
     defmt::info!("Cow<str>: {=?}", Cow::from("moo"));
     defmt::info!("Cow<String>: {=?}", String::from("moo, but allocated"));
 
-    loop {
-        debug::exit(debug::EXIT_SUCCESS)
-    }
+    ExitCode::SUCCESS.exit_process();
 }
 
 #[derive(Format)]
@@ -90,7 +89,5 @@ mod if_alloc {
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {
-        debug::exit(debug::EXIT_FAILURE)
-    }
+    ExitCode::FAILURE.exit_process()
 }

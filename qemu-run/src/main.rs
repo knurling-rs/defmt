@@ -310,17 +310,28 @@ fn print_version() -> anyhow::Result<Option<i32>> {
 
 /// Dumps UTF-8 data received on a socket to stdout, line by line
 fn print_loop(socket: std::net::TcpListener) {
+    use std::io::{BufReader, ErrorKind};
     for conn in socket.incoming().flatten() {
         conn.set_read_timeout(Some(std::time::Duration::from_millis(100)))
             .expect("Setting socket timeout");
-        let mut reader = std::io::BufReader::new(conn);
+        let mut reader = BufReader::new(conn);
         loop {
             let mut buffer = String::new();
-            let Ok(_len) = reader.read_line(&mut buffer) else {
-                break;
-            };
+            let res = reader.read_line(&mut buffer);
             if !buffer.is_empty() {
                 log::info!("UART got: {:?}", buffer);
+            }
+            match res {
+                Ok(_n) => {
+                    // do nothing
+                }
+                Err(e) if e.kind() == ErrorKind::TimedOut || e.kind() == ErrorKind::WouldBlock => {
+                    // do nothing
+                }
+                Err(e) => {
+                    log::warn!("UART disconnected ({e:?}");
+                    break;
+                }
             }
         }
     }

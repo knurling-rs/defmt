@@ -2,9 +2,10 @@
 #![no_main]
 #![allow(clippy::bad_bit_mask)]
 
+use cortex_m as _;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::debug;
 use defmt::{bitflags, Debug2Format};
+use semihosting::process::ExitCode;
 
 use defmt_semihosting as _; // global logger
 
@@ -66,16 +67,12 @@ fn main() -> ! {
         Debug2Format(&LargeFlags::empty())
     );
 
-    loop {
-        debug::exit(debug::EXIT_SUCCESS)
-    }
+    ExitCode::SUCCESS.exit_process()
 }
 
 // like `panic-semihosting` but doesn't print to stdout (that would corrupt the defmt stream)
 #[cfg(target_os = "none")]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {
-        debug::exit(debug::EXIT_FAILURE)
-    }
+    ExitCode::FAILURE.exit_process()
 }

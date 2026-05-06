@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 extern crate defmt as defmt2;
 
 fn main() {
@@ -56,3 +57,25 @@ struct Transparent<T: Foo>(Quux<T>);
 #[defmt(crate = defmt3, crate = defmt2)]
 #[allow(dead_code)]
 struct Variations<T: Foo>(Quux<T>);
+
+struct Flavor;
+
+trait FlavorT {
+    type List<'a, T: 'a + ::defmt::Format>: ::defmt::Format;
+}
+
+impl FlavorT for Flavor {
+    type List<'a, T: 'a + ::defmt::Format> = &'a [T];
+}
+
+#[derive(defmt::Format)]
+#[defmt(bound())] // fixes the compile error from `ui/derive_bound_overflow.rs`
+enum Flavored<F: FlavorT + 'static> {
+    Str(F::List<'static, Self>),
+}
+
+const _: () = {
+    const fn implements_format<T: defmt::Format>() {}
+
+    implements_format::<Flavored<Flavor>>();
+};

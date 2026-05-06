@@ -1,7 +1,8 @@
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, ToTokens};
 use syn::{
-    parse_quote, DataStruct, Ident, ImplGenerics, TypeGenerics, WhereClause, WherePredicate,
+    parse_quote, punctuated::Punctuated, DataStruct, Ident, ImplGenerics, Token, TypeGenerics,
+    WhereClause, WherePredicate,
 };
 
 pub(crate) use enum_data::encode as encode_enum_data;
@@ -75,37 +76,50 @@ impl<'a> Generics<'a> {
 pub(crate) struct DefmtAttr {
     pub(crate) transparent: bool,
     pub(crate) defmt_path: syn::Path,
+    pub(crate) where_clause: Option<WhereClause>,
 }
 
 impl DefmtAttr {
     pub(crate) fn from_attrs(attrs: &[syn::Attribute]) -> syn::Result<Self> {
-        let (transparent, defmt_path) = attrs
+        let (transparent, defmt_path, bound) = attrs
             .iter()
             .filter(|attr| attr.path().is_ident("defmt"))
             .try_fold(
-            (false, None),
-            |(mut transparent, mut defmt_path), attr| -> syn::Result<_> {
-                let options = attr.meta.require_list()?;
-                options.parse_nested_meta(|meta| {
-                    if meta.path.is_ident("transparent") {
-                        transparent = true;
-                    } else if meta.path.is_ident("crate") {
-                        meta.input.parse::<syn::Token![=]>()?;
-                        defmt_path = Some(meta.input.parse::<syn::Path>()?);
-                    } else {
-                        let path = meta.path.to_token_stream().to_string().replace(' ', "");
-                        return Err(meta.error(format_args!("unknown defmt attribute `{path}`")));
-                    }
-                    Ok(())
-                })?;
+                (false, None, None),
+                |(mut transparent, mut defmt_path, mut bound), attr| -> syn::Result<_> {
+                    let options = attr.meta.require_list()?;
+                    options.parse_nested_meta(|meta| {
+                        if meta.path.is_ident("transparent") {
+                            transparent = true;
+                        } else if meta.path.is_ident("crate") {
+                            meta.input.parse::<syn::Token![=]>()?;
+                            defmt_path = Some(meta.input.parse::<syn::Path>()?);
+                        } else if meta.path.is_ident("bound") {
+                            let content;
+                            let _paren = ::syn::parenthesized!(content in meta.input);
+                            bound =
+                                Some(Punctuated::<WherePredicate, Token![,]>::parse_terminated(
+                                    &content,
+                                )?);
+                        } else {
+                            let path = meta.path.to_token_stream().to_string().replace(' ', "");
+                            return Err(
+                                meta.error(format_args!("unknown defmt attribute `{path}`"))
+                            );
+                        }
+                        Ok(())
+                    })?;
 
-                Ok((transparent, defmt_path))
-            },
-        )?;
+                    Ok((transparent, defmt_path, bound))
+                },
+            )?;
+
         let defmt_path = defmt_path.unwrap_or_else(|| parse_quote! { defmt });
+        let where_clause = bound.map(|bound| parse_quote! { where #bound });
         Ok(Self {
             transparent,
             defmt_path,
+            where_clause,
         })
     }
 }

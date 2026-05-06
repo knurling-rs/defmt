@@ -1,8 +1,10 @@
 #![no_std]
 #![no_main]
 
+use cortex_m as _;
+
 use core::panic;
-use cortex_m_semihosting::debug;
+use semihosting::process::ExitCode;
 
 use defmt_semihosting as _; // global logger
 
@@ -17,7 +19,5 @@ fn main() -> ! {
 #[panic_handler]
 fn panic(panic_info: &panic::PanicInfo) -> ! {
     defmt::info!("PanicInfo: {=?}", panic_info);
-    loop {
-        debug::exit(debug::EXIT_SUCCESS)
-    }
+    ExitCode::SUCCESS.exit_process()
 }

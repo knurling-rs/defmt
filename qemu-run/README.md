@@ -11,7 +11,7 @@ Set as your cargo runner, e.g. in your `.cargo/config.toml` file:
 
 ```toml
 [target.thumbv7em-none-eabihf]
-runner = "qemu-run -machine lm3s6965evb"
+runner = "qemu-run --machine lm3s6965evb --cpu cortex-m3"
 ```
 
 It will execute `qemu-system-arm`, pass the given `-machine` argument, pass
@@ -19,6 +19,9 @@ additional arguments to configure semihosting, and pipe semihosting data into
 `defmt-decoder` to be decoded and printed to the console.
 
 Run `qemu-run --help` to see a list of other command-line arguments available.
+
+Note that `qemu-system-arm` takes long arguments with a single dash (`-`), but
+`qemu-run` takes long arguments with a double dash (`--`).
 
 ## MSRV
 
