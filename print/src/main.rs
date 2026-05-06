@@ -241,16 +241,20 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let elf_path = elf.unwrap();
     let bytes = fs::read(&elf_path).await?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
-    
-    // On macOS, check for .dSYM bundle which contains DWARF debug info
-    let mut dwarf_bytes = bytes.clone();
+
+    // On macOS, DWARF lives in a sibling .dSYM bundle when built with
+    // split-debuginfo = "packed". On other platforms DWARF is embedded in the
+    // main ELF, so we just feed `bytes` straight through.
+    #[cfg(not(target_os = "macos"))]
+    let dwarf_bytes = bytes.clone();
 
     #[cfg(target_os = "macos")]
-    {
+    let dwarf_bytes = {
+        let mut dwarf_bytes = bytes.clone();
         let dsym_bundle = format!("{}.dSYM", elf_path.display());
         let dwarf_dir = std::path::Path::new(&dsym_bundle).join("Contents/Resources/DWARF");
 
-        // Attempt to read the first DWARF file within the bundle directory
+        // Attempt to read the first DWARF file within the bundle directory.
         if let Ok(mut entries) = std::fs::read_dir(dwarf_dir) {
             if let Some(Ok(entry)) = entries.next() {
                 // Note: defmt-print uses async tokio::fs::read
@@ -259,8 +263,9 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
                 }
             }
         }
-    }
-    
+        dwarf_bytes
+    };
+
     let locs = table.get_locations(&dwarf_bytes)?;
 
     // Give the _SEGGER_RTT address to the source.
