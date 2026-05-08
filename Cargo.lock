@@ -323,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-macros"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "defmt-parser",
  "maplit",
