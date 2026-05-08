@@ -73,15 +73,7 @@ impl Channel {
 
         // copy `bytes[..len]` to the RTT buffer
         unsafe {
-            if cursor + len > BUF_SIZE {
-                // split memcpy
-                let pivot = BUF_SIZE - cursor;
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
-                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
-            } else {
-                // single memcpy
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
-            }
+            self.copy_wrapping(&bytes[..len], cursor);
         }
 
         // adjust the write pointer, so the host knows that there is new data
@@ -102,16 +94,7 @@ impl Channel {
             return bytes.is_empty();
         }
 
-        #[cfg(feature = "disable-blocking-mode")]
-        {
-            let read = self.read.load(Ordering::Relaxed) as usize;
-            if available_buffer_size(read, *cursor) < bytes.len() {
-                return false;
-            }
-        }
-
-        #[cfg(not(feature = "disable-blocking-mode"))]
-        if !self.host_is_connected() {
+        if cfg!(feature = "disable-blocking-mode") || !self.host_is_connected() {
             let read = self.read.load(Ordering::Relaxed) as usize;
             if available_buffer_size(read, *cursor) < bytes.len() {
                 return false;
@@ -123,20 +106,12 @@ impl Channel {
             } {}
         }
 
+        // copy `bytes` to the RTT buffer
         unsafe {
-            if *cursor + bytes.len() > BUF_SIZE {
-                let pivot = BUF_SIZE - *cursor;
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(*cursor), pivot);
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr().add(pivot),
-                    self.buffer,
-                    bytes.len() - pivot,
-                );
-            } else {
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(*cursor), bytes.len());
-            }
+            self.copy_wrapping(&bytes, *cursor);
         }
 
+        // advance the cursor
         *cursor = cursor.wrapping_add(bytes.len()) % BUF_SIZE;
         true
     }
@@ -149,6 +124,18 @@ impl Channel {
 }
 
 impl Channel {
+    unsafe fn copy_wrapping(&self, bytes: &[u8], cursor: usize) {
+        if cursor + bytes.len() > BUF_SIZE {
+            // split memcpy
+            let pivot = BUF_SIZE - cursor;
+            ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
+            ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, bytes.len() - pivot);
+        } else {
+            // single memcpy
+            ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), bytes.len());
+        }
+    }
+
     pub fn flush(&self) {
         // return early, if host is disconnected
         if !self.host_is_connected() {

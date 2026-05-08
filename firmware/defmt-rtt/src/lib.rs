@@ -148,22 +148,9 @@ struct RttEncoder {
     encoder: UnsafeCell<defmt::Encoder>,
 }
 
-#[cfg(feature = "disable-irq-masking")]
-const NO_OWNER: u32 = u32::MAX;
-
-#[cfg(feature = "disable-irq-masking")]
-struct AtomicRttEncoder {
-    /// A defmt::Encoder for encoding frames
-    encoder: UnsafeCell<defmt::Encoder>,
-    owner: AtomicU32,
-    overflowed: UnsafeCell<bool>,
-    start: UnsafeCell<usize>,
-    cursor: UnsafeCell<usize>,
-}
-
 #[cfg(not(feature = "disable-irq-masking"))]
 impl RttEncoder {
-    /// Create a new semihosting-based defmt-encoder
+    /// Create a new rtt-based defmt-encoder
     const fn new() -> RttEncoder {
         RttEncoder {
             taken: AtomicBool::new(false),
@@ -252,8 +239,21 @@ impl RttEncoder {
 }
 
 #[cfg(feature = "disable-irq-masking")]
+const NO_OWNER: u32 = u32::MAX;
+
+#[cfg(feature = "disable-irq-masking")]
+struct AtomicRttEncoder {
+    /// A defmt::Encoder for encoding frames
+    encoder: UnsafeCell<defmt::Encoder>,
+    owner: AtomicU32,
+    overflowed: UnsafeCell<bool>,
+    start: UnsafeCell<usize>,
+    cursor: UnsafeCell<usize>,
+}
+
+#[cfg(feature = "disable-irq-masking")]
 impl AtomicRttEncoder {
-    /// Create a new semihosting-based defmt-encoder
+    /// Create a new rtt-based defmt-encoder
     const fn new() -> AtomicRttEncoder {
         AtomicRttEncoder {
             encoder: UnsafeCell::new(defmt::Encoder::new()),
@@ -286,6 +286,7 @@ impl AtomicRttEncoder {
         0
     }
 
+    /// Acquire the defmt encoder.
     fn acquire(&self) {
         let context = Self::current_context();
         if self.owner.load(Ordering::Relaxed) == context {
@@ -310,7 +311,7 @@ impl AtomicRttEncoder {
             *self.start.get() = cursor;
             *self.cursor.get() = cursor;
             let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
-            encoder.start_frame(stage_bytes);
+            encoder.start_frame(|b| RTT_ENCODER.stage(b));
         }
     }
 
@@ -325,7 +326,7 @@ impl AtomicRttEncoder {
         }
         unsafe {
             let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
-            encoder.write(bytes, stage_bytes);
+            encoder.write(bytes, |b| RTT_ENCODER.stage(b));
         }
     }
 
@@ -351,7 +352,7 @@ impl AtomicRttEncoder {
         }
         unsafe {
             let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
-            encoder.end_frame(stage_bytes);
+            encoder.end_frame(|b| RTT_ENCODER.stage(b));
             if !*self.overflowed.get() {
                 _SEGGER_RTT.up_channel.commit(*self.cursor.get());
             }
@@ -389,13 +390,6 @@ impl AtomicRttEncoder {
 unsafe impl Sync for RttEncoder {}
 #[cfg(feature = "disable-irq-masking")]
 unsafe impl Sync for AtomicRttEncoder {}
-
-#[cfg(feature = "disable-irq-masking")]
-fn stage_bytes(bytes: &[u8]) {
-    unsafe {
-        RTT_ENCODER.stage(bytes);
-    }
-}
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
