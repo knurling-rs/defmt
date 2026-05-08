@@ -108,7 +108,7 @@ impl Channel {
 
         // copy `bytes` to the RTT buffer
         unsafe {
-            self.copy_wrapping(&bytes, *cursor);
+            self.copy_wrapping(bytes, *cursor);
         }
 
         // advance the cursor
@@ -165,12 +165,8 @@ pub(crate) fn available_buffer_size(read_cursor: usize, write_cursor: usize) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::{available_buffer_size, Channel};
-    use crate::{consts::BUF_SIZE, MODE_NON_BLOCKING_TRIM};
-    use core::{
-        ptr,
-        sync::atomic::{AtomicU32, Ordering},
-    };
+    use super::available_buffer_size;
+    use crate::consts::BUF_SIZE;
 
     #[test]
     fn test_rtt_available_buffer_size() {
@@ -224,8 +220,20 @@ mod tests {
             }
         }
     }
+}
 
-    #[cfg(feature = "disable-irq-masking")]
+#[cfg(all(test, feature = "disable-irq-masking"))]
+mod test_disable_irq_masking {
+    use super::available_buffer_size;
+    use crate::consts::BUF_SIZE;
+
+    use super::Channel;
+    use crate::MODE_NON_BLOCKING_TRIM;
+    use core::{
+        ptr,
+        sync::atomic::{AtomicU32, Ordering},
+    };
+
     #[test]
     fn staged_bytes_stay_hidden_until_commit() {
         let mut buffer = [0u8; BUF_SIZE];
@@ -248,7 +256,6 @@ mod tests {
         assert_eq!(channel.write.load(Ordering::Relaxed), 3);
     }
 
-    #[cfg(feature = "disable-irq-masking")]
     #[test]
     fn staged_bytes_wrap_without_publishing() {
         let mut buffer = [0u8; BUF_SIZE];
@@ -267,5 +274,45 @@ mod tests {
         assert_eq!(channel.write.load(Ordering::Relaxed), 0);
         assert_eq!(&buffer[BUF_SIZE - 2..], b"wx");
         assert_eq!(&buffer[..2], b"yz");
+    }
+
+    #[test]
+    fn staged_bytes_rejects_oversized_frame_without_side_effects() {
+        let mut buffer = [0xAA; BUF_SIZE];
+        let channel = Channel {
+            name: ptr::null(),
+            buffer: buffer.as_mut_ptr(),
+            size: BUF_SIZE as u32,
+            write: AtomicU32::new(7),
+            read: AtomicU32::new(7),
+            flags: AtomicU32::new(MODE_NON_BLOCKING_TRIM),
+        };
+        let mut cursor = 7;
+        let bytes = [0x55; BUF_SIZE];
+
+        assert!(!channel.stage_bytes(&mut cursor, &bytes));
+        assert_eq!(cursor, 7);
+        assert_eq!(channel.write.load(Ordering::Relaxed), 7);
+        assert!(buffer.iter().all(|&b| b == 0xAA));
+    }
+
+    #[test]
+    fn staged_bytes_rejects_when_space_is_insufficient_without_partial_copy() {
+        let mut buffer = [0xAA; BUF_SIZE];
+        let channel = Channel {
+            name: ptr::null(),
+            buffer: buffer.as_mut_ptr(),
+            size: BUF_SIZE as u32,
+            write: AtomicU32::new(0),
+            read: AtomicU32::new(4),
+            flags: AtomicU32::new(MODE_NON_BLOCKING_TRIM),
+        };
+        let mut cursor = 0;
+
+        assert_eq!(available_buffer_size(4, cursor), 3);
+        assert!(!channel.stage_bytes(&mut cursor, b"wxyz"));
+        assert_eq!(cursor, 0);
+        assert_eq!(channel.write.load(Ordering::Relaxed), 0);
+        assert!(buffer.iter().all(|&b| b == 0xAA));
     }
 }
