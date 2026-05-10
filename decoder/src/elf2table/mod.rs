@@ -7,9 +7,10 @@ mod symbol;
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap},
+    collections::{hash_map::DefaultHasher, BTreeMap, HashMap},
     convert::TryInto,
     fmt,
+    hash::{Hash, Hasher},
     path::{Path, PathBuf},
 };
 
@@ -317,15 +318,14 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
     let mut map = BTreeMap::new();
 
     // macos groups log sections, so we map the secondary location marker's hash to its table index
-    let mut hash_to_index = std::collections::BTreeMap::new();
+    let mut hash_to_index = BTreeMap::new();
     if is_mac {
-        use std::hash::{Hash, Hasher};
         for (idx, entry) in table.entries.iter() {
             let symbol = entry
                 .raw_symbol
                 .strip_prefix('_')
                 .unwrap_or(&entry.raw_symbol);
-            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            let mut hasher = DefaultHasher::new();
             symbol.hash(&mut hasher);
             let hash = hasher.finish();
             hash_to_index.insert(hash, *idx as u64);

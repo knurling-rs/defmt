@@ -1,6 +1,6 @@
 use std::{
     collections::hash_map::DefaultHasher,
-    hash::{Hash as _, Hasher as _},
+    hash::{Hash, Hasher},
 };
 
 use proc_macro::Span;
@@ -93,9 +93,6 @@ pub(crate) fn static_variable(
 
     // macos restricts segments to 255 sections. we group logs into a single section and emit
     // a secondary location marker symbol to allow the decoder to resolve addresses via DWARF.
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
     let mut hasher = DefaultHasher::new();
     sym_name.hash(&mut hasher);
     let hash_val = hasher.finish();
