@@ -87,9 +87,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
 
     let mut defmt_sections = HashMap::new();
     if is_mac {
-        let defmt_segment = elf.segments().find(|segment| {
-            object::ObjectSegment::name(segment).is_ok_and(|name| name == Some(".defmt"))
-        });
+        let defmt_segment = elf
+            .segments()
+            .find(|segment| ObjectSegment::name(segment) == Ok(Some(".defmt")));
         if let Some(defmt_segment) = defmt_segment {
             for section in elf.sections() {
                 // check if the section is in the segment by comparing the section's address
