@@ -246,38 +246,32 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     // split-debuginfo = "packed". On other platforms DWARF is embedded in the
     // main ELF, so we just feed `bytes` straight through.
     #[cfg(not(target_os = "macos"))]
-    let dwarf_bytes = bytes.clone();
+    let locs = Some(table.get_locations(&bytes)?);
 
     #[cfg(target_os = "macos")]
-    let dwarf_bytes = {
-        let mut dwarf_bytes = bytes.clone();
-        let dsym_bundle = format!("{}.dSYM", elf_path.display());
-        let dwarf_dir = std::path::Path::new(&dsym_bundle).join("Contents/Resources/DWARF");
-
-        // Attempt to read the first DWARF file within the bundle directory.
-        if let Ok(mut entries) = std::fs::read_dir(dwarf_dir) {
-            if let Some(Ok(entry)) = entries.next() {
-                // Note: defmt-print uses async tokio::fs::read
-                if let Ok(bundle_bytes) = fs::read(entry.path()).await {
-                    dwarf_bytes = bundle_bytes;
-                }
-            }
+    let locs = match read_dsym_dwarf(&elf_path).await {
+        Some(dwarf_bytes) => Some(table.get_locations(&dwarf_bytes)?),
+        None => {
+            log::warn!(
+                "no .dSYM bundle found next to {}; location info will be unavailable",
+                elf_path.display()
+            );
+            None
         }
-        dwarf_bytes
     };
-
-    let locs = table.get_locations(&dwarf_bytes)?;
 
     // Give the _SEGGER_RTT address to the source.
     source.set_rtt_addr(&bytes).await?;
 
     // check if the locations info contains all the indicies
-    let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
-        Some(locs)
-    } else {
-        log::warn!("(BUG) location info is incomplete; it will be omitted from the output");
-        None
-    };
+    let locs = locs.and_then(|locs| {
+        if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
+            Some(locs)
+        } else {
+            log::warn!("(BUG) location info is incomplete; it will be omitted from the output");
+            None
+        }
+    });
 
     let logger_type = if json {
         DefmtLoggerType::Json
@@ -352,6 +346,15 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
             }
         }
     }
+}
+
+#[cfg(target_os = "macos")]
+async fn read_dsym_dwarf(elf_path: &Path) -> Option<Vec<u8>> {
+    let dsym_bundle = format!("{}.dSYM", elf_path.display());
+    let dwarf_dir = Path::new(&dsym_bundle).join("Contents/Resources/DWARF");
+    let mut entries = fs::read_dir(dwarf_dir).await.ok()?;
+    let entry = entries.next_entry().await.ok().flatten()?;
+    fs::read(entry.path()).await.ok()
 }
 
 type LocationInfo = (Option<String>, Option<u32>, Option<String>);
