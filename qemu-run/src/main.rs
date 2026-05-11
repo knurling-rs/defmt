@@ -38,6 +38,10 @@ struct Opts {
     #[arg(long, required = false)]
     cpu: Option<String>,
 
+    /// Optionally additional arguments for QEMU
+    #[arg(long, required = false)]
+    arg: Vec<String>,
+
     /// Optionally specify a custom defmt log format
     #[arg(short = 'l', required = false, alias = "log-format")]
     log_format: Option<String>,
@@ -150,6 +154,15 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
         command.arg("-cpu");
         command.arg(cpu);
     }
+
+    for arg in &opts.arg {
+        let Some((arg_name, arg_value)) = arg.split_once("=") else {
+            panic!("Argument {arg} does not contain '=' - it should be like 'smp=2'");
+        };
+        command.arg(format!("-{arg_name}"));
+        command.arg(arg_value);
+    }
+
     // create a character device connected to `uart_socket`
     if opts.uart_telnet {
         command.arg("-chardev");
