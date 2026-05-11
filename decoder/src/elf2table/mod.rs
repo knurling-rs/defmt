@@ -419,26 +419,23 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                                 }
                             }
                         }
-                    } else {
-                        // --- STANDARD ELF LOGIC (Preserved) ---
-                        if let (Some(loc), Some(linkage_name_index)) = (location, linkage_name) {
-                            let linkage_name_slice = dwarf.string(linkage_name_index)?;
-                            let linkage_name_str = core::str::from_utf8(&linkage_name_slice)?;
+                    } else if let (Some(loc), Some(linkage_name_index)) = (location, linkage_name) {
+                        let linkage_name_slice = dwarf.string(linkage_name_index)?;
+                        let linkage_name_str = core::str::from_utf8(&linkage_name_slice)?;
 
-                            if name_str == "DEFMT_LOG_STATEMENT"
-                                && table.raw_symbols().any(|i| i == linkage_name_str)
-                            {
-                                let addr = exprloc2address(unit.encoding(), &loc)?;
-                                let file = file_index_to_path(file_index, &unit, &dwarf)?;
-                                let module = segments.join("::");
-                                let loc_data = Location { file, line, module };
+                        if name_str == "DEFMT_LOG_STATEMENT"
+                            && table.raw_symbols().any(|i| i == linkage_name_str)
+                        {
+                            let addr = exprloc2address(unit.encoding(), &loc)?;
+                            let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                            let module = segments.join("::");
+                            let loc_data = Location { file, line, module };
 
-                                if let Some(_old) = map.insert(addr, loc_data.clone()) {
-                                    bail!(
-                                        "BUG in DWARF variable filter: index collision for addr 0x{:08x}",
-                                        addr
-                                    );
-                                }
+                            if let Some(_old) = map.insert(addr, loc_data.clone()) {
+                                bail!(
+                                    "BUG in DWARF variable filter: index collision for addr 0x{:08x}",
+                                    addr
+                                );
                             }
                         }
                     }
