@@ -973,6 +973,7 @@ Initial release
 ### [qemu-run-next]
 
 * [#1048] Fixed UART read timeout issue ([#1047])
+* [#1055] Support `--arg foo=bar` to pass `-foo bar` to QEMU
 
 ### [qemu-run-v0.1.1]
 
@@ -1007,6 +1008,7 @@ Initial release
 
 ---
 
+[#1055]: https://github.com/knurling-rs/defmt/pull/1055
 [#1052]: https://github.com/knurling-rs/defmt/pull/1052
 [#1049]: https://github.com/knurling-rs/defmt/pull/1049
 [#1048]: https://github.com/knurling-rs/defmt/pull/1048
