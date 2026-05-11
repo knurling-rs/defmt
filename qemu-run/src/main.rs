@@ -155,12 +155,14 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
         command.arg(cpu);
     }
 
+    // convert "--arg smp=2" into "-smp 2", and "--arg nographic" into "-nographic"
     for arg in &opts.arg {
-        let Some((arg_name, arg_value)) = arg.split_once("=") else {
-            panic!("Argument {arg} does not contain '=' - it should be like 'smp=2'");
-        };
-        command.arg(format!("-{arg_name}"));
-        command.arg(arg_value);
+        if let Some((arg_name, arg_value)) = arg.split_once("=") {
+            command.arg(format!("-{arg_name}"));
+            command.arg(arg_value);
+        } else {
+            command.arg(format!("-{arg}"));
+        }
     }
 
     // create a character device connected to `uart_socket`
