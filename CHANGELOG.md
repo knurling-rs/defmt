@@ -966,17 +966,16 @@ Initial release
 
 > Runs [`qemu-system-arm`] but decodes [`defmt`] data sent to semihosting
 
-[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.1.0...main
-[qemu-run-v0.1.1]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.1
+[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.3.0...main
+[qemu-run-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.3.0
 [qemu-run-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.0
 
 ### [qemu-run-next]
 
+### [qemu-run-v0.3.0]
+
 * [#1048] Fixed UART read timeout issue ([#1047])
 * [#1055] Support `--arg foo=bar` to pass `-foo bar` to QEMU
-
-### [qemu-run-v0.1.1]
-
 * [#1028] Bump MSRV to 1.83
 * [#1028] Use latest `defmt-decoder` (moves location of `(HOST)` in log messages to end of line)
 
