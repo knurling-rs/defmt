@@ -32,7 +32,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 > A highly efficient logging framework that targets resource-constrained devices, like microcontrollers
 
-[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.0.1...main
+[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.1.0...main
+[defmt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.1.0
 [defmt-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.1
 [defmt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.0
 [defmt-v0.3.100]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.100
@@ -58,6 +59,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+### [defmt-v1.1.0] (2026-05-12)
+
 * [#974] Ensure typechecking is still performed on disabled log statement.
 * [#960] Fix `Format` not accepting multiple helper attribute instances
 * [#937] add support for `#[defmt(transparent)]` on `Format` derive
@@ -78,7 +81,6 @@ We have several packages which live in this repository. Changes are tracked sepa
 ### [defmt-v1.0.0] (2025-04-01)
 
 * [#909] First 1.0 stable release :tada:
-* [#940] `defmt-print`: Allow reading from a serial port
 * [#938] Emit `option_env!("DEFMT_LOG")` so rustc depinfo can track it
 * [#935] Add note in book's setup chapter to clarify staticlib setup
 * [#914] Add cargo-deny as a CI action to check crate security and licensing
@@ -416,7 +418,8 @@ Initial release
 
 > Macros for [defmt](#defmt)
 
-[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.0.1...main
+[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.1.0...main
+[defmt-macros-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.1.0
 [defmt-macros-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.0.1
 [defmt-macros-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.0.0
 [defmt-macros-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.4.0
@@ -439,6 +442,8 @@ Initial release
 [defmt-macros-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.1.0
 
 ### [defmt-macros-next]
+
+### [defmt-macros-v1.1.0] (2026-05-12)
 
 * [#1044]: Add support for `bound` attribute via a `#[defmt(bound(T: MyCustomBound))]`
 * [#956]: Link LICENSE-* in the crate folder
@@ -522,15 +527,15 @@ Initial release
 
 ### [defmt-print-next]
 
-* No changes
 
-### [defmt-print-v1.1.0] (2026-01-20)
+### [defmt-print-v1.1.0] (2026-05-12)
 
 * [#985] Add `--set-addr` option to actively set the `_SEGGER_RTT` address
 * [#952] Support sending dtr on connection for serial port input
 * [#965] Also support `--log-format=online` or  `--log-format=default`
 * [#986] Bump MSRV to 1.81
 * [#1028] Bump MSRV to 1.83
+* [#940] Allow reading from a serial port
 
 ### [defmt-print-v1.0.0] (2025-04-01)
 
@@ -731,7 +736,8 @@ Initial release
 
 > Transmit defmt log messages over the RTT (Real-Time Transfer) protocol
 
-[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.1.0...main
+[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.2.0...main
+[defmt-rtt-v1.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.2.0
 [defmt-rtt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.1.0
 [defmt-rtt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.0.0
 [defmt-rtt-v0.4.2]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.4.2
@@ -744,6 +750,8 @@ Initial release
 [defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
 ### [defmt-rtt-next]
+
+### [defmt-rtt-v1.2.0] (2026-05-12)
 
 * [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
 * [#1013] Switch to fixed 32-bit types, to support 64-bit targets
@@ -876,7 +884,8 @@ Initial release
 
 > A test harness for embedded devices
 
-[defmt-test-next]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.4.0...main
+[defmt-test-next]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.5.0...main
+[defmt-test-v0.5.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.5.0
 [defmt-test-v0.4.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.4.0
 [defmt-test-v0.3.2]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.2
 [defmt-test-v0.3.1]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.1
@@ -889,6 +898,8 @@ Initial release
 [defmt-test-v0.1.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.1.0
 
 ### [defmt-test-next]
+
+### [defmt-test-v0.5.0] (2026-05-12)
 
 * [#1049] Pin trybuild to 1.0.89
 * [#1046] Replace `cortex-m-semihosting` with generic `semihosting` crate to support non-Cortex-M thumb targets
@@ -966,16 +977,16 @@ Initial release
 
 > Runs [`qemu-system-arm`] but decodes [`defmt`] data sent to semihosting
 
-[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.1.0...main
-[qemu-run-v0.1.1]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.1
+[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.3.0...main
+[qemu-run-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.3.0
 [qemu-run-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.0
 
 ### [qemu-run-next]
 
+### [qemu-run-v0.3.0] (2026-05-12)
+
 * [#1048] Fixed UART read timeout issue ([#1047])
-
-### [qemu-run-v0.1.1]
-
+* [#1055] Support `--arg foo=bar` to pass `-foo bar` to QEMU
 * [#1028] Bump MSRV to 1.83
 * [#1028] Use latest `defmt-decoder` (moves location of `(HOST)` in log messages to end of line)
 
@@ -1007,6 +1018,7 @@ Initial release
 
 ---
 
+[#1055]: https://github.com/knurling-rs/defmt/pull/1055
 [#1052]: https://github.com/knurling-rs/defmt/pull/1052
 [#1049]: https://github.com/knurling-rs/defmt/pull/1049
 [#1048]: https://github.com/knurling-rs/defmt/pull/1048

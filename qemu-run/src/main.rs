@@ -38,6 +38,10 @@ struct Opts {
     #[arg(long, required = false)]
     cpu: Option<String>,
 
+    /// Optionally additional arguments for QEMU
+    #[arg(long, required = false)]
+    arg: Vec<String>,
+
     /// Optionally specify a custom defmt log format
     #[arg(short = 'l', required = false, alias = "log-format")]
     log_format: Option<String>,
@@ -150,6 +154,17 @@ fn notmain() -> Result<Option<i32>, anyhow::Error> {
         command.arg("-cpu");
         command.arg(cpu);
     }
+
+    // convert "--arg smp=2" into "-smp 2", and "--arg nographic" into "-nographic"
+    for arg in &opts.arg {
+        if let Some((arg_name, arg_value)) = arg.split_once("=") {
+            command.arg(format!("-{arg_name}"));
+            command.arg(arg_value);
+        } else {
+            command.arg(format!("-{arg}"));
+        }
+    }
+
     // create a character device connected to `uart_socket`
     if opts.uart_telnet {
         command.arg("-chardev");
