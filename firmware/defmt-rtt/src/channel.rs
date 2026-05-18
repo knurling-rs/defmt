@@ -24,6 +24,7 @@ pub(crate) struct Channel {
     pub flags: AtomicU32,
 }
 
+#[cfg(not(feature = "drop-on-contention"))]
 impl Channel {
     pub fn write_all(&self, mut bytes: &[u8]) {
         // the host-connection-status is only modified after RAM initialization while the device is
@@ -72,15 +73,7 @@ impl Channel {
 
         // copy `bytes[..len]` to the RTT buffer
         unsafe {
-            if cursor + len > BUF_SIZE {
-                // split memcpy
-                let pivot = BUF_SIZE - cursor;
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
-                ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, len - pivot);
-            } else {
-                // single memcpy
-                ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), len);
-            }
+            self.copy_wrapping(&bytes[..len], cursor);
         }
 
         // adjust the write pointer, so the host knows that there is new data
@@ -91,6 +84,56 @@ impl Channel {
 
         // return the number of bytes written
         len
+    }
+}
+
+#[cfg(feature = "drop-on-contention")]
+impl Channel {
+    pub fn stage_bytes(&self, cursor: &mut usize, bytes: &[u8]) -> bool {
+        if bytes.is_empty() || bytes.len() >= BUF_SIZE {
+            return bytes.is_empty();
+        }
+
+        if cfg!(feature = "disable-blocking-mode") || !self.host_is_connected() {
+            let read = self.read.load(Ordering::Relaxed) as usize;
+            if available_buffer_size(read, *cursor) < bytes.len() {
+                return false;
+            }
+        } else {
+            while {
+                let read = self.read.load(Ordering::Relaxed) as usize;
+                available_buffer_size(read, *cursor) < bytes.len()
+            } {}
+        }
+
+        // copy `bytes` to the RTT buffer
+        unsafe {
+            self.copy_wrapping(bytes, *cursor);
+        }
+
+        // advance the cursor
+        *cursor = cursor.wrapping_add(bytes.len()) % BUF_SIZE;
+        true
+    }
+
+    pub fn commit(&self, cursor: usize) {
+        // The owner staged the complete frame first, so a single write-pointer
+        // update publishes either the whole frame or nothing.
+        self.write.store(cursor as u32, Ordering::Release);
+    }
+}
+
+impl Channel {
+    unsafe fn copy_wrapping(&self, bytes: &[u8], cursor: usize) {
+        if cursor + bytes.len() > BUF_SIZE {
+            // split memcpy
+            let pivot = BUF_SIZE - cursor;
+            ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), pivot);
+            ptr::copy_nonoverlapping(bytes.as_ptr().add(pivot), self.buffer, bytes.len() - pivot);
+        } else {
+            // single memcpy
+            ptr::copy_nonoverlapping(bytes.as_ptr(), self.buffer.add(cursor), bytes.len());
+        }
     }
 
     pub fn flush(&self) {
@@ -112,7 +155,7 @@ impl Channel {
 }
 
 /// How much space is left in the buffer?
-fn available_buffer_size(read_cursor: usize, write_cursor: usize) -> usize {
+pub(crate) fn available_buffer_size(read_cursor: usize, write_cursor: usize) -> usize {
     if read_cursor > write_cursor {
         read_cursor - write_cursor - 1
     } else {
@@ -176,5 +219,100 @@ mod tests {
                 assert_eq!(actual, expected, "Mismatch at read={read}, write={write}");
             }
         }
+    }
+}
+
+#[cfg(all(test, feature = "drop-on-contention"))]
+mod test_drop_on_contention {
+    use super::available_buffer_size;
+    use crate::consts::BUF_SIZE;
+
+    use super::Channel;
+    use crate::MODE_NON_BLOCKING_TRIM;
+    use core::{
+        ptr,
+        sync::atomic::{AtomicU32, Ordering},
+    };
+
+    #[test]
+    fn staged_bytes_stay_hidden_until_commit() {
+        let mut buffer = [0u8; BUF_SIZE];
+        let channel = Channel {
+            name: ptr::null(),
+            buffer: buffer.as_mut_ptr(),
+            size: BUF_SIZE as u32,
+            write: AtomicU32::new(0),
+            read: AtomicU32::new(0),
+            flags: AtomicU32::new(MODE_NON_BLOCKING_TRIM),
+        };
+        let mut cursor = 0;
+
+        assert!(channel.stage_bytes(&mut cursor, b"abc"));
+        assert_eq!(cursor, 3);
+        assert_eq!(channel.write.load(Ordering::Relaxed), 0);
+        assert_eq!(&buffer[..3], b"abc");
+
+        channel.commit(cursor);
+        assert_eq!(channel.write.load(Ordering::Relaxed), 3);
+    }
+
+    #[test]
+    fn staged_bytes_wrap_without_publishing() {
+        let mut buffer = [0u8; BUF_SIZE];
+        let channel = Channel {
+            name: ptr::null(),
+            buffer: buffer.as_mut_ptr(),
+            size: BUF_SIZE as u32,
+            write: AtomicU32::new(0),
+            read: AtomicU32::new(8),
+            flags: AtomicU32::new(MODE_NON_BLOCKING_TRIM),
+        };
+        let mut cursor = BUF_SIZE - 2;
+
+        assert!(channel.stage_bytes(&mut cursor, b"wxyz"));
+        assert_eq!(cursor, 2);
+        assert_eq!(channel.write.load(Ordering::Relaxed), 0);
+        assert_eq!(&buffer[BUF_SIZE - 2..], b"wx");
+        assert_eq!(&buffer[..2], b"yz");
+    }
+
+    #[test]
+    fn staged_bytes_rejects_oversized_frame_without_side_effects() {
+        let mut buffer = [0xAA; BUF_SIZE];
+        let channel = Channel {
+            name: ptr::null(),
+            buffer: buffer.as_mut_ptr(),
+            size: BUF_SIZE as u32,
+            write: AtomicU32::new(7),
+            read: AtomicU32::new(7),
+            flags: AtomicU32::new(MODE_NON_BLOCKING_TRIM),
+        };
+        let mut cursor = 7;
+        let bytes = [0x55; BUF_SIZE];
+
+        assert!(!channel.stage_bytes(&mut cursor, &bytes));
+        assert_eq!(cursor, 7);
+        assert_eq!(channel.write.load(Ordering::Relaxed), 7);
+        assert!(buffer.iter().all(|&b| b == 0xAA));
+    }
+
+    #[test]
+    fn staged_bytes_rejects_when_space_is_insufficient_without_partial_copy() {
+        let mut buffer = [0xAA; BUF_SIZE];
+        let channel = Channel {
+            name: ptr::null(),
+            buffer: buffer.as_mut_ptr(),
+            size: BUF_SIZE as u32,
+            write: AtomicU32::new(0),
+            read: AtomicU32::new(4),
+            flags: AtomicU32::new(MODE_NON_BLOCKING_TRIM),
+        };
+        let mut cursor = 0;
+
+        assert_eq!(available_buffer_size(4, cursor), 3);
+        assert!(!channel.stage_bytes(&mut cursor, b"wxyz"));
+        assert_eq!(cursor, 0);
+        assert_eq!(channel.write.load(Ordering::Relaxed), 0);
+        assert!(buffer.iter().all(|&b| b == 0xAA));
     }
 }

@@ -38,6 +38,18 @@
 //! [dependencies]
 //! cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}
 //! ```
+//!
+//! With feature `drop-on-contention` you do not need a critical section
+//! implementation and interrupts are not disabled. Instead, when execution
+//! contexts collide, frames are dropped. This mode is for bare-metal
+//! Cortex-M use where thread mode is a single execution context. It is not
+//! correct on RTOS or other multi-thread-mode systems because all thread-mode
+//! tasks share `IPSR == 0`, which can misidentify ownership and panic. It can
+//! be combined with `disable-blocking-mode`, in which case frames that do not
+//! already fit are dropped. Because the public write cursor advances only once
+//! at frame end, every encoded frame in this mode must fit within the RTT
+//! ring's usable capacity (`BUF_SIZE - 1`); oversized frames are dropped even
+//! in blocking mode.
 
 #![no_std]
 
@@ -46,8 +58,11 @@ mod consts;
 
 use core::{
     cell::UnsafeCell,
-    sync::atomic::{AtomicBool, AtomicU32, Ordering},
+    sync::atomic::{AtomicU32, Ordering},
 };
+
+#[cfg(not(feature = "drop-on-contention"))]
+use core::sync::atomic::AtomicBool;
 
 use crate::{channel::Channel, consts::BUF_SIZE};
 
@@ -68,7 +83,10 @@ const MODE_NON_BLOCKING_TRIM: u32 = 1;
 struct Logger;
 
 /// Our defmt encoder state
+#[cfg(not(feature = "drop-on-contention"))]
 static RTT_ENCODER: RttEncoder = RttEncoder::new();
+#[cfg(feature = "drop-on-contention")]
+static RTT_ENCODER: AtomicRttEncoder = AtomicRttEncoder::new();
 
 /// Our shared header structure.
 ///
@@ -117,6 +135,7 @@ static BUFFER: Buffer = Buffer::new();
 #[cfg_attr(not(target_os = "macos"), link_section = ".data.defmt-rtt.NAME")]
 static NAME: [u8; 6] = *b"defmt\0";
 
+#[cfg(not(feature = "drop-on-contention"))]
 struct RttEncoder {
     /// A boolean lock
     ///
@@ -129,8 +148,9 @@ struct RttEncoder {
     encoder: UnsafeCell<defmt::Encoder>,
 }
 
+#[cfg(not(feature = "drop-on-contention"))]
 impl RttEncoder {
-    /// Create a new semihosting-based defmt-encoder
+    /// Create a new rtt-based defmt-encoder
     const fn new() -> RttEncoder {
         RttEncoder {
             taken: AtomicBool::new(false),
@@ -218,7 +238,152 @@ impl RttEncoder {
     }
 }
 
+#[cfg(feature = "drop-on-contention")]
+const NO_OWNER: u32 = u32::MAX;
+
+#[cfg(feature = "drop-on-contention")]
+struct AtomicRttEncoder {
+    /// A defmt::Encoder for encoding frames
+    encoder: UnsafeCell<defmt::Encoder>,
+    owner: AtomicU32,
+    overflowed: UnsafeCell<bool>,
+    start: UnsafeCell<usize>,
+    cursor: UnsafeCell<usize>,
+}
+
+#[cfg(feature = "drop-on-contention")]
+impl AtomicRttEncoder {
+    /// Create a new rtt-based defmt-encoder
+    const fn new() -> AtomicRttEncoder {
+        AtomicRttEncoder {
+            encoder: UnsafeCell::new(defmt::Encoder::new()),
+            owner: AtomicU32::new(NO_OWNER),
+            overflowed: UnsafeCell::new(false),
+            start: UnsafeCell::new(0),
+            cursor: UnsafeCell::new(0),
+        }
+    }
+
+    fn current_context() -> u32 {
+        #[cfg(target_arch = "arm")]
+        unsafe {
+            // IPSR is 0 in thread mode and otherwise the active exception
+            // number. That makes it a unique owner token for bare-metal
+            // Cortex-M execution: one thread-mode context plus interrupts. It
+            // is not suitable for systems that can switch between multiple
+            // thread-mode tasks mid-frame because those tasks all appear as
+            // owner 0 and can spuriously panic as "reentrant".
+            let ipsr: u32;
+            core::arch::asm!(
+                "mrs {}, ipsr",
+                out(reg) ipsr,
+                options(nomem, nostack, preserves_flags)
+            );
+            ipsr
+        }
+
+        #[cfg(not(target_arch = "arm"))]
+        0
+    }
+
+    fn is_owner(&self) -> bool {
+        self.owner.load(Ordering::Relaxed) == Self::current_context()
+    }
+
+    /// Acquire the defmt encoder.
+    fn acquire(&self) {
+        let context = Self::current_context();
+        if self.owner.load(Ordering::Relaxed) == context {
+            panic!("defmt logger taken reentrantly");
+        }
+
+        // Acquire publishes exclusive ownership before any frame staging starts.
+        // On failure we intentionally drop the whole colliding frame; the
+        // caller continues but all later methods become no-ops because it is
+        // not the owner.
+        if self
+            .owner
+            .compare_exchange(NO_OWNER, context, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            return;
+        }
+
+        unsafe {
+            *self.overflowed.get() = false;
+            let cursor = _SEGGER_RTT.up_channel.write.load(Ordering::Acquire) as usize;
+            *self.start.get() = cursor;
+            *self.cursor.get() = cursor;
+            let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
+            encoder.start_frame(|b| RTT_ENCODER.stage(b));
+        }
+    }
+
+    /// Write bytes to the defmt encoder.
+    fn write(&self, bytes: &[u8]) {
+        if !self.is_owner() {
+            return;
+        }
+        unsafe {
+            let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
+            encoder.write(bytes, |b| RTT_ENCODER.stage(b));
+        }
+    }
+
+    /// Flush the encoder.
+    fn flush(&self) {
+        if !self.is_owner() {
+            return;
+        }
+
+        _SEGGER_RTT.up_channel.flush();
+    }
+
+    /// Release the defmt encoder.
+    fn release(&self) {
+        if !self.is_owner() {
+            return;
+        }
+        unsafe {
+            let encoder: &mut defmt::Encoder = &mut *self.encoder.get();
+            encoder.end_frame(|b| RTT_ENCODER.stage(b));
+            if !*self.overflowed.get() {
+                _SEGGER_RTT.up_channel.commit(*self.cursor.get());
+            }
+        }
+
+        self.owner.store(NO_OWNER, Ordering::Release);
+    }
+
+    unsafe fn stage(&self, bytes: &[u8]) {
+        unsafe {
+            if *self.overflowed.get() {
+                return;
+            }
+            if crate::channel::available_buffer_size(*self.start.get(), *self.cursor.get())
+                < bytes.len()
+            {
+                *self.overflowed.get() = true;
+                return;
+            }
+
+            // Only the owner stages bytes. Until `release()` commits the final
+            // cursor, the host still sees the old write pointer and therefore
+            // never consumes these bytes as a partial frame.
+            if !_SEGGER_RTT
+                .up_channel
+                .stage_bytes(&mut *self.cursor.get(), bytes)
+            {
+                *self.overflowed.get() = true;
+            }
+        }
+    }
+}
+
+#[cfg(not(feature = "drop-on-contention"))]
 unsafe impl Sync for RttEncoder {}
+#[cfg(feature = "drop-on-contention")]
+unsafe impl Sync for AtomicRttEncoder {}
 
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
@@ -226,21 +391,15 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn write(bytes: &[u8]) {
-        unsafe {
-            RTT_ENCODER.write(bytes);
-        }
+        RTT_ENCODER.write(bytes);
     }
 
     unsafe fn flush() {
-        unsafe {
-            RTT_ENCODER.flush();
-        }
+        RTT_ENCODER.flush();
     }
 
     unsafe fn release() {
-        unsafe {
-            RTT_ENCODER.release();
-        }
+        RTT_ENCODER.release();
     }
 }
 

@@ -131,6 +131,22 @@ fn test_host(deny_warnings: bool, skip_ui_tests: bool) {
             "host",
         );
     }
+
+    if cfg!(target_os = "linux") {
+        for feat in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
+            do_test(
+                || {
+                    run_command(
+                        "cargo",
+                        &["test", "--features", feat],
+                        Some("firmware/defmt-rtt"),
+                        &env,
+                    )
+                },
+                "host defmt-rtt",
+            );
+        }
+    }
 }
 
 fn test_cross(deny_warnings: bool) {
@@ -211,6 +227,20 @@ fn test_cross(deny_warnings: bool) {
         "cross",
     );
 
+    for feature in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
+        do_test(
+            || {
+                run_command(
+                    "cargo",
+                    &["check", "--target", "thumbv7m-none-eabi", "--features", feature],
+                    Some("firmware/defmt-rtt"),
+                    &env,
+                )
+            },
+            "cross",
+        );
+    }
+
     for feature in ["print-defmt", "print-rtt"] {
         do_test(
             || {
@@ -254,6 +284,31 @@ fn test_lint_cross(deny_warnings: bool) {
         },
         "cross",
     );
+
+    for feature in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
+        do_test(
+            || {
+                run_command(
+                    "cargo",
+                    &[
+                        "clippy",
+                        "--target",
+                        "thumbv7m-none-eabi",
+                        "--features",
+                        feature,
+                        "--",
+                        "-D",
+                        "warnings",
+                        "-A",
+                        "unknown-lints",
+                    ],
+                    Some("firmware/defmt-rtt"),
+                    &env,
+                )
+            },
+            "cross",
+        );
+    }
 }
 
 fn test_book() {
