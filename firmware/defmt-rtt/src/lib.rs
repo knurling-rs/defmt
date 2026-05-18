@@ -320,12 +320,7 @@ impl AtomicRttEncoder {
     }
 
     /// Write bytes to the defmt encoder.
-    ///
-    /// # Safety
-    ///
-    /// No safety constraints. If this context did not become the active writer
-    /// during `acquire`, this call is ignored and the message is dropped.
-    unsafe fn write(&self, bytes: &[u8]) {
+    fn write(&self, bytes: &[u8]) {
         if !self.is_owner() {
             return;
         }
@@ -336,12 +331,7 @@ impl AtomicRttEncoder {
     }
 
     /// Flush the encoder.
-    ///
-    /// # Safety
-    ///
-    /// No safety constraints. If this context did not become the active writer
-    /// during `acquire`, this call is ignored as part of dropping the message.
-    unsafe fn flush(&self) {
+    fn flush(&self) {
         if !self.is_owner() {
             return;
         }
@@ -350,12 +340,7 @@ impl AtomicRttEncoder {
     }
 
     /// Release the defmt encoder.
-    ///
-    /// # Safety
-    ///
-    /// No safety constraints. If this context did not become the active writer
-    /// during `acquire`, this call is ignored as part of dropping the message.
-    unsafe fn release(&self) {
+    fn release(&self) {
         if !self.is_owner() {
             return;
         }
@@ -406,21 +391,15 @@ unsafe impl defmt::Logger for Logger {
     }
 
     unsafe fn write(bytes: &[u8]) {
-        unsafe {
-            RTT_ENCODER.write(bytes);
-        }
+        RTT_ENCODER.write(bytes);
     }
 
     unsafe fn flush() {
-        unsafe {
-            RTT_ENCODER.flush();
-        }
+        RTT_ENCODER.flush();
     }
 
     unsafe fn release() {
-        unsafe {
-            RTT_ENCODER.release();
-        }
+        RTT_ENCODER.release();
     }
 }
 
