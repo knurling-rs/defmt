@@ -755,7 +755,7 @@ Initial release
 
 * [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
 * [#1013] Switch to fixed 32-bit types, to support 64-bit targets
-* [#1053] Add the `disable-irq-masking` feature to trade low interrupt latency for reliable RTT delivery
+* [#1053] Add the `drop-on-contention` feature to trade low interrupt latency for reliable RTT delivery
 
 ### [defmt-rtt-v1.1.0] (2025-10-09)
 

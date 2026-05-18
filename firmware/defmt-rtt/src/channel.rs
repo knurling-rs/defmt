@@ -24,7 +24,7 @@ pub(crate) struct Channel {
     pub flags: AtomicU32,
 }
 
-#[cfg(not(feature = "disable-irq-masking"))]
+#[cfg(not(feature = "drop-on-contention"))]
 impl Channel {
     pub fn write_all(&self, mut bytes: &[u8]) {
         // the host-connection-status is only modified after RAM initialization while the device is
@@ -87,7 +87,7 @@ impl Channel {
     }
 }
 
-#[cfg(feature = "disable-irq-masking")]
+#[cfg(feature = "drop-on-contention")]
 impl Channel {
     pub fn stage_bytes(&self, cursor: &mut usize, bytes: &[u8]) -> bool {
         if bytes.is_empty() || bytes.len() >= BUF_SIZE {
@@ -222,8 +222,8 @@ mod tests {
     }
 }
 
-#[cfg(all(test, feature = "disable-irq-masking"))]
-mod test_disable_irq_masking {
+#[cfg(all(test, feature = "drop-on-contention"))]
+mod test_drop_on_contention {
     use super::available_buffer_size;
     use crate::consts::BUF_SIZE;
 

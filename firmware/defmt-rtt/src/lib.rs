@@ -39,7 +39,7 @@
 //! cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}
 //! ```
 //!
-//! With feature `disable-irq-masking` you do not need a critical section
+//! With feature `drop-on-contention` you do not need a critical section
 //! implementation and interrupts are not disabled. Instead, when execution
 //! contexts collide, frames are dropped. This mode is for bare-metal
 //! Cortex-M use where thread mode is a single execution context. It is not
@@ -61,7 +61,7 @@ use core::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-#[cfg(not(feature = "disable-irq-masking"))]
+#[cfg(not(feature = "drop-on-contention"))]
 use core::sync::atomic::AtomicBool;
 
 use crate::{channel::Channel, consts::BUF_SIZE};
@@ -83,9 +83,9 @@ const MODE_NON_BLOCKING_TRIM: u32 = 1;
 struct Logger;
 
 /// Our defmt encoder state
-#[cfg(not(feature = "disable-irq-masking"))]
+#[cfg(not(feature = "drop-on-contention"))]
 static RTT_ENCODER: RttEncoder = RttEncoder::new();
-#[cfg(feature = "disable-irq-masking")]
+#[cfg(feature = "drop-on-contention")]
 static RTT_ENCODER: AtomicRttEncoder = AtomicRttEncoder::new();
 
 /// Our shared header structure.
@@ -135,7 +135,7 @@ static BUFFER: Buffer = Buffer::new();
 #[cfg_attr(not(target_os = "macos"), link_section = ".data.defmt-rtt.NAME")]
 static NAME: [u8; 6] = *b"defmt\0";
 
-#[cfg(not(feature = "disable-irq-masking"))]
+#[cfg(not(feature = "drop-on-contention"))]
 struct RttEncoder {
     /// A boolean lock
     ///
@@ -148,7 +148,7 @@ struct RttEncoder {
     encoder: UnsafeCell<defmt::Encoder>,
 }
 
-#[cfg(not(feature = "disable-irq-masking"))]
+#[cfg(not(feature = "drop-on-contention"))]
 impl RttEncoder {
     /// Create a new rtt-based defmt-encoder
     const fn new() -> RttEncoder {
@@ -238,10 +238,10 @@ impl RttEncoder {
     }
 }
 
-#[cfg(feature = "disable-irq-masking")]
+#[cfg(feature = "drop-on-contention")]
 const NO_OWNER: u32 = u32::MAX;
 
-#[cfg(feature = "disable-irq-masking")]
+#[cfg(feature = "drop-on-contention")]
 struct AtomicRttEncoder {
     /// A defmt::Encoder for encoding frames
     encoder: UnsafeCell<defmt::Encoder>,
@@ -251,7 +251,7 @@ struct AtomicRttEncoder {
     cursor: UnsafeCell<usize>,
 }
 
-#[cfg(feature = "disable-irq-masking")]
+#[cfg(feature = "drop-on-contention")]
 impl AtomicRttEncoder {
     /// Create a new rtt-based defmt-encoder
     const fn new() -> AtomicRttEncoder {
@@ -284,6 +284,10 @@ impl AtomicRttEncoder {
 
         #[cfg(not(target_arch = "arm"))]
         0
+    }
+
+    fn is_owner(&self) -> bool {
+        self.owner.load(Ordering::Relaxed) == Self::current_context()
     }
 
     /// Acquire the defmt encoder.
@@ -319,9 +323,10 @@ impl AtomicRttEncoder {
     ///
     /// # Safety
     ///
-    /// Do not call unless you have called `acquire`.
+    /// No safety constraints. If this context did not become the active writer
+    /// during `acquire`, this call is ignored and the message is dropped.
     unsafe fn write(&self, bytes: &[u8]) {
-        if self.owner.load(Ordering::Relaxed) != Self::current_context() {
+        if !self.is_owner() {
             return;
         }
         unsafe {
@@ -334,8 +339,13 @@ impl AtomicRttEncoder {
     ///
     /// # Safety
     ///
-    /// Do not call unless you have called `acquire`.
+    /// No safety constraints. If this context did not become the active writer
+    /// during `acquire`, this call is ignored as part of dropping the message.
     unsafe fn flush(&self) {
+        if !self.is_owner() {
+            return;
+        }
+
         _SEGGER_RTT.up_channel.flush();
     }
 
@@ -343,11 +353,10 @@ impl AtomicRttEncoder {
     ///
     /// # Safety
     ///
-    /// Do not call unless you have called `acquire`. This will release your
-    /// lock - do not call `flush` and `write` until you have done another
-    /// `acquire`.
+    /// No safety constraints. If this context did not become the active writer
+    /// during `acquire`, this call is ignored as part of dropping the message.
     unsafe fn release(&self) {
-        if self.owner.load(Ordering::Relaxed) != Self::current_context() {
+        if !self.is_owner() {
             return;
         }
         unsafe {
@@ -386,9 +395,9 @@ impl AtomicRttEncoder {
     }
 }
 
-#[cfg(not(feature = "disable-irq-masking"))]
+#[cfg(not(feature = "drop-on-contention"))]
 unsafe impl Sync for RttEncoder {}
-#[cfg(feature = "disable-irq-masking")]
+#[cfg(feature = "drop-on-contention")]
 unsafe impl Sync for AtomicRttEncoder {}
 
 unsafe impl defmt::Logger for Logger {
