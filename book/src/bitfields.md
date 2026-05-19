@@ -1,8 +1,8 @@
 # Bitfields
 
-> `:M..N` is the bitfield formatting parameter.
+> `=M..N` is the bitfield formatting parameter.
 
-The bitfield argument is expected to be a *unsigned* integer that's large enough to contain the bitfields.
+The bitfield argument is expected to be an  *unsigned* integer that's large enough to contain the bitfields.
 For example, if bitfield ranges only cover up to bit `11` (e.g. `=8..12`) then the argument must be at least `u16`.
 
 When paired with a positional parameter it can be used to display the bitfields of a register.
