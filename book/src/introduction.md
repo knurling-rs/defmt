@@ -19,10 +19,10 @@
 
 ## Intended use
 
-In its current iteration `defmt` mainly targets tiny embedded devices that have no mean to display information to the developer, e.g. a screen.
+In its current iteration `defmt` mainly targets tiny embedded devices that have no means to display information to the developer, e.g. a screen.
 In this scenario logs need to be transferred to a second machine, usually a PC/laptop, before they can be displayed to the developer/end-user.
 
-`defmt` operating principles, however, are applicable to beefier machines and could be use to improve the logging performance of x86 web server applications and the like.
+`defmt` operating principles, however, are applicable to beefier machines and could be used to improve the logging performance of x86 web server applications and the like.
 
 ## Operating principle
 

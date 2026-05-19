@@ -10,7 +10,7 @@ To use `defmt` in an **application** you need the additional steps documented be
 
 ## For applications
 
-> 💡 The prefferred way to create a *new* `defmt` application is to use our [app-template]. Tag along if you want to add `defmt` to an *existing* application.
+> 💡 The preferred way to create a *new* `defmt` application is to use our [app-template]. Tag along if you want to add `defmt` to an *existing* application.
 
 [app-template]: https://github.com/knurling-rs/app-template
 
@@ -59,7 +59,7 @@ Information about how to write a `global_logger` can be found in the [`#[global_
 ### Enabling logging
 
 By default, only ERROR level messages are logged.
-To learn how to enable other logging levels and filters logs per modules read the [Filtering section](./filtering.md).
+To learn how to enable other logging levels and filter logs per module read the [Filtering section](./filtering.md).
 
 ### Memory use
 
