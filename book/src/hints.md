@@ -129,7 +129,7 @@ struct S { x: u8, y: u8 }
 
 impl defmt::Format for S {
     fn format(&self, f: defmt::Formatter) {
-        // `y`'s display hint cannot be overriden (see below)
+        // `y`'s display hint cannot be overridden (see below)
         defmt::write!(f, "S {{ x: {=u8}, y: {=u8:x} }}", self.x, self.y)
     }
 }
