@@ -27,3 +27,8 @@ jobs:
           missingUpdateErrorMessage: "Please add a changelog entry in the CHANGELOG.md file."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install ripgrep
+        run: sudo apt update && sudo apt install ripgrep
+      - name: Check that all the github links in CHANGELOG.md are correctly defined
+        run: ./check_changelog.sh
