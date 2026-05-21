@@ -4,5 +4,5 @@
 
 for link in `rg '\[(#\d+)\] ' CHANGELOG.md -o | sort | uniq | sed 's/\]/\\\\]/' | sed 's/\[/\\\\[/'`
 do
-    rg "${link}:" CHANGELOG.md -q || echo $link is MISSING
+    grep "${link}:" CHANGELOG.md -q || echo ${link//\\/} is MISSING a link-reference, see https://github.github.com/gfm/#shortcut-reference-link
 done
