@@ -42,8 +42,12 @@ struct Opts {
     #[arg(long, required = false)]
     arg: Vec<String>,
 
-    /// Optionally specify a custom defmt log format
-    #[arg(short = 'l', required = false, alias = "log-format")]
+    /// Optionally specify a defmt log format.
+    ///
+    /// Accepts a canned format keyword (e.g. `default`, `oneline`) or a
+    /// custom format string. See the "Custom Log Output" section of the
+    /// defmt book for the format syntax.
+    #[arg(short = 'l', long, required = false)]
     log_format: Option<String>,
 
     /// Print the version number, and quit

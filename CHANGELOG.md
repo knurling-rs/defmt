@@ -983,6 +983,8 @@ Initial release
 
 ### [qemu-run-next]
 
+* [#1060] Honor `--log-format=<format>` long flag (the clap arg only had `-l`; the `alias = "log-format"` silently no-opped without a primary `long`). Canned-format mapping was already in place via #965. ([#1034])
+
 ### [qemu-run-v0.3.0] (2026-05-12)
 
 * [#1048] Fixed UART read timeout issue ([#1047])
@@ -1018,11 +1020,13 @@ Initial release
 
 ---
 
+[#1060]: https://github.com/knurling-rs/defmt/pull/1060
 [#1055]: https://github.com/knurling-rs/defmt/pull/1055
 [#1052]: https://github.com/knurling-rs/defmt/pull/1052
 [#1049]: https://github.com/knurling-rs/defmt/pull/1049
 [#1048]: https://github.com/knurling-rs/defmt/pull/1048
 [#1047]: https://github.com/knurling-rs/defmt/pull/1047
+[#1034]: https://github.com/knurling-rs/defmt/issues/1034
 [#1046]: https://github.com/knurling-rs/defmt/pull/1046
 [#1044]: https://github.com/knurling-rs/defmt/pull/1044
 [#1041]: https://github.com/knurling-rs/defmt/pull/1041
