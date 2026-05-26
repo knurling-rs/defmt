@@ -29,6 +29,7 @@ pub(crate) fn all_snapshot_tests() -> Vec<&'static str> {
         "hints_inner",
         "dbg",
         "panic_info",
+        "drop-on-contention",
     ];
     const NIGHTLY_SNAPSHOT_TESTS: &[&str] = &["alloc"];
     const POST_MSRV_SNAPSHOT_TESTS: &[&str] = &["net"];
@@ -75,7 +76,7 @@ pub fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
         None => test_all_snapshots(overwrite),
         Some(snapshot) => {
             do_test(
-                || test_single_snapshot(snapshot.name(), "", overwrite),
+                || test_single_snapshot(snapshot.name(), snapshot_features(snapshot.name()), overwrite),
                 "qemu/snapshot",
             );
         }
@@ -84,16 +85,19 @@ pub fn test_snapshot(overwrite: bool, snapshot: Option<Snapshot>) {
 
 fn test_all_snapshots(overwrite: bool) {
     for test in all_snapshot_tests() {
-        let features = match test {
-            "alloc" => "alloc",
-            "net" => "ip_in_core",
-            _ => "",
-        };
-
         do_test(
-            || test_single_snapshot(test, features, overwrite),
+            || test_single_snapshot(test, snapshot_features(test), overwrite),
             "qemu/snapshot",
         );
+    }
+}
+
+fn snapshot_features(test: &str) -> &str {
+    match test {
+        "alloc" => "alloc",
+        "drop-on-contention" => "drop-on-contention",
+        "net" => "ip_in_core",
+        _ => "",
     }
 }
 

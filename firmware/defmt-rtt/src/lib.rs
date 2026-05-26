@@ -264,8 +264,8 @@ impl AtomicRttEncoder {
         }
     }
 
+    #[cfg(target_arch = "arm")]
     fn current_context() -> u32 {
-        #[cfg(target_arch = "arm")]
         unsafe {
             // IPSR is 0 in thread mode and otherwise the active exception
             // number. That makes it a unique owner token for bare-metal
@@ -281,9 +281,12 @@ impl AtomicRttEncoder {
             );
             ipsr
         }
+    }
 
-        #[cfg(not(target_arch = "arm"))]
-        0
+    #[cfg(not(target_arch = "arm"))]
+    fn current_context() -> u32 {
+        compile_error!("the `drop-on-contention` feature is only supported on ARM targets");
+        loop {}
     }
 
     fn is_owner(&self) -> bool {
@@ -320,12 +323,7 @@ impl AtomicRttEncoder {
     }
 
     /// Write bytes to the defmt encoder.
-    ///
-    /// # Safety
-    ///
-    /// No safety constraints. If this context did not become the active writer
-    /// during `acquire`, this call is ignored and the message is dropped.
-    unsafe fn write(&self, bytes: &[u8]) {
+    fn write(&self, bytes: &[u8]) {
         if !self.is_owner() {
             return;
         }
@@ -336,12 +334,7 @@ impl AtomicRttEncoder {
     }
 
     /// Flush the encoder.
-    ///
-    /// # Safety
-    ///
-    /// No safety constraints. If this context did not become the active writer
-    /// during `acquire`, this call is ignored as part of dropping the message.
-    unsafe fn flush(&self) {
+    fn flush(&self) {
         if !self.is_owner() {
             return;
         }
@@ -350,12 +343,7 @@ impl AtomicRttEncoder {
     }
 
     /// Release the defmt encoder.
-    ///
-    /// # Safety
-    ///
-    /// No safety constraints. If this context did not become the active writer
-    /// during `acquire`, this call is ignored as part of dropping the message.
-    unsafe fn release(&self) {
+    fn release(&self) {
         if !self.is_owner() {
             return;
         }
@@ -400,6 +388,7 @@ unsafe impl Sync for RttEncoder {}
 #[cfg(feature = "drop-on-contention")]
 unsafe impl Sync for AtomicRttEncoder {}
 
+#[cfg_attr(feature = "drop-on-contention", allow(unused_unsafe))]
 unsafe impl defmt::Logger for Logger {
     fn acquire() {
         RTT_ENCODER.acquire();
