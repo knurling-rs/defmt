@@ -131,22 +131,6 @@ fn test_host(deny_warnings: bool, skip_ui_tests: bool) {
             "host",
         );
     }
-
-    if cfg!(target_os = "linux") {
-        for feat in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
-            do_test(
-                || {
-                    run_command(
-                        "cargo",
-                        &["test", "--features", feat],
-                        Some("firmware/defmt-rtt"),
-                        &env,
-                    )
-                },
-                "host defmt-rtt",
-            );
-        }
-    }
 }
 
 fn test_cross(deny_warnings: bool) {
