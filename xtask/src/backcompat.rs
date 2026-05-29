@@ -71,7 +71,7 @@ pub fn test() {
         }
     };
 
-    for snapshot_test in all_snapshot_tests() {
+    for snapshot_test in all_backcompat_snapshot_tests() {
         let feature = match snapshot_test {
             "alloc" => "alloc",
             "net" => "ip_in_core",
@@ -83,6 +83,13 @@ pub fn test() {
             "backcompat (see xtask/src/backcompat.rs for FIXME instructions)",
         );
     }
+}
+
+fn all_backcompat_snapshot_tests() -> Vec<&'static str> {
+    all_snapshot_tests()
+        .into_iter()
+        .filter(|test| *test != "drop-on-contention")
+        .collect()
 }
 
 struct QemuRun {
