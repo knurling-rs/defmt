@@ -53,6 +53,9 @@
 
 #![no_std]
 
+#[cfg(all(feature = "drop-on-contention", not(target_arch = "arm"), not(doc)))]
+compile_error!("the `drop-on-contention` feature is only supported on ARM targets");
+
 mod channel;
 mod consts;
 
@@ -283,9 +286,13 @@ impl AtomicRttEncoder {
         }
     }
 
-    #[cfg(not(target_arch = "arm"))]
+    #[cfg(all(not(target_arch = "arm"), doc))]
     fn current_context() -> u32 {
-        compile_error!("the `drop-on-contention` feature is only supported on ARM targets");
+        NO_OWNER
+    }
+
+    #[cfg(all(not(target_arch = "arm"), not(doc)))]
+    fn current_context() -> u32 {
         loop {}
     }
 
