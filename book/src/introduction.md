@@ -36,7 +36,7 @@ At runtime the logging machine sends *indices* instead of complete strings.
 
 ## Components
 
-Fundamentally, `defmt` is comprised of multiple packages - some run on your microcontroller :pager:, some run on your host machine :computer:, and some are macros that generate code (for either of those scenarios) :construction:.
+Fundamentally, `defmt` is comprised of multiple packages - some run on your microcontroller 📟, some run on your host machine 🖥️, and some are macros that generate code (for either of those scenarios) 🚧.
 
 ### [`defmt`](https://crates.io/crates/defmt) 📟
 
