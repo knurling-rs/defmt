@@ -166,14 +166,31 @@ impl Table {
     ///
     /// This function returns `None` if the ELF file contains no `.defmt` section.
     pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-        parse_impl(elf, true)
+        parse_impl(elf, true, None)
     }
 
     /// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
     ///
     /// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage data.
     pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-        parse_impl(elf, false)
+        parse_impl(elf, false, None)
+    }
+
+    /// Parses an ELF file and returns the decoded `defmt` table.
+    ///
+    /// For ELFs without a merged `.defmt` section, `load_bias` is added to each
+    /// split `.defmt.*` symbol address before deriving the runtime frame index.
+    /// Pass the loader's virtual-memory bias for the object that contains the
+    /// defmt metadata.
+    ///
+    /// This function returns `None` if the ELF file contains no defmt metadata.
+    /// Existing merged `.defmt` sections are parsed like [`Self::parse`] and
+    /// ignore `load_bias`.
+    pub fn parse_with_load_bias(
+        elf: &[u8],
+        load_bias: u64,
+    ) -> Result<Option<Table>, anyhow::Error> {
+        parse_impl(elf, true, Some(load_bias))
     }
 
     pub fn set_timestamp_entry(&mut self, timestamp: TableEntry) {
