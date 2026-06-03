@@ -14,86 +14,43 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, ensure};
-use object::{Object, ObjectSection, ObjectSymbol, SectionIndex};
+use object::{Object, ObjectSection, ObjectSymbol};
 use serde::{Deserialize, Serialize};
 
 use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSIONS};
 
-pub(super) fn parse_impl(
-    elf: &[u8],
-    check_version: bool,
-    split_load_bias: Option<u64>,
-) -> Result<Option<Table>, anyhow::Error> {
+pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
     let elf = object::File::parse(elf)?;
-    // First pass: extract the `_defmt_version_` and `_defmt_encoding_`
-    // symbols before looking at table sections.
-    let metadata = collect_metadata(&elf)?;
-
-    if let Some(section) = elf.section_by_name(".defmt") {
-        return build_table(&elf, &[section.index()], metadata, check_version, None).map(Some);
-    }
-
-    let Some(load_bias) = split_load_bias else {
-        // NOTE: Return `Ok(None)`, not `Err`, when defmt is not in use.
-        // Otherwise probe-run won't work with apps that don't use defmt.
-        if metadata.version.is_some() {
-            bail!("defmt version found, but no `.defmt` section - check your linker configuration")
-        }
-        return Ok(None);
-    };
-
-    // Host binaries may keep defmt symbols in split sections. macOS uses
-    // `.defmt,` section names because its linker restricts section names.
-    let sections = elf
-        .sections()
-        .filter_map(|section| {
-            section
-                .name()
-                .ok()
-                .filter(|name| name.starts_with(".defmt.") || name.starts_with(".defmt,"))
-                .map(|_| section.index())
-        })
-        .collect::<Vec<_>>();
-
-    if sections.is_empty() {
-        // NOTE: Return `Ok(None)`, not `Err`, when defmt is not in use.
-        // Otherwise probe-run won't work with apps that don't use defmt.
-        if metadata.version.is_some() {
-            bail!("defmt version found, but no `.defmt` section - check your linker configuration")
-        }
-        return Ok(None);
-    }
-
-    if metadata.version.is_none() {
-        bail!("found split `.defmt.*` sections, but no defmt version symbol")
-    }
-    if metadata.encoding.is_none() {
-        bail!("found split `.defmt.*` sections, but no defmt encoding symbol")
-    }
-
-    build_table(&elf, &sections, metadata, check_version, Some(load_bias)).map(Some)
-}
-
-struct Metadata {
-    version: Option<String>,
-    encoding: Option<String>,
-}
-
-fn collect_metadata(elf: &object::File<'_>) -> Result<Metadata, anyhow::Error> {
+    // first pass to extract the `_defmt_version`
     let mut version = None;
     let mut encoding = None;
 
     // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
     // makes it keep the quotes from the linker script.
     let try_get_version = |name: &str| {
-        name.strip_prefix("\"_defmt_version_ = ")
-            .or_else(|| name.strip_prefix("_defmt_version_ = "))
-            .map(|version| version.trim_end_matches('"').to_string())
+        if name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ") {
+            Some(
+                name.trim_start_matches("\"_defmt_version_ = ")
+                    .trim_start_matches("_defmt_version_ = ")
+                    .trim_end_matches('"')
+                    .to_string(),
+            )
+        } else {
+            None
+        }
+    };
+
+    // No need to remove quotes for `_defmt_encoding_`, since it's defined in Rust code
+    // using `#[export_name = "_defmt_encoding_ = x"]`, never in linker scripts.
+    let try_get_encoding = |name: &str| {
+        name.strip_prefix("_defmt_encoding_ = ")
+            .map(ToString::to_string)
     };
 
     for entry in elf.symbols() {
-        let Ok(name) = entry.name() else {
-            continue;
+        let name = match entry.name() {
+            Ok(name) => name,
+            Err(_) => continue,
         };
 
         // Not in the `.defmt` section because it's not tied to the address of any symbol
@@ -109,12 +66,7 @@ fn collect_metadata(elf: &object::File<'_>) -> Result<Metadata, anyhow::Error> {
             version = Some(new_version);
         }
 
-        // No need to remove quotes for `_defmt_encoding_`, since it's defined in Rust code
-        // using `#[export_name = "_defmt_encoding_ = x"]`, never in linker scripts.
-        if let Some(new_encoding) = name
-            .strip_prefix("_defmt_encoding_ = ")
-            .map(ToString::to_string)
-        {
+        if let Some(new_encoding) = try_get_encoding(name) {
             if let Some(encoding) = encoding {
                 return Err(anyhow!(
                     "multiple defmt encodings in use: {} and {} (only one is supported)",
@@ -126,32 +78,49 @@ fn collect_metadata(elf: &object::File<'_>) -> Result<Metadata, anyhow::Error> {
         }
     }
 
-    Ok(Metadata { version, encoding })
-}
+    // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
+    // Otherwise probe-run won't work with apps that don't use defmt.
 
-fn build_table(
-    elf: &object::File<'_>,
-    sections: &[SectionIndex],
-    metadata: Metadata,
-    check_version: bool,
-    split_load_bias: Option<u64>,
-) -> Result<Table, anyhow::Error> {
-    let Some(version) = metadata.version else {
-        bail!("`.defmt` section found, but no version symbol - check your linker configuration");
+    // Host binaries may keep defmt symbols in split sections. macOS uses
+    // `.defmt,` section names because its linker restricts section names.
+    let sections = elf
+        .sections()
+        .filter_map(|section| {
+            section
+                .name()
+                .ok()
+                .filter(|name| {
+                    *name == ".defmt" || name.starts_with(".defmt.") || name.starts_with(".defmt,")
+                })
+                .map(|_| section.index())
+        })
+        .collect::<Vec<_>>();
+
+    if sections.is_empty() {
+        if version.is_none() {
+            return Ok(None); // defmt is not used
+        }
+        bail!(
+            "defmt version found, but no `.defmt` metadata section - check your linker configuration"
+        );
+    }
+    let Some(version) = version else {
+        bail!("found `.defmt` metadata sections, but no defmt version symbol");
     };
+
     if check_version {
         self::check_version(&version).map_err(anyhow::Error::msg)?;
     }
-    let encoding = match metadata.encoding {
+    let encoding = match encoding {
         Some(e) => e.parse()?,
         None => bail!("No defmt encoding specified. This is a bug."),
     };
 
+    // second pass to demangle symbols
     let mut map = BTreeMap::new();
     let mut collisions = BTreeSet::new();
     let mut bitflags_map = HashMap::new();
     let mut timestamp = None;
-    // second pass to demangle symbols
     for entry in elf.symbols() {
         let Ok(name) = entry.name() else {
             continue;
@@ -204,18 +173,8 @@ fn build_table(
                     }
 
                     let section = elf.section_by_index(section_index)?;
-                    let bytes = if split_load_bias.is_some() {
-                        // Split sections use normal virtual addresses.
-                        section.data_range(entry.address(), BITFLAGS_VALUE_SIZE)?
-                    } else {
-                        // The embedded linker script makes `.defmt` an INFO
-                        // section whose symbol values are table offsets.
-                        let offset = entry.address() as usize;
-                        section
-                            .data()?
-                            .get(offset..offset + BITFLAGS_VALUE_SIZE as usize)
-                    };
-                    let value = match bytes {
+                    let addr = entry.address();
+                    let value = match section.data_range(addr, BITFLAGS_VALUE_SIZE)? {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
                             "bitflags value at {:#x} outside of defmt section",
@@ -246,31 +205,26 @@ fn build_table(
                     ));
                 }
                 symbol::SymbolTag::Defmt(tag) => {
+                    let index = entry.address() as u16 as usize;
+                    if collisions.contains(&index) {
+                        log::warn!(
+                            "defmt frame index collision at {index:#06x}; omitting symbol `{name}`"
+                        );
+                        continue;
+                    }
+
                     let table_entry = TableEntry::new(
                         StringEntry::new(tag, sym.data().to_string()),
                         name.to_string(),
                     );
-                    if let Some(load_bias) = split_load_bias {
-                        let index = entry.address().wrapping_add(load_bias) as u16 as usize;
-                        if collisions.contains(&index) {
-                            log::warn!(
-                                "defmt frame index collision at {index:#06x}; omitting symbol `{name}`"
-                            );
-                            continue;
-                        }
-
-                        if let Some(old) = map.insert(index, table_entry) {
-                            map.remove(&index);
-                            collisions.insert(index);
-                            // Keep a tombstone for ambiguous indices so later
-                            // symbols cannot reuse them.
-                            log::warn!(
-                                "defmt frame index collision at {index:#06x}; omitting symbols `{}` and `{name}`",
-                                old.raw_symbol
-                            );
-                        }
-                    } else {
-                        map.insert(entry.address() as usize, table_entry);
+                    if let Some(old) = map.insert(index, table_entry) {
+                        map.remove(&index);
+                        collisions.insert(index);
+                        // Keep a tombstone for ambiguous indices so later symbols cannot reuse them.
+                        log::warn!(
+                            "defmt frame index collision at {index:#06x}; omitting symbols `{}` and `{name}`",
+                            old.raw_symbol
+                        );
                     }
                 }
                 symbol::SymbolTag::Custom(_) => {}
@@ -294,12 +248,12 @@ fn build_table(
         })
         .collect();
 
-    Ok(Table {
+    Ok(Some(Table {
         entries: map,
         timestamp,
         bitflags,
         encoding,
-    })
+    }))
 }
 
 /// Checks if the version encoded in the symbol table is compatible with this version of the `decoder` crate
@@ -335,8 +289,8 @@ pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
     let object = object::File::parse(elf)?;
-    // Consumers look up locations by decoded frame index. Split tables use the
-    // final load-biased u16 index.
+    // Consumers look up locations by decoded frame index. Link locations by raw
+    // symbol name so merged and split tables use the same table indices.
     let symbol_frame_indices = table
         .entries
         .iter()
@@ -408,6 +362,12 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                 let mut decl_line = None; // line number
                 let mut name = None;
                 let mut linkage_name = None;
+                // Do not use DW_AT_location here. Rust emits these as
+                // `#[export_name] static DEFMT_LOG_STATEMENT`, and the symbol
+                // table is the decoder's source of truth for the final u16
+                // frame index. Raw linkage names let embedded merged tables,
+                // host split tables, and biased host frames share the same
+                // location mapping.
 
                 while let Some(attr) = attrs.next()? {
                     match attr.name() {
@@ -531,14 +491,27 @@ mod tests {
     }
 
     fn split_elf_with_data(symbols: impl IntoIterator<Item = (u64, String, Vec<u8>)>) -> Vec<u8> {
+        elf_with_named_sections(
+            symbols
+                .into_iter()
+                .enumerate()
+                .map(|(index, (address, name, data))| {
+                    (format!(".defmt.{index}"), address, name, data)
+                }),
+        )
+    }
+
+    fn elf_with_named_sections(
+        symbols: impl IntoIterator<Item = (String, u64, String, Vec<u8>)>,
+    ) -> Vec<u8> {
         let mut object =
             WriteObject::new(BinaryFormat::Elf, Architecture::X86_64, Endianness::Little);
         object.add_file_symbol(b"split-defmt-test".to_vec());
 
-        for (index, (address, name, data)) in symbols.into_iter().enumerate() {
+        for (section_name, address, name, data) in symbols {
             let section = object.add_section(
                 Vec::new(),
-                format!(".defmt.{index}").into_bytes(),
+                section_name.into_bytes(),
                 object::SectionKind::ReadOnlyData,
             );
             object.set_section_data(section, data.clone(), 1);
@@ -583,16 +556,45 @@ mod tests {
     }
 
     #[test]
-    fn split_table_uses_load_bias() {
+    fn split_table_uses_symbol_address_index() {
         let elf = split_elf([(0x20, log_symbol("hello", "a"))]);
-        let table = parse_impl(&elf, true, Some(3)).unwrap().unwrap();
+        let table = parse_impl(&elf, true).unwrap().unwrap();
         let mut frame = Vec::new();
-        frame.write_u16::<LittleEndian>(0x23).unwrap();
+        frame.write_u16::<LittleEndian>(0x20).unwrap();
 
         let (frame, consumed) = table.decode(&frame).unwrap();
         assert_eq!(consumed, 2);
-        assert_eq!(frame.index(), 0x23);
+        assert_eq!(frame.index(), 0x20);
         assert_eq!(frame.display_message().to_string(), "hello");
+    }
+
+    #[test]
+    fn defmt_metadata_sections_are_gathered_by_name() {
+        let elf = elf_with_named_sections([
+            (".defmt".to_string(), 0, log_symbol("merged", "a"), vec![0]),
+            (".defmt.1".to_string(), 1, log_symbol("split", "b"), vec![0]),
+            (
+                ".defmt,macos".to_string(),
+                2,
+                log_symbol("macos", "c"),
+                vec![0],
+            ),
+        ]);
+        let table = parse_impl(&elf, true).unwrap().unwrap();
+
+        for (index, message) in [(0, "merged"), (1, "split"), (2, "macos")] {
+            let mut frame = Vec::new();
+            frame.write_u16::<LittleEndian>(index).unwrap();
+            assert_eq!(
+                table
+                    .decode(&frame)
+                    .unwrap()
+                    .0
+                    .display_message()
+                    .to_string(),
+                message
+            );
+        }
     }
 
     #[test]
@@ -602,12 +604,16 @@ mod tests {
             (0x1_0000, log_symbol("second", "b")),
             (0x2_0000, log_symbol("third", "c")),
         ]);
-        let table = parse_impl(&elf, true, Some(0)).unwrap().unwrap();
+        let table = parse_impl(&elf, true).unwrap().unwrap();
         let mut frame = Vec::new();
         frame.write_u16::<LittleEndian>(0).unwrap();
 
         assert!(table.indices().next().is_none());
         assert_eq!(table.decode(&frame), Err(crate::DecodeError::Malformed));
+        assert_eq!(
+            table.decode_with_bias(&[3, 0], 3),
+            Err(crate::DecodeError::Malformed)
+        );
     }
 
     #[test]
@@ -618,7 +624,7 @@ mod tests {
             bitflags_value_symbol("Flags::0::A"),
             value.to_le_bytes().to_vec(),
         )]);
-        let table = parse_impl(&elf, true, Some(0)).unwrap().unwrap();
+        let table = parse_impl(&elf, true).unwrap().unwrap();
         let values = table.bitflags.values().next().unwrap();
 
         assert_eq!(values, &[("A".to_string(), value)]);

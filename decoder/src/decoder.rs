@@ -9,12 +9,13 @@ use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
 pub(crate) struct Decoder<'t, 'b> {
     table: &'t Table,
+    bias: u16,
     pub bytes: &'b [u8],
 }
 
 impl<'t, 'b> Decoder<'t, 'b> {
-    pub fn new(table: &'t Table, bytes: &'b [u8]) -> Self {
-        Self { table, bytes }
+    pub fn new(table: &'t Table, bytes: &'b [u8], bias: u16) -> Self {
+        Self { table, bias, bytes }
     }
 
     /// Sort and deduplicate `params` so that they can be interpreted correctly during decoding
@@ -29,7 +30,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
 
     /// Gets a format string from `bytes` and `table`
     fn get_format(&mut self) -> Result<&'t str, DecodeError> {
-        let index = self.bytes.read_u16::<LE>()? as usize;
+        let index = self.bytes.read_u16::<LE>()?.wrapping_sub(self.bias) as usize;
         let format = self
             .table
             .get_without_level(index)

@@ -166,31 +166,14 @@ impl Table {
     ///
     /// This function returns `None` if the ELF file contains no `.defmt` section.
     pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-        parse_impl(elf, true, None)
+        parse_impl(elf, true)
     }
 
     /// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
     ///
     /// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage data.
     pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-        parse_impl(elf, false, None)
-    }
-
-    /// Parses an ELF file and returns the decoded `defmt` table.
-    ///
-    /// For ELFs without a merged `.defmt` section, `load_bias` is added to each
-    /// split `.defmt.*` symbol address before deriving the runtime frame index.
-    /// Pass the loader's virtual-memory bias for the object that contains the
-    /// defmt metadata.
-    ///
-    /// This function returns `None` if the ELF file contains no defmt metadata.
-    /// Existing merged `.defmt` sections are parsed like [`Self::parse`] and
-    /// ignore `load_bias`.
-    pub fn parse_with_load_bias(
-        elf: &[u8],
-        load_bias: u64,
-    ) -> Result<Option<Table>, anyhow::Error> {
-        parse_impl(elf, true, Some(load_bias))
+        parse_impl(elf, false)
     }
 
     pub fn set_timestamp_entry(&mut self, timestamp: TableEntry) {
@@ -245,12 +228,21 @@ impl Table {
     ///   * contains the [log string index, timestamp, optional fmt string args]
     pub fn decode<'t>(
         &'t self,
+        bytes: &[u8],
+    ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
+        self.decode_with_bias(bytes, 0)
+    }
+
+    /// Like [`Self::decode`], but subtracts `bias` from each raw u16 table index.
+    pub fn decode_with_bias<'t>(
+        &'t self,
         mut bytes: &[u8],
+        bias: u16,
     ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
         let len = bytes.len();
-        let index = bytes.read_u16::<LE>()? as u64;
+        let index = bytes.read_u16::<LE>()?.wrapping_sub(bias) as u64;
 
-        let mut decoder = Decoder::new(self, bytes);
+        let mut decoder = Decoder::new(self, bytes, bias);
 
         let mut timestamp_format = None;
         let mut timestamp_args = Vec::new();
@@ -476,6 +468,31 @@ mod tests {
     }
 
     #[test]
+    fn decode_with_bias() {
+        let table = test_table([TableEntry::new_without_symbol(
+            Tag::Info,
+            "Hello, world!".to_owned(),
+        )]);
+        let bytes = [3, 0];
+
+        assert_eq!(
+            table.decode_with_bias(&bytes, 3),
+            Ok((
+                Frame::new(
+                    &table,
+                    Some(Level::Info),
+                    0,
+                    None,
+                    vec![],
+                    "Hello, world!",
+                    vec![],
+                ),
+                bytes.len(),
+            ))
+        );
+    }
+
+    #[test]
     fn all_integers() {
         const FMT: &str =
             "Hello, {=u8} {=u16} {=u32} {=u64} {=u128} {=i8} {=i16} {=i32} {=i64} {=i128}!";
@@ -600,6 +617,31 @@ mod tests {
 
         assert_eq!(
             table.decode(&bytes),
+            Ok((
+                Frame::new(
+                    &table,
+                    Some(Level::Info),
+                    0,
+                    None,
+                    vec![],
+                    "x={=?}",
+                    vec![Arg::Format {
+                        format: "Foo {{ x: {=u8} }}",
+                        args: vec![Arg::Uxx(42)]
+                    }],
+                ),
+                bytes.len(),
+            ))
+        );
+
+        let bytes = [
+            3, 0, // biased index
+            4, 0,  // biased index of the struct
+            42, // Foo.x
+        ];
+
+        assert_eq!(
+            table.decode_with_bias(&bytes, 3),
             Ok((
                 Frame::new(
                     &table,

@@ -616,7 +616,7 @@ Initial release
 
 ### [defmt-decoder-next]
 
-* [#1066] Add support for parsing split defmt tables with load bias
+* [#1066] Add support for parsing split defmt tables and decoding biased frame indices
 
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
