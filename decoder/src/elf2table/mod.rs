@@ -284,18 +284,20 @@ impl fmt::Debug for Location {
     }
 }
 
-/// Mapping of decoded defmt frame index to [`Location`]
+/// Mapping of decoded defmt frame index to [`Location`].
+///
+/// For merged tables the symbol address is the table offset,
+/// so address and frame index coincide. Consumers look up
+/// locations by decoded frame index.
 pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
-    let object = object::File::parse(elf)?;
-    // Consumers look up locations by decoded frame index. Link locations by raw
-    // symbol name so merged and split tables use the same table indices.
     let symbol_frame_indices = table
         .entries
         .iter()
         .map(|(index, entry)| (entry.raw_symbol.as_str(), *index as u64))
         .collect::<HashMap<_, _>>();
+    let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
     } else {
@@ -362,12 +364,6 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                 let mut decl_line = None; // line number
                 let mut name = None;
                 let mut linkage_name = None;
-                // Do not use DW_AT_location here. Rust emits these as
-                // `#[export_name] static DEFMT_LOG_STATEMENT`, and the symbol
-                // table is the decoder's source of truth for the final u16
-                // frame index. Raw linkage names let embedded merged tables,
-                // host split tables, and biased host frames share the same
-                // location mapping.
 
                 while let Some(attr) = attrs.next()? {
                     match attr.name() {
@@ -404,8 +400,12 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                     let linkage_name = core::str::from_utf8(&linkage_name_slice)?;
 
                     if name == "DEFMT_LOG_STATEMENT" {
-                        // DWARF may still mention defmt symbols that the linker
-                        // garbage-collected. Link locations by raw symbol name.
+                        // Do not use DW_AT_location here. Rust emits these as
+                        // `#[export_name] static DEFMT_LOG_STATEMENT`, and the symbol
+                        // table is the decoder's source of truth for the final u16
+                        // frame index. Raw linkage names let embedded merged tables,
+                        // host split tables, and biased host frames share the same
+                        // location mapping.
                         if let Some(index) = symbol_frame_indices.get(linkage_name) {
                             let file = file_index_to_path(file_index, &unit, &dwarf)?;
                             let module = segments.join("::");
