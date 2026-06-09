@@ -157,7 +157,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     }
 
                     let defmt_data = defmt_section.data()?;
-                    let addr = entry.address() as usize;
+                    let addr = (entry.address() - defmt_section.address()) as usize;
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
@@ -190,7 +190,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 }
                 symbol::SymbolTag::Defmt(tag) => {
                     map.insert(
-                        entry.address() as usize,
+                        (entry.address() - defmt_section.address()) as usize,
                         TableEntry::new(
                             StringEntry::new(tag, sym.data().to_string()),
                             name.to_string(),
