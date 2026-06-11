@@ -616,6 +616,8 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1066] Add support for parsing split defmt tables and decoding biased frame indices
+
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
@@ -1019,6 +1021,7 @@ Initial release
 
 ---
 
+[#1066]: https://github.com/knurling-rs/defmt/pull/1066
 [#1053]: https://github.com/knurling-rs/defmt/pull/1053
 [#1055]: https://github.com/knurling-rs/defmt/pull/1055
 [#1052]: https://github.com/knurling-rs/defmt/pull/1052

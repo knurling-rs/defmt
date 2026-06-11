@@ -228,12 +228,21 @@ impl Table {
     ///   * contains the [log string index, timestamp, optional fmt string args]
     pub fn decode<'t>(
         &'t self,
+        bytes: &[u8],
+    ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
+        self.decode_with_bias(bytes, 0)
+    }
+
+    /// Like [`Self::decode`], but subtracts `bias` from each raw u16 table index.
+    pub fn decode_with_bias<'t>(
+        &'t self,
         mut bytes: &[u8],
+        bias: u16,
     ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
         let len = bytes.len();
-        let index = bytes.read_u16::<LE>()? as u64;
+        let index = bytes.read_u16::<LE>()?.wrapping_sub(bias) as u64;
 
-        let mut decoder = Decoder::new(self, bytes);
+        let mut decoder = Decoder::new(self, bytes, bias);
 
         let mut timestamp_format = None;
         let mut timestamp_args = Vec::new();
@@ -583,6 +592,31 @@ mod tests {
 
         assert_eq!(
             table.decode(&bytes),
+            Ok((
+                Frame::new(
+                    &table,
+                    Some(Level::Info),
+                    0,
+                    None,
+                    vec![],
+                    "x={=?}",
+                    vec![Arg::Format {
+                        format: "Foo {{ x: {=u8} }}",
+                        args: vec![Arg::Uxx(42)]
+                    }],
+                ),
+                bytes.len(),
+            ))
+        );
+
+        let bytes = [
+            3, 0, // biased index
+            4, 0,  // biased index of the struct
+            42, // Foo.x
+        ];
+
+        assert_eq!(
+            table.decode_with_bias(&bytes, 3),
             Ok((
                 Frame::new(
                     &table,
