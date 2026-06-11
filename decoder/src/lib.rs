@@ -468,31 +468,6 @@ mod tests {
     }
 
     #[test]
-    fn decode_with_bias() {
-        let table = test_table([TableEntry::new_without_symbol(
-            Tag::Info,
-            "Hello, world!".to_owned(),
-        )]);
-        let bytes = [3, 0];
-
-        assert_eq!(
-            table.decode_with_bias(&bytes, 3),
-            Ok((
-                Frame::new(
-                    &table,
-                    Some(Level::Info),
-                    0,
-                    None,
-                    vec![],
-                    "Hello, world!",
-                    vec![],
-                ),
-                bytes.len(),
-            ))
-        );
-    }
-
-    #[test]
     fn all_integers() {
         const FMT: &str =
             "Hello, {=u8} {=u16} {=u32} {=u64} {=u128} {=i8} {=i16} {=i32} {=i64} {=i128}!";

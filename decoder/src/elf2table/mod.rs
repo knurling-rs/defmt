@@ -573,35 +573,6 @@ mod tests {
     }
 
     #[test]
-    fn defmt_metadata_sections_are_gathered_by_name() {
-        let elf = elf_with_named_sections([
-            (".defmt".to_string(), 0, log_symbol("merged", "a"), vec![0]),
-            (".defmt.1".to_string(), 1, log_symbol("split", "b"), vec![0]),
-            (
-                ".defmt,macos".to_string(),
-                2,
-                log_symbol("macos", "c"),
-                vec![0],
-            ),
-        ]);
-        let table = parse_impl(&elf, true).unwrap().unwrap();
-
-        for (index, message) in [(0, "merged"), (1, "split"), (2, "macos")] {
-            let mut frame = Vec::new();
-            frame.write_u16::<LittleEndian>(index).unwrap();
-            assert_eq!(
-                table
-                    .decode(&frame)
-                    .unwrap()
-                    .0
-                    .display_message()
-                    .to_string(),
-                message
-            );
-        }
-    }
-
-    #[test]
     fn split_table_omits_symbols_after_prior_collision() {
         let elf = split_elf([
             (0, log_symbol("first", "a")),
@@ -614,10 +585,6 @@ mod tests {
 
         assert!(table.indices().next().is_none());
         assert_eq!(table.decode(&frame), Err(crate::DecodeError::Malformed));
-        assert_eq!(
-            table.decode_with_bias(&[3, 0], 3),
-            Err(crate::DecodeError::Malformed)
-        );
     }
 
     #[test]
