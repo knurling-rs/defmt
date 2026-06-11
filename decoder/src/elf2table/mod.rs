@@ -205,6 +205,10 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     ));
                 }
                 symbol::SymbolTag::Defmt(tag) => {
+                    // The wire format carries `&symbol as *const u8 as u16`, so
+                    // keep the low bits of the final symbol address. This also
+                    // covers merged `.defmt` sections with non-zero base
+                    // addresses when the base is aligned accordingly.
                     let index = entry.address() as u16 as usize;
                     if collisions.contains(&index) {
                         log::warn!(
