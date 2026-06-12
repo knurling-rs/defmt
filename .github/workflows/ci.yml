@@ -27,7 +27,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set Rust version
         uses: ./.github/actions/update-rust
         with:
@@ -46,7 +46,7 @@ jobs:
           - "1.76" # firmware MSRV
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set Rust version
         uses: ./.github/actions/update-rust
         with:
@@ -62,7 +62,7 @@ jobs:
           - "1.76" # firmware MSRV
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set Rust version
         uses: ./.github/actions/update-rust
         with:
@@ -80,7 +80,7 @@ jobs:
     # Prevent sudden announcement of a new advisory from failing ci:
     continue-on-error: ${{ matrix.checks == 'advisories' }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - uses: EmbarkStudios/cargo-deny-action@v2
       with:
         command: check ${{ matrix.checks }}
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set Rust version
         uses: ./.github/actions/update-rust
         with:
@@ -111,7 +111,7 @@ jobs:
           - "1.83" # host MSRV
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set Rust version
         uses: ./.github/actions/update-rust
         with:
@@ -128,7 +128,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set Rust version
         uses: ./.github/actions/update-rust
         with:
@@ -150,7 +150,7 @@ jobs:
           - nightly
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Use the latest ${{ matrix.toolchain }} release
         uses: ./.github/actions/update-rust
         with:
@@ -170,7 +170,7 @@ jobs:
           - "1.83" # host MSRV
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set Rust version
