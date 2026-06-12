@@ -1,6 +1,5 @@
 use defmt_parser::ParserMode;
 use proc_macro::TokenStream;
-use proc_macro_error2::abort;
 use quote::quote;
 use syn::{parse_macro_input, parse_quote};
 
@@ -20,7 +19,11 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     let format_string = log_args.format_string.value();
     let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
         Ok(args) => args,
-        Err(e) => abort!(log_args.format_string, "{}", e),
+        Err(e) => {
+            return syn::Error::new(log_args.format_string.span(), format!("{}", e))
+                .into_compile_error()
+                .into()
+        }
     };
 
     let formatting_exprs: Vec<_> = log_args
@@ -28,11 +31,14 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         .map(|punctuated| punctuated.into_iter().collect())
         .unwrap_or_default();
 
-    let log::Codegen { patterns, exprs } = log::Codegen::new(
+    let log::Codegen { patterns, exprs } = match log::Codegen::new(
         &fragments,
         formatting_exprs.len(),
         log_args.format_string.span(),
-    );
+    ) {
+        Ok(val) => val,
+        Err(err) => return err.into_compile_error().into(),
+    };
 
     let format_tag =
         construct::interned_string(&format_string, "write", false, None, &parse_quote!(defmt));

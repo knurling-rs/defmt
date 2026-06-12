@@ -1,6 +1,4 @@
 use defmt_parser::Level;
-#[cfg(not(test))]
-use proc_macro_error2::abort_call_site as panic;
 use std::fmt;
 use syn::Ident;
 

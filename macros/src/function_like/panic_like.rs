@@ -24,13 +24,16 @@ pub(crate) fn expand(
     };
 
     let format_string = construct::string_literal(&format_string);
-    let log_stmt = log::expand_parsed(
+    let log_stmt = match log::expand_parsed(
         Level::Error,
         log::Args {
             format_string,
             formatting_args,
         },
-    );
+    ) {
+        Ok(log_stmt) => log_stmt,
+        Err(err) => return err.into_compile_error().into(),
+    };
 
     quote!(
         {
