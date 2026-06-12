@@ -1,5 +1,4 @@
-use proc_macro2::TokenStream as TokenStream2;
-use proc_macro_error2::abort_call_site;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{DataEnum, Ident};
 
@@ -25,7 +24,7 @@ pub(crate) fn encode(
 
     let mut match_arms = vec![];
     let mut is_first_variant = true;
-    let discriminant_encoder = DiscriminantEncoder::new(data.variants.len());
+    let discriminant_encoder = DiscriminantEncoder::new(data.variants.len())?;
     let enum_ident = ident;
     for (index, variant) in data.variants.iter().enumerate() {
         let variant_ident = &variant.ident;
@@ -79,23 +78,26 @@ enum DiscriminantEncoder {
 }
 
 impl DiscriminantEncoder {
-    fn new(number_of_variants: usize) -> Self {
+    fn new(number_of_variants: usize) -> syn::Result<Self> {
         if number_of_variants == 1 {
-            Self::Nop
+            Ok(Self::Nop)
         } else if number_of_variants <= usize::from(u8::MAX) {
-            Self::U8
+            Ok(Self::U8)
         } else if number_of_variants <= usize::from(u16::MAX) {
-            Self::U16
+            Ok(Self::U16)
         } else if number_of_variants as u128 > u128::from(u64::MAX) {
             // unreachable on existing hardware?
-            abort_call_site!(
-                "`#[derive(Format)]` does not support enums with more than {} variants",
-                number_of_variants
-            )
+            Err(syn::Error::new(
+                Span::call_site(),
+                format!(
+                    "`#[derive(Format)]` does not support enums with more than {} variants",
+                    number_of_variants
+                ),
+            ))
         } else if number_of_variants as u64 <= u64::from(u32::MAX) {
-            Self::U32
+            Ok(Self::U32)
         } else {
-            Self::U64
+            Ok(Self::U64)
         }
     }
 

@@ -1,21 +1,28 @@
 use proc_macro::TokenStream;
-use proc_macro_error2::{abort, abort_call_site};
+use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, Attribute, ItemFn, ReturnType, Type};
+use syn::{parse_macro_input, spanned::Spanned, Attribute, ItemFn, ReturnType, Type};
 
 pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
-    if !args.is_empty() {
-        abort_call_site!("`#[defmt::panic_handler]` attribute takes no arguments");
-    }
-
     let fun = parse_macro_input!(item as ItemFn);
 
-    validate(&fun);
+    if !args.is_empty() {
+        return syn::Error::new(
+            Span::call_site(),
+            "`#[defmt::panic_handler]` attribute takes no arguments",
+        )
+        .into_compile_error()
+        .into();
+    }
+
+    if let Err(err) = validate(&fun) {
+        return err.into_compile_error().into();
+    };
 
     codegen(&fun)
 }
 
-fn validate(fun: &ItemFn) {
+fn validate(fun: &ItemFn) -> syn::Result<()> {
     let is_divergent = match &fun.sig.output {
         ReturnType::Default => false,
         ReturnType::Type(_, ty) => matches!(&**ty, Type::Never(_)),
@@ -31,10 +38,13 @@ fn validate(fun: &ItemFn) {
         || !fun.sig.inputs.is_empty()
         || !is_divergent
     {
-        abort!(fun.sig.ident, "function must have signature `fn() -> !`");
+        return Err(syn::Error::new(
+            fun.sig.ident.span(),
+            "function must have signature `fn() -> !`",
+        ));
     }
 
-    check_for_attribute_conflicts("panic_handler", &fun.attrs, &["export_name", "no_mangle"]);
+    check_for_attribute_conflicts("panic_handler", &fun.attrs, &["export_name", "no_mangle"])
 }
 
 /// Checks if any attribute in `attrs_to_check` is in `reject_list` and returns a compiler error if there's a match
@@ -44,21 +54,23 @@ fn check_for_attribute_conflicts(
     attr_name: &str,
     attrs_to_check: &[Attribute],
     reject_list: &[&str],
-) {
+) -> syn::Result<()> {
     for attr in attrs_to_check {
         if let Some(ident) = attr.path().get_ident() {
             let ident = ident.to_string();
 
             if reject_list.contains(&ident.as_str()) {
-                abort!(
-                    attr,
-                    "`#[{}]` attribute cannot be used together with `#[{}]`",
-                    attr_name,
-                    ident
-                )
+                return Err(syn::Error::new(
+                    attr.span(),
+                    format!(
+                        "`#[{}]` attribute cannot be used together with `#[{}]`",
+                        attr_name, ident
+                    ),
+                ));
             }
         }
     }
+    Ok(())
 }
 
 fn codegen(fun: &ItemFn) -> TokenStream {

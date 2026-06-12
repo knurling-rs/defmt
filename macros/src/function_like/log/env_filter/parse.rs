@@ -1,6 +1,5 @@
 use defmt_parser::Level;
-#[cfg(not(test))]
-use proc_macro_error2::abort_call_site as panic;
+use proc_macro2::Span;
 use std::fmt;
 use syn::Ident;
 
@@ -14,29 +13,32 @@ pub(crate) struct ModulePath {
 }
 
 /// Parses the contents of the `DEFMT_LOG` env var
-pub(crate) fn defmt_log(input: &str) -> impl Iterator<Item = Entry> + '_ {
+pub(crate) fn defmt_log(input: &str) -> impl Iterator<Item = syn::Result<Entry>> + '_ {
     input
         .rsplit(',')
         .filter(|entry| !entry.is_empty())
         .map(|entry| {
             if let Some((path, log_level)) = entry.rsplit_once('=') {
                 let module_path = ModulePath::parse(path);
-                let log_level = parse_log_level(log_level).unwrap_or_else(|_| {
-                    panic!(
-                        "unknown log level `{}` in DEFMT_LOG env var. \
-                     expected one of: off, error, info, warn, debug, trace",
-                        log_level
-                    )
-                });
+                let Ok(log_level) = parse_log_level(log_level) else {
+                    return Err(syn::Error::new(
+                        Span::call_site(),
+                        format!(
+                            "unknown log level `{}` in DEFMT_LOG env var. \
+                            expected one of: off, error, info, warn, debug, trace",
+                            log_level
+                        ),
+                    ));
+                };
 
-                Entry::ModulePathLogLevel {
+                Ok(Entry::ModulePathLogLevel {
                     module_path,
                     log_level,
-                }
+                })
             } else if let Ok(log_level) = parse_log_level(entry) {
-                Entry::LogLevel(log_level)
+                Ok(Entry::LogLevel(log_level))
             } else {
-                Entry::ModulePath(ModulePath::parse(entry))
+                Ok(Entry::ModulePath(ModulePath::parse(entry)))
             }
         })
 }
@@ -112,8 +114,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_from_the_right() {
-        let entries = defmt_log("krate=info,krate,info").collect::<Vec<_>>();
+    fn parses_from_the_right() -> syn::Result<()> {
+        let entries = defmt_log("krate=info,krate,info").collect::<syn::Result<Vec<_>>>()?;
         assert_eq!(
             [
                 Entry::LogLevel(Some(Level::Info)),
@@ -129,6 +131,7 @@ mod tests {
             ],
             entries.as_slice()
         );
+        Ok(())
     }
 
     #[test]
@@ -167,18 +170,20 @@ mod tests {
     #[case::with_level("krate::some-module=info")]
     #[should_panic = "not a valid identifier"]
     fn rejects_invalid_identifier(#[case] input: &str) {
-        defmt_log(input).next();
+        defmt_log(input).collect::<syn::Result<Vec<_>>>().unwrap();
     }
 
     #[test]
     #[should_panic = "unknown log level"]
     fn rejects_unknown_log_level() {
-        defmt_log("krate=module").next();
+        defmt_log("krate=module")
+            .collect::<syn::Result<Vec<_>>>()
+            .unwrap();
     }
 
     #[test]
     #[should_panic = "module path cannot be an empty string"]
     fn rejects_empty_module_path() {
-        defmt_log("=info").next();
+        defmt_log("=info").collect::<syn::Result<Vec<_>>>().unwrap();
     }
 }
