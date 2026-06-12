@@ -16,6 +16,7 @@ mod ops;
 mod panic;
 mod ptr;
 mod slice;
+mod str;
 
 use super::*;
 use crate::export;
