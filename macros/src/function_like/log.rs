@@ -1,7 +1,6 @@
 use defmt_parser::{Level, ParserMode};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use proc_macro_error2::abort;
 use quote::quote;
 use syn::{parse_macro_input, parse_quote};
 
@@ -15,14 +14,16 @@ mod codegen;
 mod env_filter;
 
 pub(crate) fn expand(level: Level, args: TokenStream) -> TokenStream {
-    expand_parsed(level, parse_macro_input!(args as Args)).into()
+    expand_parsed(level, parse_macro_input!(args as Args))
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
-pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
+pub(crate) fn expand_parsed(level: Level, args: Args) -> syn::Result<TokenStream2> {
     let format_string = args.format_string.value();
     let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
         Ok(args) => args,
-        Err(e) => abort!(args.format_string, "{}", e),
+        Err(e) => return Err(syn::Error::new(args.format_string.span(), format!("{}", e))),
     };
 
     let formatting_exprs = args
@@ -34,7 +35,7 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
         &fragments,
         formatting_exprs.len(),
         args.format_string.span(),
-    );
+    )?;
 
     let header = construct::interned_string(
         &format_string,
@@ -43,7 +44,7 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
         Some(level.as_str()),
         &parse_quote!(defmt),
     );
-    let env_filter = EnvFilter::from_env_var();
+    let env_filter = EnvFilter::from_env_var()?;
 
     let content = if exprs.is_empty() {
         quote!(
@@ -61,7 +62,7 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
 
     let filter_check = env_filter.path_check(level).unwrap_or(quote!(false));
 
-    quote!(
+    Ok(quote!(
         {
             option_env!("DEFMT_LOG");
             match (#(&(#formatting_exprs)),*) {
@@ -72,5 +73,5 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> TokenStream2 {
                 }
             }
         }
-    )
+    ))
 }

@@ -59,6 +59,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#1070] Swap from `proc-macro-error2` to `syn::Error`
+
 ### [defmt-v1.1.0] (2026-05-12)
 
 * [#974] Ensure typechecking is still performed on disabled log statement.
@@ -1019,6 +1021,7 @@ Initial release
 
 ---
 
+[#1070]: https://github.com/knurling-rs/defmt/pull/1070
 [#1053]: https://github.com/knurling-rs/defmt/pull/1053
 [#1055]: https://github.com/knurling-rs/defmt/pull/1055
 [#1052]: https://github.com/knurling-rs/defmt/pull/1052

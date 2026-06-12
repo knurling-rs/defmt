@@ -4,8 +4,7 @@ use std::{
 };
 
 use defmt_parser::Level;
-use proc_macro2::TokenStream as TokenStream2;
-use proc_macro_error2::abort_call_site;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 
 use self::parse::{Entry, LogLevelOrOff, ModulePath};
@@ -19,11 +18,15 @@ pub(crate) struct EnvFilter {
 }
 
 impl EnvFilter {
-    pub(crate) fn from_env_var() -> Self {
+    pub(crate) fn from_env_var() -> syn::Result<Self> {
         let defmt_log = env::var("DEFMT_LOG").ok();
-        let cargo_crate_name = env::var("CARGO_CRATE_NAME")
-            .unwrap_or_else(|_| abort_call_site!("`CARGO_CRATE_NAME` env var is not set"));
-        Self::new(defmt_log.as_deref(), &cargo_crate_name)
+        let Ok(cargo_crate_name) = env::var("CARGO_CRATE_NAME") else {
+            return Err(syn::Error::new(
+                Span::call_site(),
+                "`CARGO_CRATE_NAME` env var is not set",
+            ));
+        };
+        Ok(Self::new(defmt_log.as_deref(), &cargo_crate_name))
     }
 
     fn new(defmt_log: Option<&str>, cargo_crate_name: &str) -> Self {

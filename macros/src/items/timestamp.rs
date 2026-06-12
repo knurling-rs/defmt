@@ -1,6 +1,5 @@
 use defmt_parser::ParserMode;
 use proc_macro::TokenStream;
-use proc_macro_error2::abort;
 use quote::format_ident;
 use quote::quote;
 use syn::parse_macro_input;
@@ -14,7 +13,11 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
 
     let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
         Ok(args) => args,
-        Err(e) => abort!(args.format_string, "{}", e),
+        Err(e) => {
+            return syn::Error::new(args.format_string.span(), format!("{}", e))
+                .into_compile_error()
+                .into()
+        }
     };
 
     let formatting_exprs: Vec<_> = args
@@ -22,11 +25,14 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         .map(|punctuated| punctuated.into_iter().collect())
         .unwrap_or_default();
 
-    let log::Codegen { patterns, exprs } = log::Codegen::new(
+    let log::Codegen { patterns, exprs } = match log::Codegen::new(
         &fragments,
         formatting_exprs.len(),
         args.format_string.span(),
-    );
+    ) {
+        Ok(val) => val,
+        Err(err) => return err.into_compile_error().into(),
+    };
 
     let var_name = format_ident!("S");
     let var_item = construct::static_variable(&var_name, &format_string, "timestamp", None);
