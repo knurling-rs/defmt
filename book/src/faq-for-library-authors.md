@@ -6,10 +6,19 @@ This page will help you understand what `defmt` is and how to integrate it into 
 
 ## What is `defmt`?
 
-`defmt` is a library to efficiently send logs from an embedded device to a host computer.
+`defmt` is a logging framework for deferred formatting on resource-constrained embedded devices.
+It provides a familiar logging API while staying cheap enough for microcontrollers.
+
+`defmt` gets its efficiency from:
+- deferred string interpolation: the program on the microcontroller sends compact binary data, and the host formats it later.
+- string interning: format strings don't end up on the microcontroller and are not sent with each log frame.
+- compact encoding and compression: useful logs can fit through bandwidth-constrained channels.
+- no allocations: formatting does not need runtime allocation on the target.
+- no reliance on `core::fmt`: `Format` implementations encode values directly, avoiding expensive string formatting on the target and reducing both runtime overhead and flash usage.
+
 For more details, see [Introduction](./introduction.md).
-It does this by separating compile-time information (format strings) from runtime information (values interpolated into format strings).
-Types implement `Format` so defmt can encode their values.
+
+Types implement `Format` so `defmt` can encode their values.
 If you want your library to support `defmt`, public types that users may log should implement this trait.
 
 ## Should my library support `defmt`?
@@ -77,7 +86,7 @@ struct MyStruct {  }
 #[cfg(feature = "defmt")]
 impl defmt::Format for MyStruct {  }
 
-// If you prefer less feature-gate clutter, group defmt-specific implementations
+// To reduce feature-gate clutter, group defmt-specific implementations
 # struct MyOtherStruct {  }
 #
 #[cfg(feature = "defmt")]
@@ -99,7 +108,7 @@ If the type you want to implement `Format` for contains types controlled by a th
 1. If the third-party crate also has `defmt` support, consider making your `defmt` feature enable its `defmt` feature.
 1. If they don't support `defmt` yet, consider asking them to add it.
 1. Write a [`Format`](./format.md#manual-implementation-with-write) implementation and print information retrieved from the inner type manually.
-1. Use one of the [uncompressed adapters](./format.md#uncompressed-adapters); only recommended as a last resort since these bypass `defmt`'s efficiency features.
+1. Use one of the [uncompressed adapters](./format.md#uncompressed-adapters); use as a last resort since these bypass `defmt`'s efficiency features.
 
 ## How can I test my `defmt` support?
 
