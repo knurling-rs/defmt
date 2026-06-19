@@ -27,7 +27,7 @@ We recommend adding `defmt` support if your library:
 - targets embedded users or supports `no_std`
 - exposes types that users commonly inspect in logs or debug output.
 
-## Does `Format` replace `Debug` or `Display`?
+## How does `Format` compare to `Debug` or `Display`?
 
 - [core::fmt::Display](https://doc.rust-lang.org/core/fmt/trait.Display.html)
 
