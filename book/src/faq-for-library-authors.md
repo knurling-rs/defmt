@@ -10,15 +10,13 @@ This page will help you understand what `defmt` is and how to integrate it into 
 For more details, see [Introduction](./introduction.md).
 It does this by separating compile-time information (format strings) from runtime information (values interpolated into format strings).
 Types implement `Format` so defmt can encode their values.
-If you want your library to support `defmt`, your public types should implement this trait.
+If you want your library to support `defmt`, public types that users may log should implement this trait.
 
 ## Should my library support `defmt`?
 
 We recommend adding `defmt` support if your library:
 - targets embedded users or supports `no_std`
-- exposes types that implement `Debug` or would implement `Debug` if the crate was not aimed at embedded.
-
-While `defmt`'s main goal is to enable efficient logging in an embedded context, support for higher level platforms and standard library support is likely in the future.
+- exposes types that users commonly inspect in logs or debug output.
 
 ## Does `Format` replace `Debug` or `Display`?
 
@@ -68,17 +66,22 @@ defmt = { version = "1", optional = true }
 defmt = ["dep:defmt"]
 ```
 
-Depending on your codebase, you may want to use one of the following patterns:
+Depending on your codebase, we suggest using the following patterns:
 
 ```rust
+// For feature gating derives
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct MyStruct { .. }
 
+// For manual implementations
 #[cfg(feature = "defmt")]
 impl defmt::Format for MyStruct { .. }
 
 #[cfg(feature = "defmt")]
-mod defmt;
+mod defmt {
+    impl defmt::Format for MyStruct { .. }
+    impl defmt::Format for MyOtherStruct { .. }
+}
 ```
 
 ## Which `defmt` version should I depend on?
@@ -93,8 +96,7 @@ If the type you want to implement `Format` for contains types controlled by a th
 1. If the third-party crate also has `defmt` support, consider making your `defmt` feature enable its `defmt` feature.
 1. If they don't support `defmt` yet, consider asking them to add it.
 1. Write a [`Format`](./format.md#manual-implementation-with-write) implementation and print information retrieved from the inner type manually.
-1. Use one of the [uncompressed adapters](./format.md#uncompressed-adapters);
-   Only recommended as a last resort since these bypass the efficiency features of `defmt`.
+1. Use one of the [uncompressed adapters](./format.md#uncompressed-adapters); only recommended as a last resort since these bypass `defmt`'s efficiency features.
 
 ## How can I test my `defmt` support?
 
