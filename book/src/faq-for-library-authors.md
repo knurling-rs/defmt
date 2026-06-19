@@ -96,21 +96,18 @@ If the type you want to implement `Format` for contains types controlled by a th
 1. Use one of the [uncompressed adapters](./format.md#uncompressed-adapters);
    Only recommended as a last resort since these bypass the efficiency features of `defmt`.
 
-## How can I test `defmt` support?
+## How can I test my `defmt` support?
 
-For most libraries implementing `defmt`, it should be sufficient to test whether compilation is successful with the `defmt` feature enabled.
-This is especially true if you don't have any manual `Format` implementations.
+For most libraries, compile-checking with the `defmt` feature enabled is enough.
+This is especially true if you only derive `Format`.
+
+Because `defmt` support may not compile for your host system, test with an embedded target:
 
 ```sh
-cargo check --features defmt
+cargo check --target thumbv7m-none-eabi --features defmt
 ```
 
-### Runtime smoke tests
+If you write manual `Format` implementations, keep non-formatting logic in normal helper functions and unit-test those separately.
 
-If your `Format` implementation calls complex helper methods, test those individually.
-Running defmt code on Linux/Mac/Windows is currently not supported.
-
-### Testing exact output
-
-If you want to ensure your custom `Format` implementations produce the exact strings you intend, one option is to use [qemu-run](https://crates.io/crates/qemu-run) to execute a cross-compiled binary through [QEMU](https://www.qemu.org/).
-Note that this is usually not necessary unless you consider exact formatted log strings part of your public API.
+Testing exact formatted output usually is not necessary unless you treat that output as part of your public API.
+If you need it, run a small cross-compiled binary through [QEMU](https://www.qemu.org/), for example with [`qemu-run`](https://crates.io/crates/qemu-run).
