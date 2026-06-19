@@ -71,17 +71,19 @@ Depending on your codebase, we suggest using the following patterns:
 ```rust
 // For feature gating derives
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct MyStruct { .. }
+struct MyStruct {  }
 
 // For manual implementations
 #[cfg(feature = "defmt")]
-impl defmt::Format for MyStruct { .. }
+impl defmt::Format for MyStruct {  }
 
 // If you prefer less feature-gate clutter, group defmt-specific implementations
+# struct MyOtherStruct {  }
+#
 #[cfg(feature = "defmt")]
 mod defmt {
-    impl defmt::Format for MyStruct { .. }
-    impl defmt::Format for MyOtherStruct { .. }
+    impl defmt::Format for MyStruct {  }
+    impl defmt::Format for MyOtherStruct {  }
 }
 ```
 
