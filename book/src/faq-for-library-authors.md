@@ -107,14 +107,8 @@ cargo check --features defmt
 
 ### Runtime smoke tests
 
-If your `Format` implementation calls helper methods, test those individually.
-
-Alternatively, you can call `defmt::println!` on the type in your test.
-In that case make sure to register a dummy [global logger](./global-logger.md) to avoid linker errors.
-
-```sh
-cargo test --features defmt
-```
+If your `Format` implementation calls complex helper methods, test those individually.
+Running defmt code on Linux/Mac/Windows is currently not supported.
 
 ### Testing exact output
 
