@@ -77,6 +77,7 @@ struct MyStruct { .. }
 #[cfg(feature = "defmt")]
 impl defmt::Format for MyStruct { .. }
 
+// If you prefer less feature-gate clutter, group defmt-specific implementations
 #[cfg(feature = "defmt")]
 mod defmt {
     impl defmt::Format for MyStruct { .. }
