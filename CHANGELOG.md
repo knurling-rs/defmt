@@ -6,7 +6,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 # Cargo Workspaces
-
 * [#1011] Add a Cargo.lock to the root workspace to support reproducible binary crate builds such as `defmt-print`. Resolves [#1000]
 
 # Packages
@@ -984,6 +983,8 @@ Initial release
 
 ### [qemu-run-next]
 
+* [#1035] Specifying the `--verbose` / `-v` option now also prints the actual QEMU command being run.
+
 ### [qemu-run-v0.3.0] (2026-05-12)
 
 * [#1048] Fixed UART read timeout issue ([#1047])
@@ -1029,6 +1030,7 @@ Initial release
 [#1044]: https://github.com/knurling-rs/defmt/pull/1044
 [#1041]: https://github.com/knurling-rs/defmt/pull/1041
 [#1036]: https://github.com/knurling-rs/defmt/pull/1036
+[#1035]: https://github.com/knurling-rs/defmt/pull/1035
 [#1028]: https://github.com/knurling-rs/defmt/pull/1028
 [#1022]: https://github.com/knurling-rs/defmt/pull/1022
 [#1013]: https://github.com/knurling-rs/defmt/pull/1013
