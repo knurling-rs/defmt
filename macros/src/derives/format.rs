@@ -2,7 +2,10 @@ use codegen::DefmtAttr;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, Arm, Data, DeriveInput, Generics, Ident, WhereClause};
+use syn::{
+    parse_macro_input, parse_quote, spanned::Spanned, Arm, Data, DeriveInput, Generics, Ident,
+    WhereClause,
+};
 
 mod codegen;
 
@@ -100,11 +103,11 @@ pub(crate) fn expand_transparent(
                 let one_or_less = fields.next().is_none();
                 let Some(field) = field.filter(|_| one_or_less) else {
                     return Err(syn::Error::new(
-                        Span::call_site(),
+                        v.fields.span(),
                         format!(
                             "Transparent format can only be applied \
                             when all variants have exactly one field (got {})",
-                            fields.len(),
+                            v.fields.len(),
                         ),
                     ));
                 };
