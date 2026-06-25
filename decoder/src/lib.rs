@@ -161,6 +161,65 @@ pub struct Table {
     encoding: Encoding,
 }
 
+/// Options for building a [`DecodeIndex`].
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct DecodeOptions {
+    address_bias: u64,
+}
+
+impl Default for DecodeOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DecodeOptions {
+    pub const fn new() -> Self {
+        Self { address_bias: 0 }
+    }
+
+    /// Add `address_bias` when mapping table indices into the wire index namespace.
+    pub const fn address_bias(mut self, address_bias: u64) -> Self {
+        self.address_bias = address_bias;
+        self
+    }
+}
+
+/// Reusable index for decoding frames whose wire indices differ from table indices.
+pub struct DecodeIndex {
+    entries: Option<HashMap<u16, Option<usize>>>,
+}
+
+impl DecodeIndex {
+    fn new(table: &Table, options: DecodeOptions) -> Self {
+        let mut entries = HashMap::new();
+
+        for &index in table.entries.keys() {
+            let wire_index = (index as u64).wrapping_add(options.address_bias) as u16;
+
+            entries
+                .entry(wire_index)
+                .and_modify(|entry| *entry = None)
+                .or_insert(Some(index));
+        }
+
+        Self {
+            entries: Some(entries),
+        }
+    }
+
+    fn read_raw(&self, bytes: &mut &[u8]) -> Result<u16, DecodeError> {
+        Ok(bytes.read_u16::<LE>()?)
+    }
+
+    fn resolve(&self, index: u16) -> Option<usize> {
+        match &self.entries {
+            None => Some(index.into()),
+            Some(entries) => entries.get(&index).copied().flatten(),
+        }
+    }
+}
+
 impl Table {
     /// Parses an ELF file and returns the decoded `defmt` table.
     ///
@@ -228,12 +287,28 @@ impl Table {
     ///   * contains the [log string index, timestamp, optional fmt string args]
     pub fn decode<'t>(
         &'t self,
+        bytes: &[u8],
+    ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
+        self.decode_with_index(bytes, &DecodeIndex { entries: None })
+    }
+
+    /// Build a reusable index for decoding frames.
+    pub fn new_decode_index(&self, options: DecodeOptions) -> DecodeIndex {
+        DecodeIndex::new(self, options)
+    }
+
+    /// Decode the data sent by the device using a reusable index.
+    pub fn decode_with_index<'t>(
+        &'t self,
         mut bytes: &[u8],
+        index: &DecodeIndex,
     ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
         let len = bytes.len();
-        let index = bytes.read_u16::<LE>()? as u64;
+        let frame_index = index
+            .resolve(index.read_raw(&mut bytes)?)
+            .ok_or(DecodeError::Malformed)?;
 
-        let mut decoder = Decoder::new(self, bytes);
+        let mut decoder = Decoder::new(self, bytes, index);
 
         let mut timestamp_format = None;
         let mut timestamp_args = Vec::new();
@@ -244,7 +319,7 @@ impl Table {
         }
 
         let (level, format) = self
-            .get_with_level(index as usize)
+            .get_with_level(frame_index)
             .map_err(|_| DecodeError::Malformed)?;
 
         let args = decoder.decode_format(format)?;
@@ -252,7 +327,7 @@ impl Table {
         let frame = Frame::new(
             self,
             level,
-            index,
+            frame_index as u64,
             timestamp_format,
             timestamp_args,
             format,
@@ -599,6 +674,34 @@ mod tests {
                 bytes.len(),
             ))
         );
+
+        let bytes = [
+            3, 0, // wire index for the frame
+            4, 0,  // wire index for the struct
+            42, // Foo.x
+        ];
+        let index = table.new_decode_index(DecodeOptions::new().address_bias(3));
+
+        let frame = table.decode_with_index(&bytes, &index).unwrap().0;
+        assert_eq!(frame.index(), 0);
+        assert_eq!(frame.display_message().to_string(), "x=Foo { x: 42 }");
+    }
+
+    #[test]
+    fn decode_index_supports_interned_strings() {
+        let table = test_table(vec![
+            TableEntry::new_without_symbol(Tag::Info, "name={=istr}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Str, "alice".to_owned()),
+        ]);
+        let bytes = [
+            3, 0, // wire index for the frame
+            4, 0, // wire index for the interned string
+        ];
+        let index = table.new_decode_index(DecodeOptions::new().address_bias(3));
+
+        let frame = table.decode_with_index(&bytes, &index).unwrap().0;
+        assert_eq!(frame.index(), 0);
+        assert_eq!(frame.display_message().to_string(), "name=alice");
     }
 
     #[test]
@@ -651,6 +754,56 @@ mod tests {
                 ),
                 bytes.len(),
             ))
+        );
+
+        let bytes = [
+            4, 0, // wire index for the frame
+            5, 0, // wire index for Foo
+            6, 0,  // wire index for Bar
+            42, // bar.x
+            7, 0,  // wire index for State
+            23, // State variable
+            0, 0, // terminator
+        ];
+        let index = table.new_decode_index(DecodeOptions::new().address_bias(4));
+
+        let frame = table.decode_with_index(&bytes, &index).unwrap().0;
+        assert_eq!(frame.index(), 0);
+        assert_eq!(frame.display_message().to_string(), "FooBar(42)State 23|");
+    }
+
+    #[test]
+    fn decode_index_rejects_colliding_wire_indices() {
+        let table = Table {
+            timestamp: None,
+            entries: [
+                (
+                    0,
+                    TableEntry::new_without_symbol(Tag::Info, "zero".to_owned()),
+                ),
+                (
+                    1,
+                    TableEntry::new_without_symbol(Tag::Info, "one".to_owned()),
+                ),
+                (
+                    0x1_0000,
+                    TableEntry::new_without_symbol(Tag::Info, "also zero".to_owned()),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            bitflags: Default::default(),
+            encoding: Encoding::Raw,
+        };
+        let index = table.new_decode_index(DecodeOptions::new());
+
+        assert_eq!(
+            table.decode_with_index(&[0, 0], &index),
+            Err(DecodeError::Malformed)
+        );
+        assert_eq!(
+            table.decode_with_index(&[1, 0], &index).unwrap().0.index(),
+            1
         );
     }
 
