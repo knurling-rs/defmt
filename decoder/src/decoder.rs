@@ -3,18 +3,23 @@ use std::{
     ops::Range,
 };
 
-use crate::{Arg, DecodeError, FormatSliceElement, Table};
+use crate::{Arg, DecodeError, DecodeIndex, FormatSliceElement, Table};
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
-pub(crate) struct Decoder<'t, 'b> {
+pub(crate) struct Decoder<'t, 'b, 'i> {
     table: &'t Table,
+    index: &'i DecodeIndex,
     pub bytes: &'b [u8],
 }
 
-impl<'t, 'b> Decoder<'t, 'b> {
-    pub fn new(table: &'t Table, bytes: &'b [u8]) -> Self {
-        Self { table, bytes }
+impl<'t, 'b, 'i> Decoder<'t, 'b, 'i> {
+    pub fn new(table: &'t Table, bytes: &'b [u8], index: &'i DecodeIndex) -> Self {
+        Self {
+            table,
+            index,
+            bytes,
+        }
     }
 
     /// Sort and deduplicate `params` so that they can be interpreted correctly during decoding
@@ -27,9 +32,15 @@ impl<'t, 'b> Decoder<'t, 'b> {
         params.dedup_by(|a, b| a.index == b.index);
     }
 
+    fn read_index(&mut self) -> Result<usize, DecodeError> {
+        self.index
+            .resolve(self.index.read_raw(&mut self.bytes)?)
+            .ok_or(DecodeError::Malformed)
+    }
+
     /// Gets a format string from `bytes` and `table`
     fn get_format(&mut self) -> Result<&'t str, DecodeError> {
-        let index = self.bytes.read_u16::<LE>()? as usize;
+        let index = self.read_index()?;
         let format = self
             .table
             .get_without_level(index)
@@ -182,7 +193,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Str(arg_str));
                 }
                 Type::IStr => {
-                    let str_index = self.bytes.read_u16::<LE>()? as usize;
+                    let str_index = self.read_index()?;
 
                     let string = self
                         .table
@@ -236,10 +247,11 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::FormatSequence => {
                     let mut seq_args = Vec::new();
                     loop {
-                        let index = self.bytes.read_u16::<LE>()? as usize;
+                        let index = self.index.read_raw(&mut self.bytes)?;
                         if index == 0 {
                             break;
                         }
+                        let index = self.index.resolve(index).ok_or(DecodeError::Malformed)?;
 
                         let format = self
                             .table
