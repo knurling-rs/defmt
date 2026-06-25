@@ -161,36 +161,9 @@ pub struct Table {
     encoding: Encoding,
 }
 
-/// Integer type used to encode wire indices in a defmt frame.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum IndexType {
-    /// A 16-bit little-endian wire index.
-    U16,
-    /// A 32-bit little-endian wire index.
-    U32,
-    /// A 64-bit little-endian wire index.
-    U64,
-}
-
-impl IndexType {
-    const fn bits(self) -> u32 {
-        match self {
-            Self::U16 => 16,
-            Self::U32 => 32,
-            Self::U64 => 64,
-        }
-    }
-}
-
-const DEFAULT_INDEX_TYPE: IndexType = IndexType::U16;
-const DEFAULT_MODULO_BITS: u32 = 16;
-
 /// Options for building a [`DecodeIndex`].
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct DecodeOptions {
-    index_type: IndexType,
-    modulo_bits: u32,
     address_bias: u64,
 }
 
@@ -202,23 +175,7 @@ impl Default for DecodeOptions {
 
 impl DecodeOptions {
     pub const fn new() -> Self {
-        Self {
-            index_type: DEFAULT_INDEX_TYPE,
-            modulo_bits: DEFAULT_MODULO_BITS,
-            address_bias: 0,
-        }
-    }
-
-    /// Set the integer type used to read wire indices from frame data.
-    pub fn index_type(mut self, index_type: IndexType) -> Self {
-        self.index_type = index_type;
-        self
-    }
-
-    /// Set the number of low bits used to map table indices to wire indices.
-    pub fn modulo_bits(mut self, modulo_bits: u32) -> Self {
-        self.modulo_bits = modulo_bits;
-        self
+        Self { address_bias: 0 }
     }
 
     /// Add `address_bias` when mapping table indices into the wire index namespace.
@@ -226,40 +183,19 @@ impl DecodeOptions {
         self.address_bias = address_bias;
         self
     }
-
-    fn index_mask(self) -> u64 {
-        assert!(
-            (1..=self.index_type.bits()).contains(&self.modulo_bits),
-            "defmt index modulo bits must fit the encoded index type"
-        );
-
-        if self.modulo_bits == 64 {
-            u64::MAX
-        } else {
-            (1u64 << self.modulo_bits) - 1
-        }
-    }
 }
 
 /// Reusable index for decoding frames whose wire indices differ from table indices.
 pub struct DecodeIndex {
-    index_type: IndexType,
-    mask: u64,
-    entries: DecodeIndexEntries,
-}
-
-enum DecodeIndexEntries {
-    Direct,
-    Mapped(HashMap<u64, Option<usize>>),
+    entries: Option<HashMap<u16, Option<usize>>>,
 }
 
 impl DecodeIndex {
     fn new(table: &Table, options: DecodeOptions) -> Self {
         let mut entries = HashMap::new();
-        let mask = options.index_mask();
 
         for &index in table.entries.keys() {
-            let wire_index = (index as u64).wrapping_add(options.address_bias) & mask;
+            let wire_index = (index as u64).wrapping_add(options.address_bias) as u16;
 
             entries
                 .entry(wire_index)
@@ -268,25 +204,18 @@ impl DecodeIndex {
         }
 
         Self {
-            index_type: options.index_type,
-            mask,
-            entries: DecodeIndexEntries::Mapped(entries),
+            entries: Some(entries),
         }
     }
 
-    fn read_raw(&self, bytes: &mut &[u8]) -> Result<u64, DecodeError> {
-        match self.index_type {
-            IndexType::U16 => Ok(bytes.read_u16::<LE>()?.into()),
-            IndexType::U32 => Ok(bytes.read_u32::<LE>()?.into()),
-            IndexType::U64 => Ok(bytes.read_u64::<LE>()?),
-        }
+    fn read_raw(&self, bytes: &mut &[u8]) -> Result<u16, DecodeError> {
+        Ok(bytes.read_u16::<LE>()?)
     }
 
-    fn resolve(&self, index: u64) -> Option<usize> {
-        let index = index & self.mask;
+    fn resolve(&self, index: u16) -> Option<usize> {
         match &self.entries {
-            DecodeIndexEntries::Direct => index.try_into().ok(),
-            DecodeIndexEntries::Mapped(entries) => entries.get(&index).copied().flatten(),
+            None => Some(index.into()),
+            Some(entries) => entries.get(&index).copied().flatten(),
         }
     }
 }
@@ -360,15 +289,7 @@ impl Table {
         &'t self,
         bytes: &[u8],
     ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
-        let options = DecodeOptions::new();
-        self.decode_with_index(
-            bytes,
-            &DecodeIndex {
-                index_type: options.index_type,
-                mask: options.index_mask(),
-                entries: DecodeIndexEntries::Direct,
-            },
-        )
+        self.decode_with_index(bytes, &DecodeIndex { entries: None })
     }
 
     /// Build a reusable index for decoding frames.
@@ -514,15 +435,6 @@ mod tests {
         Table {
             timestamp: None,
             entries: entries.into_iter().enumerate().collect(),
-            bitflags: Default::default(),
-            encoding: Encoding::Raw,
-        }
-    }
-
-    fn test_table_with_indices(entries: impl IntoIterator<Item = (usize, TableEntry)>) -> Table {
-        Table {
-            timestamp: None,
-            entries: entries.into_iter().collect(),
             bitflags: Default::default(),
             encoding: Encoding::Raw,
         }
@@ -862,20 +774,27 @@ mod tests {
 
     #[test]
     fn decode_index_rejects_colliding_wire_indices() {
-        let table = test_table_with_indices([
-            (
-                0,
-                TableEntry::new_without_symbol(Tag::Info, "zero".to_owned()),
-            ),
-            (
-                1,
-                TableEntry::new_without_symbol(Tag::Info, "one".to_owned()),
-            ),
-            (
-                0x1_0000,
-                TableEntry::new_without_symbol(Tag::Info, "also zero".to_owned()),
-            ),
-        ]);
+        let table = Table {
+            timestamp: None,
+            entries: [
+                (
+                    0,
+                    TableEntry::new_without_symbol(Tag::Info, "zero".to_owned()),
+                ),
+                (
+                    1,
+                    TableEntry::new_without_symbol(Tag::Info, "one".to_owned()),
+                ),
+                (
+                    0x1_0000,
+                    TableEntry::new_without_symbol(Tag::Info, "also zero".to_owned()),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            bitflags: Default::default(),
+            encoding: Encoding::Raw,
+        };
         let index = table.new_decode_index(DecodeOptions::new());
 
         assert_eq!(
@@ -886,25 +805,6 @@ mod tests {
             table.decode_with_index(&[1, 0], &index).unwrap().0.index(),
             1
         );
-    }
-
-    #[test]
-    fn decode_index_separates_index_type_from_modulo() {
-        let table = test_table_with_indices([(
-            0x1_0000,
-            TableEntry::new_without_symbol(Tag::Info, "wide".to_owned()),
-        )]);
-        let index = table.new_decode_index(
-            DecodeOptions::new()
-                .modulo_bits(24)
-                .index_type(IndexType::U32),
-        );
-        let bytes = [0, 0, 1, 0xff];
-
-        let (frame, consumed) = table.decode_with_index(&bytes, &index).unwrap();
-        assert_eq!(consumed, bytes.len());
-        assert_eq!(frame.index(), 0x1_0000);
-        assert_eq!(frame.display_message().to_string(), "wide");
     }
 
     #[test]
