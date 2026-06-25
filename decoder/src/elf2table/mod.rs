@@ -81,25 +81,33 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
     // Otherwise probe-run won't work with apps that don't use defmt.
 
-    let defmt_section = elf.section_by_name(".defmt");
+    // Host binaries may keep defmt symbols in unmerged sections.
+    let sections = elf
+        .sections()
+        .filter_map(|section| {
+            section
+                .name()
+                .ok()
+                .filter(|name| *name == ".defmt" || name.starts_with(".defmt."))
+                .map(|_| section.index())
+        })
+        .collect::<Vec<_>>();
 
-    let (defmt_section, version) = match (defmt_section, version) {
-        (None, None) => return Ok(None), // defmt is not used
-        (Some(defmt_section), Some(version)) => (defmt_section, version),
-        (None, Some(_)) => {
-            bail!("defmt version found, but no `.defmt` section - check your linker configuration");
+    if sections.is_empty() {
+        if version.is_none() {
+            return Ok(None); // defmt is not used
         }
-        (Some(_), None) => {
-            bail!(
-                "`.defmt` section found, but no version symbol - check your linker configuration"
-            );
-        }
+        bail!(
+            "defmt version found, but no `.defmt` metadata section - check your linker configuration"
+        );
+    }
+    let Some(version) = version else {
+        bail!("found `.defmt` metadata sections, but no defmt version symbol");
     };
 
     if check_version {
         self::check_version(&version).map_err(anyhow::Error::msg)?;
     }
-
     let encoding = match encoding {
         Some(e) => e.parse()?,
         None => bail!("No defmt encoding specified. This is a bug."),
@@ -132,7 +140,11 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             continue;
         }
 
-        if entry.section_index() == Some(defmt_section.index()) {
+        let Some(section_index) = entry.section_index() else {
+            continue;
+        };
+
+        if sections.contains(&section_index) {
             let sym = symbol::Symbol::demangle(name)?;
             match sym.tag() {
                 symbol::SymbolTag::Defmt(Tag::Timestamp) => {
@@ -156,9 +168,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                         );
                     }
 
-                    let defmt_data = defmt_section.data()?;
-                    let addr = entry.address() as usize;
-                    let value = match defmt_data.get(addr..addr + 16) {
+                    let section = elf.section_by_index(section_index)?;
+                    let addr = entry.address();
+                    let value = match section.data_range(addr, BITFLAGS_VALUE_SIZE)? {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
                             "bitflags value at {:#x} outside of defmt section",
@@ -254,10 +266,17 @@ impl fmt::Debug for Location {
     }
 }
 
-/// Mapping of memory address to [`Location`]
+/// Mapping of resolved defmt frame index to [`Location`].
+///
+/// Keys match [`crate::Table`] entries and [`crate::Frame::index`].
 pub type Locations = BTreeMap<u64, Location>;
 
 pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
+    let symbol_table_indices = table
+        .entries
+        .iter()
+        .map(|(index, entry)| (entry.raw_symbol.as_str(), *index as u64))
+        .collect::<HashMap<_, _>>();
     let object = object::File::parse(elf)?;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
@@ -325,7 +344,6 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                 let mut decl_line = None; // line number
                 let mut name = None;
                 let mut linkage_name = None;
-                let mut location = None;
 
                 while let Some(attr) = attrs.next()? {
                     match attr.name() {
@@ -344,11 +362,6 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                                 decl_line = Some(line);
                             }
                         }
-                        gimli::constants::DW_AT_location => {
-                            if let gimli::AttributeValue::Exprloc(loc) = attr.value() {
-                                location = Some(loc);
-                            }
-                        }
                         gimli::constants::DW_AT_linkage_name => {
                             if let gimli::AttributeValue::DebugStrRef(off) = attr.value() {
                                 linkage_name = Some(off);
@@ -358,13 +371,8 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                     }
                 }
 
-                if let (
-                    Some(name_index),
-                    Some(linkage_name_index),
-                    Some(file_index),
-                    Some(line),
-                    Some(loc),
-                ) = (name, linkage_name, decl_file, decl_line, location)
+                if let (Some(name_index), Some(linkage_name_index), Some(file_index), Some(line)) =
+                    (name, linkage_name, decl_file, decl_line)
                 {
                     let name_slice = dwarf.string(name_index)?;
                     let name = core::str::from_utf8(&name_slice)?;
@@ -372,19 +380,22 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                     let linkage_name = core::str::from_utf8(&linkage_name_slice)?;
 
                     if name == "DEFMT_LOG_STATEMENT" {
-                        if table.raw_symbols().any(|i| i == linkage_name) {
-                            let addr = exprloc2address(unit.encoding(), &loc)?;
+                        // Do not use DW_AT_location here. Rust emits these as
+                        // `#[export_name] static DEFMT_LOG_STATEMENT`; raw linkage
+                        // names let merged and unmerged sections share the same
+                        // location mapping.
+                        if let Some(index) = symbol_table_indices.get(linkage_name) {
                             let file = file_index_to_path(file_index, &unit, &dwarf)?;
                             let module = segments.join("::");
 
                             let loc = Location { file, line, module };
 
-                            if let Some(old) = map.insert(addr, loc.clone()) {
-                                bail!("BUG in DWARF variable filter: index collision for addr 0x{:08x} (old = {:?}, new = {:?})", addr, old, loc);
+                            if let Some(old) = map.insert(*index, loc.clone()) {
+                                bail!("BUG in DWARF variable filter: index collision for frame index 0x{:x} (old = {:?}, new = {:?})", index, old, loc);
                             }
                         } else {
                             // this symbol was GC-ed by the linker (but remains in the DWARF info)
-                            // so we discard it (its `addr` info is also wrong which causes collisions)
+                            // so we discard it
                         }
                     }
                 }
@@ -440,18 +451,114 @@ where
     Ok(p)
 }
 
-fn exprloc2address<R: gimli::read::Reader<Offset = usize>>(
-    encoding: gimli::Encoding,
-    data: &gimli::Expression<R>,
-) -> Result<u64, anyhow::Error> {
-    let mut pc = data.0.clone();
-    while pc.len() != 0 {
-        if let Ok(gimli::Operation::Address { address }) =
-            gimli::Operation::parse(&mut pc, encoding)
-        {
-            return Ok(address);
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use byteorder::{LittleEndian, WriteBytesExt};
+    use object::{
+        write::{Object as WriteObject, Symbol, SymbolSection},
+        Architecture, BinaryFormat, Endianness, SymbolFlags, SymbolKind, SymbolScope,
+    };
+
+    fn unmerged_elf(symbols: impl IntoIterator<Item = (u64, String)>) -> Vec<u8> {
+        unmerged_elf_with_data(
+            symbols
+                .into_iter()
+                .map(|(address, name)| (address, name, vec![0])),
+        )
     }
 
-    Err(anyhow!("`Operation::Address` not found"))
+    fn unmerged_elf_with_data(
+        symbols: impl IntoIterator<Item = (u64, String, Vec<u8>)>,
+    ) -> Vec<u8> {
+        elf_with_named_sections(
+            symbols
+                .into_iter()
+                .enumerate()
+                .map(|(index, (address, name, data))| {
+                    (format!(".defmt.{index}"), address, name, data)
+                }),
+        )
+    }
+
+    fn elf_with_named_sections(
+        symbols: impl IntoIterator<Item = (String, u64, String, Vec<u8>)>,
+    ) -> Vec<u8> {
+        let mut object =
+            WriteObject::new(BinaryFormat::Elf, Architecture::X86_64, Endianness::Little);
+        object.add_file_symbol(b"unmerged-defmt-test".to_vec());
+
+        for (section_name, address, name, data) in symbols {
+            let section = object.add_section(
+                Vec::new(),
+                section_name.into_bytes(),
+                object::SectionKind::ReadOnlyData,
+            );
+            object.set_section_data(section, data.clone(), 1);
+            object.add_symbol(Symbol {
+                name: name.as_bytes().to_vec(),
+                value: address,
+                size: data.len() as u64,
+                kind: SymbolKind::Data,
+                scope: SymbolScope::Linkage,
+                weak: false,
+                section: SymbolSection::Section(section),
+                flags: SymbolFlags::None,
+            });
+        }
+
+        for name in ["_defmt_version_ = 4", "_defmt_encoding_ = raw"] {
+            object.add_symbol(Symbol {
+                name: name.as_bytes().to_vec(),
+                value: 0,
+                size: 0,
+                kind: SymbolKind::Data,
+                scope: SymbolScope::Compilation,
+                weak: false,
+                section: SymbolSection::Absolute,
+                flags: SymbolFlags::None,
+            });
+        }
+
+        object.write().unwrap()
+    }
+
+    fn log_symbol(data: &str, disambiguator: &str) -> String {
+        format!(
+            r#"{{"package":"pkg","tag":"defmt_info","data":"{data}","disambiguator":"{disambiguator}","crate_name":"crate"}}"#
+        )
+    }
+
+    fn bitflags_value_symbol(data: &str) -> String {
+        format!(
+            r#"{{"package":"pkg","tag":"defmt_bitflags_value","data":"{data}","disambiguator":"a","crate_name":"crate"}}"#
+        )
+    }
+
+    #[test]
+    fn unmerged_sections_use_symbol_address_indices() {
+        let elf = unmerged_elf([(0x20, log_symbol("hello", "a"))]);
+        let table = parse_impl(&elf, true).unwrap().unwrap();
+        let mut frame = Vec::new();
+        frame.write_u16::<LittleEndian>(0x20).unwrap();
+
+        let (frame, consumed) = table.decode(&frame).unwrap();
+        assert_eq!(consumed, 2);
+        assert_eq!(frame.index(), 0x20);
+        assert_eq!(frame.display_message().to_string(), "hello");
+    }
+
+    #[test]
+    fn unmerged_sections_read_bitflags_value_data_from_symbol_section() {
+        let value = 0x1234u128;
+        let elf = unmerged_elf_with_data([(
+            0,
+            bitflags_value_symbol("Flags::0::A"),
+            value.to_le_bytes().to_vec(),
+        )]);
+        let table = parse_impl(&elf, true).unwrap().unwrap();
+        let values = table.bitflags.values().next().unwrap();
+
+        assert_eq!(values, &[("A".to_string(), value)]);
+    }
 }
