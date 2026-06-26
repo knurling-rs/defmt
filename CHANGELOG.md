@@ -32,7 +32,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 > A highly efficient logging framework that targets resource-constrained devices, like microcontrollers
 
-[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.1.0...main
+[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.1.1...main
+[defmt-v1.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.1.1
 [defmt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.1.0
 [defmt-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.1
 [defmt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.0
@@ -58,6 +59,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 [defmt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.0
 
 ### [defmt-next]
+
+### [defmt-v1.1.1] (2026-06-26)
 
 * [#1070] Swap from `proc-macro-error2` to `syn::Error`
 
@@ -420,7 +423,8 @@ Initial release
 
 > Macros for [defmt](#defmt)
 
-[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.1.0...main
+[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.1.1...main
+[defmt-macros-v1.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.1.1
 [defmt-macros-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.1.0
 [defmt-macros-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.0.1
 [defmt-macros-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.0.0
@@ -444,6 +448,10 @@ Initial release
 [defmt-macros-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v0.1.0
 
 ### [defmt-macros-next]
+
+### [defmt-macros-v1.1.1] (2026-06-26)
+
+* [#1070] Swap from `proc-macro-error2` to `syn::Error`
 
 ### [defmt-macros-v1.1.0] (2026-05-12)
 
@@ -738,7 +746,8 @@ Initial release
 
 > Transmit defmt log messages over the RTT (Real-Time Transfer) protocol
 
-[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.2.0...main
+[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.3.0...main
+[defmt-rtt-v1.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.3.0
 [defmt-rtt-v1.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.2.0
 [defmt-rtt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.1.0
 [defmt-rtt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.0.0
@@ -753,11 +762,14 @@ Initial release
 
 ### [defmt-rtt-next]
 
+### [defmt-rtt-v1.3.0] (2026-06-26)
+
+* [#1053] Add the `drop-on-contention` feature to trade low interrupt latency for reliable RTT delivery
+
 ### [defmt-rtt-v1.2.0] (2026-05-12)
 
 * [#1006] Fix `available_buffer_size` ignoring available buffer space when `read < write`
 * [#1013] Switch to fixed 32-bit types, to support 64-bit targets
-* [#1053] Add the `drop-on-contention` feature to trade low interrupt latency for reliable RTT delivery
 
 ### [defmt-rtt-v1.1.0] (2025-10-09)
 
