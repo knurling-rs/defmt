@@ -111,6 +111,7 @@ exceptions = [
     { allow = ["MPL-2.0"], crate = "serialport" },
     { allow = ["MPL-2.0"], crate = "colored" },
     { allow = ["MPL-2.0"], crate = "alterable_logger" },
+    { allow = ["Zlib"], crate = "foldhash" },
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
