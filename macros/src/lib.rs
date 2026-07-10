@@ -5,7 +5,6 @@
 use defmt_parser::Level;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use proc_macro_error2::proc_macro_error;
 use quote::quote;
 
 mod attributes;
@@ -22,39 +21,33 @@ mod items;
 
 /* # Attributes */
 #[proc_macro_attribute]
-#[proc_macro_error]
 pub fn global_logger(args: TokenStream, item: TokenStream) -> TokenStream {
     attributes::global_logger::expand(args, item)
 }
 
 #[proc_macro_attribute]
-#[proc_macro_error]
 pub fn panic_handler(args: TokenStream, item: TokenStream) -> TokenStream {
     attributes::panic_handler::expand(args, item)
 }
 
 /* # Derives */
 #[proc_macro_derive(Format, attributes(defmt))]
-#[proc_macro_error]
 pub fn format(input: TokenStream) -> TokenStream {
     derives::format::expand(input)
 }
 
 /* # Function-like */
 #[proc_macro]
-#[proc_macro_error]
 pub fn assert_(args: TokenStream) -> TokenStream {
     function_like::assert_like::assert::expand(args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn assert_eq_(args: TokenStream) -> TokenStream {
     function_like::assert_binop::eq(args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn assert_ne_(args: TokenStream) -> TokenStream {
     function_like::assert_binop::ne(args)
 }
@@ -65,7 +58,6 @@ pub fn assert_ne_(args: TokenStream) -> TokenStream {
 // statement is reported. Using a proc-macro results in the call site being reported, which is what
 // we want
 #[proc_macro]
-#[proc_macro_error]
 pub fn debug_assert_(input: TokenStream) -> TokenStream {
     let assert = TokenStream2::from(assert_(input));
     quote!(if cfg!(debug_assertions) {
@@ -75,7 +67,6 @@ pub fn debug_assert_(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn debug_assert_eq_(input: TokenStream) -> TokenStream {
     let assert = TokenStream2::from(assert_eq_(input));
     quote!(if cfg!(debug_assertions) {
@@ -85,7 +76,6 @@ pub fn debug_assert_eq_(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn debug_assert_ne_(input: TokenStream) -> TokenStream {
     let assert = TokenStream2::from(assert_ne_(input));
     quote!(if cfg!(debug_assertions) {
@@ -96,25 +86,21 @@ pub fn debug_assert_ne_(input: TokenStream) -> TokenStream {
 /* ## end of `debug_` variants */
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn dbg(args: TokenStream) -> TokenStream {
     function_like::dbg::expand(args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn intern(args: TokenStream) -> TokenStream {
     function_like::intern::expand(args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn internp(args: TokenStream) -> TokenStream {
     function_like::internp::expand(args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn println(args: TokenStream) -> TokenStream {
     function_like::println::expand(args)
 }
@@ -122,38 +108,32 @@ pub fn println(args: TokenStream) -> TokenStream {
 /* ## Logging macros */
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn trace(args: TokenStream) -> TokenStream {
     function_like::log::expand(Level::Trace, args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn debug(args: TokenStream) -> TokenStream {
     function_like::log::expand(Level::Debug, args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn info(args: TokenStream) -> TokenStream {
     function_like::log::expand(Level::Info, args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn warn(args: TokenStream) -> TokenStream {
     function_like::log::expand(Level::Warn, args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn error(args: TokenStream) -> TokenStream {
     function_like::log::expand(Level::Error, args)
 }
 /* ## end of logging macros */
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn panic_(args: TokenStream) -> TokenStream {
     function_like::panic_like::expand(args, "panicked at 'explicit panic'", |format_string| {
         format!("panicked at '{format_string}'")
@@ -161,7 +141,6 @@ pub fn panic_(args: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn todo_(args: TokenStream) -> TokenStream {
     function_like::panic_like::expand(args, "panicked at 'not yet implemented'", |format_string| {
         format!("panicked at 'not yet implemented: {format_string}'")
@@ -169,7 +148,6 @@ pub fn todo_(args: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn unreachable_(args: TokenStream) -> TokenStream {
     function_like::panic_like::expand(
         args,
@@ -184,26 +162,22 @@ pub fn unreachable_(args: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn unwrap(args: TokenStream) -> TokenStream {
     function_like::assert_like::unwrap::expand(args)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn write(args: TokenStream) -> TokenStream {
     function_like::write::expand(args)
 }
 
 /* # Items */
 #[proc_macro]
-#[proc_macro_error]
 pub fn bitflags(ts: TokenStream) -> TokenStream {
     items::bitflags::expand(ts)
 }
 
 #[proc_macro]
-#[proc_macro_error]
 pub fn timestamp(args: TokenStream) -> TokenStream {
     items::timestamp::expand(args)
 }

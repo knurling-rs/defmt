@@ -1,6 +1,5 @@
 use defmt_parser::{Fragment, Parameter, Type};
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
-use proc_macro_error2::abort;
 use quote::{format_ident, quote};
 
 pub(crate) struct Codegen {
@@ -9,7 +8,11 @@ pub(crate) struct Codegen {
 }
 
 impl Codegen {
-    pub(crate) fn new(fragments: &[Fragment<'_>], given_arg_count: usize, span: Span2) -> Self {
+    pub(crate) fn new(
+        fragments: &[Fragment<'_>],
+        given_arg_count: usize,
+        span: Span2,
+    ) -> syn::Result<Self> {
         let params = fragments
             .iter()
             .filter_map(|frag| match frag {
@@ -30,13 +33,13 @@ impl Codegen {
                 only = "only ";
             }
 
-            abort!(
+            return Err(syn::Error::new(
                 span,
-                "format string requires {} arguments but {}{} were provided",
-                expected_arg_count,
-                only,
-                given_arg_count
-            )
+                format!(
+                    "format string requires {} arguments but {}{} were provided",
+                    expected_arg_count, only, given_arg_count
+                ),
+            ));
         }
 
         let mut exprs = vec![];
@@ -55,7 +58,7 @@ impl Codegen {
             patterns.push(arg_ident);
         }
 
-        Codegen { exprs, patterns }
+        Ok(Codegen { exprs, patterns })
     }
 }
 

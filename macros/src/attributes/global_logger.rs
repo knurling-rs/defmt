@@ -1,31 +1,40 @@
 use proc_macro::TokenStream;
-use proc_macro_error2::{abort, abort_call_site};
+use proc_macro2::Span;
 use quote::quote;
 use syn::{parse_macro_input, Fields, ItemStruct};
 
 pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
-    if !args.is_empty() {
-        abort_call_site!("`#[global_logger]` attribute takes no arguments")
-    }
-
     let strukt = parse_macro_input!(item as ItemStruct);
 
-    validate(&strukt);
+    if !args.is_empty() {
+        return syn::Error::new(
+            Span::call_site(),
+            "`#[global_logger]` attribute takes no arguments",
+        )
+        .into_compile_error()
+        .into();
+    }
+
+    if let Err(err) = validate(&strukt) {
+        return err.into_compile_error().into();
+    }
 
     codegen(&strukt)
 }
 
-fn validate(strukt: &ItemStruct) {
+fn validate(strukt: &ItemStruct) -> syn::Result<()> {
     let is_unit_struct = matches!(strukt.fields, Fields::Unit);
 
     if !strukt.generics.params.is_empty()
         || strukt.generics.where_clause.is_some()
         || !is_unit_struct
     {
-        abort!(
-            strukt,
-            "struct must be a non-generic unit struct (e.g. `struct S;`)"
-        );
+        Err(syn::Error::new(
+            strukt.ident.span(),
+            "struct must be a non-generic unit struct (e.g. `struct S;`)",
+        ))
+    } else {
+        Ok(())
     }
 }
 

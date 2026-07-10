@@ -1,5 +1,6 @@
 use defmt_parser::Level;
 use proc_macro::TokenStream;
+use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{parse_macro_input, punctuated::Punctuated};
 
@@ -10,16 +11,20 @@ use self::args::Args;
 mod args;
 
 pub(crate) fn eq(args: TokenStream) -> TokenStream {
-    expand(args, BinOp::Eq)
+    let parsed_args = parse_macro_input!(args as Args);
+    expand(parsed_args, BinOp::Eq)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 pub(crate) fn ne(args: TokenStream) -> TokenStream {
-    expand(args, BinOp::Ne)
+    let parsed_args = parse_macro_input!(args as Args);
+    expand(parsed_args, BinOp::Ne)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
-fn expand(args: TokenStream, binop: BinOp) -> TokenStream {
-    let args = parse_macro_input!(args as Args);
-
+fn expand(args: Args, binop: BinOp) -> syn::Result<TokenStream2> {
     let left = args.left;
     let right = args.right;
 
@@ -61,14 +66,14 @@ left/right: `{{:?}}`",
         format_string: construct::string_literal(&panic_msg),
         formatting_args: Some(formatting_args),
     };
-    let log_stmt = log::expand_parsed(Level::Error, log_args);
+    let log_stmt = log::expand_parsed(Level::Error, log_args)?;
 
     let mut cond = quote!(*left_val == *right_val);
     if binop == BinOp::Eq {
         cond = quote!(!(#cond));
     }
 
-    quote!(
+    let quoted = quote!(
         // evaluate arguments first
         match (&(#left), &(#right)) {
             (left_val, right_val) => {
@@ -79,8 +84,8 @@ left/right: `{{:?}}`",
                 }
             }
         }
-    )
-    .into()
+    );
+    Ok(quoted)
 }
 
 #[derive(PartialEq)]

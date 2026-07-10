@@ -10,6 +10,7 @@
     - [Format slices / arrays](./format-slices.md)
     - [Display hints](./hints.md)
   - [Implementing Format](./format.md)
+  - [FAQ for library authors](./faq-for-library-authors.md)
   - [Filtering](./filtering.md)
   - [Timestamps](./timestamps.md)
   - [#[global_logger]](./global-logger.md)
