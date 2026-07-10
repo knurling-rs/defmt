@@ -60,10 +60,11 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#1068] Adding `Format` impl for `core::str` errors
+
 ### [defmt-v1.1.1] (2026-06-26)
 
 * [#1070] Swap from `proc-macro-error2` to `syn::Error`
-* [#1068] Adding `Format` impl for `core::str` errors
 
 ### [defmt-v1.1.0] (2026-05-12)
 
