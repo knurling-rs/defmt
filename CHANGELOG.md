@@ -60,6 +60,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* Support named arguments in format strings, like `core::format_args!`: `{owner}`, `{owner:?}` and `{owner=u8:#x}` capture `owner` from the surrounding scope, and arguments can be passed by name (`defmt::info!("{x}", x = expr)`).
+
 ### [defmt-v1.1.1] (2026-06-26)
 
 * [#1070] Swap from `proc-macro-error2` to `syn::Error`
@@ -449,6 +451,8 @@ Initial release
 
 ### [defmt-macros-next]
 
+* Support named arguments with inline capture (`{owner:?}`) and explicit `name = expr` formatting arguments.
+
 ### [defmt-macros-v1.1.1] (2026-06-26)
 
 * [#1070] Swap from `proc-macro-error2` to `syn::Error`
@@ -707,6 +711,7 @@ Initial release
 
 ### [defmt-parser-next]
 
+* Support named arguments (`{owner}`, `{owner=u8:#x}`) in the format string grammar. Named parameters are assigned the argument indices after all positional ones, in order of first appearance. `Parameter` gained a `name` field (breaking change).
 * [#956] Link `LICENSE-*` in the crate folder
 * [#1028] Clarify that MSRV is 1.76
 

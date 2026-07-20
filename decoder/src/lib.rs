@@ -737,6 +737,27 @@ mod tests {
     }
 
     #[test]
+    fn decode_named_args() {
+        // Arguments are serialized in index order: positional arguments first, then named
+        // arguments in order of first appearance. This mirrors the order in which the
+        // `defmt` macros emit them; both sides derive it from the same format string.
+        let bytes = [
+            0, 0,    // index
+            2,    // timestamp
+            1,    // pos ({=u8}, index 0)
+            42,   // x (index 1)
+            0x34, // y (index 2, u16 LE)
+            0x12,
+        ];
+
+        decode_and_expect(
+            "x={x=u8}, pos={=u8}, y={y=u16:#x}, x again={x=u8}",
+            &bytes,
+            "0.000002 INFO x=42, pos=1, y=0x1234, x again=42",
+        );
+    }
+
+    #[test]
     fn display_use_inner_type_hint() {
         let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "x={:b}".to_owned()),
