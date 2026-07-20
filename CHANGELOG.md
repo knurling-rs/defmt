@@ -60,6 +60,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#1029] Add macOS and Linux compatibility - `defmt` can now run on these hosts.
+
 ### [defmt-v1.1.1] (2026-06-26)
 
 * [#1070] Swap from `proc-macro-error2` to `syn::Error`
@@ -1044,6 +1046,7 @@ Initial release
 [#1044]: https://github.com/knurling-rs/defmt/pull/1044
 [#1041]: https://github.com/knurling-rs/defmt/pull/1041
 [#1036]: https://github.com/knurling-rs/defmt/pull/1036
+[#1029]: https://github.com/knurling-rs/defmt/pull/1029
 [#1028]: https://github.com/knurling-rs/defmt/pull/1028
 [#1022]: https://github.com/knurling-rs/defmt/pull/1022
 [#1013]: https://github.com/knurling-rs/defmt/pull/1013
