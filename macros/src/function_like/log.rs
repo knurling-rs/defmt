@@ -7,7 +7,10 @@ use syn::{parse_macro_input, parse_quote};
 use crate::construct;
 
 use self::env_filter::EnvFilter;
-pub(crate) use self::{args::Args, codegen::Codegen};
+pub(crate) use self::{
+    args::{Args, FormatArg},
+    codegen::{resolve_args, Codegen},
+};
 
 mod args;
 mod codegen;
@@ -26,10 +29,8 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> syn::Result<TokenStream
         Err(e) => return Err(syn::Error::new(args.format_string.span(), format!("{}", e))),
     };
 
-    let formatting_exprs = args
-        .formatting_args
-        .map(|punctuated| punctuated.into_iter().collect::<Vec<_>>())
-        .unwrap_or_default();
+    let formatting_exprs =
+        resolve_args(&fragments, args.format_string.span(), args.formatting_args)?;
 
     let Codegen { patterns, exprs } = Codegen::new(
         &fragments,

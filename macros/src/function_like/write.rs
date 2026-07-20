@@ -26,10 +26,14 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         }
     };
 
-    let formatting_exprs: Vec<_> = log_args
-        .formatting_args
-        .map(|punctuated| punctuated.into_iter().collect())
-        .unwrap_or_default();
+    let formatting_exprs = match log::resolve_args(
+        &fragments,
+        log_args.format_string.span(),
+        log_args.formatting_args,
+    ) {
+        Ok(val) => val,
+        Err(err) => return err.into_compile_error().into(),
+    };
 
     let log::Codegen { patterns, exprs } = match log::Codegen::new(
         &fragments,

@@ -5,7 +5,7 @@ use quote::quote;
 use syn::{parse_macro_input, parse_quote};
 
 use crate::construct;
-use crate::function_like::log::{Args, Codegen};
+use crate::function_like::log::{resolve_args, Args, Codegen};
 
 pub(crate) fn expand(args: TokenStream) -> TokenStream {
     let parsed = parse_macro_input!(args as Args);
@@ -28,10 +28,8 @@ pub(crate) fn expand_parsed(args: Args) -> syn::Result<TokenStream2> {
         Err(e) => return Err(syn::Error::new(args.format_string.span(), format!("{}", e))), // No extra help
     };
 
-    let formatting_exprs = args
-        .formatting_args
-        .map(|punctuated| punctuated.into_iter().collect::<Vec<_>>())
-        .unwrap_or_default();
+    let formatting_exprs =
+        resolve_args(&fragments, args.format_string.span(), args.formatting_args)?;
 
     let Codegen { patterns, exprs } = Codegen::new(
         &fragments,
