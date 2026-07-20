@@ -626,6 +626,8 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1079] Avoid cloning `Arg`s when formatting format sequences
+
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
@@ -1033,6 +1035,7 @@ Initial release
 
 ---
 
+[#1079]: https://github.com/knurling-rs/defmt/pull/1079
 [#1070]: https://github.com/knurling-rs/defmt/pull/1070
 [#1053]: https://github.com/knurling-rs/defmt/pull/1053
 [#1055]: https://github.com/knurling-rs/defmt/pull/1055
