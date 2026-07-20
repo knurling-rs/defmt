@@ -37,7 +37,14 @@ pub(super) enum SymbolTag {
 }
 
 impl Symbol {
-    pub fn demangle(raw: &str) -> anyhow::Result<Self> {
+    pub fn demangle(raw: &str, is_mac: bool) -> anyhow::Result<Self> {
+        let raw = if is_mac {
+            // remove the prefix from the raw string
+            raw.strip_prefix("_")
+                .ok_or_else(|| anyhow::anyhow!("macos symbol `{}` should start with `_`", raw))?
+        } else {
+            raw
+        };
         serde_json::from_str(raw)
             .map_err(|j| anyhow::anyhow!("failed to demangle defmt symbol `{}`: {}", raw, j))
     }

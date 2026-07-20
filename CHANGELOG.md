@@ -20,6 +20,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [defmt-rtt](#defmt-rtt)
 * [defmt-itm](#defmt-itm)
 * [defmt-semihosting](#defmt-semihosting)
+* [defmt-stdout](#defmt-stdout)
 * [panic-probe](#panic-probe)
 * [defmt-test](#defmt-test)
 * [defmt-test-macros](#defmt-test-macros)
@@ -628,6 +629,10 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* Support executables linked without `defmt.x`: collect all `.defmt.*` sections when there is no single `.defmt` section. This fixes decoding logs from Linux host builds.
+* Truncate DWARF addresses to 16 bits when extracting location information, matching how table indices are computed. This fixes missing location info for host builds whose defmt statics are placed above 64 KiB.
+* Rename `elf` variables/parameters to `executable`, since the input may be a Mach-O file rather than an ELF file.
+
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
@@ -859,6 +864,14 @@ Initial release
 ### [defmt-semihosting-v0.1.0] (2024-11-27)
 
 Initial release
+
+## defmt-stdout
+
+> Transmit defmt log messages to stdout or a file on operating systems with `std` support
+
+### defmt-stdout-next
+
+* Initial release: `defmt` global logger for programs and unit tests running on a host OS (Linux, macOS). Writes to stdout, or to the file named by the `DEFMT_STDOUT_FILE` environment variable.
 
 ## panic-probe
 

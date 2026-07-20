@@ -13,8 +13,8 @@ use defmt_decoder::{
     },
     DecodeError, Frame, Locations, Table, DEFMT_VERSIONS,
 };
-use goblin::elf::Elf;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use object::{Object, ObjectSymbol};
 use tokio::{
     fs,
     io::{self, AsyncReadExt, AsyncWriteExt, Stdin},
@@ -28,9 +28,9 @@ use tokio_serial::{SerialPort, SerialPortBuilderExt, SerialStream};
 #[derive(Parser, Clone)]
 #[command(name = "defmt-print")]
 struct Opts {
-    /// The firmware running on the device being logged
+    /// The firmware running on the device being logged (an ELF or Mach-O executable)
     #[arg(short, required = true, conflicts_with("version"))]
-    elf: Option<PathBuf>,
+    executable: Option<PathBuf>,
 
     /// Emit logs in JSON format
     #[arg(long)]
@@ -123,7 +123,7 @@ impl Source {
         Ok(Source::Serial(ser))
     }
 
-    async fn set_rtt_addr(&mut self, elf_bytes: &[u8]) -> anyhow::Result<()> {
+    async fn set_rtt_addr(&mut self, executable_bytes: &[u8]) -> anyhow::Result<()> {
         let Source::Tcp(tcpstream, set_addr) = self else {
             return Ok(());
         };
@@ -133,16 +133,15 @@ impl Source {
             return Ok(());
         }
 
-        let elf = Elf::parse(elf_bytes)?;
-        let rtt_symbol = elf
-            .syms
-            .iter()
-            .find(|sym| elf.strtab.get_at(sym.st_name) == Some("_SEGGER_RTT"))
-            .ok_or_else(|| anyhow!("Symbol '_SEGGER_RTT' not found in ELF file"))?;
+        let obj = object::File::parse(executable_bytes)?;
+        let rtt_symbol = obj
+            .symbols()
+            .find(|sym| matches!(sym.name(), Ok("_SEGGER_RTT") | Ok("__SEGGER_RTT")))
+            .ok_or_else(|| anyhow!("Symbol '_SEGGER_RTT' not found in binary"))?;
 
         let cmd = format!(
             "$$SEGGER_TELNET_ConfigStr=SetRTTAddr;{:#x}$$",
-            rtt_symbol.st_value
+            rtt_symbol.address()
         );
         tcpstream.write_all(cmd.as_bytes()).await?;
 
@@ -205,9 +204,9 @@ async fn has_file_changed(rx: &mut Receiver<Result<Event, notify::Error>>, path:
 async fn run_and_watch(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
-    let path = opts.elf.clone().unwrap().canonicalize().unwrap();
+    let path = opts.executable.clone().unwrap().canonicalize().unwrap();
 
-    // We want the elf directory instead of the elf, since some editors remove
+    // We want the executable's directory instead of the executable, since some editors remove
     // and recreate the file on save which will remove the notifier
     let directory_path = path.parent().unwrap();
 
@@ -229,7 +228,7 @@ async fn run_and_watch(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
 
 async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
     let Opts {
-        elf,
+        executable,
         json,
         log_format,
         host_log_format,
@@ -238,21 +237,41 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
         ..
     } = opts;
 
-    // read and parse elf file
-    let bytes = fs::read(elf.unwrap()).await?;
+    // read and parse the executable
+    let executable_path = executable.unwrap();
+    let bytes = fs::read(&executable_path).await?;
     let table = Table::parse(&bytes)?.ok_or_else(|| anyhow!(".defmt data not found"))?;
-    let locs = table.get_locations(&bytes)?;
+
+    // On macOS, DWARF lives in a sibling .dSYM bundle when built with
+    // split-debuginfo = "packed". On other platforms DWARF is embedded in the
+    // main ELF, so we just feed `bytes` straight through.
+    #[cfg(not(target_os = "macos"))]
+    let locs = Some(table.get_locations(&bytes)?);
+
+    #[cfg(target_os = "macos")]
+    let locs = match read_dsym_dwarf(&executable_path).await {
+        Some(dwarf_bytes) => Some(table.get_locations(&dwarf_bytes)?),
+        None => {
+            log::warn!(
+                "no .dSYM bundle found next to {}; location info will be unavailable",
+                executable_path.display()
+            );
+            None
+        }
+    };
 
     // Give the _SEGGER_RTT address to the source.
     source.set_rtt_addr(&bytes).await?;
 
     // check if the locations info contains all the indicies
-    let locs = if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
-        Some(locs)
-    } else {
-        log::warn!("(BUG) location info is incomplete; it will be omitted from the output");
-        None
-    };
+    let locs = locs.and_then(|locs| {
+        if table.indices().all(|idx| locs.contains_key(&(idx as u64))) {
+            Some(locs)
+        } else {
+            log::warn!("(BUG) location info is incomplete; it will be omitted from the output");
+            None
+        }
+    });
 
     let logger_type = if json {
         DefmtLoggerType::Json
@@ -327,6 +346,15 @@ async fn run(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
             }
         }
     }
+}
+
+#[cfg(target_os = "macos")]
+async fn read_dsym_dwarf(executable_path: &Path) -> Option<Vec<u8>> {
+    let dsym_bundle = format!("{}.dSYM", executable_path.display());
+    let dwarf_dir = Path::new(&dsym_bundle).join("Contents/Resources/DWARF");
+    let mut entries = fs::read_dir(dwarf_dir).await.ok()?;
+    let entry = entries.next_entry().await.ok().flatten()?;
+    fs::read(entry.path()).await.ok()
 }
 
 type LocationInfo = (Option<String>, Option<u32>, Option<String>);

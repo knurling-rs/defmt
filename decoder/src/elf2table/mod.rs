@@ -7,20 +7,22 @@ mod symbol;
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap},
+    collections::{hash_map::DefaultHasher, BTreeMap, HashMap},
     convert::TryInto,
     fmt,
+    hash::{Hash, Hasher},
     path::{Path, PathBuf},
 };
 
 use anyhow::{anyhow, bail, ensure};
-use object::{Object, ObjectSection, ObjectSymbol};
+use object::{Object, ObjectSection, ObjectSegment, ObjectSymbol};
 use serde::{Deserialize, Serialize};
 
 use crate::{BitflagsKey, StringEntry, Table, TableEntry, Tag, DEFMT_VERSIONS};
 
-pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
-    let elf = object::File::parse(elf)?;
+pub fn parse_impl(executable: &[u8], check_version: bool) -> Result<Option<Table>, anyhow::Error> {
+    let executable = object::File::parse(executable)?;
+    let is_mac = executable.format() == object::BinaryFormat::MachO;
     // first pass to extract the `_defmt_version`
     let mut version = None;
     let mut encoding = None;
@@ -28,10 +30,14 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
     // makes it keep the quotes from the linker script.
     let try_get_version = |name: &str| {
-        if name.starts_with("\"_defmt_version_ = ") || name.starts_with("_defmt_version_ = ") {
+        if name.starts_with("\"_defmt_version_ = ")
+            || name.starts_with("_defmt_version_ = ")
+            || name.starts_with("__defmt_version_ = ")
+        {
             Some(
                 name.trim_start_matches("\"_defmt_version_ = ")
                     .trim_start_matches("_defmt_version_ = ")
+                    .trim_start_matches("__defmt_version_ = ")
                     .trim_end_matches('"')
                     .to_string(),
             )
@@ -44,10 +50,11 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // using `#[export_name = "_defmt_encoding_ = x"]`, never in linker scripts.
     let try_get_encoding = |name: &str| {
         name.strip_prefix("_defmt_encoding_ = ")
+            .or_else(|| name.strip_prefix("__defmt_encoding_ = "))
             .map(ToString::to_string)
     };
 
-    for entry in elf.symbols() {
+    for entry in executable.symbols() {
         let name = match entry.name() {
             Ok(name) => name,
             Err(_) => continue,
@@ -78,12 +85,40 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         }
     }
 
+    let mut defmt_sections = HashMap::new();
+    if is_mac {
+        let defmt_segment = executable
+            .segments()
+            .find(|segment| ObjectSegment::name(segment) == Ok(Some(".defmt")));
+        if let Some(defmt_segment) = defmt_segment {
+            for section in executable.sections() {
+                // check if the section is in the segment by comparing the section's address
+                // with the segment's address and size
+                if section.address() >= defmt_segment.address()
+                    && section.address() < defmt_segment.address() + defmt_segment.size()
+                {
+                    defmt_sections.insert(section.index(), section);
+                }
+            }
+        }
+    } else {
+        // The `defmt.x` linker script collects all `.defmt.*` input sections into a single
+        // output section named `.defmt`. Host builds (e.g. Linux) are linked without the
+        // linker script, so every symbol keeps its own `.defmt.<tag>.<symbol>` section.
+        // Accept both layouts.
+        for section in executable.sections() {
+            if let Ok(name) = section.name() {
+                if name == ".defmt" || name.starts_with(".defmt.") {
+                    defmt_sections.insert(section.index(), section);
+                }
+            }
+        }
+    }
+
     // NOTE: We need to make sure to return `Ok(None)`, not `Err`, when defmt is not in use.
     // Otherwise probe-run won't work with apps that don't use defmt.
 
-    let defmt_section = elf.section_by_name(".defmt");
-
-    let (defmt_section, version) = match (defmt_section, version) {
+    let (_defmt_section, version) = match (defmt_sections.values().next(), version) {
         (None, None) => return Ok(None), // defmt is not used
         (Some(defmt_section), Some(version)) => (defmt_section, version),
         (None, Some(_)) => {
@@ -109,7 +144,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     let mut map = BTreeMap::new();
     let mut bitflags_map = HashMap::new();
     let mut timestamp = None;
-    for entry in elf.symbols() {
+    for entry in executable.symbols() {
         let Ok(name) = entry.name() else {
             continue;
         };
@@ -125,15 +160,23 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
             continue;
         }
 
-        if name.starts_with("_defmt") || name.starts_with("__DEFMT_MARKER") {
+        if name.starts_with("_defmt")
+            || name.starts_with("__DEFMT_MARKER")
+            || name.starts_with("__defmt")
+        {
             // `_defmt_version_` is not a JSON encoded `defmt` symbol / log-message; skip it
             // LLD and GNU LD behave differently here. LLD doesn't include `_defmt_version_`
             // (defined in a linker script) in the `.defmt` section but GNU LD does.
             continue;
         }
 
-        if entry.section_index() == Some(defmt_section.index()) {
-            let sym = symbol::Symbol::demangle(name)?;
+        // find the relevant section using the section index
+        if let Some(section_index) = entry.section_index() {
+            if !defmt_sections.contains_key(&section_index) {
+                continue;
+            }
+
+            let sym = symbol::Symbol::demangle(name, is_mac)?;
             match sym.tag() {
                 symbol::SymbolTag::Defmt(Tag::Timestamp) => {
                     if timestamp.is_some() {
@@ -146,18 +189,9 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                     ));
                 }
                 symbol::SymbolTag::Defmt(Tag::BitflagsValue) => {
-                    // Bitflags values always occupy 128 bits / 16 bytes.
-                    const BITFLAGS_VALUE_SIZE: u64 = 16;
-
-                    if entry.size() != BITFLAGS_VALUE_SIZE {
-                        bail!(
-                            "bitflags value does not occupy 16 bytes (symbol `{}`)",
-                            name
-                        );
-                    }
-
-                    let defmt_data = defmt_section.data()?;
-                    let addr = entry.address() as usize;
+                    let section = defmt_sections.get(&section_index).unwrap();
+                    let defmt_data = section.data()?;
+                    let addr = (entry.address() - section.address()) as usize;
                     let value = match defmt_data.get(addr..addr + 16) {
                         Some(bytes) => u128::from_le_bytes(bytes.try_into().unwrap()),
                         None => bail!(
@@ -190,7 +224,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 }
                 symbol::SymbolTag::Defmt(tag) => {
                     map.insert(
-                        entry.address() as usize,
+                        (entry.address() as u16) as usize,
                         TableEntry::new(
                             StringEntry::new(tag, sym.data().to_string()),
                             name.to_string(),
@@ -240,7 +274,7 @@ fn check_version(version: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Location of a defmt log statement in the elf-file
+/// Location of a defmt log statement in the executable
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Location {
     pub file: PathBuf,
@@ -257,8 +291,9 @@ impl fmt::Debug for Location {
 /// Mapping of memory address to [`Location`]
 pub type Locations = BTreeMap<u64, Location>;
 
-pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
-    let object = object::File::parse(elf)?;
+pub fn get_locations(executable: &[u8], table: &Table) -> Result<Locations, anyhow::Error> {
+    let object = object::File::parse(executable)?;
+    let is_mac = object.format() == object::BinaryFormat::MachO;
     let endian = if object.is_little_endian() {
         gimli::RunTimeEndian::Little
     } else {
@@ -288,6 +323,22 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
     let mut units = dwarf.debug_info.units();
 
     let mut map = BTreeMap::new();
+
+    // macos groups log sections, so we map the secondary location marker's hash to its table index
+    let mut hash_to_index = BTreeMap::new();
+    if is_mac {
+        for (idx, entry) in table.entries.iter() {
+            let symbol = entry
+                .raw_symbol
+                .strip_prefix('_')
+                .unwrap_or(&entry.raw_symbol);
+            let mut hasher = DefaultHasher::new();
+            symbol.hash(&mut hasher);
+            let hash = hasher.finish();
+            hash_to_index.insert(hash, *idx as u64);
+        }
+    }
+
     while let Some(header) = units.next()? {
         let unit = dwarf.unit(header)?;
         let abbrev = header.abbreviations(&dwarf.debug_abbrev)?;
@@ -358,33 +409,45 @@ pub fn get_locations(elf: &[u8], table: &Table) -> Result<Locations, anyhow::Err
                     }
                 }
 
-                if let (
-                    Some(name_index),
-                    Some(linkage_name_index),
-                    Some(file_index),
-                    Some(line),
-                    Some(loc),
-                ) = (name, linkage_name, decl_file, decl_line, location)
+                if let (Some(name_index), Some(file_index), Some(line)) =
+                    (name, decl_file, decl_line)
                 {
                     let name_slice = dwarf.string(name_index)?;
-                    let name = core::str::from_utf8(&name_slice)?;
-                    let linkage_name_slice = dwarf.string(linkage_name_index)?;
-                    let linkage_name = core::str::from_utf8(&linkage_name_slice)?;
+                    let name_str = core::str::from_utf8(&name_slice)?;
 
-                    if name == "DEFMT_LOG_STATEMENT" {
-                        if table.raw_symbols().any(|i| i == linkage_name) {
-                            let addr = exprloc2address(unit.encoding(), &loc)?;
+                    if is_mac {
+                        // Bypass memory addresses entirely: parse the hash directly from the variable name
+                        if let Some(hash_str) = name_str.strip_prefix("DEFMT_LOC_MARKER_") {
+                            if let Ok(hash) = u64::from_str_radix(hash_str, 16) {
+                                if let Some(&index) = hash_to_index.get(&hash) {
+                                    let file = file_index_to_path(file_index, &unit, &dwarf)?;
+                                    let module = segments.join("::");
+                                    map.insert(index, Location { file, line, module });
+                                }
+                            }
+                        }
+                    } else if let (Some(loc), Some(linkage_name_index)) = (location, linkage_name) {
+                        let linkage_name_slice = dwarf.string(linkage_name_index)?;
+                        let linkage_name_str = core::str::from_utf8(&linkage_name_slice)?;
+
+                        if name_str == "DEFMT_LOG_STATEMENT"
+                            && table.raw_symbols().any(|i| i == linkage_name_str)
+                        {
+                            // Truncate the address to 16 bits, mirroring how `parse_impl`
+                            // computes table indices. On embedded targets the `.defmt`
+                            // section starts at address 1 so this is a no-op; host builds
+                            // place the defmt statics at arbitrary addresses.
+                            let addr = u64::from(exprloc2address(unit.encoding(), &loc)? as u16);
                             let file = file_index_to_path(file_index, &unit, &dwarf)?;
                             let module = segments.join("::");
+                            let loc_data = Location { file, line, module };
 
-                            let loc = Location { file, line, module };
-
-                            if let Some(old) = map.insert(addr, loc.clone()) {
-                                bail!("BUG in DWARF variable filter: index collision for addr 0x{:08x} (old = {:?}, new = {:?})", addr, old, loc);
+                            if let Some(_old) = map.insert(addr, loc_data.clone()) {
+                                bail!(
+                                    "BUG in DWARF variable filter: index collision for addr 0x{:08x}",
+                                    addr
+                                );
                             }
-                        } else {
-                            // this symbol was GC-ed by the linker (but remains in the DWARF info)
-                            // so we discard it (its `addr` info is also wrong which causes collisions)
                         }
                     }
                 }
