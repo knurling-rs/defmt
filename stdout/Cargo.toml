@@ -1,0 +1,24 @@
+[package]
+authors = ["The Knurling-rs developers"]
+categories = ["development-tools::debugging"]
+description = "Transmit defmt log messages to stdout or a file on operating systems with `std` support"
+edition = "2021"
+keywords = ["knurling", "defmt", "defmt-transport"]
+license = "MIT OR Apache-2.0"
+name = "defmt-stdout"
+readme = "README.md"
+repository = "https://github.com/knurling-rs/defmt"
+version = "0.1.0"
+
+[features]
+default = ["timestamp", "panic-handler"]
+# Provide a no-op `_defmt_timestamp` implementation. Disable this feature if you
+# want to define your own timestamp with `defmt::timestamp!`.
+timestamp = []
+# Provide a `_defmt_panic` implementation that forwards to `core::panic!`.
+# Disable this feature if you want to define your own with `#[defmt::panic_handler]`.
+panic-handler = []
+
+[dependencies]
+critical-section = { version = "1.2", features = ["std"] }
+defmt = { version = "1.1", path = "../defmt" }

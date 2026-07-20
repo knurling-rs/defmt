@@ -25,6 +25,7 @@ thread_local! {
 #[cfg(feature = "unstable-test")]
 pub fn fetch_string_index() -> u16 {
     I.with(|i| i.load(core::sync::atomic::Ordering::Relaxed))
+        .wrapping_sub(binary_base())
 }
 
 /// For testing purposes
@@ -98,9 +99,61 @@ pub fn timestamp(fmt: crate::Formatter<'_>) {
     unsafe { _defmt_timestamp(fmt) }
 }
 
+/// For bare-metal targets there is no ASLR, so the base address is always 0.
+#[cfg(target_os = "none")]
+fn binary_base() -> u16 {
+    0
+}
+
+/// For Linux (ELF), use the linker-provided `__executable_start` symbol.
+#[cfg(target_os = "linux")]
+#[allow(unused_unsafe)]
+fn binary_base() -> u16 {
+    extern "C" {
+        static __executable_start: u8;
+    }
+    // SAFETY: `__executable_start` is a linker-provided symbol marking the start of the executable.
+    (unsafe { core::ptr::addr_of!(__executable_start) as usize }) as u16
+}
+
+/// For macOS (Mach-O), use the linker-provided `_mh_execute_header` symbol.
+#[cfg(target_os = "macos")]
+#[allow(unused_unsafe)]
+fn binary_base() -> u16 {
+    extern "C" {
+        static _mh_execute_header: u8;
+    }
+    // SAFETY: `_mh_execute_header` is a linker-provided symbol marking the Mach-O header.
+    (unsafe { core::ptr::addr_of!(_mh_execute_header) as usize }) as u16
+}
+
+/// For Windows, use the DOS header address from the PE format.
+#[cfg(target_os = "windows")]
+#[allow(unused_unsafe)]
+fn binary_base() -> u16 {
+    extern "C" {
+        static __ImageBase: u8;
+    }
+    // SAFETY: `__ImageBase` is a linker-provided symbol marking the base of the PE image.
+    (unsafe { core::ptr::addr_of!(__ImageBase) as usize }) as u16
+}
+
+/// Fallback for other platforms - assume no ASLR, so the base address is always 0.
+#[cfg(not(any(
+    target_os = "none",
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "windows"
+)))]
+fn binary_base() -> u16 {
+    0
+}
+
 /// Returns the interned string at `address`.
 pub fn make_istr(address: u16) -> Str {
-    Str { address }
+    Str {
+        address: address.wrapping_sub(binary_base()),
+    }
 }
 
 /// Create a Formatter.

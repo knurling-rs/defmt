@@ -1,6 +1,6 @@
 use std::{
     collections::hash_map::DefaultHasher,
-    hash::{Hash as _, Hasher as _},
+    hash::{Hash, Hasher},
 };
 
 use proc_macro::Span;
@@ -59,7 +59,7 @@ pub(crate) fn interned_string(
 
 /// work around restrictions on length and allowed characters imposed by macos linker
 /// returns (note the comma character for macos):
-///   under macos: ".defmt," + 16 character hex digest of symbol's hash
+///   under macos: ".defmt," + prefix
 ///   otherwise:   ".defmt." + prefix + symbol
 pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str) -> String {
     let mut sub_section = if let Some(prefix) = prefix {
@@ -69,7 +69,13 @@ pub(crate) fn linker_section(for_macos: bool, prefix: Option<&str>, symbol: &str
     };
 
     if for_macos {
-        sub_section = format!(",{:x}", hash(&sub_section));
+        // Use a single section per severity level instead of unique section per log.
+        // This avoids hitting macOS's 255 section-per-segment limit.
+        // The symbol's export_name is still unique, so address-based lookup works.
+        sub_section = match prefix {
+            Some(p) => format!(",{p}"),
+            None => ",data".to_string(),
+        };
     }
 
     format!(".defmt{sub_section}")
@@ -85,11 +91,25 @@ pub(crate) fn static_variable(
     let section = linker_section(false, prefix, &sym_name);
     let section_for_macos = linker_section(true, prefix, &sym_name);
 
+    // macos restricts segments to 255 sections. we group logs into a single section and emit
+    // a secondary location marker symbol to allow the decoder to resolve addresses via DWARF.
+    let mut hasher = DefaultHasher::new();
+    sym_name.hash(&mut hasher);
+    let hash_val = hasher.finish();
+    let loc_sym_name = format!("__defmt_loc_{:x}", hash_val);
+    let loc_ident = format_ident!("DEFMT_LOC_MARKER_{:x}", hash_val);
+
     quote!(
         #[cfg_attr(target_os = "macos", link_section = #section_for_macos)]
         #[cfg_attr(not(target_os = "macos"), link_section = #section)]
         #[export_name = #sym_name]
         static #name: u8 = 0;
+
+        #[cfg(target_os = "macos")]
+        #[link_section = "__DATA,__defmt_loc"]
+        #[used]
+        #[export_name = #loc_sym_name]
+        static #loc_ident: u8 = 0;
     )
 }
 

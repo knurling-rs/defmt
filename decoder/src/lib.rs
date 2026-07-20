@@ -162,18 +162,18 @@ pub struct Table {
 }
 
 impl Table {
-    /// Parses an ELF file and returns the decoded `defmt` table.
+    /// Parses an executable (ELF or Mach-O) and returns the decoded `defmt` table.
     ///
-    /// This function returns `None` if the ELF file contains no `.defmt` section.
-    pub fn parse(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-        parse_impl(elf, true)
+    /// This function returns `None` if the executable contains no `.defmt` data.
+    pub fn parse(executable: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+        parse_impl(executable, true)
     }
 
     /// Like `parse`, but does not verify that the defmt version in the firmware matches the host.
     ///
     /// CAUTION: This is meant for defmt/probe-run development only and can result in reading garbage data.
-    pub fn parse_ignore_version(elf: &[u8]) -> Result<Option<Table>, anyhow::Error> {
-        parse_impl(elf, false)
+    pub fn parse_ignore_version(executable: &[u8]) -> Result<Option<Table>, anyhow::Error> {
+        parse_impl(executable, false)
     }
 
     pub fn set_timestamp_entry(&mut self, timestamp: TableEntry) {
@@ -217,8 +217,8 @@ impl Table {
         self.entries.values().map(|s| &*s.raw_symbol)
     }
 
-    pub fn get_locations(&self, elf: &[u8]) -> Result<Locations, anyhow::Error> {
-        elf2table::get_locations(elf, self)
+    pub fn get_locations(&self, executable: &[u8]) -> Result<Locations, anyhow::Error> {
+        elf2table::get_locations(executable, self)
     }
 
     /// Decode the data sent by the device using the previously stored metadata.
