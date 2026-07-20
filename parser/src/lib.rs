@@ -47,6 +47,8 @@ pub enum Error {
     ConflictingTypes(usize, Type, Type),
     #[error("argument {0} is not used in this format string")]
     UnusedArgument(usize),
+    #[error("invalid argument name `{0}`")]
+    InvalidArgumentName(String),
 }
 
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
@@ -58,6 +60,11 @@ pub struct Parameter {
     pub ty: Type,
     /// The display hint, e.g. ':x', ':b', ':a'.
     pub hint: Option<DisplayHint>,
+    /// The argument name, if this parameter refers to a named argument (e.g. `{owner}`).
+    ///
+    /// Named arguments are assigned the indices following the positional arguments, in
+    /// order of first appearance; `index` is always set accordingly.
+    pub name: Option<String>,
 }
 
 /// A part of a format string.
@@ -76,7 +83,8 @@ pub enum Fragment<'f> {
 ///
 /// ```notrust
 /// param := '{' [ argument ] [ '=' argtype ] [ ':' format_spec ] '}'
-/// argument := integer
+/// argument := integer | identifier
+/// identifier := [ 'a'-'z' | 'A'-'Z' | '_' ] [ 'a'-'z' | 'A'-'Z' | '0'-'9' | '_' ]*
 ///
 /// argtype := bitfield | '?' | format-array | '[?]' | byte-array | '[u8]' | 'istr' | 'str' |
 ///     'bool' | 'char' | 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'usize' | 'i8' | 'i16' | 'i32' |
@@ -93,6 +101,7 @@ pub enum Fragment<'f> {
 #[derive(Debug, PartialEq)]
 struct Param {
     index: Option<usize>,
+    name: Option<String>,
     ty: Type,
     hint: Option<DisplayHint>,
 }
@@ -191,19 +200,35 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
     const TYPE_PREFIX: &str = "=";
     const HINT_PREFIX: &str = ":";
 
-    // First, optional argument index.
+    // First, optional argument: an integer index or an identifier (named argument).
     let mut index = None;
+    let mut name = None;
     let index_end = input
         .find(|c: char| !c.is_ascii_digit())
         .unwrap_or(input.len());
 
     if index_end != 0 {
         index = Some(input[..index_end].parse::<usize>()?);
+        input = &input[index_end..];
+    } else if input
+        .chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+    {
+        // Identifiers may not start with a digit; that case was handled above.
+        let name_end = input
+            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+            .unwrap_or(input.len());
+        let ident = &input[..name_end];
+        if ident == "_" {
+            return Err(Error::InvalidArgumentName(ident.to_owned()));
+        }
+        name = Some(ident.to_owned());
+        input = &input[name_end..];
     }
 
     // Then, optional type
     let mut ty = Type::default(); // when no explicit type; use the default one
-    input = &input[index_end..];
 
     if input.starts_with(TYPE_PREFIX) {
         // skip the prefix
@@ -255,10 +280,15 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
         return Err(Error::UnexpectedContentInFormatString(input.to_owned()));
     }
 
-    Ok(Param { index, ty, hint })
+    Ok(Param {
+        index,
+        name,
+        ty,
+        hint,
+    })
 }
 
-fn push_literal<'f>(frag: &mut Vec<Fragment<'f>>, unescaped_literal: &'f str) -> Result<(), Error> {
+fn unescape_literal(unescaped_literal: &str) -> Result<Cow<'_, str>, Error> {
     // Replace `{{` with `{` and `}}` with `}`. Single braces are errors.
 
     // Scan for single braces first. The rest is trivial.
@@ -282,9 +312,10 @@ fn push_literal<'f>(frag: &mut Vec<Fragment<'f>>, unescaped_literal: &'f str) ->
     }
 
     // FIXME: This always allocates a `String`, so the `Cow` is useless.
-    let literal = unescaped_literal.replace("{{", "{").replace("}}", "}");
-    frag.push(Fragment::Literal(literal.into()));
-    Ok(())
+    Ok(unescaped_literal
+        .replace("{{", "{")
+        .replace("}}", "}")
+        .into())
 }
 
 /// Returns `Some(smallest_bit_index, largest_bit_index)` contained in `params` if
@@ -316,13 +347,16 @@ where
 }
 
 pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>, Error> {
-    let mut fragments = Vec::new();
+    /// A fragment whose parameters do not have their final argument index assigned yet.
+    enum RawFragment<'f> {
+        Literal(Cow<'f, str>),
+        Parameter(Param),
+    }
+
+    let mut raw_fragments = Vec::new();
 
     // Index after the `}` of the last format specifier.
     let mut end_pos = 0;
-
-    // Next argument index assigned to a parameter without an explicit one.
-    let mut next_arg_index = 0;
 
     let mut chars = format_string.char_indices();
     while let Some((brace_pos, ch)) = chars.next() {
@@ -341,7 +375,7 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
         if brace_pos > end_pos {
             // There's a literal fragment with at least 1 character before this parameter fragment.
             let unescaped_literal = &format_string[end_pos..brace_pos];
-            push_literal(&mut fragments, unescaped_literal)?;
+            raw_fragments.push(RawFragment::Literal(unescape_literal(unescaped_literal)?));
         }
 
         // Else, this is a format specifier. It ends at the next `}`.
@@ -353,22 +387,75 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
 
         // Parse the contents inside the braces.
         let param_str = &format_string[brace_pos + 1..][..len];
-        let param = parse_param(param_str, mode)?;
-        fragments.push(Fragment::Parameter(Parameter {
-            index: param.index.unwrap_or_else(|| {
-                // If there is no explicit index, assign the next one.
-                let idx = next_arg_index;
-                next_arg_index += 1;
-                idx
-            }),
-            ty: param.ty,
-            hint: param.hint,
-        }));
+        raw_fragments.push(RawFragment::Parameter(parse_param(param_str, mode)?));
     }
 
     // Trailing literal.
     if end_pos != format_string.len() {
-        push_literal(&mut fragments, &format_string[end_pos..])?;
+        raw_fragments.push(RawFragment::Literal(unescape_literal(
+            &format_string[end_pos..],
+        )?));
+    }
+
+    // Assign argument indices.
+    //
+    // Parameters with an explicit index (`{0}`) use it as-is and parameters with neither an
+    // index nor a name (`{}`) take the next implicit index, exactly like `core::format_args!`.
+    // Named parameters (`{owner}`) are assigned the indices *after* all positional ones, in
+    // order of first appearance, mirroring how `core::format_args!` appends named arguments
+    // after the positional ones.
+    //
+    // NOTE: this assignment is recomputed from the interned format string when decoding logs,
+    // so it must stay deterministic: `defmt-macros` serializes the arguments in this order at
+    // compile time and `defmt-decoder` derives the same order from the same string at decode
+    // time (both through this function).
+    let mut implicit_count = 0;
+    let mut max_explicit = None;
+    let mut names: Vec<&str> = Vec::new();
+    for frag in &raw_fragments {
+        if let RawFragment::Parameter(param) = frag {
+            match (&param.index, &param.name) {
+                (Some(index), _) => max_explicit = max_explicit.max(Some(*index)),
+                (None, Some(name)) => {
+                    if !names.iter().any(|n| n == name) {
+                        names.push(name);
+                    }
+                }
+                (None, None) => implicit_count += 1,
+            }
+        }
+    }
+    let positional_count = implicit_count.max(max_explicit.map_or(0, |max| max + 1));
+    let names = names.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+
+    let mut next_arg_index = 0;
+    let mut fragments = Vec::new();
+    for frag in raw_fragments {
+        match frag {
+            RawFragment::Literal(literal) => fragments.push(Fragment::Literal(literal)),
+            RawFragment::Parameter(param) => {
+                let index = match (param.index, &param.name) {
+                    (Some(index), _) => index,
+                    (None, Some(name)) => {
+                        let name_index =
+                            names.iter().position(|n| n == name).unwrap(/* collected above */);
+                        positional_count + name_index
+                    }
+                    (None, None) => {
+                        // If there is no explicit index, assign the next one.
+                        let index = next_arg_index;
+                        next_arg_index += 1;
+                        index
+                    }
+                };
+                fragments.push(Fragment::Parameter(Parameter {
+                    index,
+                    ty: param.ty,
+                    hint: param.hint,
+                    name: param.name,
+                }));
+            }
+        }
     }
 
     // Check for argument type conflicts.

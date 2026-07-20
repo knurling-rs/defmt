@@ -20,7 +20,12 @@ fn all_parse_param_cases(
 ) {
     assert_eq!(
         parse_param(input, ParserMode::Strict),
-        Ok(Param { index, ty, hint })
+        Ok(Param {
+            name: None,
+            index,
+            ty,
+            hint
+        })
     );
 }
 
@@ -49,6 +54,7 @@ fn all_display_hints(#[case] input: &str, #[case] hint: DisplayHint) {
     assert_eq!(
         parse_param(input, ParserMode::Strict),
         Ok(Param {
+            name: None,
             index: None,
             ty: Type::Format,
             hint: Some(hint),
@@ -62,6 +68,7 @@ fn display_hint_unknown() {
     assert_eq!(
         parse_param(":unknown", ParserMode::ForwardsCompatible),
         Ok(Param {
+            name: None,
             index: None,
             ty: Type::Format,
             hint: Some(DisplayHint::Unknown("unknown".to_string())),
@@ -92,6 +99,7 @@ fn all_types(#[case] input: &str, #[case] ty: Type) {
     assert_eq!(
         parse_param(input, ParserMode::Strict),
         Ok(Param {
+            name: None,
             index: None,
             ty,
             hint: None,
@@ -109,17 +117,61 @@ fn index(#[case] input: &str, #[case] params: [(usize, Type); 2]) {
         parse(input, ParserMode::Strict),
         Ok(vec![
             Fragment::Parameter(Parameter {
+                name: None,
                 index: params[0].0,
                 ty: params[0].1.clone(),
                 hint: None,
             }),
             Fragment::Parameter(Parameter {
+                name: None,
                 index: params[1].0,
                 ty: params[1].1.clone(),
                 hint: None,
             }),
         ])
     );
+}
+
+#[rstest]
+#[case::named_only("{owner}{count}", [(0, Some("owner"), Type::Format), (1, Some("count"), Type::Format)])]
+#[case::named_repeated("{owner}{owner}", [(0, Some("owner"), Type::Format), (0, Some("owner"), Type::Format)])]
+#[case::named_after_implicit("{}{owner}", [(0, None, Type::Format), (1, Some("owner"), Type::Format)])]
+#[case::named_after_explicit("{owner}{1=u8}{0=u16}", [(2, Some("owner"), Type::Format), (1, None, Type::U8)])]
+#[case::named_with_type_and_hint("{owner=u8:#x}{count=u16}", [(0, Some("owner"), Type::U8), (1, Some("count"), Type::U16)])]
+fn named(#[case] input: &str, #[case] params: [(usize, Option<&str>, Type); 2]) {
+    let parsed = parse(input, ParserMode::Strict).unwrap();
+    let parsed_params = parsed
+        .iter()
+        .filter_map(|frag| match frag {
+            Fragment::Parameter(param) => {
+                Some((param.index, param.name.as_deref(), param.ty.clone()))
+            }
+            Fragment::Literal(_) => None,
+        })
+        .take(2)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        parsed_params,
+        params
+            .iter()
+            .map(|(index, name, ty)| (*index, *name, ty.clone()))
+            .collect::<Vec<_>>()
+    );
+}
+
+#[rstest]
+#[case::debug_hint("{owner:?}")]
+#[case::zero_pad_hint("{owner:08}")]
+fn named_with_debug_hint(#[case] input: &str) {
+    // `{owner:?}` (std's Debug syntax) must parse as a named parameter of the default
+    // (`Format`) type, making std format strings work unchanged.
+    let parsed = parse(input, ParserMode::Strict).unwrap();
+    let Fragment::Parameter(param) = &parsed[0] else {
+        panic!("expected parameter, got {parsed:?}");
+    };
+    assert_eq!(param.index, 0);
+    assert_eq!(param.name.as_deref(), Some("owner"));
+    assert_eq!(param.ty, Type::Format);
 }
 
 #[rstest]
@@ -130,6 +182,7 @@ fn range(#[case] input: &str, #[case] bit_field: Range<u8>) {
     assert_eq!(
         parse(input, ParserMode::Strict),
         Ok(vec![Fragment::Parameter(Parameter {
+            name: None,
             index: 0,
             ty: Type::BitField(bit_field),
             hint: None,
@@ -143,16 +196,19 @@ fn multiple_ranges() {
         parse("{0=30..31}{1=0..4}{1=2..6}", ParserMode::Strict),
         Ok(vec![
             Fragment::Parameter(Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(30..31),
                 hint: None,
             }),
             Fragment::Parameter(Parameter {
+                name: None,
                 index: 1,
                 ty: Type::BitField(0..4),
                 hint: None,
             }),
             Fragment::Parameter(Parameter {
+                name: None,
                 index: 1,
                 ty: Type::BitField(2..6),
                 hint: None,
@@ -169,6 +225,7 @@ fn arrays(#[case] input: &str, #[case] length: usize) {
     assert_eq!(
         parse(input, ParserMode::Strict),
         Ok(vec![Fragment::Parameter(Parameter {
+            name: None,
             index: 0,
             ty: Type::U8Array(length),
             hint: None,
@@ -186,10 +243,10 @@ fn arrays_err(#[case] input: &str) {
 
 #[rstest]
 #[case("{=dunno}", Error::InvalidTypeSpecifier("dunno".to_string()))]
-#[case("{dunno}", Error::UnexpectedContentInFormatString("dunno".to_string()))]
 #[case("{=u8;x}", Error::InvalidTypeSpecifier("u8;x".to_string()))]
-#[case("{dunno=u8:x}", Error::UnexpectedContentInFormatString("dunno=u8:x".to_string()))]
 #[case("{0dunno}", Error::UnexpectedContentInFormatString("dunno".to_string()))]
+#[case("{dunno.field}", Error::UnexpectedContentInFormatString(".field".to_string()))]
+#[case("{_}", Error::InvalidArgumentName("_".to_string()))]
 #[case("{:}", Error::MalformedFormatString)]
 #[case::stray_braces_1("}string", Error::UnmatchedCloseBracket)]
 #[case::stray_braces_2("{string", Error::UnmatchedOpenBracket)]
