@@ -60,7 +60,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-* Support named arguments in format strings, like `core::format_args!`: `{owner}`, `{owner:?}` and `{owner=u8:#x}` capture `owner` from the surrounding scope, and arguments can be passed by name (`defmt::info!("{x}", x = expr)`).
+* Support named arguments in format strings. A parameter may now name a variable instead of using a positional index; the variable is captured from the surrounding scope, following the same rules as `core::format_args!`. This means `format!`-style strings such as `"{owner}"` and `"{owner:?}"` work unchanged, and defmt's type and display-hint syntax composes with names: `"{owner=u8:#x}"`. Arguments can also be passed by name: `defmt::info!("{x}", x = expr)`. Decoders older than this change cannot decode log statements that use the new syntax (other log statements are unaffected).
 
 ### [defmt-v1.1.1] (2026-06-26)
 
@@ -711,7 +711,7 @@ Initial release
 
 ### [defmt-parser-next]
 
-* Support named arguments (`{owner}`, `{owner=u8:#x}`) in the format string grammar. Named parameters are assigned the argument indices after all positional ones, in order of first appearance. `Parameter` gained a `name` field (breaking change).
+* Support named arguments (`{owner}`, `{owner=u8:#x}`) in the format string grammar. Named parameters are assigned the argument indices after all positional ones, in order of first appearance. Breaking changes (v2.0.0): `Parameter` gained a `name` field and `Error` gained an `InvalidArgumentName` variant.
 * [#956] Link `LICENSE-*` in the crate folder
 * [#1028] Clarify that MSRV is 1.76
 

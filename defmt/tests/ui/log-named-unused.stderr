@@ -1,0 +1,5 @@
+error: named argument `y` is not used in this format string
+ --> tests/ui/log-named-unused.rs:2:35
+  |
+2 |     defmt::info!("{x=u8}", x = 1, y = 2)
+  |                                   ^

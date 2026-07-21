@@ -272,6 +272,8 @@ fn arrays_err(#[case] input: &str) {
 #[case::index_0_is_omitted("{1=u8}", Error::UnusedArgument(0))]
 #[case::index_1_is_missing("{2=u8}{=u16}", Error::UnusedArgument(1))]
 #[case::index_0_is_missing("{2=u8}{1=u16}", Error::UnusedArgument(0))]
+#[case::name_with_different_types("{n=u8}{n=u16}", Error::ConflictingTypes(0, Type::U8, Type::U16))]
+#[case::positional_missing_with_named_present("{owner}{1=u8}", Error::UnusedArgument(0))]
 fn error_msg(#[case] input: &str, #[case] err: Error) {
     assert_eq!(parse(input, ParserMode::Strict), Err(err));
 }

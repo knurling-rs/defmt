@@ -1,0 +1,5 @@
+error[E0425]: cannot find value `missing` in this scope
+ --> tests/ui/log-named-missing-capture.rs:2:18
+  |
+2 |     defmt::info!("{missing}")
+  |                  ^^^^^^^^^^^ not found in this scope

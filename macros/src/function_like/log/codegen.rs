@@ -10,6 +10,15 @@ pub(crate) struct Codegen {
     pub(crate) patterns: Vec<Ident2>,
 }
 
+/// Number of arguments referenced by the format string's parameters.
+fn expected_arg_count<'a>(params: impl IntoIterator<Item = &'a Parameter>) -> usize {
+    params
+        .into_iter()
+        .map(|param| param.index + 1)
+        .max()
+        .unwrap_or(0)
+}
+
 /// Resolves the given formatting arguments against the format string's parameters,
 /// returning one expression per argument index, in index order.
 ///
@@ -29,11 +38,7 @@ pub(crate) fn resolve_args(
         })
         .collect::<Vec<_>>();
 
-    let arg_count = params
-        .iter()
-        .map(|param| param.index + 1)
-        .max()
-        .unwrap_or(0);
+    let arg_count = expected_arg_count(params.iter().copied());
 
     // The parser assigns named parameters the indices after all positional ones.
     let mut names: Vec<Option<&str>> = vec![None; arg_count];
@@ -134,11 +139,7 @@ impl Codegen {
             })
             .collect::<Vec<_>>();
 
-        let expected_arg_count = params
-            .iter()
-            .map(|param| param.index + 1)
-            .max()
-            .unwrap_or(0);
+        let expected_arg_count = expected_arg_count(&params);
 
         if given_arg_count != expected_arg_count {
             let mut only = "";
