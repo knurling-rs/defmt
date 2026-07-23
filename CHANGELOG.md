@@ -628,6 +628,8 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1073] Gather symbols from unmerged `.defmt.*` sections, don't use `DW_AT_location`
+
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
@@ -1035,6 +1037,7 @@ Initial release
 
 ---
 
+[#1073]: https://github.com/knurling-rs/defmt/pull/1073
 [#1070]: https://github.com/knurling-rs/defmt/pull/1070
 [#1068]: https://github.com/knurling-rs/defmt/pull/1068
 [#1053]: https://github.com/knurling-rs/defmt/pull/1053
