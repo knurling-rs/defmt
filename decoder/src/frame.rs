@@ -215,7 +215,7 @@ impl<'t> Frame<'t> {
                     },
                     Arg::FormatSequence { args } => {
                         for arg in args {
-                            buf.push_str(&self.format_args("{=?}", &[arg.clone()], hint))
+                            buf.push_str(&self.format_args("{=?}", std::slice::from_ref(arg), hint))
                         }
                     }
                     Arg::FormatSlice { elements } => {
