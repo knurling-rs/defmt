@@ -51,5 +51,8 @@ cbor-edn = { version = "0.0.6", default-features = false }
 # DEPRECATED: noop, will be removed in 1.0
 unstable = []
 
+[dev-dependencies]
+object = { version = "0.36", default-features = false, features = ["write_core"] }
+
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg=docsrs"]
