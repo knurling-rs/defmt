@@ -21,10 +21,12 @@ pub(crate) fn expand(level: Level, args: TokenStream) -> TokenStream {
 
 pub(crate) fn expand_parsed(level: Level, args: Args) -> syn::Result<TokenStream2> {
     let format_string = args.format_string.value();
-    let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
-        Ok(args) => args,
-        Err(e) => return Err(syn::Error::new(args.format_string.span(), format!("{}", e))),
-    };
+    let (fragments, warnings) =
+        match defmt_parser::parse_with_warnings(&format_string, ParserMode::Strict) {
+            Ok(parsed) => parsed,
+            Err(e) => return Err(syn::Error::new(args.format_string.span(), format!("{}", e))),
+        };
+    let warnings = construct::format_string_warnings(&warnings, args.format_string.span());
 
     let formatting_exprs = args
         .formatting_args
@@ -64,6 +66,7 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> syn::Result<TokenStream
 
     Ok(quote!(
         {
+            #warnings
             option_env!("DEFMT_LOG");
             match (#(&(#formatting_exprs)),*) {
                 (#(#patterns),*) => {

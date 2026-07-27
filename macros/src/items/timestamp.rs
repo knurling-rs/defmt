@@ -11,14 +11,16 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
 
     let format_string = args.format_string.value();
 
-    let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
-        Ok(args) => args,
-        Err(e) => {
-            return syn::Error::new(args.format_string.span(), format!("{}", e))
-                .into_compile_error()
-                .into()
-        }
-    };
+    let (fragments, warnings) =
+        match defmt_parser::parse_with_warnings(&format_string, ParserMode::Strict) {
+            Ok(parsed) => parsed,
+            Err(e) => {
+                return syn::Error::new(args.format_string.span(), format!("{}", e))
+                    .into_compile_error()
+                    .into()
+            }
+        };
+    let warnings = construct::format_string_warnings(&warnings, args.format_string.span());
 
     let formatting_exprs: Vec<_> = args
         .formatting_args
@@ -42,6 +44,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
             #[export_name = "_defmt_timestamp"]
             #[inline(never)]
             fn defmt_timestamp(fmt: defmt::Formatter<'_>) {
+                #warnings
                 match (#(&(#formatting_exprs)),*) {
                     (#(#patterns),*) => {
                     // NOTE: No format string index, and no finalize call.
