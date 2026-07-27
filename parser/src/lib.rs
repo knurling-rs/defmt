@@ -129,7 +129,7 @@ fn parse_range(mut s: &str) -> Option<(Range<u8>, usize /* consumed */)> {
     let start = s[..start_digits].parse().ok()?;
 
     // next two `char`s should be `..`
-    if &s[start_digits..start_digits + 2] != ".." {
+    if s.get(start_digits..start_digits + 2) != Some("..") {
         return None;
     }
     s = &s[start_digits + 2..];
