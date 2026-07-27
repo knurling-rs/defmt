@@ -49,6 +49,19 @@ pub enum Error {
     UnusedArgument(usize),
 }
 
+/// A format string that a future release will reject.
+///
+/// This is *not* a part of the public API.
+#[doc(hidden)]
+#[derive(thiserror::Error, Debug, PartialEq, Eq, Clone)]
+#[non_exhaustive]
+pub enum Warning {
+    #[error("unmatched `{{` in format string, escape it as `{{{{`: this will be an error in a future release")]
+    UnmatchedOpenBracket,
+    #[error("unmatched `}}` in format string, escape it as `}}}}`: this will be an error in a future release")]
+    UnmatchedCloseBracket,
+}
+
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Parameter {
@@ -258,10 +271,24 @@ fn parse_param(mut input: &str, mode: ParserMode) -> Result<Param, Error> {
     Ok(Param { index, ty, hint })
 }
 
-fn push_literal<'f>(frag: &mut Vec<Fragment<'f>>, unescaped_literal: &'f str) -> Result<(), Error> {
-    // Replace `{{` with `{` and `}}` with `}`. Single braces are errors.
+/// Rejects a brace that is not doubled, matching what `format!` accepts.
+fn check_braces_by_pairing(unescaped_literal: &str) -> Result<(), Warning> {
+    let mut chars = unescaped_literal.chars().peekable();
+    while let Some(c) = chars.next() {
+        if (c == '{' || c == '}') && chars.next_if_eq(&c).is_none() {
+            return Err(if c == '{' {
+                Warning::UnmatchedOpenBracket
+            } else {
+                Warning::UnmatchedCloseBracket
+            });
+        }
+    }
 
-    // Scan for single braces first. The rest is trivial.
+    Ok(())
+}
+
+/// Rejects a brace kind whose count is odd at a plain character or at the end.
+fn check_braces_by_parity(unescaped_literal: &str) -> Result<(), Error> {
     let mut last_open = false;
     let mut last_close = false;
     for c in unescaped_literal.chars() {
@@ -279,6 +306,26 @@ fn push_literal<'f>(frag: &mut Vec<Fragment<'f>>, unescaped_literal: &'f str) ->
         return Err(Error::UnmatchedOpenBracket);
     } else if last_close {
         return Err(Error::UnmatchedCloseBracket);
+    }
+
+    Ok(())
+}
+
+fn push_literal<'f>(
+    frag: &mut Vec<Fragment<'f>>,
+    unescaped_literal: &'f str,
+    warnings: &mut Vec<Warning>,
+) -> Result<(), Error> {
+    // Replace `{{` with `{` and `}}` with `}`. Single braces are errors.
+
+    // Parity is what this parser has always shipped and accepts strings pairing rejects, such
+    // as `}{{}`. Rejecting those outright would break code that compiles today, so parity keeps
+    // deciding and pairing only warns until a future release swaps them.
+    check_braces_by_parity(unescaped_literal)?;
+    if let Err(warning) = check_braces_by_pairing(unescaped_literal) {
+        if !warnings.contains(&warning) {
+            warnings.push(warning);
+        }
     }
 
     // FIXME: This always allocates a `String`, so the `Cow` is useless.
@@ -316,7 +363,19 @@ where
 }
 
 pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>, Error> {
+    parse_with_warnings(format_string, mode).map(|(fragments, _warnings)| fragments)
+}
+
+/// Same as [`parse`], additionally reporting each warning once.
+///
+/// This is *not* a part of the public API.
+#[doc(hidden)]
+pub fn parse_with_warnings(
+    format_string: &str,
+    mode: ParserMode,
+) -> Result<(Vec<Fragment<'_>>, Vec<Warning>), Error> {
     let mut fragments = Vec::new();
+    let mut warnings = Vec::new();
 
     // Index after the `}` of the last format specifier.
     let mut end_pos = 0;
@@ -341,7 +400,7 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
         if brace_pos > end_pos {
             // There's a literal fragment with at least 1 character before this parameter fragment.
             let unescaped_literal = &format_string[end_pos..brace_pos];
-            push_literal(&mut fragments, unescaped_literal)?;
+            push_literal(&mut fragments, unescaped_literal, &mut warnings)?;
         }
 
         // Else, this is a format specifier. It ends at the next `}`.
@@ -368,7 +427,7 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
 
     // Trailing literal.
     if end_pos != format_string.len() {
-        push_literal(&mut fragments, &format_string[end_pos..])?;
+        push_literal(&mut fragments, &format_string[end_pos..], &mut warnings)?;
     }
 
     // Check for argument type conflicts.
@@ -399,5 +458,5 @@ pub fn parse(format_string: &str, mode: ParserMode) -> Result<Vec<Fragment<'_>>,
         }
     }
 
-    Ok(fragments)
+    Ok((fragments, warnings))
 }

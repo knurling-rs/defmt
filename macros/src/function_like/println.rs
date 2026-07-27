@@ -16,8 +16,8 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
 
 pub(crate) fn expand_parsed(args: Args) -> syn::Result<TokenStream2> {
     let format_string = args.format_string.value();
-    let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
-        Ok(args) => args,
+    let (fragments, warnings) = match defmt_parser::parse_with_warnings(&format_string, ParserMode::Strict) {
+        Ok(parsed) => parsed,
         Err(e @ defmt_parser::Error::UnknownDisplayHint(_)) => return Err(syn::Error::new(
             args.format_string.span(),
             format!(
@@ -27,6 +27,7 @@ pub(crate) fn expand_parsed(args: Args) -> syn::Result<TokenStream2> {
         )),
         Err(e) => return Err(syn::Error::new(args.format_string.span(), format!("{}", e))), // No extra help
     };
+    let warnings = construct::format_string_warnings(&warnings, args.format_string.span());
 
     let formatting_exprs = args
         .formatting_args
@@ -55,6 +56,7 @@ pub(crate) fn expand_parsed(args: Args) -> syn::Result<TokenStream2> {
         )
     };
     Ok(quote!({
+        #warnings
         match (#(&(#formatting_exprs)),*) {
             (#(#patterns),*) => {
                 #content

@@ -3,9 +3,10 @@ use std::{
     hash::{Hash as _, Hasher as _},
 };
 
+use defmt_parser::Warning;
 use proc_macro::Span;
 use proc_macro2::{Ident as Ident2, Span as Span2, TokenStream as TokenStream2};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 use syn::{parse_quote, Expr, Ident, LitStr};
 
 pub(crate) use symbol::mangled as mangled_symbol_name;
@@ -55,6 +56,23 @@ pub(crate) fn interned_string(
     quote!({
         #defmt_path::export::make_istr(#var_addr)
     })
+}
+
+/// Reports `warnings` at `span`: stable proc macros have no diagnostic of their own, so each
+/// one rides on a deprecated constant the expansion reads.
+pub(crate) fn format_string_warnings(warnings: &[Warning], span: Span2) -> TokenStream2 {
+    let statements = warnings.iter().map(|warning| {
+        let note = warning.to_string();
+        quote_spanned!(span=>
+            {
+                #[deprecated(note = #note)]
+                const DEFMT_FORMAT_STRING: () = ();
+                let _ = DEFMT_FORMAT_STRING;
+            }
+        )
+    });
+
+    quote!(#(#statements)*)
 }
 
 /// work around restrictions on length and allowed characters imposed by macos linker

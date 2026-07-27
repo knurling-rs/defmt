@@ -17,14 +17,16 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     } = parse_macro_input!(args as Args);
 
     let format_string = log_args.format_string.value();
-    let fragments = match defmt_parser::parse(&format_string, ParserMode::Strict) {
-        Ok(args) => args,
-        Err(e) => {
-            return syn::Error::new(log_args.format_string.span(), format!("{}", e))
-                .into_compile_error()
-                .into()
-        }
-    };
+    let (fragments, warnings) =
+        match defmt_parser::parse_with_warnings(&format_string, ParserMode::Strict) {
+            Ok(parsed) => parsed,
+            Err(e) => {
+                return syn::Error::new(log_args.format_string.span(), format!("{}", e))
+                    .into_compile_error()
+                    .into()
+            }
+        };
+    let warnings = construct::format_string_warnings(&warnings, log_args.format_string.span());
 
     let formatting_exprs: Vec<_> = log_args
         .formatting_args
@@ -43,6 +45,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     let format_tag =
         construct::interned_string(&format_string, "write", false, None, &parse_quote!(defmt));
     quote!({
+        #warnings
         let _typecheck_formatter: defmt::Formatter<'_> = #formatter;
         match (#(&(#formatting_exprs)),*) {
             (#(#patterns),*) => {
