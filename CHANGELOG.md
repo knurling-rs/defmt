@@ -716,6 +716,7 @@ Initial release
 
 * [#1083] A bitfield spec whose leading number is not followed by a complete `..end`, such as `{=8}` or `{=0.}`, now returns `Err(InvalidTypeSpecifier)` instead of panicking.
 * [#1084] Add `parse_with_warnings`, which reports the format strings that a future release will reject. A stray `}` in a literal that a later stray `}` cancels out, such as `}{{}`, is one: `format!` rejects it, so it warns with `Warning::UnmatchedCloseBracket` while still parsing as before.
+* [#1085] A `{` inside a parameter opens another parameter sharing the same `}`, so `{:{}` asks for two arguments. `parse_with_warnings` reports it as `Warning::NestedParameter` while still parsing as before, and a future release will read the `{` as part of the parameter it sits in.
 * [#956] Link `LICENSE-*` in the crate folder
 * [#1028] Clarify that MSRV is 1.76
 
@@ -1043,6 +1044,7 @@ Initial release
 ---
 
 [#1089]: https://github.com/knurling-rs/defmt/pull/1089
+[#1085]: https://github.com/knurling-rs/defmt/pull/1085
 [#1084]: https://github.com/knurling-rs/defmt/pull/1084
 [#1083]: https://github.com/knurling-rs/defmt/pull/1083
 [#1073]: https://github.com/knurling-rs/defmt/pull/1073

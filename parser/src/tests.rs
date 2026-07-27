@@ -307,3 +307,49 @@ fn braces_by_pairing(#[case] literal: &str, #[case] expected: Result<(), Warning
 fn braces_by_parity(#[case] literal: &str, #[case] expected: Result<(), Error>) {
     assert_eq!(check_braces_by_parity(literal), expected);
 }
+
+/// The `{` in the body opens a second parameter sharing the first one's `}`, so the format
+/// string takes one more argument than it spells out.
+#[rstest]
+#[case::brace_is_the_whole_hint("{:{}", "{")]
+#[case::brace_ends_the_hint("{:a{}", "a{")]
+#[case::brace_after_empty_hint("{::{}", ":{")]
+fn open_brace_inside_parameter_warns(#[case] input: &str, #[case] hint: &str) {
+    assert_eq!(
+        parse_with_warnings(input, ParserMode::ForwardsCompatible),
+        Ok((
+            vec![
+                Fragment::Parameter(Parameter {
+                    index: 0,
+                    ty: Type::Format,
+                    hint: Some(DisplayHint::Unknown(hint.to_string())),
+                }),
+                Fragment::Parameter(Parameter {
+                    index: 1,
+                    ty: Type::Format,
+                    hint: None,
+                }),
+            ],
+            vec![Warning::NestedParameter],
+        ))
+    );
+}
+
+#[rstest]
+#[case::brace_starts_the_hint("{:{a}", Error::UnexpectedContentInFormatString("a".to_string()))]
+#[case::brace_then_colon("{:{:}", Error::MalformedFormatString)]
+fn open_brace_inside_parameter_can_fail_the_re_parse(#[case] input: &str, #[case] err: Error) {
+    assert_eq!(parse(input, ParserMode::ForwardsCompatible), Err(err));
+}
+
+/// `Strict`, the mode the macros use, rejects every string this warns about.
+#[rstest]
+#[case::brace_is_the_whole_hint("{:{}", "{")]
+#[case::brace_ends_the_hint("{:a{}", "a{")]
+#[case::brace_starts_the_hint("{:{a}", "{a")]
+fn open_brace_inside_parameter_is_rejected_in_strict_mode(#[case] input: &str, #[case] hint: &str) {
+    assert_eq!(
+        parse(input, ParserMode::Strict),
+        Err(Error::UnknownDisplayHint(hint.to_string()))
+    );
+}

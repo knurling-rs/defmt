@@ -49,7 +49,7 @@ pub enum Error {
     UnusedArgument(usize),
 }
 
-/// A format string that a future release will reject.
+/// A format string that a future release will reject or read differently.
 ///
 /// This is *not* a part of the public API.
 #[doc(hidden)]
@@ -60,6 +60,8 @@ pub enum Warning {
     UnmatchedOpenBracket,
     #[error("unmatched `}}` in format string, escape it as `}}}}`: this will be an error in a future release")]
     UnmatchedCloseBracket,
+    #[error("`{{` inside a parameter opens another parameter sharing the same `}}`: a future release will read it as part of the parameter it sits in")]
+    NestedParameter,
 }
 
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
@@ -311,6 +313,12 @@ fn check_braces_by_parity(unescaped_literal: &str) -> Result<(), Error> {
     Ok(())
 }
 
+fn push_warning(warnings: &mut Vec<Warning>, warning: Warning) {
+    if !warnings.contains(&warning) {
+        warnings.push(warning);
+    }
+}
+
 fn push_literal<'f>(
     frag: &mut Vec<Fragment<'f>>,
     unescaped_literal: &'f str,
@@ -323,9 +331,7 @@ fn push_literal<'f>(
     // deciding and pairing only warns until a future release swaps them.
     check_braces_by_parity(unescaped_literal)?;
     if let Err(warning) = check_braces_by_pairing(unescaped_literal) {
-        if !warnings.contains(&warning) {
-            warnings.push(warning);
-        }
+        push_warning(warnings, warning);
     }
 
     // FIXME: This always allocates a `String`, so the `Cow` is useless.
@@ -395,6 +401,13 @@ pub fn parse_with_warnings(
             // Escaped `{{`, also part of a literal fragment.
             chars.next(); // Move after both `{`s.
             continue;
+        }
+
+        if brace_pos < end_pos {
+            // This `{` sits in the body of the previous parameter and opens another one sharing
+            // its `}`. Reading the body as part of its own parameter would change what already
+            // built binaries decode to, so the re-scan stays and a future release changes it.
+            push_warning(&mut warnings, Warning::NestedParameter);
         }
 
         if brace_pos > end_pos {
