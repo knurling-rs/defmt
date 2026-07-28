@@ -452,7 +452,7 @@ Initial release
 
 ### [defmt-macros-next]
 
-* Support named arguments with inline capture (`{owner:?}`) and explicit `name = expr` formatting arguments.
+* [#1078] Support named arguments with inline capture (`{owner:?}`) and explicit `name = expr` formatting arguments.
 
 ### [defmt-macros-v1.1.1] (2026-06-26)
 
