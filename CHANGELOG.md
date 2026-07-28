@@ -60,7 +60,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
-* Support named arguments in format strings. A parameter may now name a variable instead of using a positional index; the variable is captured from the surrounding scope, following the same rules as `core::format_args!`. This means `format!`-style strings such as `"{owner}"` and `"{owner:?}"` work unchanged, and defmt's type and display-hint syntax composes with names: `"{owner=u8:#x}"`. Arguments can also be passed by name: `defmt::info!("{x}", x = expr)`. Decoders older than this change cannot decode log statements that use the new syntax (other log statements are unaffected).
+* [#1078] Support named arguments in format strings
+* [#1068] Adding `Format` impl for `core::str` errors
 
 ### [defmt-v1.1.1] (2026-06-26)
 
@@ -630,6 +631,8 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1073] Gather symbols from unmerged `.defmt.*` sections, don't use `DW_AT_location`
+
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
 * [#1004] decoder: add `Send + Sync` bound to returned `StreamDecoder`
@@ -711,7 +714,8 @@ Initial release
 
 ### [defmt-parser-next]
 
-* Support named arguments (`{owner}`, `{owner=u8:#x}`) in the format string grammar. Named parameters are assigned the argument indices after all positional ones, in order of first appearance. Breaking changes (v2.0.0): `Parameter` gained a `name` field and `Error` gained an `InvalidArgumentName` variant.
+* [#1078] Support named arguments (`{owner}`, `{owner=u8:#x}`) in the format string grammar. Named parameters are assigned the argument indices after all positional ones, in order of first appearance. Breaking changes (v2.0.0): `Parameter` gained a `name` field and `Error` gained an `InvalidArgumentName` variant.
+* [#1083] A bitfield spec whose leading number is not followed by a complete `..end`, such as `{=8}` or `{=0.}`, now returns `Err(InvalidTypeSpecifier)` instead of panicking.
 * [#956] Link `LICENSE-*` in the crate folder
 * [#1028] Clarify that MSRV is 1.76
 
@@ -1038,7 +1042,10 @@ Initial release
 
 ---
 
+[#1083]: https://github.com/knurling-rs/defmt/pull/1083
+[#1073]: https://github.com/knurling-rs/defmt/pull/1073
 [#1070]: https://github.com/knurling-rs/defmt/pull/1070
+[#1068]: https://github.com/knurling-rs/defmt/pull/1068
 [#1053]: https://github.com/knurling-rs/defmt/pull/1053
 [#1055]: https://github.com/knurling-rs/defmt/pull/1055
 [#1052]: https://github.com/knurling-rs/defmt/pull/1052
