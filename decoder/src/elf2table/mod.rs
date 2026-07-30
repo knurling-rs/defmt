@@ -24,6 +24,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // first pass to extract the `_defmt_version`
     let mut version = None;
     let mut encoding = None;
+    let mut elf_address_anchor = None;
 
     // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
     // makes it keep the quotes from the linker script.
@@ -75,6 +76,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 ));
             }
             encoding = Some(new_encoding);
+            elf_address_anchor = Some(entry.address());
         }
     }
 
@@ -235,6 +237,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         timestamp,
         bitflags,
         encoding,
+        elf_address_anchor,
     }))
 }
 

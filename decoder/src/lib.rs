@@ -159,30 +159,8 @@ pub struct Table {
     entries: BTreeMap<usize, TableEntry>,
     bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
     encoding: Encoding,
-}
-
-/// Options for building a [`DecodeIndex`].
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct DecodeOptions {
-    address_bias: u64,
-}
-
-impl Default for DecodeOptions {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl DecodeOptions {
-    pub const fn new() -> Self {
-        Self { address_bias: 0 }
-    }
-
-    /// Add `address_bias` when mapping table indices into the wire index namespace.
-    pub const fn address_bias(mut self, address_bias: u64) -> Self {
-        self.address_bias = address_bias;
-        self
-    }
+    #[serde(default)]
+    elf_address_anchor: Option<u64>,
 }
 
 /// Reusable index for decoding frames whose wire indices differ from table indices.
@@ -191,15 +169,25 @@ pub struct DecodeIndex {
 }
 
 impl DecodeIndex {
-    fn new(table: &Table, options: DecodeOptions) -> Self {
+    fn new(table: &Table, load_bias: u64) -> Self {
         let mut entries = HashMap::new();
+        let wire_index_bias = load_bias as u16;
 
-        for &index in table.entries.keys() {
-            let wire_index = (index as u64).wrapping_add(options.address_bias) as u16;
+        for (&index, table_entry) in &table.entries {
+            let wire_index = (index as u16).wrapping_add(wire_index_bias);
 
             entries
                 .entry(wire_index)
-                .and_modify(|entry| *entry = None)
+                .and_modify(|entry| {
+                    if let Some(old) = *entry {
+                        let old_symbol = &table.entries[&old].raw_symbol;
+                        ::log::warn!(
+                            "defmt decode index collision for wire index 0x{wire_index:04x}: symbols `{old_symbol}` and `{}`",
+                            table_entry.raw_symbol,
+                        );
+                    }
+                    *entry = None;
+                })
                 .or_insert(Some(index));
         }
 
@@ -292,9 +280,28 @@ impl Table {
         self.decode_with_index(bytes, &DecodeIndex { entries: None })
     }
 
-    /// Build a reusable index for decoding frames.
-    pub fn new_decode_index(&self, options: DecodeOptions) -> DecodeIndex {
-        DecodeIndex::new(self, options)
+    /// Build a reusable index for decoding frames from an image loaded with `load_bias`.
+    ///
+    /// Table indices are ELF symbol addresses. The current defmt wire index is
+    /// the low 16 bits of the corresponding loaded runtime symbol address.
+    /// `load_bias` is the runtime symbol address minus the same symbol's ELF
+    /// address, and is added before truncating to the wire index.
+    ///
+    /// Decoding fails for wire indices that match multiple table entries.
+    pub fn new_decode_index(&self, load_bias: u64) -> DecodeIndex {
+        DecodeIndex::new(self, load_bias)
+    }
+
+    /// Build a reusable index from the runtime address of the defmt anchor.
+    ///
+    /// `runtime_anchor` is the runtime address returned by
+    /// `defmt::runtime_anchor()` in the process that emitted the frames,
+    /// widened to `u64`. It is compared with the same symbol's ELF address
+    /// stored in the table to compute the load bias.
+    pub fn new_decode_index_for_runtime_anchor(&self, runtime_anchor: u64) -> Option<DecodeIndex> {
+        self.elf_address_anchor.map(|elf_address_anchor| {
+            self.new_decode_index(runtime_anchor.wrapping_sub(elf_address_anchor))
+        })
     }
 
     /// Decode the data sent by the device using a reusable index.
@@ -437,6 +444,7 @@ mod tests {
             entries: entries.into_iter().enumerate().collect(),
             bitflags: Default::default(),
             encoding: Encoding::Raw,
+            elf_address_anchor: None,
         }
     }
 
@@ -452,6 +460,7 @@ mod tests {
             entries: entries.into_iter().enumerate().collect(),
             bitflags: Default::default(),
             encoding: Encoding::Raw,
+            elf_address_anchor: None,
         }
     }
 
@@ -475,6 +484,7 @@ mod tests {
             )),
             bitflags: Default::default(),
             encoding: Encoding::Raw,
+            elf_address_anchor: None,
         };
 
         let frame = table.decode(bytes).unwrap().0;
@@ -680,7 +690,7 @@ mod tests {
             4, 0,  // wire index for the struct
             42, // Foo.x
         ];
-        let index = table.new_decode_index(DecodeOptions::new().address_bias(3));
+        let index = table.new_decode_index(3);
 
         let frame = table.decode_with_index(&bytes, &index).unwrap().0;
         assert_eq!(frame.index(), 0);
@@ -697,7 +707,7 @@ mod tests {
             3, 0, // wire index for the frame
             4, 0, // wire index for the interned string
         ];
-        let index = table.new_decode_index(DecodeOptions::new().address_bias(3));
+        let index = table.new_decode_index(3);
 
         let frame = table.decode_with_index(&bytes, &index).unwrap().0;
         assert_eq!(frame.index(), 0);
@@ -765,7 +775,7 @@ mod tests {
             23, // State variable
             0, 0, // terminator
         ];
-        let index = table.new_decode_index(DecodeOptions::new().address_bias(4));
+        let index = table.new_decode_index(4);
 
         let frame = table.decode_with_index(&bytes, &index).unwrap().0;
         assert_eq!(frame.index(), 0);
@@ -794,8 +804,9 @@ mod tests {
             .collect(),
             bitflags: Default::default(),
             encoding: Encoding::Raw,
+            elf_address_anchor: None,
         };
-        let index = table.new_decode_index(DecodeOptions::new());
+        let index = table.new_decode_index(0);
 
         assert_eq!(
             table.decode_with_index(&[0, 0], &index),
@@ -804,6 +815,22 @@ mod tests {
         assert_eq!(
             table.decode_with_index(&[1, 0], &index).unwrap().0.index(),
             1
+        );
+    }
+
+    #[test]
+    fn decode_index_from_runtime_anchor() {
+        let mut table = test_table([TableEntry::new_without_symbol(
+            Tag::Info,
+            "hello".to_owned(),
+        )]);
+        table.elf_address_anchor = Some(0x1000);
+
+        let index = table.new_decode_index_for_runtime_anchor(0x1003).unwrap();
+
+        assert_eq!(
+            table.decode_with_index(&[3, 0], &index).unwrap().0.index(),
+            0
         );
     }
 
@@ -1310,6 +1337,7 @@ mod tests {
             )),
             bitflags: Default::default(),
             encoding: Encoding::Raw,
+            elf_address_anchor: None,
         };
 
         let bytes = [
