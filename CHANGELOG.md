@@ -712,6 +712,7 @@ Initial release
 
 ### [defmt-parser-next]
 
+* [#1083] A bitfield spec whose leading number is not followed by a complete `..end`, such as `{=8}` or `{=0.}`, now returns `Err(InvalidTypeSpecifier)` instead of panicking.
 * [#956] Link `LICENSE-*` in the crate folder
 * [#1028] Clarify that MSRV is 1.76
 
@@ -1038,6 +1039,7 @@ Initial release
 
 ---
 
+[#1083]: https://github.com/knurling-rs/defmt/pull/1083
 [#1073]: https://github.com/knurling-rs/defmt/pull/1073
 [#1070]: https://github.com/knurling-rs/defmt/pull/1070
 [#1066]: https://github.com/knurling-rs/defmt/pull/1066

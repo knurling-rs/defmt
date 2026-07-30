@@ -204,6 +204,10 @@ fn arrays_err(#[case] input: &str) {
 #[case::range_missing_parts_3("{=..4}", Error::InvalidTypeSpecifier("..4".to_string()))]
 #[case::range_missing_parts_4("{=0.4}", Error::InvalidTypeSpecifier("0.4".to_string()))]
 #[case::range_missing_parts_5("{=0...4}", Error::InvalidTypeSpecifier("0...4".to_string()))]
+#[case::bitfield_bare_digit("{=8}", Error::InvalidTypeSpecifier("8".to_string()))]
+#[case::bitfield_bare_digit_zero("{=0}", Error::InvalidTypeSpecifier("0".to_string()))]
+#[case::bitfield_bare_digit_multi("{=127}", Error::InvalidTypeSpecifier("127".to_string()))]
+#[case::bitfield_digit_then_dot("{=0.}", Error::InvalidTypeSpecifier("0.".to_string()))]
 #[case::index_with_different_types(
     "{0=u8}{0=u16}",
     Error::ConflictingTypes(0, Type::U8, Type::U16)
