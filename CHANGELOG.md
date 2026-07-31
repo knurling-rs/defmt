@@ -60,6 +60,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#1078] Support named arguments in format strings
 * [#1068] Adding `Format` impl for `core::str` errors
 
 ### [defmt-v1.1.1] (2026-06-26)
@@ -451,6 +452,8 @@ Initial release
 
 ### [defmt-macros-next]
 
+* [#1078] Support named arguments with inline capture (`{owner:?}`) and explicit `name = expr` formatting arguments.
+
 ### [defmt-macros-v1.1.1] (2026-06-26)
 
 * [#1070] Swap from `proc-macro-error2` to `syn::Error`
@@ -711,6 +714,7 @@ Initial release
 
 ### [defmt-parser-next]
 
+* [#1078] Support named arguments (`{owner}`, `{owner=u8:#x}`) in the format string grammar. Named parameters are assigned the argument indices after all positional ones, in order of first appearance. Breaking changes (v2.0.0): `Parameter` gained a `name` field and `Error` gained an `InvalidArgumentName` variant.
 * [#1083] A bitfield spec whose leading number is not followed by a complete `..end`, such as `{=8}` or `{=0.}`, now returns `Err(InvalidTypeSpecifier)` instead of panicking.
 * [#956] Link `LICENSE-*` in the crate folder
 * [#1028] Clarify that MSRV is 1.76

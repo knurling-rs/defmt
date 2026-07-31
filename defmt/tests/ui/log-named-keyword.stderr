@@ -1,0 +1,5 @@
+error: invalid argument name `fn`: keywords cannot be captured
+ --> tests/ui/log-named-keyword.rs:2:18
+  |
+2 |     defmt::info!("{fn}")
+  |                  ^^^^^^

@@ -89,6 +89,11 @@ fn all_backcompat_snapshot_tests() -> Vec<&'static str> {
     all_snapshot_tests()
         .into_iter()
         .filter(|test| *test != "drop-on-contention")
+        // `named_args` exercises a format string grammar extension; decoders older than the
+        // extension cannot parse such format strings (by design, this does not bump the wire
+        // format version: frames from log statements that don't use the new syntax are
+        // unaffected)
+        .filter(|test| *test != "named_args")
         .collect()
 }
 

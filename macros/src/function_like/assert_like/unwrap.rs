@@ -19,7 +19,7 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
         );
 
         let mut formatting_args = Punctuated::new();
-        formatting_args.push(construct::variable("_unwrap_err"));
+        formatting_args.push(log::FormatArg::from(construct::variable("_unwrap_err")));
 
         (format_string, Some(formatting_args))
     };

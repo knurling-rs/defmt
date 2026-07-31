@@ -36,7 +36,7 @@ defmt::trace!("{}", x);
 
 The `defmt` grammar is similar to `core::fmt`, but not the same. The syntax of a formatting parameter is shown below:
 
-> `{[pos][=Type][:Display]}`
+> `{[pos|name][=Type][:Display]}`
 
 ### Type hint
 
@@ -55,3 +55,18 @@ Read more about it [here](./hints.md).
 ### Positional parameter
 
 The `pos` parameter lets you specify the position of the value to format (see ["Positional parameters"](https://doc.rust-lang.org/std/fmt/index.html#positional-parameters)).
+
+### Named parameters
+
+Instead of a position, a parameter can name a variable, which is captured from the surrounding scope (see ["Named parameters"](https://doc.rust-lang.org/std/fmt/index.html#named-parameters)).
+Names combine freely with the type and display hints, and arguments can also be passed by name.
+
+``` rust
+# extern crate defmt;
+# let len = 80u8;
+// -> INFO:  message arrived (length=80)
+defmt::info!("message arrived (length={len})");
+
+// -> INFO:  message arrived (length=0x50)
+defmt::info!("message arrived (length={len=u8:#x})", len = 80u8);
+```

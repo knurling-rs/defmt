@@ -1,0 +1,5 @@
+error: duplicate argument named `x`
+ --> tests/ui/log-named-duplicate.rs:2:35
+  |
+2 |     defmt::info!("{x=u8}", x = 1, x = 2)
+  |                                   ^

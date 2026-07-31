@@ -45,7 +45,7 @@ fn expand(args: Args, binop: BinOp) -> syn::Result<TokenStream2> {
     };
 
     for val in vals {
-        formatting_args.push(construct::variable(val));
+        formatting_args.push(log::FormatArg::from(construct::variable(val)));
     }
 
     let panic_msg = match binop {

@@ -1,0 +1,8 @@
+INFO  42
+INFO  42
+INFO  42
+INFO  0x2a then 0x1234
+INFO  42 repeated 42
+INFO  explicit 1
+INFO  mixed pos=7 named=42 first=7
+println 42 0x1234

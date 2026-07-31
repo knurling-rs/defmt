@@ -285,6 +285,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 
             // create new merged bitfield for this index
             merged_bitfields.push(Parameter {
+                name: None,
                 index,
                 ty: Type::BitField(Range {
                     start: smallest,
@@ -325,11 +326,13 @@ mod tests {
     fn merge_bitfields_simple() {
         let mut params = vec![
             Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(0..3),
                 hint: None,
             },
             Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(4..7),
                 hint: None,
@@ -340,6 +343,7 @@ mod tests {
         assert_eq!(
             params,
             vec![Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(0..7),
                 hint: None,
@@ -351,11 +355,13 @@ mod tests {
     fn merge_bitfields_overlap() {
         let mut params = vec![
             Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(1..3),
                 hint: None,
             },
             Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(2..5),
                 hint: None,
@@ -366,6 +372,7 @@ mod tests {
         assert_eq!(
             params,
             vec![Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(1..5),
                 hint: None,
@@ -377,16 +384,19 @@ mod tests {
     fn merge_bitfields_multiple_indices() {
         let mut params = vec![
             Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(0..3),
                 hint: None,
             },
             Parameter {
+                name: None,
                 index: 1,
                 ty: Type::BitField(1..3),
                 hint: None,
             },
             Parameter {
+                name: None,
                 index: 1,
                 ty: Type::BitField(4..5),
                 hint: None,
@@ -398,11 +408,13 @@ mod tests {
             params,
             vec![
                 Parameter {
+                    name: None,
                     index: 0,
                     ty: Type::BitField(0..3),
                     hint: None,
                 },
                 Parameter {
+                    name: None,
                     index: 1,
                     ty: Type::BitField(1..5),
                     hint: None,
@@ -415,21 +427,25 @@ mod tests {
     fn merge_bitfields_overlap_non_consecutive_indices() {
         let mut params = vec![
             Parameter {
+                name: None,
                 index: 0,
                 ty: Type::BitField(0..3),
                 hint: None,
             },
             Parameter {
+                name: None,
                 index: 1,
                 ty: Type::U8,
                 hint: None,
             },
             Parameter {
+                name: None,
                 index: 2,
                 ty: Type::BitField(1..4),
                 hint: None,
             },
             Parameter {
+                name: None,
                 index: 2,
                 ty: Type::BitField(4..5),
                 hint: None,
@@ -442,16 +458,19 @@ mod tests {
             params,
             vec![
                 Parameter {
+                    name: None,
                     index: 1,
                     ty: Type::U8,
                     hint: None,
                 },
                 Parameter {
+                    name: None,
                     index: 0,
                     ty: Type::BitField(0..3),
                     hint: None,
                 },
                 Parameter {
+                    name: None,
                     index: 2,
                     ty: Type::BitField(1..5),
                     hint: None,
