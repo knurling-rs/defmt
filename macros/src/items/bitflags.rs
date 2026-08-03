@@ -82,6 +82,9 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
 
             quote! {
                 #(#cfg_attrs)*
+                // These values are decoder metadata and have no runtime reference that would
+                // otherwise keep them when no defmt linker script is used.
+                #[used]
                 #[cfg_attr(target_os = "macos", link_section = ".defmt,end")]
                 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
                 #[export_name = #sym_name]
