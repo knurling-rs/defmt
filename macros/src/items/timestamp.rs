@@ -53,8 +53,9 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
             #var_item;
 
             // Unique symbol name to prevent multiple `timestamp!` invocations in the crate graph.
-            // Uses `#var_name` to ensure it is not discarded by the linker.
-            // This symbol itself is retained via a `EXTERN` directive in the linker script.
+            // Retaining this symbol also retains `#var_name` through the reference below. The
+            // linker script's `EXTERN` directive provides the same guarantee when it is used.
+            #[used]
             #[no_mangle]
             #[cfg_attr(target_os = "macos", link_section = ".defmt,end.timestamp")]
             #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end.timestamp")]
