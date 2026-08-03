@@ -84,7 +84,9 @@ fn codegen_flag_statics(input: &Input) -> Vec<TokenStream2> {
                 #(#cfg_attrs)*
                 // These values are decoder metadata and have no runtime reference that would
                 // otherwise keep them when no defmt linker script is used.
-                #[used]
+                // MSVC represents `#[used]` as `/INCLUDE:<symbol>`, but `link.exe` fails to
+                // resolve defmt's JSON symbol names when they are forced this way.
+                #[cfg_attr(not(target_env = "msvc"), used)]
                 #[cfg_attr(target_os = "macos", link_section = ".defmt,end")]
                 #[cfg_attr(not(target_os = "macos"), link_section = ".defmt.end")]
                 #[export_name = #sym_name]
