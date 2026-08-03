@@ -60,6 +60,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#1089] Retain timestamp and bitflags metadata when linking without `defmt.x`.
 * [#1068] Adding `Format` impl for `core::str` errors
 
 ### [defmt-v1.1.1] (2026-06-26)
@@ -1038,6 +1039,7 @@ Initial release
 
 ---
 
+[#1089]: https://github.com/knurling-rs/defmt/pull/1089
 [#1083]: https://github.com/knurling-rs/defmt/pull/1083
 [#1073]: https://github.com/knurling-rs/defmt/pull/1073
 [#1070]: https://github.com/knurling-rs/defmt/pull/1070
