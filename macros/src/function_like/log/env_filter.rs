@@ -130,7 +130,6 @@ impl EnvFilter {
     fn modules_on_for(&self, level: Level) -> BTreeSet<&ModulePath> {
         self.entries
             .iter()
-            .rev()
             .filter_map(|(module_path, min_level)| {
                 // `min_level == None` means "off" so exclude the module path in that case
                 min_level.and_then(|min_level| {
@@ -148,7 +147,6 @@ impl EnvFilter {
     fn modules_off_for(&self, level: Level) -> BTreeSet<&ModulePath> {
         self.entries
             .iter()
-            .rev()
             .filter_map(|(module_path, min_level)| match min_level {
                 Some(min_level) if level >= *min_level => None,
                 _ => {
