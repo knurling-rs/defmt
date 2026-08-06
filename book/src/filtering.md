@@ -131,7 +131,8 @@ my-package # package-name = my-package
 
 ## Overrides
 
-Logging directives that appear later in the list override preceding instances.
+Specific directives override generic ones regardless of order.
+In case of duplicate logging directives, later ones override preceding instances.
 
 ``` rust
 # extern crate defmt;
