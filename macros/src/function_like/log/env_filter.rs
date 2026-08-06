@@ -84,7 +84,7 @@ impl EnvFilter {
             return None;
         }
 
-        let modules_to_reject = self.always_off_modules();
+        let modules_to_reject = self.modules_off_for(level);
 
         let module_to_criteria: BTreeMap<_, _> = modules_to_accept
             .iter()
@@ -126,7 +126,7 @@ impl EnvFilter {
         }))
     }
 
-    /// Returns the set of modules that can emit logs at requested `level`
+    /// Returns the set of modules that enable logs at requested `level`
     fn modules_on_for(&self, level: Level) -> BTreeSet<&ModulePath> {
         self.entries
             .iter()
@@ -144,17 +144,16 @@ impl EnvFilter {
             .collect()
     }
 
-    /// Returns the set of modules that must NOT emit logs (= that are set to `off`)
-    fn always_off_modules(&self) -> BTreeSet<&ModulePath> {
+    /// Returns the set of modules that disable logs at requested `level`
+    fn modules_off_for(&self, level: Level) -> BTreeSet<&ModulePath> {
         self.entries
             .iter()
             .rev()
-            .filter_map(|(module_path, level_or_off)| {
-                if level_or_off.is_none() {
-                    // `off` pseudo-level
+            .filter_map(|(module_path, min_level)| match min_level {
+                Some(min_level) if level >= *min_level => None,
+                _ => {
+                    // The module is either `off` or has a higher minimum level.
                     Some(module_path)
-                } else {
-                    None
                 }
             })
             .collect()
@@ -329,7 +328,7 @@ mod tests {
         let expected = [ModulePath::parse("krate")];
         assert_eq!(
             expected.iter().collect::<BTreeSet<_>>(),
-            env_filter.always_off_modules()
+            env_filter.modules_off_for(Level::Error)
         );
         Ok(())
     }
@@ -349,7 +348,31 @@ mod tests {
         let expected = [ModulePath::parse("krate")];
         assert_eq!(
             expected.iter().collect::<BTreeSet<_>>(),
-            env_filter.always_off_modules()
+            env_filter.modules_off_for(Level::Error)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn child_can_be_more_restrictive_than_parent() -> syn::Result<()> {
+        let env_filter = EnvFilter::new(
+            Some("debug,krate::parent=trace,krate::parent::child=debug"),
+            "krate",
+        )?;
+
+        let expected_on = [ModulePath::parse("krate::parent")];
+        assert_eq!(
+            expected_on.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_on_for(Level::Trace)
+        );
+
+        let expected_off = [
+            ModulePath::parse("krate"),
+            ModulePath::parse("krate::parent::child"),
+        ];
+        assert_eq!(
+            expected_off.iter().collect::<BTreeSet<_>>(),
+            env_filter.modules_off_for(Level::Trace)
         );
         Ok(())
     }
