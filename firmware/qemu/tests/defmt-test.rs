@@ -11,7 +11,7 @@ static MAY_PANIC: AtomicBool = AtomicBool::new(false);
 
 #[defmt_test::tests]
 mod tests {
-    use core::{sync::atomic::Ordering, u8::MAX};
+    use core::sync::atomic::Ordering;
     use defmt::{assert, assert_eq};
 
     struct InitStruct {
@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn assert_imported_max() {
-        assert_eq!(CUSTOM_MAX, MAX);
+        assert_eq!(CUSTOM_MAX, u8::MAX);
     }
 
     #[cfg(not(never))]
