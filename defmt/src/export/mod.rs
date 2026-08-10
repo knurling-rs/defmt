@@ -142,10 +142,7 @@ pub fn fmt<T: Format + ?Sized>(f: &T) {
 /// Implementation detail
 pub fn fmt_slice<T: Format>(values: &[T]) {
     usize(&values.len());
-    istr(&T::_format_tag());
-    for value in values {
-        value._format_data();
-    }
+    fmt_array(values);
 }
 
 /// Implementation detail
@@ -180,6 +177,9 @@ pub fn u8_array(a: &[u8]) {
 
 // NOTE: This is passed `&[u8; N]` – it's just coerced to a slice.
 pub fn fmt_array<T: Format>(a: &[T]) {
+    if a.is_empty() {
+        return;
+    }
     istr(&T::_format_tag());
     for value in a {
         value._format_data();
