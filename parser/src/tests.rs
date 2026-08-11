@@ -195,6 +195,8 @@ fn arrays_err(#[case] input: &str) {
 #[case::stray_braces_2("{string", Error::UnmatchedOpenBracket)]
 #[case::stray_braces_3("}", Error::UnmatchedCloseBracket)]
 #[case::stray_braces_4("{", Error::UnmatchedOpenBracket)]
+#[case::stray_close_twice("}a}", Error::UnmatchedCloseBracket)]
+#[case::stray_close_after_escape("}}a}", Error::UnmatchedCloseBracket)]
 #[case::range_empty("{=0..0}", Error::InvalidTypeSpecifier("0..0".to_string()))]
 #[case::range_start_gt_end("{=1..0}", Error::InvalidTypeSpecifier("1..0".to_string()))]
 #[case::range_out_of_128bit_1("{=0..129}", Error::InvalidTypeSpecifier("0..129".to_string()))]
@@ -234,5 +236,120 @@ fn escaped_braces(#[case] input: &str, #[case] literal: &str) {
     assert_eq!(
         parse(input, ParserMode::Strict),
         Ok(vec![Fragment::Literal(literal.into())])
+    );
+}
+
+/// Every string over `{`, `}` and `a` up to length 6 that `format!` rejects and this accepts.
+#[rstest]
+#[case::stray_close_cancelled_1("}{{}")]
+#[case::stray_close_cancelled_2("}{{}a")]
+#[case::stray_close_cancelled_3("}{{}aa")]
+#[case::stray_close_cancelled_4("a}{{}")]
+#[case::stray_close_cancelled_5("aa}{{}")]
+#[case::stray_close_cancelled_6("a}{{}a")]
+#[case::stray_close_cancelled_7("{{}{{}")]
+#[case::stray_close_cancelled_8("{}}{{}")]
+#[case::stray_close_cancelled_9("}{{{{}")]
+#[case::stray_close_cancelled_10("}{{}{{")]
+#[case::stray_close_cancelled_11("}{{}{}")]
+#[case::stray_close_cancelled_12("}{{}}}")]
+#[case::stray_close_cancelled_13("}}}{{}")]
+fn stray_brace_warns(#[case] input: &str) {
+    let (_fragments, warnings) = parse_with_warnings(input, ParserMode::Strict).unwrap();
+    assert_eq!(warnings, vec![Warning::UnmatchedCloseBracket]);
+}
+
+#[test]
+fn a_warned_format_string_parses_as_it_always_has() {
+    assert_eq!(
+        parse("}{{}", ParserMode::Strict),
+        Ok(vec![Fragment::Literal("}{}".into())])
+    );
+}
+
+#[rstest]
+#[case::escapes_only("{{}}")]
+#[case::literal_and_parameter("a{{{=u8}}}")]
+fn balanced_braces_do_not_warn(#[case] input: &str) {
+    let (_fragments, warnings) = parse_with_warnings(input, ParserMode::Strict).unwrap();
+    assert_eq!(warnings, vec![]);
+}
+
+#[test]
+fn each_warning_is_reported_once() {
+    let (_fragments, warnings) = parse_with_warnings("}{{}{=u8}}{{}", ParserMode::Strict).unwrap();
+    assert_eq!(warnings, vec![Warning::UnmatchedCloseBracket]);
+}
+
+#[rstest]
+#[case::empty("", Ok(()))]
+#[case::escaped_open("{{", Ok(()))]
+#[case::escaped_close("}}", Ok(()))]
+#[case::escapes_around_text("{{a}}", Ok(()))]
+#[case::lone_open("{", Err(Warning::UnmatchedOpenBracket))]
+#[case::lone_close("}", Err(Warning::UnmatchedCloseBracket))]
+#[case::open_before_close("{}", Err(Warning::UnmatchedOpenBracket))]
+#[case::close_before_open("}{", Err(Warning::UnmatchedCloseBracket))]
+#[case::odd_run_of_opens("{{{", Err(Warning::UnmatchedOpenBracket))]
+#[case::cancelled_close("}{{}", Err(Warning::UnmatchedCloseBracket))]
+fn braces_by_pairing(#[case] literal: &str, #[case] expected: Result<(), Warning>) {
+    assert_eq!(check_braces_by_pairing(literal), expected);
+}
+
+#[rstest]
+#[case::escapes_around_text("{{a}}", Ok(()))]
+#[case::lone_open("{", Err(Error::UnmatchedOpenBracket))]
+#[case::lone_close("}", Err(Error::UnmatchedCloseBracket))]
+#[case::text_after_lone_open("{a", Err(Error::UnmatchedOpenBracket))]
+#[case::text_after_lone_close("}a", Err(Error::UnmatchedCloseBracket))]
+#[case::cancelled_close("}{{}", Ok(()))]
+#[case::cancelled_close_around_text("a}{{}a", Ok(()))]
+fn braces_by_parity(#[case] literal: &str, #[case] expected: Result<(), Error>) {
+    assert_eq!(check_braces_by_parity(literal), expected);
+}
+
+/// The `{` in the body opens a second parameter sharing the first one's `}`, so the format
+/// string takes one more argument than it spells out.
+#[rstest]
+#[case::brace_is_the_whole_hint("{:{}", "{")]
+#[case::brace_ends_the_hint("{:a{}", "a{")]
+#[case::brace_after_empty_hint("{::{}", ":{")]
+fn open_brace_inside_parameter_warns(#[case] input: &str, #[case] hint: &str) {
+    assert_eq!(
+        parse_with_warnings(input, ParserMode::ForwardsCompatible),
+        Ok((
+            vec![
+                Fragment::Parameter(Parameter {
+                    index: 0,
+                    ty: Type::Format,
+                    hint: Some(DisplayHint::Unknown(hint.to_string())),
+                }),
+                Fragment::Parameter(Parameter {
+                    index: 1,
+                    ty: Type::Format,
+                    hint: None,
+                }),
+            ],
+            vec![Warning::NestedParameter],
+        ))
+    );
+}
+
+#[rstest]
+#[case::brace_starts_the_hint("{:{a}", Error::UnexpectedContentInFormatString("a".to_string()))]
+#[case::brace_then_colon("{:{:}", Error::MalformedFormatString)]
+fn open_brace_inside_parameter_can_fail_the_re_parse(#[case] input: &str, #[case] err: Error) {
+    assert_eq!(parse(input, ParserMode::ForwardsCompatible), Err(err));
+}
+
+/// `Strict`, the mode the macros use, rejects every string this warns about.
+#[rstest]
+#[case::brace_is_the_whole_hint("{:{}", "{")]
+#[case::brace_ends_the_hint("{:a{}", "a{")]
+#[case::brace_starts_the_hint("{:{a}", "{a")]
+fn open_brace_inside_parameter_is_rejected_in_strict_mode(#[case] input: &str, #[case] hint: &str) {
+    assert_eq!(
+        parse(input, ParserMode::Strict),
+        Err(Error::UnknownDisplayHint(hint.to_string()))
     );
 }
