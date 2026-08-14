@@ -155,8 +155,14 @@ impl Source {
                 let n = stdin.read(buf).await?;
                 Ok((n, n == 0))
             }
-            Source::Tcp(tcpstream, ..) => Ok((tcpstream.read(buf).await?, false)),
-            Source::Serial(serial) => Ok((serial.read(buf).await?, false)),
+            Source::Tcp(tcpstream, ..) => {
+                let n = tcpstream.read(buf).await?;
+                Ok((n, n == 0))
+            }
+            Source::Serial(serial) => {
+                let n = serial.read(buf).await?;
+                Ok((n, n == 0))
+            }
         }
     }
 }
@@ -221,7 +227,7 @@ async fn run_and_watch(opts: Opts, source: &mut Source) -> anyhow::Result<()> {
 
     loop {
         select! {
-            r = run(opts.clone(), source) => r?,
+            r = run(opts.clone(), source) => return r,
             _ = has_file_changed(&mut rx, &path) => ()
         }
     }
