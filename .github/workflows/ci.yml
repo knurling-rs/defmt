@@ -193,6 +193,7 @@ jobs:
       - cross
       - cargo-deny
       - lint
+      - lint-cross
       - ui
       - mdbook
       - qemu-snapshot
