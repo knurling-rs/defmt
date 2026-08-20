@@ -187,16 +187,19 @@ jobs:
   ci-success:
     name: CI finished successfully
     runs-on: ubuntu-latest
-    if: success()
+    if: always()
     needs:
       - host
       - cross
       - cargo-deny
       - lint
+      - lint-cross
       - ui
       - mdbook
       - qemu-snapshot
       - backcompat
+    timeout-minutes: 2
     steps:
-      - name: Mark the build as successful
-        run: exit 0
+      # Taken from: https://github.com/orgs/community/discussions/75568#discussioncomment-10351973
+      - name: Ensure all required jobs succeed
+        run: echo '${{ toJSON(needs) }}' | jq -e 'to_entries | all(.value.result == "success")'
