@@ -63,6 +63,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#1091] Allow inner modules to decrease env filter verbosity
 * [#1089] Retain timestamp and bitflags metadata when linking without `defmt.x`.
 * [#1068] Adding `Format` impl for `core::str` errors
+* [#1096] Implement `Format` for `alloc` Errors
 
 ### [defmt-v1.1.1] (2026-06-26)
 
@@ -1043,6 +1044,7 @@ Initial release
 
 ---
 
+[#1096]: https://github.com/knurling-rs/defmt/pull/1096
 [#1091]: https://github.com/knurling-rs/defmt/pull/1091
 [#1089]: https://github.com/knurling-rs/defmt/pull/1089
 [#1084]: https://github.com/knurling-rs/defmt/pull/1084
