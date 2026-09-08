@@ -855,7 +855,7 @@ Initial release
 
 ### [defmt-semihosting-next]
 
-* #xxx Removed `cortex-m` dependency, and `critical-section-single-core` feature
+* [#1099](https://github.com/knurling-rs/defmt/pull/1099) Removed `cortex-m` dependency, and `critical-section-single-core` feature
 
 ### [defmt-semihosting-v0.3.0] (2025-04-01)
 
