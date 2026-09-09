@@ -22,6 +22,9 @@ version = "1.1.1"
 alloc = []
 avoid-default-panic = []
 ip_in_core = []
+# Include the panic information message if it is a single string literal. This might increase
+# the code size, but panic printouts might become more useful.
+panic-message = []
 
 # Encoding feature flags. These should only be set by end-user crates, not by library crates.
 #
