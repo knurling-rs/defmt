@@ -294,22 +294,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
             });
 
             // remove old bitfields with this index
-            // TODO refactor when `drain_filter()` is stable
-            let mut i = 0;
-            while i != params.len() {
-                match &params[i].ty {
-                    Type::BitField(_) => {
-                        if params[i].index == index {
-                            params.remove(i);
-                        } else {
-                            i += 1; // we haven't removed a bitfield -> move i forward
-                        }
-                    }
-                    _ => {
-                        i += 1; // we haven't removed a bitfield -> move i forward
-                    }
-                }
-            }
+            params.retain(|param| !matches!(param.ty, Type::BitField(_)) || param.index != index);
         }
     }
 
