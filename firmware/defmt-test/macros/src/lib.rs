@@ -5,7 +5,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote, quote_spanned};
-use syn::{parse, spanned::Spanned, Attribute, Item, ItemFn, ItemMod, ReturnType, Type};
+use syn::{parse, spanned::Spanned, Attribute, Item, ItemFn, ItemMod, ReturnType, Safety, Type};
 
 #[proc_macro_attribute]
 pub fn tests(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -596,7 +596,7 @@ struct Input {
 fn check_fn_sig(sig: &syn::Signature) -> Result<(), ()> {
     if sig.constness.is_none()
         && sig.asyncness.is_none()
-        && sig.unsafety.is_none()
+        && sig.safety == Safety::Default
         && sig.abi.is_none()
         && sig.generics.params.is_empty()
         && sig.generics.where_clause.is_none()
