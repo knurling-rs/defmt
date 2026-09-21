@@ -270,7 +270,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 
     let mut merged_bitfields = Vec::new();
 
-    let max_index: usize = *params.iter().map(|param| &param.index).max().unwrap();
+    let max_index: usize = params.iter().map(|param| param.index).max().unwrap();
 
     for index in 0..=max_index {
         let mut bitfields_with_index = params
