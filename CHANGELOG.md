@@ -1010,6 +1010,8 @@ Initial release
 
 ### [qemu-run-next]
 
+* [#1035](https://github.com/knurling-rs/defmt/pull/1035) Specifying the `--verbose` / `-v` option now also prints the actual QEMU command being run.
+
 ### [qemu-run-v0.3.0] (2026-05-12)
 
 * [#1048](https://github.com/knurling-rs/defmt/pull/1048) Fixed UART read timeout issue ([#1047](https://github.com/knurling-rs/defmt/pull/1047))
