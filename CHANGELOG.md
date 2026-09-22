@@ -635,6 +635,7 @@ Initial release
 ### [defmt-decoder-next]
 
 * [#1073](https://github.com/knurling-rs/defmt/pull/1073) Gather symbols from unmerged `.defmt.*` sections, don't use `DW_AT_location`
+* [#1066](https://github.com/knurling-rs/defmt/pull/1066) Add support for biased, wrapped index decoding
 
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 

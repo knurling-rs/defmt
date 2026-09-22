@@ -24,6 +24,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
     // first pass to extract the `_defmt_version`
     let mut version = None;
     let mut encoding = None;
+    let mut image_anchor_address = None;
 
     // Note that we check for a quoted and unquoted version symbol, since LLD has a bug that
     // makes it keep the quotes from the linker script.
@@ -64,6 +65,7 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
                 ));
             }
             version = Some(new_version);
+            image_anchor_address = Some(entry.address());
         }
 
         if let Some(new_encoding) = try_get_encoding(name) {
@@ -230,12 +232,10 @@ pub fn parse_impl(elf: &[u8], check_version: bool) -> Result<Option<Table>, anyh
         })
         .collect();
 
-    Ok(Some(Table {
-        entries: map,
-        timestamp,
-        bitflags,
-        encoding,
-    }))
+    Ok(Some(
+        Table::new(timestamp, map, bitflags, encoding, image_anchor_address)
+            .map_err(anyhow::Error::msg)?,
+    ))
 }
 
 /// Checks if the version encoded in the symbol table is compatible with this version of the `decoder` crate
@@ -507,10 +507,13 @@ mod tests {
             });
         }
 
-        for name in ["_defmt_version_ = 4", "_defmt_encoding_ = raw"] {
+        for (name, value) in [
+            ("_defmt_version_ = 4", 0x1_0010),
+            ("_defmt_encoding_ = raw", 0x1_0020),
+        ] {
             object.add_symbol(Symbol {
                 name: name.as_bytes().to_vec(),
-                value: 0,
+                value,
                 size: 0,
                 kind: SymbolKind::Data,
                 scope: SymbolScope::Compilation,
@@ -545,6 +548,20 @@ mod tests {
         let (frame, consumed) = table.decode(&frame).unwrap();
         assert_eq!(consumed, 2);
         assert_eq!(frame.index(), 0x20);
+        assert_eq!(frame.display_message().to_string(), "hello");
+    }
+
+    #[test]
+    fn runtime_anchor_uses_version_symbol() {
+        let elf = unmerged_elf([(0x1_ffff, log_symbol("hello", "a"))]);
+        let table = parse_impl(&elf, true).unwrap().unwrap();
+        let table: Table = serde_json::from_str(&serde_json::to_string(&table).unwrap()).unwrap();
+        let context = table
+            .new_decode_context_for_runtime_anchor(0x2_0012)
+            .unwrap();
+
+        let frame = table.decode_with_context(&[1, 0], &context).unwrap().0;
+        assert_eq!(frame.index(), 0x1_ffff);
         assert_eq!(frame.display_message().to_string(), "hello");
     }
 
