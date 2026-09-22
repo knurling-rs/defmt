@@ -294,7 +294,9 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
             });
 
             // remove old bitfields with this index
-            params.retain(|param| !matches!(param.ty, Type::BitField(_)) || param.index != index);
+            let should_remove =
+                |param: &Parameter| matches!(param.ty, Type::BitField(_)) && param.index == index;
+            params.retain(|param| !should_remove(param));
         }
     }
 
