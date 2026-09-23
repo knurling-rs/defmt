@@ -48,7 +48,7 @@ The following `global_logger`s are provided as part of the project:
 
 - [`defmt-rtt`], logs over RTT. Note that this crate can *not* be used together with `rtt-target`.
 - [`defmt-itm`], logs over ITM (Instrumentation Trace Macrocell) stimulus port 0.
-- [`defmt-semihosting`], logs over semihosting. Meant only for testing `defmt` on a virtual Cortex-M device (QEMU).
+- [`defmt-semihosting`], logs over semihosting. Meant for testing on a virtual device (e.g. on QEMU) where semihosting has acceptable performance. Not recommend on real hardware.
 
 [`defmt-rtt`]: https://docs.rs/defmt-rtt/
 [`defmt-itm`]: https://docs.rs/defmt-itm/
