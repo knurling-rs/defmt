@@ -1,0 +1,9 @@
+[package]
+name = "defmt-log"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+defmt = { version = "0.3", path = "../defmt", features = ["no-interning"] }
+critical-section = "1.1"
+log = "0.4.22"
