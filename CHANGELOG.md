@@ -61,6 +61,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 ### [defmt-next]
 
 * [#1091](https://github.com/knurling-rs/defmt/pull/1091) Allow inner modules to decrease env filter verbosity
+* [#1039](https://github.com/knurling-rs/defmt/pull/1039) Add support for `PanicInfo::message` if the message is a static string.
+* [#1039](https://github.com/knurling-rs/defmt/pull/1039) Add rust-version 1.81 for `defmt` package configuration.
 * [#1089](https://github.com/knurling-rs/defmt/pull/1089) Retain timestamp and bitflags metadata when linking without `defmt.x`.
 * [#1068](https://github.com/knurling-rs/defmt/pull/1068) Adding `Format` impl for `core::str` errors
 * [#1096](https://github.com/knurling-rs/defmt/pull/1096) Implement `Format` for `alloc` Errors

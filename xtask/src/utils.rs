@@ -96,7 +96,7 @@ pub fn rustc_is_nightly() -> bool {
 }
 
 pub fn rustc_is_msrv() -> bool {
-    const MSRV: &str = "1.76";
+    const MSRV: &str = "1.81";
     let out = run_capturing_stdout(Command::new("rustc").args(["-V"])).unwrap();
     out.contains(MSRV)
 }

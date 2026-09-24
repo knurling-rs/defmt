@@ -9,8 +9,10 @@ impl Format for panic::PanicInfo<'_> {
         } else {
             crate::write!(f, "panicked");
         }
-        // TODO: consider supporting self.message() once stabilized, or add a crate feature for
-        // conditional support
+        #[cfg(feature = "panic-message")]
+        if let Some(message) = self.message().as_str() {
+            crate::write!(f, ": {}", message);
+        }
     }
 }
 
