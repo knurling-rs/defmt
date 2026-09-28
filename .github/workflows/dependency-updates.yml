@@ -38,7 +38,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.76" # firmware MSRV
+          - "1.81" # firmware MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
