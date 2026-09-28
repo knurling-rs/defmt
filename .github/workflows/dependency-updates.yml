@@ -1,0 +1,55 @@
+name: Dependency updates
+
+on:
+  schedule:
+    # runs 1 min after 2 or 1 AM (summer/winter) berlin time
+    - cron: "1 0 * * *"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  host:
+    strategy:
+      matrix:
+        toolchain:
+          - "stable"
+          - "1.83" # host MSRV
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set Rust version
+        uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - name: Install C libraries for tooling on ubuntu
+        run: sudo apt-get update && sudo apt-get install libudev-dev libusb-1.0-0-dev
+      - name: Update firmware dependencies
+        run: cargo update --manifest-path firmware/Cargo.toml
+      - name: Update compatibility crate dependencies
+        run: cargo update --manifest-path defmt-03/Cargo.toml
+      - name: Check that all crates that can be compiled for the host build, check that defmt compiles with different features, run all unit tests on the host
+        run: cargo xtask -d test-host ${{ matrix.toolchain == 'stable' && '--skip-ui-tests' || '' }}
+
+  cross:
+    strategy:
+      matrix:
+        toolchain:
+          - "stable"
+          - "1.76" # firmware MSRV
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set Rust version
+        uses: ./.github/actions/update-rust
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - name: Update firmware dependencies
+        run: cargo update --manifest-path firmware/Cargo.toml
+      - name: Update compatibility crate dependencies
+        run: cargo update --manifest-path defmt-03/Cargo.toml
+      - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
+        run: cargo xtask test-cross
