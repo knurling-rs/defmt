@@ -38,7 +38,9 @@ impl Channel {
         while !bytes.is_empty() {
             let consumed = write(self, bytes);
             if consumed != 0 {
-                bytes = &bytes[consumed..];
+                // SAFETY: Both write functions return at most bytes.len()
+                // which is a valid lower bound for this slice operation
+                bytes = unsafe { bytes.get_unchecked(consumed..) };
             }
         }
     }
