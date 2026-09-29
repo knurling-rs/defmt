@@ -775,6 +775,8 @@ Initial release
 
 ### [defmt-rtt-next]
 
+* [#1108](https://github.com/knurling-rs/defmt/pull/1108) Remove slice bounds panic branch to reduce flash usage.
+
 ### [defmt-rtt-v1.3.0] (2026-06-26)
 
 * [#1053](https://github.com/knurling-rs/defmt/pull/1053) Add the `drop-on-contention` feature to trade low interrupt latency for reliable RTT delivery
