@@ -25,7 +25,7 @@ use std::{
 
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::Level;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{decoder::Decoder, elf2table::parse_impl};
 
@@ -153,15 +153,82 @@ impl Encoding {
 }
 
 /// Internal table that holds log levels and maps format strings to indices
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize)]
 pub struct Table {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
     bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
     encoding: Encoding,
+    #[serde(default)]
+    image_anchor_address: Option<u64>,
+    // Derived from `entries` and rebuilt when a serialized table is loaded.
+    #[serde(skip)]
+    u16_to_address: HashMap<u16, usize>,
+}
+
+#[derive(Deserialize)]
+struct SerializedTable {
+    timestamp: Option<TableEntry>,
+    entries: BTreeMap<usize, TableEntry>,
+    bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
+    encoding: Encoding,
+    #[serde(default)]
+    image_anchor_address: Option<u64>,
+}
+
+impl<'de> Deserialize<'de> for Table {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let table = SerializedTable::deserialize(deserializer)?;
+        Self::new(
+            table.timestamp,
+            table.entries,
+            table.bitflags,
+            table.encoding,
+            table.image_anchor_address,
+        )
+        .map_err(serde::de::Error::custom)
+    }
+}
+
+/// Reusable state for decoding frames from one loaded image.
+#[derive(Debug)]
+pub struct DecodeContext {
+    wire_index_bias: u16,
 }
 
 impl Table {
+    fn new(
+        timestamp: Option<TableEntry>,
+        entries: BTreeMap<usize, TableEntry>,
+        bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
+        encoding: Encoding,
+        image_anchor_address: Option<u64>,
+    ) -> Result<Self, String> {
+        let mut u16_to_address = HashMap::with_capacity(entries.len());
+
+        for (&address, entry) in &entries {
+            let u16_address = address as u16;
+            if let Some(old_address) = u16_to_address.insert(u16_address, address) {
+                return Err(format!(
+                    "defmt address truncation collision at 0x{u16_address:04x}: symbols `{}` and `{}`",
+                    entries[&old_address].raw_symbol, entry.raw_symbol,
+                ));
+            }
+        }
+
+        Ok(Self {
+            timestamp,
+            entries,
+            bitflags,
+            encoding,
+            image_anchor_address,
+            u16_to_address,
+        })
+    }
+
     /// Parses an ELF file and returns the decoded `defmt` table.
     ///
     /// This function returns `None` if the ELF file contains no `.defmt` section.
@@ -228,12 +295,60 @@ impl Table {
     ///   * contains the [log string index, timestamp, optional fmt string args]
     pub fn decode<'t>(
         &'t self,
+        bytes: &[u8],
+    ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
+        self.decode_with_context(bytes, &DecodeContext { wire_index_bias: 0 })
+    }
+
+    /// Build reusable decoding state for the load bias of an image.
+    ///
+    /// Table entries are keyed by symbol addresses in the parsed image. The
+    /// current defmt wire index is the low 16 bits of the corresponding loaded
+    /// runtime symbol address. `load_bias` is the runtime symbol address minus
+    /// the same symbol's image address.
+    ///
+    /// Returns `None` if an entry would map to wire index zero, which is reserved
+    /// as the format-sequence terminator.
+    pub fn new_decode_context(&self, load_bias: u64) -> Option<DecodeContext> {
+        let wire_index_bias = load_bias as u16;
+        if self
+            .u16_to_address
+            .contains_key(&wire_index_bias.wrapping_neg())
+        {
+            None
+        } else {
+            Some(DecodeContext { wire_index_bias })
+        }
+    }
+
+    /// Build reusable decoding state from the runtime address of the defmt anchor.
+    ///
+    /// `runtime_anchor` is the runtime address returned by
+    /// `defmt::runtime_anchor()` in the process that emitted the frames,
+    /// widened to `u64`. It is compared with the same symbol's image address
+    /// stored in the table to compute the load bias.
+    ///
+    /// Returns `None` if the image has no anchor or an entry would map to the
+    /// reserved wire index zero.
+    pub fn new_decode_context_for_runtime_anchor(
+        &self,
+        runtime_anchor: u64,
+    ) -> Option<DecodeContext> {
+        self.new_decode_context(runtime_anchor.wrapping_sub(self.image_anchor_address?))
+    }
+
+    /// Decode the data sent by the device using a reusable decoding context.
+    pub fn decode_with_context<'t>(
+        &'t self,
         mut bytes: &[u8],
+        context: &DecodeContext,
     ) -> Result<(Frame<'t>, /* consumed: */ usize), DecodeError> {
         let len = bytes.len();
-        let index = bytes.read_u16::<LE>()? as u64;
+        let frame_address = self
+            .resolve_address(context, bytes.read_u16::<LE>()?)
+            .ok_or(DecodeError::Malformed)?;
 
-        let mut decoder = Decoder::new(self, bytes);
+        let mut decoder = Decoder::new(self, bytes, context);
 
         let mut timestamp_format = None;
         let mut timestamp_args = Vec::new();
@@ -244,7 +359,7 @@ impl Table {
         }
 
         let (level, format) = self
-            .get_with_level(index as usize)
+            .get_with_level(frame_address)
             .map_err(|_| DecodeError::Malformed)?;
 
         let args = decoder.decode_format(format)?;
@@ -252,7 +367,7 @@ impl Table {
         let frame = Frame::new(
             self,
             level,
-            index,
+            frame_address as u64,
             timestamp_format,
             timestamp_args,
             format,
@@ -261,6 +376,11 @@ impl Table {
 
         let consumed = len - decoder.bytes.len();
         Ok((frame, consumed))
+    }
+
+    fn resolve_address(&self, context: &DecodeContext, wire_index: u16) -> Option<usize> {
+        let u16_address = wire_index.wrapping_sub(context.wire_index_bias);
+        self.u16_to_address.get(&u16_address).copied()
     }
 
     pub fn new_stream_decoder(&self) -> Box<dyn StreamDecoder + Send + Sync + '_> {
@@ -357,27 +477,31 @@ mod tests {
     use super::*;
 
     fn test_table(entries: impl IntoIterator<Item = TableEntry>) -> Table {
-        Table {
-            timestamp: None,
-            entries: entries.into_iter().enumerate().collect(),
-            bitflags: Default::default(),
-            encoding: Encoding::Raw,
-        }
+        Table::new(
+            None,
+            entries.into_iter().enumerate().collect(),
+            Default::default(),
+            Encoding::Raw,
+            None,
+        )
+        .unwrap()
     }
 
     fn test_table_with_timestamp(
         entries: impl IntoIterator<Item = TableEntry>,
         timestamp: &str,
     ) -> Table {
-        Table {
-            timestamp: Some(TableEntry::new_without_symbol(
+        Table::new(
+            Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 timestamp.into(),
             )),
-            entries: entries.into_iter().enumerate().collect(),
-            bitflags: Default::default(),
-            encoding: Encoding::Raw,
-        }
+            entries.into_iter().enumerate().collect(),
+            Default::default(),
+            Encoding::Raw,
+            None,
+        )
+        .unwrap()
     }
 
     // helper function to initiate decoding and assert that the result is as expected.
@@ -392,15 +516,17 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Info, format.to_string()),
         );
 
-        let table = Table {
-            entries,
-            timestamp: Some(TableEntry::new_without_symbol(
+        let table = Table::new(
+            Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
             )),
-            bitflags: Default::default(),
-            encoding: Encoding::Raw,
-        };
+            entries,
+            Default::default(),
+            Encoding::Raw,
+            None,
+        )
+        .unwrap();
 
         let frame = table.decode(bytes).unwrap().0;
         assert_eq!(frame.display(false).to_string(), expectation.to_owned());
@@ -599,6 +725,34 @@ mod tests {
                 bytes.len(),
             ))
         );
+
+        let bytes = [
+            3, 0, // wire index for the frame
+            4, 0,  // wire index for the struct
+            42, // Foo.x
+        ];
+        let context = table.new_decode_context(3).unwrap();
+
+        let frame = table.decode_with_context(&bytes, &context).unwrap().0;
+        assert_eq!(frame.index(), 0);
+        assert_eq!(frame.display_message().to_string(), "x=Foo { x: 42 }");
+    }
+
+    #[test]
+    fn decode_context_supports_interned_strings() {
+        let table = test_table(vec![
+            TableEntry::new_without_symbol(Tag::Info, "name={=istr}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Str, "alice".to_owned()),
+        ]);
+        let bytes = [
+            3, 0, // wire index for the frame
+            4, 0, // wire index for the interned string
+        ];
+        let context = table.new_decode_context(3).unwrap();
+
+        let frame = table.decode_with_context(&bytes, &context).unwrap().0;
+        assert_eq!(frame.index(), 0);
+        assert_eq!(frame.display_message().to_string(), "name=alice");
     }
 
     #[test]
@@ -652,6 +806,68 @@ mod tests {
                 bytes.len(),
             ))
         );
+
+        let bytes = [
+            4, 0, // wire index for the frame
+            5, 0, // wire index for Foo
+            6, 0,  // wire index for Bar
+            42, // bar.x
+            7, 0,  // wire index for State
+            23, // State variable
+            0, 0, // terminator
+        ];
+        let context = table.new_decode_context(4).unwrap();
+
+        let frame = table.decode_with_context(&bytes, &context).unwrap().0;
+        assert_eq!(frame.index(), 0);
+        assert_eq!(frame.display_message().to_string(), "FooBar(42)State 23|");
+    }
+
+    #[test]
+    fn table_rejects_colliding_wire_indices() {
+        let result = Table::new(
+            None,
+            [
+                (
+                    0,
+                    TableEntry::new_without_symbol(Tag::Info, "zero".to_owned()),
+                ),
+                (
+                    1,
+                    TableEntry::new_without_symbol(Tag::Info, "one".to_owned()),
+                ),
+                (
+                    0x1_0000,
+                    TableEntry::new_without_symbol(Tag::Info, "also zero".to_owned()),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            Default::default(),
+            Encoding::Raw,
+            None,
+        );
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn decode_context_rejects_reserved_zero() {
+        let table = Table::new(
+            None,
+            [(
+                1,
+                TableEntry::new_without_symbol(Tag::Derived, "value".to_owned()),
+            )]
+            .into_iter()
+            .collect(),
+            Default::default(),
+            Encoding::Raw,
+            None,
+        )
+        .unwrap();
+
+        assert!(table.new_decode_context(u64::MAX).is_none());
     }
 
     #[test]
@@ -1149,15 +1365,17 @@ mod tests {
             TableEntry::new_without_symbol(Tag::Derived, "{=u8}".to_owned()),
         );
 
-        let table = Table {
-            entries,
-            timestamp: Some(TableEntry::new_without_symbol(
+        let table = Table::new(
+            Some(TableEntry::new_without_symbol(
                 Tag::Timestamp,
                 "{=u8:us}".to_owned(),
             )),
-            bitflags: Default::default(),
-            encoding: Encoding::Raw,
-        };
+            entries,
+            Default::default(),
+            Encoding::Raw,
+            None,
+        )
+        .unwrap();
 
         let bytes = [
             4, 0, // string index (INFO)
