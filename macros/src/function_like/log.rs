@@ -20,6 +20,15 @@ pub(crate) fn expand(level: Level, args: TokenStream) -> TokenStream {
 }
 
 pub(crate) fn expand_parsed(level: Level, args: Args) -> syn::Result<TokenStream2> {
+    expand_parsed_inner(level, args, false)
+}
+
+/// Like [`expand_parsed`], but the returned expression panics after logging.
+pub(crate) fn expand_parsed_and_panic(level: Level, args: Args) -> syn::Result<TokenStream2> {
+    expand_parsed_inner(level, args, true)
+}
+
+fn expand_parsed_inner(level: Level, args: Args, panic: bool) -> syn::Result<TokenStream2> {
     let format_string = args.format_string.value();
     let (fragments, warnings) =
         match defmt_parser::parse_with_warnings(&format_string, ParserMode::Strict) {
@@ -48,21 +57,35 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> syn::Result<TokenStream
     );
     let env_filter = EnvFilter::from_env_var()?;
 
-    let content = if exprs.is_empty() {
-        quote!(
+    let content = match (&*patterns, panic) {
+        ([], false) => quote!(
             defmt::export::acquire_header_and_release(&#header);
-        )
-    } else {
-        quote!(
+        ),
+        ([], true) => quote!(
+            defmt::export::acquire_header_release_and_panic(&#header)
+        ),
+        (_, false) => quote!(
             // safety: will be released a few lines further down
             unsafe { defmt::export::acquire_and_header(&#header); };
             #(#exprs;)*
             // safety: acquire() was called a few lines above
             unsafe { defmt::export::release() }
-        )
+        ),
+        (_, true) => quote!(
+            // safety: will be released a few lines further down
+            unsafe { defmt::export::acquire_and_header(&#header); };
+            #(#exprs;)*
+            // safety: acquire() was called a few lines above
+            unsafe { defmt::export::release_and_panic() }
+        ),
     };
 
     let filter_check = env_filter.path_check(level).unwrap_or(quote!(false));
+    let filtered_out = if panic {
+        quote!(else { defmt::export::panic() })
+    } else {
+        quote!()
+    };
 
     Ok(quote!(
         {
@@ -72,7 +95,7 @@ pub(crate) fn expand_parsed(level: Level, args: Args) -> syn::Result<TokenStream
                 (#(#patterns),*) => {
                     if #filter_check {
                         #content
-                    }
+                    } #filtered_out
                 }
             }
         }
