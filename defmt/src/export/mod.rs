@@ -225,6 +225,19 @@ pub fn acquire_header_and_release(s: &Str) {
     unsafe { release() };
 }
 
+#[inline(never)]
+pub fn acquire_header_release_and_panic(s: &Str) -> ! {
+    acquire_header_and_release(s);
+    panic()
+}
+
+/// Safety: must follow an earlier call to acquire()
+#[inline(never)]
+pub unsafe fn release_and_panic() -> ! {
+    release();
+    panic()
+}
+
 struct FmtWrite;
 
 impl core::fmt::Write for FmtWrite {

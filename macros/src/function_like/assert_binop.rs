@@ -66,7 +66,7 @@ left/right: `{{:?}}`",
         format_string: construct::string_literal(&panic_msg),
         formatting_args: Some(formatting_args),
     };
-    let log_stmt = log::expand_parsed(Level::Error, log_args)?;
+    let log_and_panic = log::expand_parsed_and_panic(Level::Error, log_args)?;
 
     let mut cond = quote!(*left_val == *right_val);
     if binop == BinOp::Eq {
@@ -79,8 +79,7 @@ left/right: `{{:?}}`",
             (left_val, right_val) => {
                 // following `core::assert_eq!`
                 if #cond {
-                    #log_stmt;
-                    defmt::export::panic()
+                    #log_and_panic
                 }
             }
         }
