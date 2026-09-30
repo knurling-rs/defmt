@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use defmt_parser::Level;
 use proc_macro::TokenStream;
-use quote::quote;
 use syn::parse_macro_input;
 
 use crate::{construct, function_like::log};
@@ -24,22 +23,16 @@ pub(crate) fn expand(
     };
 
     let format_string = construct::string_literal(&format_string);
-    let log_stmt = match log::expand_parsed(
+    let log_and_panic = match log::expand_parsed_and_panic(
         Level::Error,
         log::Args {
             format_string,
             formatting_args,
         },
     ) {
-        Ok(log_stmt) => log_stmt,
+        Ok(log_and_panic) => log_and_panic,
         Err(err) => return err.into_compile_error().into(),
     };
 
-    quote!(
-        {
-            #log_stmt;
-            defmt::export::panic()
-        }
-    )
-    .into()
+    log_and_panic.into()
 }
