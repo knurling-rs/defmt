@@ -61,6 +61,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 [defmt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.0
 
 ### [defmt-next]
+
+* [#1109](https://github.com/knurling-rs/defmt/pull/1109) Optimize enum encoding to reduce code size
 * [#1110](https://github.com/knurling-rs/defmt/pull/1110) Release and panic with a single call in panicking macros to save space.
 
 * [#879](https://github.com/knurling-rs/defmt/pull/879) Load string indices with inline asm to save space on ARMv7+
