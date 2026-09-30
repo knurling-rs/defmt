@@ -65,6 +65,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 * [#1089](https://github.com/knurling-rs/defmt/pull/1089) Retain timestamp and bitflags metadata when linking without `defmt.x`.
 * [#1068](https://github.com/knurling-rs/defmt/pull/1068) Adding `Format` impl for `core::str` errors
 * [#1096](https://github.com/knurling-rs/defmt/pull/1096) Implement `Format` for `alloc` Errors
+* [#1096](https://github.com/knurling-rs/defmt/pull/1109) Optimize enum encoding to reduce code size
 
 ### [defmt-v1.1.1] (2026-06-26)
 
