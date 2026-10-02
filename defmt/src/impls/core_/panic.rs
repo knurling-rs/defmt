@@ -11,7 +11,7 @@ impl Format for panic::PanicInfo<'_> {
         }
         #[cfg(feature = "panic-message")]
         if let Some(message) = self.message().as_str() {
-            crate::write!(f, ": {}", message);
+            crate::write!(f, ": {=str}", message);
         }
     }
 }
