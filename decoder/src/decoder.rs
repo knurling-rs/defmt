@@ -23,7 +23,7 @@ impl<'t, 'b> Decoder<'t, 'b> {
         merge_bitfields(params);
 
         // sort & dedup to ensure that format string args can be addressed by index too
-        params.sort_by(|a, b| a.index.cmp(&b.index));
+        params.sort_by_key(|a| a.index);
         params.dedup_by(|a, b| a.index == b.index);
     }
 
