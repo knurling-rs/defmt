@@ -55,7 +55,7 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "1.87" # we pin clippy because it keeps adding new lints
+          - "1.99" # we pin clippy because it keeps adding new lints
           - "1.81" # firmware MSRV
     runs-on: ubuntu-latest
     steps:
@@ -87,7 +87,7 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "1.87" # we pin clippy because it keeps adding new lints
+          - "1.99" # we pin clippy because it keeps adding new lints
           - "1.83" # host MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10

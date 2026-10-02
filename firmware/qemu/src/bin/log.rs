@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![allow(clippy::chunks_exact_to_as_chunks)]
 
 use core::{marker::PhantomData, num};
 use cortex_m as _;
@@ -496,10 +497,10 @@ fn main() -> ! {
         impl Format for MyMultiStruct {
             fn format(&self, f: Formatter) {
                 defmt::write!(f, "MyMultiStruct@{=u32} ", self.0);
-                if self.0 == 0 {
-                    defmt::write!(f, "IS ZERO")
+                if let Some(answer) = 100u32.checked_div(self.0) {
+                    defmt::write!(f, "IS NOT ZERO, division result: {=u32}", answer)
                 } else {
-                    defmt::write!(f, "IS NOT ZERO, division result: {=u32}", 100 / self.0)
+                    defmt::write!(f, "IS ZERO")
                 }
             }
         }
@@ -691,7 +692,7 @@ fn main() -> ! {
 
     // core::slice
     defmt::info!("{}", [0, 1, 2].chunks_exact(1)); // ChunksExact
-    defmt::info!("{}", [0, 1, 2].iter()); // ChunksExact
+    defmt::info!("{}", [0, 1, 2].iter()); // slice::Iter
     defmt::info!("{}", [0, 1, 2].windows(1)); // Windows
 
     // core::num::NonZero*
