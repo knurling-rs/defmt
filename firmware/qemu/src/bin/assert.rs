@@ -7,6 +7,7 @@ use cortex_m_rt::entry;
 use defmt_semihosting as _; // global logger
 
 #[entry]
+#[allow(clippy::eq_op)]
 fn main() -> ! {
     defmt::assert!({ 1 + 1 } == { 2 });
 
