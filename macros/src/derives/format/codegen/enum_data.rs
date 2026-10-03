@@ -43,7 +43,7 @@ pub(crate) fn encode(
             &mut field_patterns,
             defmt_path,
         )?;
-        where_predicates.extend(encode_field_where_predicates.into_iter());
+        where_predicates.extend(encode_field_where_predicates);
         let pattern = quote!( { #(#field_patterns),* } );
 
         let encode_discriminant_stmt = discriminant_encoder.encode(index, defmt_path);
