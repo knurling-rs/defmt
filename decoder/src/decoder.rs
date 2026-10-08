@@ -285,7 +285,7 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
 
     let mut merged_bitfields = Vec::new();
 
-    let max_index: usize = *params.iter().map(|param| &param.index).max().unwrap();
+    let max_index: usize = params.iter().map(|param| param.index).max().unwrap();
 
     for index in 0..=max_index {
         let mut bitfields_with_index = params
@@ -309,22 +309,9 @@ fn merge_bitfields(params: &mut Vec<Parameter>) {
             });
 
             // remove old bitfields with this index
-            // TODO refactor when `drain_filter()` is stable
-            let mut i = 0;
-            while i != params.len() {
-                match &params[i].ty {
-                    Type::BitField(_) => {
-                        if params[i].index == index {
-                            params.remove(i);
-                        } else {
-                            i += 1; // we haven't removed a bitfield -> move i forward
-                        }
-                    }
-                    _ => {
-                        i += 1; // we haven't removed a bitfield -> move i forward
-                    }
-                }
-            }
+            let should_remove =
+                |param: &Parameter| matches!(param.ty, Type::BitField(_)) && param.index == index;
+            params.retain(|param| !should_remove(param));
         }
     }
 

@@ -60,7 +60,9 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
 * [#1091](https://github.com/knurling-rs/defmt/pull/1091) Allow inner modules to decrease env filter verbosity
+* [#1039](https://github.com/knurling-rs/defmt/pull/1039) Add support for `PanicInfo::message` if the message is a static string.
 * [#1089](https://github.com/knurling-rs/defmt/pull/1089) Retain timestamp and bitflags metadata when linking without `defmt.x`.
 * [#1068](https://github.com/knurling-rs/defmt/pull/1068) Adding `Format` impl for `core::str` errors
 * [#1096](https://github.com/knurling-rs/defmt/pull/1096) Implement `Format` for `alloc` Errors
@@ -775,6 +777,8 @@ Initial release
 
 ### [defmt-rtt-next]
 
+* [#1108](https://github.com/knurling-rs/defmt/pull/1108) Remove slice bounds panic branch to reduce flash usage.
+
 ### [defmt-rtt-v1.3.0] (2026-06-26)
 
 * [#1053](https://github.com/knurling-rs/defmt/pull/1053) Add the `drop-on-contention` feature to trade low interrupt latency for reliable RTT delivery
@@ -856,7 +860,7 @@ Initial release
 
 ### [defmt-semihosting-next]
 
-* No changes
+* [#1099](https://github.com/knurling-rs/defmt/pull/1099) Removed `cortex-m` dependency, and `critical-section-single-core` feature
 
 ### [defmt-semihosting-v0.3.0] (2025-04-01)
 

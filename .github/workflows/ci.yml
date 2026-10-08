@@ -3,9 +3,6 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  schedule:
-    # runs 1 min after 2 or 1 AM (summer/winter) berlin time
-    - cron: "1 0 * * *"
   merge_group:
 
 env:
@@ -43,7 +40,7 @@ jobs:
       matrix:
         toolchain:
           - "stable"
-          - "1.76" # firmware MSRV
+          - "1.81" # firmware MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -59,7 +56,7 @@ jobs:
       matrix:
         toolchain:
           - "1.87" # we pin clippy because it keeps adding new lints
-          - "1.76" # firmware MSRV
+          - "1.81" # firmware MSRV
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

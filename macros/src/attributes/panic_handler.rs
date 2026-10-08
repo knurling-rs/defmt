@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, spanned::Spanned, Attribute, ItemFn, ReturnType, Type};
+use syn::{parse_macro_input, spanned::Spanned, Attribute, ItemFn, ReturnType, Safety, Type};
 
 pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     let fun = parse_macro_input!(item as ItemFn);
@@ -30,7 +30,7 @@ fn validate(fun: &ItemFn) -> syn::Result<()> {
 
     if fun.sig.constness.is_some()
         || fun.sig.asyncness.is_some()
-        || fun.sig.unsafety.is_some()
+        || fun.sig.safety != Safety::Default
         || fun.sig.abi.is_some()
         || !fun.sig.generics.params.is_empty()
         || fun.sig.generics.where_clause.is_some()

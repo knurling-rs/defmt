@@ -97,6 +97,7 @@ fn snapshot_features(test: &str) -> &str {
         "alloc" => "alloc",
         "drop-on-contention" => "drop-on-contention",
         "net" => "ip_in_core",
+        "panic_info" => "panic-message",
         _ => "",
     }
 }
