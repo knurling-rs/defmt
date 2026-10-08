@@ -555,12 +555,13 @@ mod tests {
     fn runtime_anchor_uses_version_symbol() {
         let elf = unmerged_elf([(0x1_ffff, log_symbol("hello", "a"))]);
         let table = parse_impl(&elf, true).unwrap().unwrap();
-        let table: Table = serde_json::from_str(&serde_json::to_string(&table).unwrap()).unwrap();
+        let table: Table = serde_json::from_value(serde_json::to_value(&table).unwrap()).unwrap();
         let context = table
             .new_decode_context_for_runtime_anchor(0x2_0012)
             .unwrap();
 
-        let frame = table.decode_with_context(&[1, 0], &context).unwrap().0;
+        let (frame, consumed) = table.decode_with_context(&[1, 0], &context).unwrap();
+        assert_eq!(consumed, 2);
         assert_eq!(frame.index(), 0x1_ffff);
         assert_eq!(frame.display_message().to_string(), "hello");
     }

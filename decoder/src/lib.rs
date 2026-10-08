@@ -25,7 +25,7 @@ use std::{
 
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::Level;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{decoder::Decoder, elf2table::parse_impl};
 
@@ -153,13 +153,13 @@ impl Encoding {
 }
 
 /// Internal table that holds log levels and maps format strings to indices
-#[derive(Debug, Eq, PartialEq, Clone, Serialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(try_from = "SerializedTable")]
 pub struct Table {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
     bitflags: HashMap<BitflagsKey, Vec<(String, u128)>>,
     encoding: Encoding,
-    #[serde(default)]
     image_anchor_address: Option<u64>,
     // Derived from `entries` and rebuilt when a serialized table is loaded.
     #[serde(skip)]
@@ -167,6 +167,7 @@ pub struct Table {
 }
 
 #[derive(Deserialize)]
+#[serde(rename = "Table")]
 struct SerializedTable {
     timestamp: Option<TableEntry>,
     entries: BTreeMap<usize, TableEntry>,
@@ -176,12 +177,10 @@ struct SerializedTable {
     image_anchor_address: Option<u64>,
 }
 
-impl<'de> Deserialize<'de> for Table {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let table = SerializedTable::deserialize(deserializer)?;
+impl TryFrom<SerializedTable> for Table {
+    type Error = String;
+
+    fn try_from(table: SerializedTable) -> Result<Self, Self::Error> {
         Self::new(
             table.timestamp,
             table.entries,
@@ -189,7 +188,6 @@ impl<'de> Deserialize<'de> for Table {
             table.encoding,
             table.image_anchor_address,
         )
-        .map_err(serde::de::Error::custom)
     }
 }
 
@@ -733,7 +731,8 @@ mod tests {
         ];
         let context = table.new_decode_context(3).unwrap();
 
-        let frame = table.decode_with_context(&bytes, &context).unwrap().0;
+        let (frame, consumed) = table.decode_with_context(&bytes, &context).unwrap();
+        assert_eq!(consumed, bytes.len());
         assert_eq!(frame.index(), 0);
         assert_eq!(frame.display_message().to_string(), "x=Foo { x: 42 }");
     }
@@ -750,7 +749,8 @@ mod tests {
         ];
         let context = table.new_decode_context(3).unwrap();
 
-        let frame = table.decode_with_context(&bytes, &context).unwrap().0;
+        let (frame, consumed) = table.decode_with_context(&bytes, &context).unwrap();
+        assert_eq!(consumed, bytes.len());
         assert_eq!(frame.index(), 0);
         assert_eq!(frame.display_message().to_string(), "name=alice");
     }
@@ -806,67 +806,79 @@ mod tests {
                 bytes.len(),
             ))
         );
+    }
 
+    #[test]
+    fn decode_context_supports_zero_address_in_sequence() {
+        let table = test_table([
+            TableEntry::new_without_symbol(Tag::Write, "Foo({=u8})".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "{=__internal_FormatSequence}".to_owned()),
+        ]);
+        let context = table.new_decode_context(1).unwrap();
         let bytes = [
-            4, 0, // wire index for the frame
-            5, 0, // wire index for Foo
-            6, 0,  // wire index for Bar
-            42, // bar.x
-            7, 0,  // wire index for State
-            23, // State variable
-            0, 0, // terminator
+            2, 0, // frame at image address 1
+            1, 0, 42, // Foo at image address 0 and its argument
+            0, 0,    // wire terminator
+            0xff, // trailing data
         ];
-        let context = table.new_decode_context(4).unwrap();
 
-        let frame = table.decode_with_context(&bytes, &context).unwrap().0;
-        assert_eq!(frame.index(), 0);
-        assert_eq!(frame.display_message().to_string(), "FooBar(42)State 23|");
+        let (frame, consumed) = table.decode_with_context(&bytes, &context).unwrap();
+        assert_eq!(frame.index(), 1);
+        assert_eq!(frame.display_message().to_string(), "Foo(42)");
+        assert_eq!(consumed, 7);
+        assert_eq!(
+            table
+                .decode_with_context(&bytes[..6], &context)
+                .unwrap_err(),
+            DecodeError::UnexpectedEof
+        );
     }
 
     #[test]
     fn table_rejects_colliding_wire_indices() {
-        let result = Table::new(
-            None,
-            [
+        let entries = [0, 0x1_0000]
+            .map(|address| {
                 (
-                    0,
-                    TableEntry::new_without_symbol(Tag::Info, "zero".to_owned()),
-                ),
-                (
-                    1,
-                    TableEntry::new_without_symbol(Tag::Info, "one".to_owned()),
-                ),
-                (
-                    0x1_0000,
-                    TableEntry::new_without_symbol(Tag::Info, "also zero".to_owned()),
-                ),
-            ]
+                    address,
+                    TableEntry::new_without_symbol(Tag::Info, "log".to_owned()),
+                )
+            })
             .into_iter()
-            .collect(),
-            Default::default(),
-            Encoding::Raw,
-            None,
+            .collect();
+        let serialized = serde_json::json!({
+            "timestamp": null, "entries": entries, "bitflags": {}, "encoding": "Raw"
+        });
+        let error = Table::new(None, entries, Default::default(), Encoding::Raw, None).unwrap_err();
+        assert!(error.contains("address truncation collision at 0x0000"));
+        assert_eq!(
+            serde_json::from_value::<Table>(serialized)
+                .unwrap_err()
+                .to_string(),
+            error
         );
+    }
 
-        assert!(result.is_err());
+    #[test]
+    fn deserialize_legacy_table() {
+        let table = test_table([TableEntry::new_without_symbol(
+            Tag::Info,
+            "hello".to_owned(),
+        )]);
+        let mut serialized = serde_json::to_value(&table).unwrap();
+        serialized
+            .as_object_mut()
+            .unwrap()
+            .remove("image_anchor_address");
+        assert_eq!(serde_json::from_value::<Table>(serialized).unwrap(), table);
     }
 
     #[test]
     fn decode_context_rejects_reserved_zero() {
-        let table = Table::new(
-            None,
-            [(
-                1,
-                TableEntry::new_without_symbol(Tag::Derived, "value".to_owned()),
-            )]
-            .into_iter()
-            .collect(),
-            Default::default(),
-            Encoding::Raw,
-            None,
-        )
-        .unwrap();
-
+        let table = test_table([
+            TableEntry::new_without_symbol(Tag::Derived, "zero".to_owned()),
+            TableEntry::new_without_symbol(Tag::Derived, "one".to_owned()),
+        ]);
+        assert!(table.new_decode_context(0).is_none());
         assert!(table.new_decode_context(u64::MAX).is_none());
     }
 
