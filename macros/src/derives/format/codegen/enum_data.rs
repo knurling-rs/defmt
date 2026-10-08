@@ -1,5 +1,5 @@
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{DataEnum, Ident};
 
 use crate::construct;
@@ -22,7 +22,9 @@ pub(crate) fn encode(
     let mut format_string = String::new();
     let mut where_predicates = vec![];
 
+    let mut discriminant_arms = vec![];
     let mut match_arms = vec![];
+    let mut has_variants_without_fields = false;
     let mut is_first_variant = true;
     let discriminant_encoder = DiscriminantEncoder::new(data.variants.len())?;
     let enum_ident = ident;
@@ -46,20 +48,35 @@ pub(crate) fn encode(
         where_predicates.extend(encode_field_where_predicates.into_iter());
         let pattern = quote!( { #(#field_patterns),* } );
 
-        let encode_discriminant_stmt = discriminant_encoder.encode(index, defmt_path);
+        if let Some(index) = discriminant_encoder.literal(index) {
+            discriminant_arms.push(quote!(#enum_ident::#variant_ident { .. } => #index,));
+        }
 
-        match_arms.push(quote!(
-            #enum_ident::#variant_ident #pattern => {
-                #encode_discriminant_stmt
-                #(#encode_fields_stmts;)*
-            }
-        ))
+        if encode_fields_stmts.is_empty() {
+            has_variants_without_fields = true;
+        } else {
+            match_arms.push(quote!(
+                #enum_ident::#variant_ident #pattern => {
+                    #(#encode_fields_stmts;)*
+                }
+            ))
+        }
     }
 
     let format_tag = construct::interned_string(&format_string, "derived", false, None, defmt_path);
-    let stmts = vec![quote!(match self {
-        #(#match_arms)*
-    })];
+    let mut stmts = vec![];
+    if let Some(method) = discriminant_encoder.method() {
+        stmts.push(quote!(#defmt_path::export::#method(&match self {
+            #(#discriminant_arms)*
+        });));
+    }
+    if !match_arms.is_empty() {
+        let default_arm = has_variants_without_fields.then(|| quote!(_ => {}));
+        stmts.push(quote!(match self {
+            #(#match_arms)*
+            #default_arm
+        }));
+    }
     where_predicates.dedup_by(|a, b| a == b);
 
     Ok(EncodeData {
@@ -101,27 +118,26 @@ impl DiscriminantEncoder {
         }
     }
 
-    // NOTE this assumes `index` < `number_of_variants` used to construct `self`
-    fn encode(&self, index: usize, defmt_path: &syn::Path) -> TokenStream2 {
-        match self {
+    fn method(&self) -> Option<Ident> {
+        let name = match self {
             // For single-variant enums, there is no need to encode the discriminant.
-            DiscriminantEncoder::Nop => quote!(),
-            DiscriminantEncoder::U8 => {
-                let index = index as u8;
-                quote!(#defmt_path::export::u8(&#index);)
-            }
-            DiscriminantEncoder::U16 => {
-                let index = index as u16;
-                quote!(#defmt_path::export::u16(&#index);)
-            }
-            DiscriminantEncoder::U32 => {
-                let index = index as u32;
-                quote!(#defmt_path::export::u32(&#index);)
-            }
-            DiscriminantEncoder::U64 => {
-                let index = index as u64;
-                quote!(#defmt_path::export::u64(&#index);)
-            }
+            DiscriminantEncoder::Nop => return None,
+            DiscriminantEncoder::U8 => "u8",
+            DiscriminantEncoder::U16 => "u16",
+            DiscriminantEncoder::U32 => "u32",
+            DiscriminantEncoder::U64 => "u64",
+        };
+        Some(Ident::new(name, Span::call_site()))
+    }
+
+    // NOTE this assumes `index` < `number_of_variants` used to construct `self`
+    fn literal(&self, index: usize) -> Option<TokenStream2> {
+        match self {
+            DiscriminantEncoder::Nop => None,
+            DiscriminantEncoder::U8 => Some((index as u8).to_token_stream()),
+            DiscriminantEncoder::U16 => Some((index as u16).to_token_stream()),
+            DiscriminantEncoder::U32 => Some((index as u32).to_token_stream()),
+            DiscriminantEncoder::U64 => Some((index as u64).to_token_stream()),
         }
     }
 }
