@@ -777,6 +777,7 @@ Initial release
 ### [defmt-rtt-next]
 
 * [#1108](https://github.com/knurling-rs/defmt/pull/1108) Remove slice bounds panic branch to reduce flash usage.
+* [#TODO](https://github.com/knurling-rs/defmt/pull/TODO) Support `drop-on-contention` on targets without compare-and-swap, such as ARMv6-M
 
 ### [defmt-rtt-v1.3.0] (2026-06-26)
 

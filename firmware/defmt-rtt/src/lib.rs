@@ -39,9 +39,11 @@
 //! cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}
 //! ```
 //!
-//! With feature `drop-on-contention` you do not need a critical section
-//! implementation and interrupts are not disabled. Instead, when execution
-//! contexts collide, frames are dropped. This mode is for bare-metal
+//! With feature `drop-on-contention` interrupts are not disabled while a frame
+//! is written. Instead, when execution contexts collide, frames are dropped.
+//! Targets with compare-and-swap do not need a critical section implementation.
+//! Targets without it (e.g. ARMv6-M) use a critical section only to claim the
+//! logger at the start of a frame. This mode is for bare-metal
 //! Cortex-M use where thread mode is a single execution context. It is not
 //! correct on RTOS or other multi-thread-mode systems because all thread-mode
 //! tasks share `IPSR == 0`, which can misidentify ownership and panic. It can
@@ -296,6 +298,26 @@ impl AtomicRttEncoder {
         loop {}
     }
 
+    #[cfg(target_has_atomic = "32")]
+    fn try_claim(&self, context: u32) -> bool {
+        self.owner
+            .compare_exchange(NO_OWNER, context, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+    }
+
+    /// Targets without compare-and-swap (e.g. ARMv6-M) mask interrupts only
+    /// for the claim, not for the whole frame.
+    #[cfg(not(target_has_atomic = "32"))]
+    fn try_claim(&self, context: u32) -> bool {
+        critical_section::with(|_| {
+            if self.owner.load(Ordering::Relaxed) != NO_OWNER {
+                return false;
+            }
+            self.owner.store(context, Ordering::Relaxed);
+            true
+        })
+    }
+
     fn is_owner(&self) -> bool {
         self.owner.load(Ordering::Relaxed) == Self::current_context()
     }
@@ -311,11 +333,7 @@ impl AtomicRttEncoder {
         // On failure we intentionally drop the whole colliding frame; the
         // caller continues but all later methods become no-ops because it is
         // not the owner.
-        if self
-            .owner
-            .compare_exchange(NO_OWNER, context, Ordering::Acquire, Ordering::Relaxed)
-            .is_err()
-        {
+        if !self.try_claim(context) {
             return;
         }
 
