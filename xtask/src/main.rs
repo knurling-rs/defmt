@@ -211,18 +211,21 @@ fn test_cross(deny_warnings: bool) {
         "cross",
     );
 
-    for feature in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
-        do_test(
-            || {
-                run_command(
-                    "cargo",
-                    &["check", "--target", "thumbv7m-none-eabi", "--features", feature],
-                    Some("firmware/defmt-rtt"),
-                    &env,
-                )
-            },
-            "cross",
-        );
+    // thumbv6m has no compare-and-swap and takes a different code path
+    for target in ["thumbv6m-none-eabi", "thumbv7m-none-eabi"] {
+        for feature in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
+            do_test(
+                || {
+                    run_command(
+                        "cargo",
+                        &["check", "--target", target, "--features", feature],
+                        Some("firmware/defmt-rtt"),
+                        &env,
+                    )
+                },
+                "cross",
+            );
+        }
     }
 
     for feature in ["print-defmt", "print-rtt"] {
@@ -269,29 +272,31 @@ fn test_lint_cross(deny_warnings: bool) {
         "cross",
     );
 
-    for feature in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
-        do_test(
-            || {
-                run_command(
-                    "cargo",
-                    &[
-                        "clippy",
-                        "--target",
-                        "thumbv7m-none-eabi",
-                        "--features",
-                        feature,
-                        "--",
-                        "-D",
-                        "warnings",
-                        "-A",
-                        "unknown-lints",
-                    ],
-                    Some("firmware/defmt-rtt"),
-                    &env,
-                )
-            },
-            "cross",
-        );
+    for target in ["thumbv6m-none-eabi", "thumbv7m-none-eabi"] {
+        for feature in ["drop-on-contention", "drop-on-contention,disable-blocking-mode"] {
+            do_test(
+                || {
+                    run_command(
+                        "cargo",
+                        &[
+                            "clippy",
+                            "--target",
+                            target,
+                            "--features",
+                            feature,
+                            "--",
+                            "-D",
+                            "warnings",
+                            "-A",
+                            "unknown-lints",
+                        ],
+                        Some("firmware/defmt-rtt"),
+                        &env,
+                    )
+                },
+                "cross",
+            );
+        }
     }
 }
 
