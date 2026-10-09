@@ -47,9 +47,17 @@ jobs:
         uses: ./.github/actions/update-rust
         with:
           toolchain: ${{ matrix.toolchain }}
+      - name: Install MSRV-aware Cargo
+        if: matrix.toolchain != 'stable'
+        run: rustup toolchain install stable --no-self-update
+      # Attempt to select firmware MSRV compatible crate versions using stable rust MSRV-aware resolver
       - name: Update firmware dependencies
-        run: cargo update --manifest-path firmware/Cargo.toml
-      - name: Update compatibility crate dependencies
-        run: cargo update --manifest-path defmt-03/Cargo.toml
+        env:
+          CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: ${{ matrix.toolchain == 'stable' && 'allow' || 'fallback' }}
+        run: |
+          # Use the matrix compiler's version despite stable cargo
+          export RUSTC="$(rustup which rustc)"
+          cargo +stable update --manifest-path firmware/Cargo.toml
+          cargo +stable update --manifest-path defmt-03/Cargo.toml
       - name: Install Rust targets, build defmt crates for no_std targets, build defmt dependent crates for cortex-m targets, build panic-probe with different features
         run: cargo xtask test-cross
