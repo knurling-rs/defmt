@@ -3,18 +3,23 @@ use std::{
     ops::Range,
 };
 
-use crate::{Arg, DecodeError, FormatSliceElement, Table};
+use crate::{Arg, DecodeContext, DecodeError, FormatSliceElement, Table};
 use byteorder::{ReadBytesExt, LE};
 use defmt_parser::{get_max_bitfield_range, Fragment, Parameter, Type};
 
-pub(crate) struct Decoder<'t, 'b> {
+pub(crate) struct Decoder<'t, 'b, 'i> {
     table: &'t Table,
+    context: &'i DecodeContext,
     pub bytes: &'b [u8],
 }
 
-impl<'t, 'b> Decoder<'t, 'b> {
-    pub fn new(table: &'t Table, bytes: &'b [u8]) -> Self {
-        Self { table, bytes }
+impl<'t, 'b, 'i> Decoder<'t, 'b, 'i> {
+    pub fn new(table: &'t Table, bytes: &'b [u8], context: &'i DecodeContext) -> Self {
+        Self {
+            table,
+            context,
+            bytes,
+        }
     }
 
     /// Sort and deduplicate `params` so that they can be interpreted correctly during decoding
@@ -27,12 +32,18 @@ impl<'t, 'b> Decoder<'t, 'b> {
         params.dedup_by(|a, b| a.index == b.index);
     }
 
+    fn read_address(&mut self) -> Result<usize, DecodeError> {
+        self.table
+            .resolve_address(self.context, self.bytes.read_u16::<LE>()?)
+            .ok_or(DecodeError::Malformed)
+    }
+
     /// Gets a format string from `bytes` and `table`
     fn get_format(&mut self) -> Result<&'t str, DecodeError> {
-        let index = self.bytes.read_u16::<LE>()? as usize;
+        let address = self.read_address()?;
         let format = self
             .table
-            .get_without_level(index)
+            .get_without_level(address)
             .map_err(|_| DecodeError::Malformed)?;
 
         Ok(format)
@@ -182,11 +193,11 @@ impl<'t, 'b> Decoder<'t, 'b> {
                     args.push(Arg::Str(arg_str));
                 }
                 Type::IStr => {
-                    let str_index = self.bytes.read_u16::<LE>()? as usize;
+                    let address = self.read_address()?;
 
                     let string = self
                         .table
-                        .get_without_level(str_index)
+                        .get_without_level(address)
                         .map_err(|_| DecodeError::Malformed)?;
 
                     args.push(Arg::IStr(string));
@@ -236,14 +247,18 @@ impl<'t, 'b> Decoder<'t, 'b> {
                 Type::FormatSequence => {
                     let mut seq_args = Vec::new();
                     loop {
-                        let index = self.bytes.read_u16::<LE>()? as usize;
-                        if index == 0 {
+                        let wire_index = self.bytes.read_u16::<LE>()?;
+                        if wire_index == 0 {
                             break;
                         }
+                        let address = self
+                            .table
+                            .resolve_address(self.context, wire_index)
+                            .ok_or(DecodeError::Malformed)?;
 
                         let format = self
                             .table
-                            .get_without_level(index)
+                            .get_without_level(address)
                             .map_err(|_| DecodeError::Malformed)?;
 
                         let inner_args = self.decode_format(format)?;
