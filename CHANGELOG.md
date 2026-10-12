@@ -32,11 +32,13 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 > A highly efficient logging framework that targets resource-constrained devices, like microcontrollers
 
-[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.1.1...main
+[defmt-next]: https://github.com/knurling-rs/defmt/compare/defmt-v1.2.0...main
+[defmt-v1.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.2.0
 [defmt-v1.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.1.1
 [defmt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.1.0
 [defmt-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.1
 [defmt-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v1.0.0
+[defmt-v0.3.101]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.101
 [defmt-v0.3.100]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.100
 [defmt-v0.3.10]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.10
 [defmt-v0.3.9]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.3.9
@@ -60,12 +62,18 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+### [defmt-v1.2.0] (2026-10-15)
+
 * [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
 * [#1091](https://github.com/knurling-rs/defmt/pull/1091) Allow inner modules to decrease env filter verbosity
 * [#1039](https://github.com/knurling-rs/defmt/pull/1039) Add support for `PanicInfo::message` if the message is a static string.
 * [#1089](https://github.com/knurling-rs/defmt/pull/1089) Retain timestamp and bitflags metadata when linking without `defmt.x`.
 * [#1068](https://github.com/knurling-rs/defmt/pull/1068) Adding `Format` impl for `core::str` errors
 * [#1096](https://github.com/knurling-rs/defmt/pull/1096) Implement `Format` for `alloc` Errors
+
+### [defmt-v0.3.101] (2026-10-15)
+
+* [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
 
 ### [defmt-v1.1.1] (2026-06-26)
 
@@ -430,7 +438,8 @@ Initial release
 
 > Macros for [defmt](#defmt)
 
-[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.1.1...main
+[defmt-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-macros-v1.2.0...main
+[defmt-macros-v1.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.2.0
 [defmt-macros-v1.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.1.1
 [defmt-macros-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.1.0
 [defmt-macros-v1.0.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-macros-v1.0.1
@@ -456,7 +465,12 @@ Initial release
 
 ### [defmt-macros-next]
 
+### [defmt-macros-v1.2.0] (2026-10-15)
+
 * [#1084](https://github.com/knurling-rs/defmt/pull/1084) Report a format string that a future release will reject, such as `}{{}`, as a deprecation warning at the macro call site.
+* [#1091](https://github.com/knurling-rs/defmt/pull/1091) Allow inner modules to decrease env filter verbosity
+* [#1089](https://github.com/knurling-rs/defmt/pull/1089) Retain timestamp and bitflags metadata when linking without `defmt.x`.
+* [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
 
 ### [defmt-macros-v1.1.1] (2026-06-26)
 
@@ -524,7 +538,8 @@ Initial release
 
 > A tool that decodes defmt logs and prints them to the console
 
-[defmt-print-next]: https://github.com/knurling-rs/defmt/compare/defmt-print-v1.0.0...main
+[defmt-print-next]: https://github.com/knurling-rs/defmt/compare/defmt-print-v1.2.0...main
+[defmt-print-v1.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v1.2.0
 [defmt-print-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v1.1.0
 [defmt-print-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v1.0.0
 [defmt-print-v0.3.13]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.3.13
@@ -545,6 +560,8 @@ Initial release
 [defmt-print-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-print-v0.2.0
 
 ### [defmt-print-next]
+
+### [defmt-print-v1.2.0] (2026-10-15)
 
 * [#1095](https://github.com/knurling-rs/defmt/pull/1095) Exit on EOF instead of busy-looping when the serial device is unplugged or the tcp connection is closed
 
@@ -611,7 +628,8 @@ Initial release
 
 > Decodes defmt log frames
 
-[defmt-decoder-next]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v1.0.1...main
+[defmt-decoder-next]: https://github.com/knurling-rs/defmt/compare/defmt-decoder-v1.2.0...main
+[defmt-decoder-v1.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v1.2.0
 [defmt-decoder-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v1.1.0
 [defmt-decoder-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v1.0.0
 [defmt-decoder-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.4.0
@@ -636,7 +654,9 @@ Initial release
 
 ### [defmt-decoder-next]
 
-* [#1073](https://github.com/knurling-rs/defmt/pull/1073) Gather symbols from unmerged `.defmt.*` sections, don't use `DW_AT_location`
+### [defmt-decoder-v1.2.0] (2026-10-15)
+
+* [#1073](https://github.com/knurling-rs/defmt/pull/1073) Gather symbols from unmerged `.defmt.*` sections
 
 ### [defmt-decoder-v1.1.0] (2026-01-20)
 
@@ -703,7 +723,8 @@ Initial release
 
 > Parsing library for defmt format strings
 
-[defmt-parser-next]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v1.0.0...main
+[defmt-parser-next]: https://github.com/knurling-rs/defmt/compare/defmt-parser-v1.1.0...main
+[defmt-parser-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v1.1.0
 [defmt-parser-v1.0.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v1.0.0
 [defmt-parser-v0.4.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.4.1
 [defmt-parser-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-parser-v0.4.0
@@ -719,10 +740,13 @@ Initial release
 
 ### [defmt-parser-next]
 
+### [defmt-parser-v1.1.0] (2026-10-15)
+
 * [#1083](https://github.com/knurling-rs/defmt/pull/1083) A bitfield spec whose leading number is not followed by a complete `..end`, such as `{=8}` or `{=0.}`, now returns `Err(InvalidTypeSpecifier)` instead of panicking.
 * [#1084](https://github.com/knurling-rs/defmt/pull/1084) Add `parse_with_warnings`, which reports the format strings that a future release will reject. A stray `}` in a literal that a later stray `}` cancels out, such as `}{{}`, is one: `format!` rejects it, so it warns with `Warning::UnmatchedCloseBracket` while still parsing as before.
 * [#956](https://github.com/knurling-rs/defmt/pull/956) Link `LICENSE-*` in the crate folder
 * [#1028](https://github.com/knurling-rs/defmt/pull/1028) Clarify that MSRV is 1.76
+* [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
 
 ### [defmt-parser-v1.0.0] (2025-04-01)
 
@@ -760,7 +784,8 @@ Initial release
 
 > Transmit defmt log messages over the RTT (Real-Time Transfer) protocol
 
-[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.3.0...main
+[defmt-rtt-next]: https://github.com/knurling-rs/defmt/compare/defmt-rtt-v1.3.1...main
+[defmt-rtt-v1.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.3.1
 [defmt-rtt-v1.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.3.0
 [defmt-rtt-v1.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.2.0
 [defmt-rtt-v1.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v1.1.0
@@ -775,6 +800,8 @@ Initial release
 [defmt-rtt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-rtt-v0.1.0
 
 ### [defmt-rtt-next]
+
+### [defmt-rtt-v1.3.1] (2026-10-15)
 
 * [#1108](https://github.com/knurling-rs/defmt/pull/1108) Remove slice bounds panic branch to reduce flash usage.
 
@@ -852,12 +879,15 @@ Initial release
 
 > Transmit defmt log messages using semi-hosting breakpoints
 
-[defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.3.0...main
+[defmt-semihosting-next]: https://github.com/knurling-rs/defmt/compare/defmt-semihosting-v0.4.0...main
+[defmt-semihosting-v0.4.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.4.0
 [defmt-semihosting-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.3.0
 [defmt-semihosting-v0.2.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.2.0
 [defmt-semihosting-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-semihosting-v0.1.0
 
 ### [defmt-semihosting-next]
+
+### [defmt-semihosting-v0.4.0] (2026-10-15)
 
 * [#1099](https://github.com/knurling-rs/defmt/pull/1099) Removed `cortex-m` dependency, and `critical-section-single-core` feature
 
@@ -915,7 +945,8 @@ Initial release
 
 > A test harness for embedded devices
 
-[defmt-test-next]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.5.0...main
+[defmt-test-next]:  https://github.com/knurling-rs/defmt/compare/defmt-test-v0.5.1...main
+[defmt-test-v0.5.1]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.5.1
 [defmt-test-v0.5.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.5.0
 [defmt-test-v0.4.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.4.0
 [defmt-test-v0.3.2]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.3.2
@@ -929,6 +960,10 @@ Initial release
 [defmt-test-v0.1.0]:  https://github.com/knurling-rs/defmt/releases/tag/defmt-test-v0.1.0
 
 ### [defmt-test-next]
+
+### [defmt-test-v0.5.1] (2026-10-15)
+
+* [#1102](https://github.com/knurling-rs/defmt/pull/1102) Bump `syn` to v3
 
 ### [defmt-test-v0.5.0] (2026-05-12)
 
@@ -963,7 +998,8 @@ Initial release
 
 > Macros for defmt-test
 
-[defmt-test-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-test-macros-v0.3.1...main
+[defmt-test-macros-next]: https://github.com/knurling-rs/defmt/compare/defmt-test-macros-v0.3.4...main
+[defmt-test-macros-v0.3.4]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.3.4
 [defmt-test-macros-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.3.1
 [defmt-test-macros-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.3.0
 [defmt-test-macros-v0.2.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-test-macros-v0.2.1
@@ -973,7 +1009,9 @@ Initial release
 
 ### [defmt-test-macros-next]
 
-* No changes
+### [defmt-test-macros-v0.3.4] (2026-10-15)
+
+* [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
 
 ### [defmt-test-macros-v0.3.1] (2024-03-05)
 
@@ -993,12 +1031,16 @@ Initial release
 
 > JSON schema for defmt
 
-[defmt-json-schema-next]: https://github.com/knurling-rs/defmt/compare/defmt-json-schema-v0.1.0...main
+[defmt-json-schema-next]: https://github.com/knurling-rs/defmt/compare/defmt-json-schema-v0.1.1...main
+[defmt-json-schema-v0.1.1]: https://github.com/knurling-rs/defmt/releases/tag/defmt-json-schema-v0.1.1
 [defmt-json-schema-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-json-schema-v0.1.0
 
 ### [defmt-json-schema-next]
 
+### [defmt-json-schema-v0.1.1] (2026-10-15)
+
 * [#986](https://github.com/knurling-rs/defmt/pull/986) Bump MSRV to 1.78
+* [#1028](https://github.com/knurling-rs/defmt/pull/1028) Bump host MSRV to Rust 1.83
 
 ### [defmt-json-schema-v0.1.0] (2022-03-10)
 
@@ -1008,11 +1050,16 @@ Initial release
 
 > Runs [`qemu-system-arm`] but decodes [`defmt`] data sent to semihosting
 
-[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.3.0...main
+[qemu-run-next]: https://github.com/knurling-rs/defmt/compare/qemu-run-v0.3.1...main
+[qemu-run-v0.3.1]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.3.1
 [qemu-run-v0.3.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.3.0
 [qemu-run-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/qemu-run-v0.1.0
 
 ### [qemu-run-next]
+
+### [qemu-run-v0.3.1] (2026-10-15)
+
+* [#1073](https://github.com/knurling-rs/defmt/pull/1073) Gather symbols from unmerged `.defmt.*` sections
 
 ### [qemu-run-v0.3.0] (2026-05-12)
 
