@@ -61,6 +61,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 [defmt-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-v0.1.0
 
 ### [defmt-next]
+* [#1096](https://github.com/knurling-rs/defmt/pull/1109) Optimize enum encoding to reduce code size
 
 ### [defmt-v1.2.0] (2026-10-15)
 
