@@ -23,16 +23,13 @@ pub(crate) fn expand(
     };
 
     let format_string = construct::string_literal(&format_string);
-    let log_and_panic = match log::expand_parsed_and_panic(
+    log::expand_parsed_and_panic(
         Level::Error,
         log::Args {
             format_string,
             formatting_args,
         },
-    ) {
-        Ok(log_and_panic) => log_and_panic,
-        Err(err) => return err.into_compile_error().into(),
-    };
-
-    log_and_panic.into()
+    )
+    .unwrap_or_else(syn::Error::into_compile_error)
+    .into()
 }
