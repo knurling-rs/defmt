@@ -62,6 +62,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#879](https://github.com/knurling-rs/defmt/pull/879) Load string indices with inline asm to save space on ARMv7+
+
 ### [defmt-v1.2.0] (2026-10-15)
 
 * [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
