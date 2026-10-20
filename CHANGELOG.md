@@ -62,6 +62,8 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 ### [defmt-next]
 
+* [#1118](https://github.com/knurling-rs/defmt/pull/1118) Add `Str::index`, the index of an interned string in the `.defmt` table
+
 ### [defmt-v1.2.0] (2026-10-15)
 
 * [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).
@@ -653,6 +655,8 @@ Initial release
 [defmt-decoder-v0.1.0]: https://github.com/knurling-rs/defmt/releases/tag/defmt-decoder-v0.1.0
 
 ### [defmt-decoder-next]
+
+* [#1118](https://github.com/knurling-rs/defmt/pull/1118) Add `Table::get_str` to look up an interned string by its index
 
 ### [defmt-decoder-v1.2.0] (2026-10-15)
 
