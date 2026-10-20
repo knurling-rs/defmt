@@ -465,6 +465,8 @@ Initial release
 
 ### [defmt-macros-next]
 
+* [#1117](https://github.com/knurling-rs/defmt/pull/1117) Fix `#[derive(Format)]` enums with exactly 256 or 65536 variants encoding a wider discriminant than the decoder reads
+
 ### [defmt-macros-v1.2.0] (2026-10-15)
 
 * [#1084](https://github.com/knurling-rs/defmt/pull/1084) Report a format string that a future release will reject, such as `}{{}`, as a deprecation warning at the macro call site.
