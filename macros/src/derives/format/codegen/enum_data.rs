@@ -78,14 +78,21 @@ enum DiscriminantEncoder {
 }
 
 impl DiscriminantEncoder {
+    // NOTE this assumes `number_of_variants` > 0
     fn new(number_of_variants: usize) -> syn::Result<Self> {
-        if number_of_variants == 1 {
+        // the width is picked by the largest discriminant, which must match the decoder
+        let max_discriminant = number_of_variants - 1;
+        if max_discriminant == 0 {
             Ok(Self::Nop)
-        } else if number_of_variants <= usize::from(u8::MAX) {
+        } else if u8::try_from(max_discriminant).is_ok() {
             Ok(Self::U8)
-        } else if number_of_variants <= usize::from(u16::MAX) {
+        } else if u16::try_from(max_discriminant).is_ok() {
             Ok(Self::U16)
-        } else if number_of_variants as u128 > u128::from(u64::MAX) {
+        } else if u32::try_from(max_discriminant).is_ok() {
+            Ok(Self::U32)
+        } else if u64::try_from(max_discriminant).is_ok() {
+            Ok(Self::U64)
+        } else {
             // unreachable on existing hardware?
             Err(syn::Error::new(
                 Span::call_site(),
@@ -94,10 +101,6 @@ impl DiscriminantEncoder {
                     number_of_variants
                 ),
             ))
-        } else if number_of_variants as u64 <= u64::from(u32::MAX) {
-            Ok(Self::U32)
-        } else {
-            Ok(Self::U64)
         }
     }
 
@@ -123,5 +126,28 @@ impl DiscriminantEncoder {
                 quote!(#defmt_path::export::u64(&#index);)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DiscriminantEncoder;
+
+    #[test]
+    fn discriminant_width() {
+        let width = |n| match DiscriminantEncoder::new(n).unwrap() {
+            DiscriminantEncoder::Nop => 0,
+            DiscriminantEncoder::U8 => 1,
+            DiscriminantEncoder::U16 => 2,
+            DiscriminantEncoder::U32 => 4,
+            DiscriminantEncoder::U64 => 8,
+        };
+
+        assert_eq!(width(1), 0);
+        assert_eq!(width(2), 1);
+        assert_eq!(width(256), 1);
+        assert_eq!(width(257), 2);
+        assert_eq!(width(65_536), 2);
+        assert_eq!(width(65_537), 4);
     }
 }
