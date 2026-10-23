@@ -348,7 +348,6 @@ name = "defmt-parser"
 version = "1.1.0"
 dependencies = [
  "rstest",
- "thiserror",
 ]
 
 [[package]]

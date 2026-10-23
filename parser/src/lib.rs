@@ -21,46 +21,99 @@ pub use crate::{
 };
 
 /// The kinds of error this library can return
-#[derive(thiserror::Error, Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
-    #[error("invalid type specifier `{0:?}`")]
     InvalidTypeSpecifier(String),
-    #[error("unable to parse given integer")]
-    InvalidInteger(#[from] std::num::ParseIntError),
-    #[error("invalid array specifier (missing length)")]
+    InvalidInteger(std::num::ParseIntError),
     InvalidArraySpecifierMissingLength,
-    #[error("invalid array specifier (missing `]`")]
     InvalidArraySpecifierMissingBracket,
-    #[error("trailing data after bitfield range")]
     TrailingDataAfterBitfieldRange,
-    #[error("malformed format string (missing display hint after ':')")]
     MalformedFormatString,
-    #[error("unknown display hint: {0:?}")]
     UnknownDisplayHint(String),
-    #[error("unexpected content `{0:?}` in format string")]
     UnexpectedContentInFormatString(String),
-    #[error("unmatched `{{` in format string")]
     UnmatchedOpenBracket,
-    #[error("unmatched `}}` in format string")]
     UnmatchedCloseBracket,
-    #[error("conflicting types for argument {0}: used as {1:?} and {2:?}")]
     ConflictingTypes(usize, Type, Type),
-    #[error("argument {0} is not used in this format string")]
     UnusedArgument(usize),
+}
+
+impl From<core::num::ParseIntError> for Error {
+    fn from(err: core::num::ParseIntError) -> Self {
+        Self::InvalidInteger(err)
+    }
+}
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::InvalidTypeSpecifier(s) => write!(f, "invalid type specifier `{s:?}`"),
+            Self::InvalidInteger(_) => write!(f, "unable to parse given integer"),
+            Self::InvalidArraySpecifierMissingLength => {
+                write!(f, "invalid array specifier (missing length)")
+            }
+            Self::InvalidArraySpecifierMissingBracket => {
+                write!(f, "invalid array specifier (missing `]`")
+            }
+            Self::TrailingDataAfterBitfieldRange => write!(f, "trailing data after bitfield range"),
+            Self::MalformedFormatString => write!(
+                f,
+                "malformed format string (missing display hint after ':')"
+            ),
+            Self::UnknownDisplayHint(s) => write!(f, "unknown display hint: {s:?}"),
+            Self::UnexpectedContentInFormatString(s) => {
+                write!(f, "unexpected content `{s:?}` in format string")
+            }
+            Self::UnmatchedOpenBracket => write!(f, "unmatched `{{` in format string"),
+            Self::UnmatchedCloseBracket => write!(f, "unmatched `}}` in format string"),
+            Self::ConflictingTypes(i, t1, t2) => write!(
+                f,
+                "conflicting types for argument {i}: used as {t1:?} and {t2:?}"
+            ),
+            Self::UnusedArgument(i) => write!(f, "argument {i} is not used in this format string"),
+        }
+    }
+}
+
+impl core::error::Error for Error {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            Self::InvalidInteger(err) => Some(err),
+            Self::InvalidTypeSpecifier(_)
+            | Self::InvalidArraySpecifierMissingLength
+            | Self::InvalidArraySpecifierMissingBracket
+            | Self::TrailingDataAfterBitfieldRange
+            | Self::MalformedFormatString
+            | Self::UnknownDisplayHint(_)
+            | Self::UnexpectedContentInFormatString(_)
+            | Self::UnmatchedOpenBracket
+            | Self::UnmatchedCloseBracket
+            | Self::ConflictingTypes(_, _, _)
+            | Self::UnusedArgument(_) => None,
+        }
+    }
 }
 
 /// A format string that a future release will reject.
 ///
 /// This is *not* a part of the public API.
 #[doc(hidden)]
-#[derive(thiserror::Error, Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[non_exhaustive]
 pub enum Warning {
-    #[error("unmatched `{{` in format string, escape it as `{{{{`: this will be an error in a future release")]
     UnmatchedOpenBracket,
-    #[error("unmatched `}}` in format string, escape it as `}}}}`: this will be an error in a future release")]
     UnmatchedCloseBracket,
 }
+
+impl core::fmt::Display for Warning {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::UnmatchedOpenBracket => write!(f, "unmatched `{{` in format string, escape it as `{{{{`: this will be an error in a future release"),
+            Self::UnmatchedCloseBracket => write!(f, "unmatched `}}` in format string, escape it as `}}}}`: this will be an error in a future release"),
+        }
+    }
+}
+
+impl core::error::Error for Warning {}
 
 /// A parameter of the form `{{0=Type:hint}}` in a format string.
 #[derive(Clone, Debug, Eq, PartialEq)]
