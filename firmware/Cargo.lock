@@ -111,9 +111,6 @@ dependencies = [
 [[package]]
 name = "defmt-parser"
 version = "1.1.0"
-dependencies = [
- "thiserror",
-]
 
 [[package]]
 name = "defmt-rtt"
@@ -386,26 +383,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "thiserror"
-version = "2.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec86235f5fcc2a73650310756d2ac5b138a5780bbbdfae3eeccec992c435ba4f"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "2.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc04cd3e1236dd4a98afca4569f2deb3f120e5422a4023be2cb683f8486292af"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 3.0.6",
 ]
 
 [[package]]
