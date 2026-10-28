@@ -198,6 +198,13 @@ impl Table {
         }
     }
 
+    /// The string interned with `defmt::intern!` at `index` (`defmt::Str::index`), or `None` if the table has no
+    /// interned string there.
+    pub fn get_str(&self, index: usize) -> Option<&str> {
+        let entry = self.entries.get(&index)?;
+        (entry.string.tag == Tag::Str).then_some(&*entry.string.string)
+    }
+
     pub fn indices(&self) -> impl Iterator<Item = usize> + '_ {
         self.entries.iter().filter_map(move |(idx, entry)| {
             if entry.string.tag.to_level().is_some() || entry.string.tag == Tag::Println {
@@ -378,6 +385,17 @@ mod tests {
             bitflags: Default::default(),
             encoding: Encoding::Raw,
         }
+    }
+
+    #[test]
+    fn get_str_finds_interned_strings_only() {
+        let table = test_table([
+            TableEntry::new_without_symbol(Tag::Str, "two VREF sources".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "x={=u8}".to_owned()),
+        ]);
+        assert_eq!(table.get_str(0), Some("two VREF sources"));
+        assert_eq!(table.get_str(1), None);
+        assert_eq!(table.get_str(2), None);
     }
 
     // helper function to initiate decoding and assert that the result is as expected.
