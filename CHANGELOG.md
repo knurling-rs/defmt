@@ -659,6 +659,8 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1120](https://github.com/knurling-rs/defmt/pull/1120) Don't preallocate a format slice from its wire length
+
 ### [defmt-decoder-v1.2.0] (2026-10-15)
 
 * [#1073](https://github.com/knurling-rs/defmt/pull/1073) Gather symbols from unmerged `.defmt.*` sections
