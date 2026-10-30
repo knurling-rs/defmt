@@ -818,6 +818,24 @@ mod tests {
     }
 
     #[test]
+    fn format_slice_with_bogus_length_is_an_error() {
+        let entries = vec![
+            TableEntry::new_without_symbol(Tag::Prim, "{=u8}".to_owned()),
+            TableEntry::new_without_symbol(Tag::Info, "{=[?]}".to_owned()),
+        ];
+
+        let table = test_table(entries);
+
+        let bytes = [
+            1, 0, // frame index
+            255, 255, 255, 255, // number of elements in `FormatSlice`: u32::MAX
+            0, 0,  // Format index to table entry: `{=u8}`
+            42, // the only element actually in the frame
+        ];
+        assert_eq!(table.decode(&bytes), Err(DecodeError::UnexpectedEof));
+    }
+
+    #[test]
     fn display_u8_vec() {
         let entries = vec![
             TableEntry::new_without_symbol(Tag::Prim, "{=u8}".to_owned()),
