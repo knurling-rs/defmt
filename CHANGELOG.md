@@ -661,6 +661,7 @@ Initial release
 
 ### [defmt-decoder-next]
 
+* [#1122](https://github.com/knurling-rs/defmt/pull/1122) Use the logged width for signed `:b` and `:o` hints, and don't panic on `isize` with `:x`
 * [#1120](https://github.com/knurling-rs/defmt/pull/1120) Don't preallocate a format slice from its wire length
 
 ### [defmt-decoder-v1.2.0] (2026-10-15)
