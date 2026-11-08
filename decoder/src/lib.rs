@@ -737,6 +737,32 @@ mod tests {
     }
 
     #[test]
+    fn display_i8_with_binary_and_octal_hint() {
+        // defmt::info!("{=i8:b} {=i8:#o}", -1_i8, -1_i8);
+        let bytes = [
+            0,
+            0,           // index
+            2,           // timestamp
+            0b1111_1111, // the logged i8 value -1
+            0b1111_1111, // the logged i8 value -1
+        ];
+
+        decode_and_expect("{=i8:b} {=i8:#o}", &bytes, "0.000002 INFO 11111111 0o377");
+    }
+
+    #[test]
+    fn display_isize_with_hex_hint() {
+        // defmt::info!("{=isize:#x}", -2_isize);
+        let bytes = [
+            0, 0, // index
+            2, // timestamp
+            0xfe, 0xff, 0xff, 0xff, // the logged isize value -2
+        ];
+
+        decode_and_expect("{=isize:#x}", &bytes, "0.000002 INFO 0xfffffffe");
+    }
+
+    #[test]
     fn display_use_inner_type_hint() {
         let entries = vec![
             TableEntry::new_without_symbol(Tag::Info, "x={:b}".to_owned()),

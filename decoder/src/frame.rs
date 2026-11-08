@@ -10,33 +10,29 @@ use defmt_parser::{DisplayHint, Fragment, Level, ParserMode, TimePrecision, Type
 use time::{macros::format_description, OffsetDateTime};
 
 /// Used to convert a `i128` value into right target type in hex
-struct I128Hex(i128, Type);
+/// A signed value that is formatted with the width of the type it was logged as,
+/// so `-1_i8` shows as `ff` or `11111111` and not with 128 bits.
+struct TypedI128(i128, Type);
 
-impl std::fmt::LowerHex for I128Hex {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.1 {
-            Type::I8 => fmt::LowerHex::fmt(&(self.0 as i8), f),
-            Type::I16 => fmt::LowerHex::fmt(&(self.0 as i16), f),
-            Type::I32 => fmt::LowerHex::fmt(&(self.0 as i32), f),
-            Type::I64 => fmt::LowerHex::fmt(&(self.0 as i64), f),
-            Type::I128 => fmt::LowerHex::fmt(&self.0, f),
-            _ => panic!("Unsupported type '{:?}' found.", self.1),
+macro_rules! impl_typed_i128 {
+    ($($trait:ident),*) => {$(
+        impl fmt::$trait for TypedI128 {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self.1 {
+                    Type::I8 => fmt::$trait::fmt(&(self.0 as i8), f),
+                    Type::I16 => fmt::$trait::fmt(&(self.0 as i16), f),
+                    // isize is logged as an i32
+                    Type::I32 | Type::Isize => fmt::$trait::fmt(&(self.0 as i32), f),
+                    Type::I64 => fmt::$trait::fmt(&(self.0 as i64), f),
+                    Type::I128 => fmt::$trait::fmt(&self.0, f),
+                    _ => panic!("Unsupported type '{:?}' found.", self.1),
+                }
+            }
         }
-    }
+    )*};
 }
 
-impl std::fmt::UpperHex for I128Hex {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.1 {
-            Type::I8 => fmt::UpperHex::fmt(&(self.0 as i8), f),
-            Type::I16 => fmt::UpperHex::fmt(&(self.0 as i16), f),
-            Type::I32 => fmt::UpperHex::fmt(&(self.0 as i32), f),
-            Type::I64 => fmt::UpperHex::fmt(&(self.0 as i64), f),
-            Type::I128 => fmt::UpperHex::fmt(&self.0, f),
-            _ => panic!("Unsupported type '{:?}' found.", self.1),
-        }
-    }
-}
+impl_typed_i128!(LowerHex, UpperHex, Binary, Octal);
 
 /// A log frame
 #[derive(Debug, PartialEq)]
@@ -364,35 +360,33 @@ impl<'t> Frame<'t> {
         hint: Option<&DisplayHint>,
         buf: &mut String,
     ) -> Result<(), fmt::Error> {
+        let value = TypedI128(x, ty);
         match hint {
             Some(DisplayHint::NoHint { zero_pad }) => write!(buf, "{x:0zero_pad$}")?,
             Some(DisplayHint::Binary {
                 alternate,
                 zero_pad,
             }) => match alternate {
-                true => write!(buf, "{x:#0zero_pad$b}")?,
-                false => write!(buf, "{x:0zero_pad$b}")?,
+                true => write!(buf, "{value:#0zero_pad$b}")?,
+                false => write!(buf, "{value:0zero_pad$b}")?,
             },
             Some(DisplayHint::Octal {
                 alternate,
                 zero_pad,
             }) => match alternate {
-                true => write!(buf, "{x:#0zero_pad$o}")?,
-                false => write!(buf, "{x:0zero_pad$o}")?,
+                true => write!(buf, "{value:#0zero_pad$o}")?,
+                false => write!(buf, "{value:0zero_pad$o}")?,
             },
             Some(DisplayHint::Hexadecimal {
                 uppercase,
                 alternate,
                 zero_pad,
-            }) => {
-                let value = I128Hex(x, ty);
-                match (alternate, uppercase) {
-                    (false, false) => write!(buf, "{value:0zero_pad$x}")?,
-                    (false, true) => write!(buf, "{value:0zero_pad$X}")?,
-                    (true, false) => write!(buf, "{value:#0zero_pad$x}")?,
-                    (true, true) => write!(buf, "{value:#0zero_pad$X}")?,
-                }
-            }
+            }) => match (alternate, uppercase) {
+                (false, false) => write!(buf, "{value:0zero_pad$x}")?,
+                (false, true) => write!(buf, "{value:0zero_pad$X}")?,
+                (true, false) => write!(buf, "{value:#0zero_pad$x}")?,
+                (true, true) => write!(buf, "{value:#0zero_pad$X}")?,
+            },
             _ => write!(buf, "{x}")?,
         }
         Ok(())
