@@ -1020,7 +1020,7 @@ Initial release
 
 ### [defmt-test-macros-next]
 
-* [#XXXX](https://github.com/knurling-rs/defmt/pull/XXXX) Don't run `#[ignore]`d tests
+* [#1124](https://github.com/knurling-rs/defmt/pull/1124) Don't run `#[ignore]`d tests
 
 ### [defmt-test-macros-v0.3.4] (2026-10-15)
 
