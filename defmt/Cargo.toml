@@ -16,7 +16,7 @@ name = "defmt"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
 homepage = "https://knurling.ferrous-systems.com/"
-version = "1.1.1"
+version = "1.2.0"
 
 [features]
 alloc = []
@@ -49,7 +49,7 @@ unstable-test = [ "defmt-macros/unstable-test" ]
 [dependencies]
 # There is exactly one version of defmt-macros supported in this version of
 # defmt. Although, multiple versions of defmt might use the *same* defmt-macros.
-defmt-macros = { path = "../macros", version = "=1.1.1" }
+defmt-macros = { path = "../macros", version = "=1.2.0" }
 bitflags = "1"
 
 [dev-dependencies]

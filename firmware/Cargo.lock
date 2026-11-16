@@ -83,7 +83,7 @@ checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 
 [[package]]
 name = "defmt"
-version = "1.1.1"
+version = "1.2.0"
 dependencies = [
  "bitflags",
  "defmt-macros",
@@ -100,7 +100,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-macros"
-version = "1.1.1"
+version = "1.2.0"
 dependencies = [
  "defmt-parser",
  "proc-macro2",
@@ -110,14 +110,14 @@ dependencies = [
 
 [[package]]
 name = "defmt-parser"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "defmt-rtt"
-version = "1.3.0"
+version = "1.3.1"
 dependencies = [
  "critical-section",
  "defmt",
@@ -125,7 +125,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-semihosting"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "critical-section",
  "defmt",
@@ -134,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-test"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "defmt",
  "defmt-test-macros",
@@ -143,7 +143,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-test-macros"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "proc-macro2",
  "quote",

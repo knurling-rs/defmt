@@ -10,14 +10,14 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "defmt"
-version = "0.3.100"
+version = "0.3.101"
 dependencies = [
- "defmt 1.1.1",
+ "defmt 1.2.0",
 ]
 
 [[package]]
 name = "defmt"
-version = "1.1.1"
+version = "1.2.0"
 dependencies = [
  "bitflags",
  "defmt-macros",
@@ -25,7 +25,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-macros"
-version = "1.1.1"
+version = "1.2.0"
 dependencies = [
  "defmt-parser",
  "proc-macro2",
@@ -35,7 +35,7 @@ dependencies = [
 
 [[package]]
 name = "defmt-parser"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "thiserror",
 ]

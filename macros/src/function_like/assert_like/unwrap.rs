@@ -25,24 +25,21 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     };
 
     let format_string = construct::string_literal(&format_string);
-    let log_stmt = match log::expand_parsed(
+    let log_and_panic = match log::expand_parsed_and_panic(
         Level::Error,
         log::Args {
             format_string,
             formatting_args,
         },
     ) {
-        Ok(log_stmt) => log_stmt,
+        Ok(log_and_panic) => log_and_panic,
         Err(err) => return err.into_compile_error().into(),
     };
 
     quote!(
         match defmt::export::into_result(#condition) {
             ::core::result::Result::Ok(res) => res,
-            ::core::result::Result::Err(_unwrap_err) => {
-                #log_stmt;
-                defmt::export::panic()
-            }
+            ::core::result::Result::Err(_unwrap_err) => #log_and_panic,
         }
     )
     .into()

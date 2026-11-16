@@ -8,12 +8,12 @@ name = "defmt-decoder"
 readme = "README.md"
 repository = "https://github.com/knurling-rs/defmt"
 rust-version = "1.83"
-version = "1.1.0"
+version = "1.2.0"
 
 [dependencies]
 byteorder = "1"
 colored = "2"
-defmt-parser = { version = "=1.0.0", path = "../parser" }
+defmt-parser = { version = "=1.1.0", path = "../parser" }
 ryu = "1"
 nom = "7"
 

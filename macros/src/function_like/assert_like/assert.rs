@@ -21,21 +21,20 @@ pub(crate) fn expand(args: TokenStream) -> TokenStream {
     };
 
     let format_string = construct::string_literal(&format_string);
-    let log_stmt = match log::expand_parsed(
+    let log_and_panic = match log::expand_parsed_and_panic(
         Level::Error,
         log::Args {
             format_string,
             formatting_args,
         },
     ) {
-        Ok(log_stmt) => log_stmt,
+        Ok(log_and_panic) => log_and_panic,
         Err(err) => return err.into_compile_error().into(),
     };
 
     quote!(
         if !(#condition) {
-            #log_stmt;
-            defmt::export::panic()
+            #log_and_panic
         }
     )
     .into()

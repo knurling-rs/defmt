@@ -98,6 +98,42 @@ pub fn timestamp(fmt: crate::Formatter<'_>) {
     unsafe { _defmt_timestamp(fmt) }
 }
 
+/// Returns the string index (the address) of the interned string symbol `$sym`, as a `u16`.
+///
+/// defmt string indices are 16 bits, which can be loaded with a single `movw`.
+/// However, the compiler doesn't know that, so it generates `movw+movt` or `ldr rX, [pc, #offs]`
+/// because it sees we're loading an address of a symbol, which could be any 32bit value.
+/// This wastes space, so we load the value with asm manually to avoid this.
+#[cfg(defmt_movw)]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __defmt_string_index {
+    ($sym:ident) => {{
+        let res: u16;
+        unsafe {
+            ::core::arch::asm!(
+                "movw {res}, #:lower16:{sym}",
+                res = lateout(reg) res,
+                sym = sym $sym,
+                options(pure, nomem, nostack, preserves_flags)
+            )
+        };
+        res
+    }};
+}
+
+/// Returns the string index (the address) of the interned string symbol `$sym`, as a `u16`.
+#[cfg(not(defmt_movw))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __defmt_string_index {
+    ($sym:ident) => {
+        &$sym as *const u8 as u16
+    };
+}
+
+pub use crate::__defmt_string_index as string_index;
+
 /// Returns the interned string at `address`.
 pub fn make_istr(address: u16) -> Str {
     Str { address }
@@ -223,6 +259,19 @@ pub fn acquire_header_and_release(s: &Str) {
     timestamp(make_formatter());
     // safety: acquire() was called a few lines above
     unsafe { release() };
+}
+
+#[inline(never)]
+pub fn acquire_header_release_and_panic(s: &Str) -> ! {
+    acquire_header_and_release(s);
+    panic()
+}
+
+/// Safety: must follow an earlier call to acquire()
+#[inline(never)]
+pub unsafe fn release_and_panic() -> ! {
+    release();
+    panic()
 }
 
 struct FmtWrite;

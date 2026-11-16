@@ -49,7 +49,7 @@ pub(crate) fn interned_string(
         let var_item = static_variable(&var_name, string, tag, prefix);
         quote!({
             #var_item
-            &#var_name as *const u8 as u16
+            #defmt_path::export::string_index!(#var_name)
         })
     };
 

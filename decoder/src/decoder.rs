@@ -28,7 +28,7 @@ impl<'t, 'b, 'i> Decoder<'t, 'b, 'i> {
         merge_bitfields(params);
 
         // sort & dedup to ensure that format string args can be addressed by index too
-        params.sort_by(|a, b| a.index.cmp(&b.index));
+        params.sort_by_key(|a| a.index);
         params.dedup_by(|a, b| a.index == b.index);
     }
 
@@ -86,7 +86,11 @@ impl<'t, 'b, 'i> Decoder<'t, 'b, 'i> {
         let format = self.get_format()?;
         let is_enum = format.contains('|');
 
-        let mut elements = Vec::with_capacity(num_elements);
+        // `num_elements` comes straight from the stream, so a corrupt frame can claim
+        // billions of elements; reserving for all of them up front aborts the process
+        // on allocation failure before any element is decoded. Most elements take at
+        // least one byte, so the remaining input bounds a useful reservation.
+        let mut elements = Vec::with_capacity(num_elements.min(self.bytes.len()));
         for _i in 0..num_elements {
             let format = if is_enum {
                 self.get_variant(format)?
