@@ -64,7 +64,7 @@ We have several packages which live in this repository. Changes are tracked sepa
 
 * [#1109](https://github.com/knurling-rs/defmt/pull/1109) Optimize enum encoding to reduce code size
 * [#1110](https://github.com/knurling-rs/defmt/pull/1110) Release and panic with a single call in panicking macros to save space.
-
+* [#1128](https://github.com/knurling-rs/defmt/pull/1128) Implement `Format` for `core::task` types.
 * [#879](https://github.com/knurling-rs/defmt/pull/879) Load string indices with inline asm to save space on ARMv7+
 
 ### [defmt-v1.2.0] (2026-10-15)
