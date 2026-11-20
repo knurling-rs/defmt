@@ -11,7 +11,7 @@ use utils::rustc_is_msrv;
 
 use crate::{
     snapshot::{test_snapshot, Snapshot},
-    utils::{run_capturing_stdout, run_command},
+    utils::{build_library_dirs, run_capturing_stdout, run_command},
 };
 
 static ALL_ERRORS: Mutex<Vec<String>> = Mutex::new(Vec::new());
@@ -307,10 +307,8 @@ fn test_book() {
 
     do_test(
         || {
-            run_command(
-                "cargo",
+            let mut library_dirs = build_library_dirs(
                 &[
-                    "build",
                     "-p",
                     "defmt",
                     "-p",
@@ -319,32 +317,16 @@ fn test_book() {
                     "unstable-test",
                 ],
                 None,
-                &[],
-            )
-        },
-        "book",
-    );
+            )?;
+            library_dirs.extend(build_library_dirs(&["-p", "cortex-m"], Some("firmware"))?);
 
-    do_test(
-        || run_command("cargo", &["build", "-p", "cortex-m"], Some("firmware"), &[]),
-        "book",
-    );
-
-    do_test(
-        || {
+            let mut args = vec!["test"];
+            for dir in &library_dirs {
+                args.extend(["-L", dir.as_str()]);
+            }
             run_command(
                 "mdbook",
-                &[
-                    "test",
-                    "-L",
-                    "../target/debug",
-                    "-L",
-                    "../target/debug/deps",
-                    "-L",
-                    "../firmware/target/debug",
-                    "-L",
-                    "../firmware/target/debug/deps",
-                ],
+                &args,
                 Some("book"),
                 // logging macros need this but mdbook, not being Cargo, doesn't set the env var so
                 // we use a dummy value
