@@ -662,6 +662,7 @@ Initial release
 ### [defmt-decoder-next]
 
 * [#1120](https://github.com/knurling-rs/defmt/pull/1120) Don't preallocate a format slice from its wire length
+* [#1066](https://github.com/knurling-rs/defmt/pull/1066) Add support for biased, wrapped index decoding
 
 ### [defmt-decoder-v1.2.0] (2026-10-15)
 
