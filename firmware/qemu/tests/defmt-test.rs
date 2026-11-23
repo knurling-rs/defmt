@@ -74,7 +74,7 @@ mod tests {
     #[test]
     #[ignore]
     fn ignored() -> Result<(), ()> {
-        Err(())
+        unreachable!("ignored tests must not run")
     }
 
     #[test]

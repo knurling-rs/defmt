@@ -1020,6 +1020,8 @@ Initial release
 
 ### [defmt-test-macros-next]
 
+* [#1124](https://github.com/knurling-rs/defmt/pull/1124) Don't run `#[ignore]`d tests
+
 ### [defmt-test-macros-v0.3.4] (2026-10-15)
 
 * [#1106](https://github.com/knurling-rs/defmt/pull/1106) Bump the embedded MSRV to Rust 1.81 (Ferrocene 24.11).

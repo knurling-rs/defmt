@@ -467,7 +467,8 @@ fn tests_impl(args: TokenStream, input: TokenStream) -> parse::Result<TokenStrea
             quote!(#ident())
         };
         if ignore {
-            unit_test_calls.push(quote!(let _ = #call;));
+            // don't run the test, but reference it so it isn't reported as dead code
+            unit_test_calls.push(quote!(let _ = #ident;));
         } else {
             unit_test_calls.push(quote!(
                 #before_each_call;
